@@ -1,0 +1,6978 @@
+
+Title:
+HindleyâMilner type system
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		A HindleyâMilner (HM) type system is a classical type system for the lambda calculus with parametric polymorphism. It is also known as DamasâMilner or DamasâHindleyâMilner. It was first described by J. Roger Hindley[1] and later rediscovered by Robin Milner.[2] Luis Damas contributed a close formal analysis and proof of the method in his PhD thesis.[3][4]
+Among HM's more notable properties are its completeness and its ability to infer the most general type of a given program without programmer-supplied type annotations or other hints. Algorithm W is an efficient type inference method in practice, and has been successfully applied on large code bases, although it has a high theoretical complexity.[note 1] HM is preferably used for functional languages. It was first implemented as part of the type system of the programming language ML. Since then, HM has been extended in various ways, most notably with type class constraints like those in Haskell.
+
+Contents
+
+1 Introduction
+
+1.1 Monomorphism vs. polymorphism
+1.2 Let-polymorphism
+
+
+2 Overview
+3 The HindleyâMilner type system
+
+3.1 Syntax
+
+3.1.1 Monotypes
+3.1.2 Polytypes
+3.1.3 Context and typing
+3.1.4 Free type variables
+
+
+3.2 Type order
+
+3.2.1 Principal type
+3.2.2 Substitution in typings
+
+
+3.3 Deductive system
+
+3.3.1 Typing rules
+
+
+3.4 Let-polymorphism
+3.5 Generalization rule
+
+
+4 An inference algorithm
+
+4.1 Degrees of freedom choosing the rules
+4.2 Syntax-directed rule system
+4.3 Degrees of freedom instantiating the rules
+4.4 Algorithm J
+
+
+5 Proving the algorithm
+
+5.1 Algorithm W
+5.2 Proof obligations
+
+
+6 Extensions
+
+6.1 Recursive definitions
+
+6.1.1 Typing rule
+6.1.2 Consequences
+
+
+6.2 Overloading
+6.3 Higher-order types
+6.4 Subtyping
+
+
+7 Notes
+8 References
+9 External links
+
+
+
+Introduction[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Type inference
+As a type inference method, HindleyâMilner is able to deduce the types of variables, expressions and functions from programs written in an entirely untyped style. Being scope sensitive, it is not limited to deriving the types only from a small portion of source code, but rather from complete programs or modules. Being able to cope with parametric types, too, it is core to the type systems of many functional programming languages. It was first applied in this manner in the ML programming language.
+The origin is the type inference algorithm for the simply typed lambda calculus that was devised by Haskell Curry and Robert Feys in 1958.[citation needed]
+In 1969, J. Roger Hindley extended this work and proved that their algorithm always inferred the most general type.
+In 1978, Robin Milner,[5] independently of Hindley's work, provided an equivalent algorithm, Algorithm W.
+In 1982, Luis Damas[4] finally proved that Milner's algorithm is complete and extended it to support systems with polymorphic references.
+
+Monomorphism vs. polymorphism[edit]
+Main article: parametric polymorphism
+In the simply typed lambda calculus, types T are either atomic type constants or function types of form 
+  
+    
+      
+        T
+        â
+        T
+      
+    
+    {\displaystyle T\rightarrow T}
+  
+.  Such types are monomorphic. Typical examples are the types used in arithmetic values:
+
+ 3      Â : Number
+ add 3 4Â : Number
+ add    Â : Number -> Number -> Number
+
+Contrary to this, the untyped lambda calculus is neutral to typing at all, and many of its functions can be meaningfully applied to all type of arguments. The trivial example is the identity function
+
+id â¡ Î» x . x
+which simply returns whatever value it is applied to. Less trivial examples include parametric types like lists.
+While polymorphism in general means that operations accept values of more than one type, the polymorphism used here is parametric. One finds the notation of type schemes in the literature, too, emphasizing the parametric nature of the polymorphism. Additionally, constants may be typed with (quantified) type variables. E.g.:
+
+ consÂ : forall a . a -> List a -> List a
+ nil Â : forall a . List a.
+ id  Â : forall a . a -> a
+
+Polymorphic types can become monomorphic by consistent substitution of their variables. Examples of monomorphic instances are:
+
+id' Â : String -> String
+nil'Â : List Number
+
+More generally, types are polymorphic when they contain type variables, while types without them are monomorphic.
+Contrary to the type systems used for example in Pascal (1970) or C (1972), which only support monomorphic types, HM is designed with emphasis on parametric polymorphism. The successors of the languages mentioned, like C++ (1985), focused on different types of polymorphism, namely subtyping in connection with object-oriented programming and overloading. While subtyping is incompatible with HM, a variant of systematic overloading is available in the HM-based type system of Haskell.
+
+Let-polymorphism[edit]
+When extending the type inference for the simply-typed lambda calculus towards polymorphism, one has to define when deriving an instance of a value is admissible. Ideally, this would be allowed with any use of a bound variable, as in:
+
+ (Î» id .  ... (id 3) ... (id "text") ... ) (Î» x . x)
+
+Unfortunately, type inference in polymorphic lambda calculus is not decidable.[6] Instead, HM provides a let-polymorphism of the form
+
+ let id = Î» x . x
+  in ... (id 3) ... (id "text") ...
+
+restricting the binding mechanism in an extension of the expression syntax. Only values bound in a let construct are subject to instantiation, i.e. are polymorphic, while the parameters in lambda-abstractions are treated as being monomorphic.
+
+Overview[edit]
+The remainder of this article proceeds as follows:
+
+The HM type system is defined. This is done by describing a deduction system that makes precise what expressions have what type, if any.
+From there, it works towards an implementation of the type inference method. After introducing a syntax-driven variant of the above deductive system, it sketches an efficient implementation (algorithm J), appealing mostly to the reader's metalogical intuition.
+Because it remains open whether algorithm J indeed realises the initial deduction system, a less efficient implementation (algorithm W), is introduced and its use in a proof is hinted.
+Finally, further topics related to the algorithm are discussed.
+The same description of the deduction system is used throughout, even for the two algorithms, to make the various forms in which the HM method is presented directly comparable.
+
+The HindleyâMilner type system[edit]
+The type system can be formally described by syntax rules that fix a language for the expressions, types, etc. The presentation here of such a syntax is not too formal, in that it is written down not to study the surface grammar, but rather the depth grammar, and leaves some syntactical details open. This form of presentation is usual. Building on this, type rules are used to define how expressions and types are related. As before, the form used is a bit liberal.
+
+Syntax[edit]
+
+
+Expressions
+
+
+
+  
+    
+      
+        
+          
+            
+              
+            
+            
+              
+                e
+              
+              
+                =
+              
+              
+                x
+              
+              
+                
+                  
+                    variable
+                  
+                
+              
+            
+            
+              
+              
+                |
+              
+              
+                
+                  e
+                  
+                    1
+                  
+                
+                Â 
+                
+                  e
+                  
+                    2
+                  
+                
+              
+              
+                
+                  
+                    application
+                  
+                
+              
+            
+            
+              
+              
+                |
+              
+              
+                Î»
+                Â 
+                x
+                Â 
+                .
+                Â 
+                e
+              
+              
+                
+                  
+                    abstraction
+                  
+                
+              
+            
+            
+              
+              
+                |
+              
+              
+                
+                  
+                    l
+                    e
+                    t
+                  
+                
+                Â 
+                x
+                =
+                
+                  e
+                  
+                    1
+                  
+                
+                Â 
+                
+                  
+                    i
+                    n
+                  
+                
+                Â 
+                
+                  e
+                  
+                    2
+                  
+                
+              
+              
+            
+            
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{lrll}\\e&=&x&{\textrm {variable}}\\&\vert &e_{1}\ e_{2}&{\textrm {application}}\\&\vert &\lambda \ x\ .\ e&{\textrm {abstraction}}\\&\vert &{\mathtt {let}}\ x=e_{1}\ {\mathtt {in}}\ e_{2}&\\\\\end{array}}}
+  
+
+
+
+Types
+
+
+
+  
+    
+      
+        
+          
+            
+              
+            
+            
+              
+                
+                  
+                    mono
+                  
+                
+              
+              
+                Ï
+              
+              
+                =
+              
+              
+                Î±
+              
+              
+                Â 
+                
+                  
+                    variable
+                  
+                
+              
+            
+            
+              
+              
+              
+                |
+              
+              
+                C
+                Â 
+                Ï
+                â¦
+                Ï
+              
+              
+                Â 
+                
+                  
+                    application
+                  
+                
+              
+            
+            
+              
+              
+              
+                |
+              
+              
+                Ï
+                â
+                Ï
+              
+              
+                Â 
+                
+                  
+                    abstraction
+                  
+                
+              
+            
+            
+              
+                
+                  
+                    poly
+                  
+                
+              
+              
+                Ï
+              
+              
+                =
+              
+              
+                Ï
+              
+            
+            
+              
+              
+              
+                |
+              
+              
+                â
+                Â 
+                Î±
+                Â 
+                .
+                Â 
+                Ï
+              
+              
+                Â 
+                
+                  
+                    quantifier
+                  
+                
+              
+            
+            
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{llrll}\\{\textrm {mono}}&\tau &=&\alpha &\ {\textrm {variable}}\\&&\vert &C\ \tau \dots \tau &\ {\textrm {application}}\\&&\vert &\tau \rightarrow \tau &\ {\textrm {abstraction}}\\{\textrm {poly}}&\sigma &=&\tau \\&&\vert &\forall \ \alpha \ .\ \sigma &\ {\textrm {quantifier}}\\\\\end{array}}}
+  
+
+
+
+Context and Typing
+
+
+
+  
+    
+      
+        
+          
+            
+              
+            
+            
+              
+                
+                  Context
+                
+              
+              
+                Î
+              
+              
+                =
+              
+              
+                Ïµ
+                Â 
+                
+                  
+                    (
+                    e
+                    m
+                    p
+                    t
+                    y
+                    )
+                  
+                
+              
+            
+            
+              
+              
+              
+                |
+              
+              
+                Î
+                ,
+                Â 
+                x
+                :
+                Ï
+              
+            
+            
+              
+                
+                  Typing
+                
+              
+              
+              
+                =
+              
+              
+                Î
+                â¢
+                e
+                :
+                Ï
+              
+            
+            
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{llrl}\\{\text{Context}}&\Gamma &=&\epsilon \ {\mathtt {(empty)}}\\&&\vert &\Gamma ,\ x:\sigma \\{\text{Typing}}&&=&\Gamma \vdash e:\sigma \\\\\end{array}}}
+  
+
+
+
+Free Type Variables
+
+
+
+  
+    
+      
+        
+          
+            
+              
+            
+            
+              
+                
+                  free
+                
+                (
+                Â 
+                Î±
+                Â 
+                )
+              
+              
+                =
+                Â 
+                
+                  {
+                  Î±
+                  }
+                
+              
+            
+            
+              
+                
+                  free
+                
+                (
+                Â 
+                C
+                Â 
+                
+                  Ï
+                  
+                    1
+                  
+                
+                â¦
+                
+                  Ï
+                  
+                    n
+                  
+                
+                Â 
+                )
+              
+              
+                =
+                Â 
+                
+                  â
+                  
+                    i
+                    =
+                    1
+                  
+                  
+                    n
+                  
+                
+                
+                  
+                    free
+                  
+                  (
+                  Â 
+                  
+                    Ï
+                    
+                      i
+                    
+                  
+                  Â 
+                  )
+                
+              
+            
+            
+              
+                
+                  free
+                
+                (
+                Â 
+                Î
+                Â 
+                )
+              
+              
+                =
+                Â 
+                
+                  â
+                  
+                    x
+                    :
+                    Ï
+                    â
+                    Î
+                  
+                
+                
+                  free
+                
+                (
+                Â 
+                Ï
+                Â 
+                )
+              
+            
+            
+              
+            
+            
+              
+                
+                  free
+                
+                (
+                Â 
+                â
+                Â 
+                Î±
+                Â 
+                .
+                Â 
+                Ï
+                Â 
+                )
+              
+              
+                =
+                Â 
+                
+                  free
+                
+                (
+                Â 
+                Ï
+                Â 
+                )
+                Â 
+                â
+                Â 
+                
+                  {
+                  Î±
+                  }
+                
+              
+            
+            
+              
+                
+                  free
+                
+                (
+                Â 
+                Î
+                â¢
+                e
+                :
+                Ï
+                Â 
+                )
+              
+              
+                =
+                Â 
+                
+                  free
+                
+                (
+                Â 
+                Ï
+                Â 
+                )
+                Â 
+                â
+                Â 
+                
+                  free
+                
+                (
+                Â 
+                Î
+                Â 
+                )
+              
+            
+            
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{ll}\\{\text{free}}(\ \alpha \ )&=\ \left\{\alpha \right\}\\{\text{free}}(\ C\ \tau _{1}\dots \tau _{n}\ )&=\ \bigcup \limits _{i=1}^{n}{{\text{free}}(\ \tau _{i}\ )}\\{\text{free}}(\ \Gamma \ )&=\ \bigcup \limits _{x:\sigma \in \Gamma }{\text{free}}(\ \sigma \ )\\\\{\text{free}}(\ \forall \ \alpha \ .\ \sigma \ )&=\ {\text{free}}(\ \sigma \ )\ -\ \left\{\alpha \right\}\\{\text{free}}(\ \Gamma \vdash e:\sigma \ )&=\ {\text{free}}(\ \sigma \ )\ -\ {\text{free}}(\ \Gamma \ )\\\\\end{array}}}
+  
+
+
+The expressions to be typed are exactly those of the lambda calculus extended with a let-expression as shown in the adjacent table. Parentheses can be used to disambiguate an expression. The application is left-binding and binds stronger than abstraction or the let-in construct.
+Types are syntactically split into two groups, monotypes and polytypes.[note 2]
+
+Monotypes[edit]
+Monotypes always designate a particular type. Monotypes 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ are syntactically represented as terms.
+Examples of monotypes include type constants like 
+  
+    
+      
+        
+          
+            i
+            n
+            t
+          
+        
+      
+    
+    {\displaystyle {\mathtt {int}}}
+  
+ or 
+  
+    
+      
+        
+          
+            s
+            t
+            r
+            i
+            n
+            g
+          
+        
+      
+    
+    {\displaystyle {\mathtt {string}}}
+  
+, and parametric types like 
+  
+    
+      
+        
+          
+            M
+            a
+            p
+            Â 
+            (
+            S
+            e
+            t
+            Â 
+            s
+            t
+            r
+            i
+            n
+            g
+            )
+            Â 
+            i
+            n
+            t
+          
+        
+      
+    
+    {\displaystyle {\mathtt {Map\ (Set\ string)\ int}}}
+  
+.   The latter types are examples of applications of type functions, for example, from the set
+
+  
+    
+      
+        {
+        
+          
+            M
+            a
+            
+              p
+              
+                2
+              
+            
+            ,
+            Â 
+            S
+            e
+            
+              t
+              
+                1
+              
+            
+            ,
+            Â 
+            s
+            t
+            r
+            i
+            n
+            
+              g
+              
+                0
+              
+            
+            ,
+            Â 
+            i
+            n
+            
+              t
+              
+                0
+              
+            
+          
+        
+        ,
+        Â 
+        
+          â
+          
+            2
+          
+        
+        }
+      
+    
+    {\displaystyle \{{\mathtt {Map^{2},\ Set^{1},\ string^{0},\ int^{0}}},\ \rightarrow ^{2}\}}
+  
+, 
+where the superscript indicates the number of type parameters.  The complete set of type functions 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ is arbitrary in HM,[note 3] except that it must contain at least 
+  
+    
+      
+        
+          â
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \rightarrow ^{2}}
+  
+, the type of functions.  It is often written in infix notation for convenience.  For example, a function mapping integers to strings has type 
+  
+    
+      
+        
+          
+            i
+            n
+            t
+          
+        
+        â
+        
+          
+            s
+            t
+            r
+            i
+            n
+            g
+          
+        
+      
+    
+    {\displaystyle {\mathtt {int}}\rightarrow {\mathtt {string}}}
+  
+. Again, parentheses can be used to disambiguate a type expression. The application binds stronger than the infix arrow, which is right-binding.
+Type variables are admitted as monotypes. Monotypes are not to be confused with monomorphic types, which exclude variables and allow only ground terms.
+Two monotypes are equal if they have identical terms.
+
+Polytypes[edit]
+Polytypes (or type schemes) are types containing variables bound by zero or more for-all quantifiers, e.g. 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \alpha }
+  
+.
+A function with polytype 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \alpha }
+  
+ can map any value of the same type to itself,
+and the identity function is a value for this type.
+As another example, 
+  
+    
+      
+        â
+        Î±
+        .
+        (
+        
+          
+            S
+            e
+            t
+          
+        
+        Â 
+        Î±
+        )
+        â
+        
+          
+            i
+            n
+            t
+          
+        
+      
+    
+    {\displaystyle \forall \alpha .({\mathtt {Set}}\ \alpha )\rightarrow {\mathtt {int}}}
+  
+ is the type of a function mapping all finite sets to integers. A function which returns the cardinality of a set would be a value of this type.
+Quantifiers can only appear top level. For instance, a type 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        â
+        Î±
+        .
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \forall \alpha .\alpha }
+  
+ is excluded by the syntax of types. Also monotypes are included in the polytypes, thus a type has the general form 
+  
+    
+      
+        â
+        
+          Î±
+          
+            1
+          
+        
+        â¦
+        â
+        
+          Î±
+          
+            n
+          
+        
+        .
+        Ï
+        ,
+        n
+        â¥
+        0
+      
+    
+    {\displaystyle \forall \alpha _{1}\dots \forall \alpha _{n}.\tau ,n\geq 0}
+  
+, where 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ is a monotype.
+Equality of polytypes is up to reordering the quantification and renaming the quantified variables (
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+-conversion). Further, quantified variables not occurring in the monotype can be dropped.
+
+Context and typing[edit]
+To meaningfully bring together the still disjoint parts (syntax expressions and types) a third part is needed: context. Syntactically, a context is a list of pairs 
+  
+    
+      
+        x
+        :
+        Ï
+      
+    
+    {\displaystyle x:\sigma }
+  
+, called assignments, assumptions or bindings, each pair stating that value variable 
+  
+    
+      
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle x_{i}}
+  
+has type 
+  
+    
+      
+        
+          Ï
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \sigma _{i}}
+  
+. All three parts combined give a typing judgment of the form 
+  
+    
+      
+        Î
+        Â 
+        â¢
+        Â 
+        e
+        :
+        Ï
+      
+    
+    {\displaystyle \Gamma \ \vdash \ e:\sigma }
+  
+, stating that under assumptions 
+  
+    
+      
+        Î
+      
+    
+    {\displaystyle \Gamma }
+  
+, the expression 
+  
+    
+      
+        e
+      
+    
+    {\displaystyle e}
+  
+ has type 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+.
+
+Free type variables[edit]
+In a type 
+  
+    
+      
+        â
+        
+          Î±
+          
+            1
+          
+        
+        â¦
+        â
+        
+          Î±
+          
+            n
+          
+        
+        .
+        Ï
+      
+    
+    {\displaystyle \forall \alpha _{1}\dots \forall \alpha _{n}.\tau }
+  
+, the symbol 
+  
+    
+      
+        â
+      
+    
+    {\displaystyle \forall }
+  
+ is the quantifier binding the type variables 
+  
+    
+      
+        
+          Î±
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \alpha _{i}}
+  
+ in the monotype 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+. The variables 
+  
+    
+      
+        
+          Î±
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \alpha _{i}}
+  
+ are called quantified and any occurrence of a quantified type variable in 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ is called bound and all unbound type variables in 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ are called free. Additionally to the quantification 
+  
+    
+      
+        â
+      
+    
+    {\displaystyle \forall }
+  
+ in polytypes, type variables can also be bound by occurring in the context, but with the inverse effect on the right hand side of the 
+  
+    
+      
+        â¢
+      
+    
+    {\displaystyle \vdash }
+  
+. Such variables then behave like type constants there. Finally, a type variable may legally occur unbound in a typing, in which case they are implicitly all-quantified.
+The presence of both bound and unbound type variables is a bit uncommon in programming languages. Often, all type variables are implicitly treated all-quantified. For instance, one does not have clauses with free variables in Prolog. Likewise in Haskell, [note 4] where all type variables implicitly occur quantified, i.e. a Haskell type a -> a means 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \alpha }
+  
+ here. Related and also very uncommon is the binding effect of the right hand side 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ of the assignments.
+Typically, the mixture of both bound and unbound type variables originate from the use of free variables in an expression. The constant function K = 
+  
+    
+      
+        Î»
+        x
+        .
+        Î»
+        y
+        .
+        x
+      
+    
+    {\displaystyle \lambda x.\lambda y.x}
+  
+ provides an example. It has the monotype 
+  
+    
+      
+        Î±
+        â
+        Î²
+        â
+        Î±
+      
+    
+    {\displaystyle \alpha \rightarrow \beta \rightarrow \alpha }
+  
+. One can force polymorphism by 
+  
+    
+      
+        
+          l
+          e
+          t
+        
+        Â 
+        k
+        =
+        Î»
+        x
+        .
+        (
+        
+          l
+          e
+          t
+        
+        Â 
+        f
+        =
+        Î»
+        y
+        .
+        x
+        Â 
+        
+          i
+          n
+        
+        Â 
+        f
+        )
+        Â 
+        
+          i
+          n
+        
+        Â 
+        k
+      
+    
+    {\displaystyle \mathbf {let} \ k=\lambda x.(\mathbf {let} \ f=\lambda y.x\ \mathbf {in} \ f)\ \mathbf {in} \ k}
+  
+. Herein, 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ has the type 
+  
+    
+      
+        â
+        Î³
+        .
+        Î³
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \gamma .\gamma \rightarrow \alpha }
+  
+. The free monotype variable 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ originates from the type of the variable 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ bound in the surrounding scope. 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ has the type 
+  
+    
+      
+        â
+        Î±
+        â
+        Î²
+        .
+        Î±
+        â
+        Î²
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha \forall \beta .\alpha \rightarrow \beta \rightarrow \alpha }
+  
+. One could imagine the free type variable 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ in the type of 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ be bound by the 
+  
+    
+      
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha }
+  
+ in the type of 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+. But such a scoping cannot be expressed in HM. Rather, the binding is realized by the context.
+
+Type order[edit]
+Main article: Unification (computer science) Â§Â Substitution
+Polymorphism means that one and the same expression can have (perhaps infinitely) many types. But in this type system, these types are not completely unrelated, but rather orchestrated by the parametric polymorphism.
+As an example, the identity 
+  
+    
+      
+        Î»
+        x
+        .
+        x
+      
+    
+    {\displaystyle \lambda x.x}
+  
+ can have 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \alpha }
+  
+ as its type as well as
+
+  
+    
+      
+        
+          
+            string
+          
+        
+        â
+        
+          
+            string
+          
+        
+      
+    
+    {\displaystyle {\texttt {string}}\rightarrow {\texttt {string}}}
+  
+ or 
+  
+    
+      
+        
+          
+            int
+          
+        
+        â
+        
+          
+            int
+          
+        
+      
+    
+    {\displaystyle {\texttt {int}}\rightarrow {\texttt {int}}}
+  
+ and many others, but not 
+  
+    
+      
+        
+          
+            int
+          
+        
+        â
+        
+          
+            string
+          
+        
+      
+    
+    {\displaystyle {\texttt {int}}\rightarrow {\texttt {string}}}
+  
+. The most general type for this function is
+
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \alpha }
+  
+, while the
+others are more specific and can be derived from the general one by consistently
+replacing another type for the type parameter, i.e. the quantified
+variable 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+.  The counter-example fails because the
+replacement is not consistent.
+The consistent replacement can be made formal by applying a substitution 
+  
+    
+      
+        S
+        =
+        
+          {
+          
+            Â 
+            
+              a
+              
+                i
+              
+            
+            â¦
+            
+              Ï
+              
+                i
+              
+            
+            ,
+            Â 
+            â¦
+            Â 
+          
+          }
+        
+      
+    
+    {\displaystyle S=\left\{\ a_{i}\mapsto \tau _{i},\ \dots \ \right\}}
+  
+ to the term of a type 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+, written 
+  
+    
+      
+        S
+        Ï
+      
+    
+    {\displaystyle S\tau }
+  
+. As the example suggests, substitution is not only strongly related to an order, that expresses that a type is more or less special, but also with the all-quantification which allows the substitution to be applied.
+
+
+
+Specialization Rule
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  Ï
+                  â²
+                
+                =
+                
+                  {
+                  
+                    
+                      Î±
+                      
+                        i
+                      
+                    
+                    â¦
+                    
+                      Ï
+                      
+                        i
+                      
+                    
+                  
+                  }
+                
+                Ï
+                
+                
+                  Î²
+                  
+                    i
+                  
+                
+                â
+                
+                  
+                    free
+                  
+                
+                (
+                â
+                
+                  Î±
+                  
+                    1
+                  
+                
+                .
+                .
+                .
+                â
+                
+                  Î±
+                  
+                    n
+                  
+                
+                .
+                Ï
+                )
+              
+              
+                â
+                
+                  Î±
+                  
+                    1
+                  
+                
+                .
+                .
+                .
+                â
+                
+                  Î±
+                  
+                    n
+                  
+                
+                .
+                Ï
+                â
+                â
+                
+                  Î²
+                  
+                    1
+                  
+                
+                .
+                .
+                .
+                â
+                
+                  Î²
+                  
+                    m
+                  
+                
+                .
+                
+                  Ï
+                  â²
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle {\frac {\tau '=\left\{\alpha _{i}\mapsto \tau _{i}\right\}\tau \quad \beta _{i}\not \in {\textrm {free}}(\forall \alpha _{1}...\forall \alpha _{n}.\tau )}{\forall \alpha _{1}...\forall \alpha _{n}.\tau \sqsubseteq \forall \beta _{1}...\forall \beta _{m}.\tau '}}}
+  
+
+
+Formally, in HM, a type 
+  
+    
+      
+        
+          Ï
+          â²
+        
+      
+    
+    {\displaystyle \sigma '}
+  
+ is more general than 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+, formally 
+  
+    
+      
+        
+          Ï
+          â²
+        
+        â
+        Ï
+      
+    
+    {\displaystyle \sigma '\sqsubseteq \sigma }
+  
+, if some quantified variable in 
+  
+    
+      
+        
+          Ï
+          â²
+        
+      
+    
+    {\displaystyle \sigma '}
+  
+ is consistently substituted such that one gains 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ as shown in the side bar. This order is part of the type definition of the type system.
+In our previous example, applying the substitution 
+  
+    
+      
+        S
+        =
+        
+          {
+          
+            Î±
+            â¦
+            
+              
+                string
+              
+            
+          
+          }
+        
+      
+    
+    {\displaystyle S=\left\{\alpha \mapsto {\texttt {string}}\right\}}
+  
+ would result in 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+        â
+        
+          
+            string
+          
+        
+        â
+        
+          
+            string
+          
+        
+      
+    
+    {\displaystyle \forall \alpha .\alpha \rightarrow \alpha \sqsubseteq {\texttt {string}}\rightarrow {\texttt {string}}}
+  
+.
+While substituting a monomorphic (ground) type for a quantified variable is
+straight forward, substituting a polytype has some pitfalls caused by the
+presence of free variables. Most particularly, unbound variables must not be
+replaced. They are treated as constants here. Additionally, quantifications can only occur top-level. Substituting a parametric type,
+one has to lift its quantifiers. The table on the right makes the rule precise.
+Alternatively, consider an equivalent notation for the polytypes without
+quantifiers in which quantified variables are represented by a different set of
+symbols. In such a notation, the specialization reduces to plain consistent
+replacement of such variables.
+The relation 
+  
+    
+      
+        â
+      
+    
+    {\displaystyle \sqsubseteq }
+  
+ is a partial order
+and  
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha }
+  
+ is its smallest element.
+
+Principal type[edit]
+While specialization of a type scheme is one use of the order, it plays a
+crucial second role in the type system. Type inference with polymorphism
+faces the challenge of summarizing all possible types an expression may have.
+The order guarantees that such a summary exists as the most general type
+of the expression.
+
+Substitution in typings[edit]
+The type order defined above can be extended to typings because the implied all-quantification of typings enables consistent replacement:
+
+
+  
+    
+      
+        Î
+        â¢
+        e
+        :
+        Ï
+        
+        â¹
+        
+        S
+        Î
+        â¢
+        e
+        :
+        S
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash e:\sigma \quad \Longrightarrow \quad S\Gamma \vdash e:S\sigma }
+  
+
+Contrary to the specialisation rule, this is not part of the definition, but like the implicit all-quantification rather a consequence of the type rules defined next.
+Free type variables in a typing serve as placeholders for possible refinement. The binding effect of the environment to free type
+variables on the right hand side of 
+  
+    
+      
+        â¢
+      
+    
+    {\displaystyle \vdash }
+  
+ that prohibits their substitution in the specialisation rule is again
+that a replacement has to be consistent and would need to include the whole typing.
+This article will discuss four different rule sets:
+
+
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+ declarative system
+
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ syntactical system
+
+  
+    
+      
+        
+          â¢
+          
+            J
+          
+        
+      
+    
+    {\displaystyle \vdash _{J}}
+  
+ algorithm J
+
+  
+    
+      
+        
+          â¢
+          
+            W
+          
+        
+      
+    
+    {\displaystyle \vdash _{W}}
+  
+ algorithm W
+Deductive system[edit]
+
+
+The Syntax of Rules
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  Predicate
+                
+              
+              
+                =
+              
+              
+                Ï
+                â
+                
+                  Ï
+                  â²
+                
+              
+            
+            
+              
+              
+                |
+                Â 
+              
+              
+                Î±
+                â
+                f
+                r
+                e
+                e
+                (
+                Î
+                )
+              
+            
+            
+              
+              
+                |
+                Â 
+              
+              
+                x
+                :
+                Î±
+                â
+                Î
+              
+            
+            
+              
+            
+            
+              
+                
+                  Judgment
+                
+              
+              
+                =
+              
+              
+                
+                  Typing
+                
+              
+            
+            
+              
+                
+                  Premise
+                
+              
+              
+                =
+              
+              
+                
+                  Judgment
+                
+                Â 
+                |
+                Â 
+                
+                  Predicate
+                
+              
+            
+            
+              
+                
+                  Conclusion
+                
+              
+              
+                =
+              
+              
+                
+                  Judgment
+                
+              
+            
+            
+              
+            
+            
+              
+                
+                  Rule
+                
+              
+              
+                =
+              
+              
+                
+                  
+                    
+                      
+                        
+                          
+                            Premise
+                          
+                        
+                        Â 
+                        â¦
+                      
+                      
+                        Conclusion
+                      
+                    
+                  
+                  
+                  [
+                  
+                    
+                      N
+                      a
+                      m
+                      e
+                    
+                  
+                  ]
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{lrl}{\text{Predicate}}&=&\sigma \sqsubseteq \sigma '\\&\vert \ &\alpha \not \in free(\Gamma )\\&\vert \ &x:\alpha \in \Gamma \\\\{\text{Judgment}}&=&{\text{Typing}}\\{\text{Premise}}&=&{\text{Judgment}}\ \vert \ {\text{Predicate}}\\{\text{Conclusion}}&=&{\text{Judgment}}\\\\{\text{Rule}}&=&\displaystyle {\frac {{\textrm {Premise}}\ \dots }{\textrm {Conclusion}}}\quad [{\mathtt {Name}}]\end{array}}}
+  
+
+
+The syntax of HM is carried forward to the syntax of the inference rules that form the body of the formal system, by using the typings as judgments. Each of the rules define what conclusion could be drawn from what premises. Additionally to the judgments, some extra conditions introduced above might be used as premises, too.
+A proof using the rules is a sequence of judgments such that all premises are listed before a conclusion. The examples below show a possible format of proofs. From left to right, each line shows the conclusion, the 
+  
+    
+      
+        [
+        
+          
+            N
+            a
+            m
+            e
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Name}}]}
+  
+ of the rule applied and the premises, either by referring to an earlier line (number) if the premise is a judgment or by making the predicate explicit.
+
+Typing rules[edit]
+See also: Type rules
+
+
+Declarative Rule System
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  
+                    
+                      
+                        x
+                        :
+                        Ï
+                        â
+                        Î
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        x
+                        :
+                        Ï
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        Ï
+                        â
+                        
+                          Ï
+                          â²
+                        
+                        
+                        
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        Ï
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    p
+                    p
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        Ï
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        e
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        Î»
+                        Â 
+                        x
+                        Â 
+                        .
+                        Â 
+                        e
+                        :
+                        Ï
+                        â
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    b
+                    s
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        Ï
+                        
+                        
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        Ï
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        Ï
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        
+                          
+                            l
+                            e
+                            t
+                          
+                        
+                        Â 
+                        x
+                        =
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          
+                            i
+                            n
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        Ï
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    L
+                    e
+                    t
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        e
+                        :
+                        
+                          Ï
+                          â²
+                        
+                        
+                        
+                          Ï
+                          â²
+                        
+                        â
+                        Ï
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        e
+                        :
+                        Ï
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    I
+                    n
+                    s
+                    t
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        e
+                        :
+                        Ï
+                        
+                        Î±
+                        â
+                        
+                          free
+                        
+                        (
+                        Î
+                        )
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            D
+                          
+                        
+                        e
+                        :
+                        â
+                        Â 
+                        Î±
+                        Â 
+                        .
+                        Â 
+                        Ï
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    G
+                    e
+                    n
+                  
+                
+                ]
+              
+            
+            
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{cl}\displaystyle {\frac {x:\sigma \in \Gamma }{\Gamma \vdash _{D}x:\sigma }}&[{\mathtt {Var}}]\\\\\displaystyle {\frac {\Gamma \vdash _{D}e_{0}:\tau \rightarrow \tau '\quad \quad \Gamma \vdash _{D}e_{1}:\tau }{\Gamma \vdash _{D}e_{0}\ e_{1}:\tau '}}&[{\mathtt {App}}]\\\\\displaystyle {\frac {\Gamma ,\;x:\tau \vdash _{D}e:\tau '}{\Gamma \vdash _{D}\lambda \ x\ .\ e:\tau \rightarrow \tau '}}&[{\mathtt {Abs}}]\\\\\displaystyle {\frac {\Gamma \vdash _{D}e_{0}:\sigma \quad \quad \Gamma ,\,x:\sigma \vdash _{D}e_{1}:\tau }{\Gamma \vdash _{D}{\mathtt {let}}\ x=e_{0}\ {\mathtt {in}}\ e_{1}:\tau }}&[{\mathtt {Let}}]\\\\\\\displaystyle {\frac {\Gamma \vdash _{D}e:\sigma '\quad \sigma '\sqsubseteq \sigma }{\Gamma \vdash _{D}e:\sigma }}&[{\mathtt {Inst}}]\\\\\displaystyle {\frac {\Gamma \vdash _{D}e:\sigma \quad \alpha \notin {\text{free}}(\Gamma )}{\Gamma \vdash _{D}e:\forall \ \alpha \ .\ \sigma }}&[{\mathtt {Gen}}]\\\\\end{array}}}
+  
+
+
+The side box shows the deduction rules of the HM type system. One can roughly divide the rules into two groups:
+The first four rules 
+  
+    
+      
+        [
+        
+          
+            V
+            a
+            r
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Var}}]}
+  
+ (variable or function access), 
+  
+    
+      
+        [
+        
+          
+            A
+            p
+            p
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {App}}]}
+  
+ (application, i.e. function call with one parameter), 
+  
+    
+      
+        [
+        
+          
+            A
+            b
+            s
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Abs}}]}
+  
+ (abstraction, i.e. function declaration) and 
+  
+    
+      
+        [
+        
+          
+            L
+            e
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Let}}]}
+  
+ (variable declaration) are centered around the syntax, presenting one rule for each of the expression forms. Their meaning is obvious at the first glance, as they decompose each expression, prove their sub-expressions and finally combine the individual types found in the premises to the type in the conclusion.
+The second group is formed by the  remaining two rules 
+  
+    
+      
+        [
+        
+          
+            I
+            n
+            s
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Inst}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            G
+            e
+            n
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Gen}}]}
+  
+.
+They handle specialization and generalization of types. While the rule 
+  
+    
+      
+        [
+        
+          
+            I
+            n
+            s
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Inst}}]}
+  
+ should be clear from the section on specialization above, 
+  
+    
+      
+        [
+        
+          
+            G
+            e
+            n
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Gen}}]}
+  
+ complements the former, working in the opposite direction. It allows generalization, i.e. to quantify monotype variables not bound in the context.
+The following two examples exercise the rule system in action. Since both the expression and the type are given, they are a type-checking use of the rules.
+Example: A proof for 
+  
+    
+      
+        Î
+        
+          â¢
+          
+            D
+          
+        
+        i
+        d
+        (
+        n
+        )
+        :
+        i
+        n
+        t
+      
+    
+    {\displaystyle \Gamma \vdash _{D}id(n):int}
+  
+ where 
+  
+    
+      
+        Î
+        =
+        i
+        d
+        :
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+        ,
+        Â 
+        n
+        :
+        i
+        n
+        t
+      
+    
+    {\displaystyle \Gamma =id:\forall \alpha .\alpha \rightarrow \alpha ,\ n:int}
+  
+,
+could be written
+
+
+  
+    
+      
+        
+          
+            
+              
+                1
+                :
+              
+              
+                Î
+                
+                  â¢
+                  
+                    D
+                  
+                
+                i
+                d
+                :
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+              
+                (
+                i
+                d
+                :
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+                â
+                Î
+                )
+              
+            
+            
+              
+                2
+                :
+              
+              
+                Î
+                
+                  â¢
+                  
+                    D
+                  
+                
+                i
+                d
+                :
+                i
+                n
+                t
+                â
+                i
+                n
+                t
+              
+              
+                [
+                
+                  
+                    I
+                    n
+                    s
+                    t
+                  
+                
+                ]
+              
+              
+                (
+                1
+                )
+                ,
+                Â 
+                (
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+                â
+                i
+                n
+                t
+                â
+                i
+                n
+                t
+                )
+              
+            
+            
+              
+                3
+                :
+              
+              
+                Î
+                
+                  â¢
+                  
+                    D
+                  
+                
+                n
+                :
+                i
+                n
+                t
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+              
+                (
+                n
+                :
+                i
+                n
+                t
+                â
+                Î
+                )
+              
+            
+            
+              
+                4
+                :
+              
+              
+                Î
+                
+                  â¢
+                  
+                    D
+                  
+                
+                i
+                d
+                (
+                n
+                )
+                :
+                i
+                n
+                t
+              
+              
+                [
+                
+                  
+                    A
+                    p
+                    p
+                  
+                
+                ]
+              
+              
+                (
+                2
+                )
+                ,
+                Â 
+                (
+                3
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{llll}1:&\Gamma \vdash _{D}id:\forall \alpha .\alpha \rightarrow \alpha &[{\mathtt {Var}}]&(id:\forall \alpha .\alpha \rightarrow \alpha \in \Gamma )\\2:&\Gamma \vdash _{D}id:int\rightarrow int&[{\mathtt {Inst}}]&(1),\ (\forall \alpha .\alpha \rightarrow \alpha \sqsubseteq int\rightarrow int)\\3:&\Gamma \vdash _{D}n:int&[{\mathtt {Var}}]&(n:int\in \Gamma )\\4:&\Gamma \vdash _{D}id(n):int&[{\mathtt {App}}]&(2),\ (3)\\\end{array}}}
+  
+
+Example: To demonstrate generalization,
+
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+        Â 
+        
+          
+            let
+          
+        
+        
+        i
+        d
+        =
+        Î»
+        x
+        .
+        x
+        Â 
+        
+          
+            in
+          
+        
+        Â 
+        i
+        d
+        
+        :
+        
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \vdash _{D}\ {\textbf {let}}\,id=\lambda x.x\ {\textbf {in}}\ id\,:\,\forall \alpha .\alpha \rightarrow \alpha }
+  
+
+is shown below:
+
+
+  
+    
+      
+        
+          
+            
+              
+                1
+                :
+              
+              
+                x
+                :
+                Î±
+                
+                  â¢
+                  
+                    D
+                  
+                
+                x
+                :
+                Î±
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+              
+                (
+                x
+                :
+                Î±
+                â
+                
+                  {
+                  
+                    x
+                    :
+                    Î±
+                  
+                  }
+                
+                )
+              
+            
+            
+              
+                2
+                :
+              
+              
+                
+                  â¢
+                  
+                    D
+                  
+                
+                Î»
+                x
+                .
+                x
+                :
+                Î±
+                â
+                Î±
+              
+              
+                [
+                
+                  
+                    A
+                    b
+                    s
+                  
+                
+                ]
+              
+              
+                (
+                1
+                )
+              
+            
+            
+              
+                3
+                :
+              
+              
+                
+                  â¢
+                  
+                    D
+                  
+                
+                Î»
+                x
+                .
+                x
+                :
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+              
+              
+                [
+                
+                  
+                    G
+                    e
+                    n
+                  
+                
+                ]
+              
+              
+                (
+                2
+                )
+                ,
+                Â 
+                (
+                Î±
+                â
+                f
+                r
+                e
+                e
+                (
+                Ïµ
+                )
+                )
+              
+            
+            
+              
+                4
+                :
+              
+              
+                i
+                d
+                :
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+                
+                  â¢
+                  
+                    D
+                  
+                
+                i
+                d
+                :
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+              
+                (
+                i
+                d
+                :
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+                â
+                
+                  {
+                  
+                    i
+                    d
+                    :
+                    â
+                    Î±
+                    .
+                    Î±
+                    â
+                    Î±
+                  
+                  }
+                
+                )
+              
+            
+            
+              
+                5
+                :
+              
+              
+                
+                  â¢
+                  
+                    D
+                  
+                
+                
+                  
+                    let
+                  
+                
+                
+                i
+                d
+                =
+                Î»
+                x
+                .
+                x
+                Â 
+                
+                  
+                    in
+                  
+                
+                Â 
+                i
+                d
+                
+                :
+                
+                â
+                Î±
+                .
+                Î±
+                â
+                Î±
+              
+              
+                [
+                
+                  
+                    L
+                    e
+                    t
+                  
+                
+                ]
+              
+              
+                (
+                3
+                )
+                ,
+                Â 
+                (
+                4
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{llll}1:&x:\alpha \vdash _{D}x:\alpha &[{\mathtt {Var}}]&(x:\alpha \in \left\{x:\alpha \right\})\\2:&\vdash _{D}\lambda x.x:\alpha \rightarrow \alpha &[{\mathtt {Abs}}]&(1)\\3:&\vdash _{D}\lambda x.x:\forall \alpha .\alpha \rightarrow \alpha &[{\mathtt {Gen}}]&(2),\ (\alpha \not \in free(\epsilon ))\\4:&id:\forall \alpha .\alpha \rightarrow \alpha \vdash _{D}id:\forall \alpha .\alpha \rightarrow \alpha &[{\mathtt {Var}}]&(id:\forall \alpha .\alpha \rightarrow \alpha \in \left\{id:\forall \alpha .\alpha \rightarrow \alpha \right\})\\5:&\vdash _{D}{\textbf {let}}\,id=\lambda x.x\ {\textbf {in}}\ id\,:\,\forall \alpha .\alpha \rightarrow \alpha &[{\mathtt {Let}}]&(3),\ (4)\\\end{array}}}
+  
+
+Let-polymorphism[edit]
+Not visible immediately, the rule set encodes a regulation under which circumstances a type might be generalized or not by a slightly varying use of mono- and polytypes in the rules 
+  
+    
+      
+        [
+        
+          
+            A
+            b
+            s
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Abs}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            L
+            e
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Let}}]}
+  
+. Remember that 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ and 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ denote poly- and monotypes respectively.
+In rule 
+  
+    
+      
+        [
+        
+          
+            A
+            b
+            s
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Abs}}]}
+  
+, the value variable of the parameter of the function 
+  
+    
+      
+        Î»
+        x
+        .
+        e
+      
+    
+    {\displaystyle \lambda x.e}
+  
+ is added to the context with a monomorphic type through the premise 
+  
+    
+      
+        Î
+        ,
+        Â 
+        x
+        :
+        Ï
+        
+          â¢
+          
+            D
+          
+        
+        e
+        :
+        
+          Ï
+          â²
+        
+      
+    
+    {\displaystyle \Gamma ,\ x:\tau \vdash _{D}e:\tau '}
+  
+, while in the rule  
+  
+    
+      
+        [
+        
+          
+            L
+            e
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Let}}]}
+  
+, the variable enters the environment in polymorphic form 
+  
+    
+      
+        Î
+        ,
+        Â 
+        x
+        :
+        Ï
+        
+          â¢
+          
+            D
+          
+        
+        
+          e
+          
+            1
+          
+        
+        :
+        Ï
+      
+    
+    {\displaystyle \Gamma ,\ x:\sigma \vdash _{D}e_{1}:\tau }
+  
+. Though in both cases the presence of 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ in the context prevents the use of the generalisation rule for any free variable in the assignment, this regulation forces the type of parameter 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ in a 
+  
+    
+      
+        Î»
+      
+    
+    {\displaystyle \lambda }
+  
+-expression to remain monomorphic, while in a let-expression, the variable could be introduced polymorphic, making specializations possible.
+As a consequence of this regulation, 
+  
+    
+      
+        Î»
+        f
+        .
+        (
+        f
+        
+        
+          
+            true
+          
+        
+        ,
+        f
+        
+        
+          
+            0
+          
+        
+        )
+      
+    
+    {\displaystyle \lambda f.(f\,{\textrm {true}},f\,{\textrm {0}})}
+  
+ cannot be typed,
+since the parameter 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ is in a monomorphic position, while 
+  
+    
+      
+        
+          
+            let
+          
+        
+        Â 
+        f
+        =
+        Î»
+        x
+        .
+        x
+        
+        
+          
+            in
+          
+        
+        
+        (
+        f
+        
+        
+          
+            true
+          
+        
+        ,
+        f
+        
+        
+          
+            0
+          
+        
+        )
+      
+    
+    {\displaystyle {\textbf {let}}\ f=\lambda x.x\,{\textbf {in}}\,(f\,{\textrm {true}},f\,{\textrm {0}})}
+  
+ has type 
+  
+    
+      
+        (
+        b
+        o
+        o
+        l
+        ,
+        i
+        n
+        t
+        )
+      
+    
+    {\displaystyle (bool,int)}
+  
+, because 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ has been introduced in a let-expression and is treated polymorphic therefore.
+
+Generalization rule[edit]
+The generalisation rule is also worth for closer look. Here, the all-quantification implicit in the premise 
+  
+    
+      
+        Î
+        â¢
+        e
+        :
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash e:\sigma }
+  
+ is simply moved to the right hand side of 
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+ in the conclusion. This is possible, since 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ does not occur free in the context. Again, while this makes the generalization rule plausible, it is not really a consequence. On the contrary, the generalization rule is part of the definition of HM's type system and the implicit all-quantification a consequence.
+
+An inference algorithm[edit]
+Now that the deduction system of HM is at hand, one could present an algorithm and validate it with respect to the rules.
+Alternatively, it might be possible to derive it by taking a closer look on how the rules interact and proof are
+formed. This is done in the remainder of this article focusing on the possible decisions one can make while proving a typing.
+
+Degrees of freedom choosing the rules[edit]
+Isolating the points in a proof, where no decision is possible at all,
+the first group of rules centered around the syntax leaves no choice since
+to each syntactical rule corresponds a unique typing rule, which determines
+a part of the proof, while between the conclusion and the premises of these
+fixed parts chains of 
+  
+    
+      
+        [
+        
+          
+            I
+            n
+            s
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Inst}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            G
+            e
+            n
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Gen}}]}
+  
+
+could occur. Such a chain could also exist between the conclusion of the
+proof and the rule for topmost expression. All proofs must have
+the so sketched shape.
+Because the only choice in a proof with respect of rule selection are the
+
+  
+    
+      
+        [
+        
+          
+            I
+            n
+            s
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Inst}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            G
+            e
+            n
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Gen}}]}
+  
+ chains, the
+form of the proof suggests the question whether it can be made more precise,
+where these chains might not be needed. This is in fact possible and leads to a
+variant of the rules system with no such rules.
+
+Syntax-directed rule system[edit]
+
+
+Syntactical Rule System
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  
+                    
+                      
+                        x
+                        :
+                        Ï
+                        â
+                        Î
+                        
+                        Ï
+                        â
+                        Ï
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        x
+                        :
+                        Ï
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        Ï
+                        â
+                        
+                          Ï
+                          â²
+                        
+                        
+                        
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        Ï
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    p
+                    p
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        Ï
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        e
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        Î»
+                        Â 
+                        x
+                        Â 
+                        .
+                        Â 
+                        e
+                        :
+                        Ï
+                        â
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    b
+                    s
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        Ï
+                        
+                        
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        
+                          
+                            
+                              Î
+                              Â¯
+                            
+                          
+                        
+                        (
+                        Ï
+                        )
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            S
+                          
+                        
+                        
+                          
+                            l
+                            e
+                            t
+                          
+                        
+                        Â 
+                        x
+                        =
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          
+                            i
+                            n
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    L
+                    e
+                    t
+                  
+                
+                ]
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{cl}\displaystyle {\frac {x:\sigma \in \Gamma \quad \sigma \sqsubseteq \tau }{\Gamma \vdash _{S}x:\tau }}&[{\mathtt {Var}}]\\\\\displaystyle {\frac {\Gamma \vdash _{S}e_{0}:\tau \rightarrow \tau '\quad \quad \Gamma \vdash _{S}e_{1}:\tau }{\Gamma \vdash _{S}e_{0}\ e_{1}:\tau '}}&[{\mathtt {App}}]\\\\\displaystyle {\frac {\Gamma ,\;x:\tau \vdash _{S}e:\tau '}{\Gamma \vdash _{S}\lambda \ x\ .\ e:\tau \rightarrow \tau '}}&[{\mathtt {Abs}}]\\\\\displaystyle {\frac {\Gamma \vdash _{S}e_{0}:\tau \quad \quad \Gamma ,\,x:{\bar {\Gamma }}(\tau )\vdash _{S}e_{1}:\tau '}{\Gamma \vdash _{S}{\mathtt {let}}\ x=e_{0}\ {\mathtt {in}}\ e_{1}:\tau '}}&[{\mathtt {Let}}]\end{array}}}
+  
+
+
+
+Generalization
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Ï
+        )
+        =
+        â
+        Â 
+        
+          
+            
+              Î±
+              ^
+            
+          
+        
+        Â 
+        .
+        Â 
+        Ï
+        
+        
+        
+          
+            
+              Î±
+              ^
+            
+          
+        
+        =
+        
+          
+            free
+          
+        
+        (
+        Ï
+        )
+        â
+        
+          
+            free
+          
+        
+        (
+        Î
+        )
+      
+    
+    {\displaystyle {\bar {\Gamma }}(\tau )=\forall \ {\hat {\alpha }}\ .\ \tau \quad \quad {\hat {\alpha }}={\textrm {free}}(\tau )-{\textrm {free}}(\Gamma )}
+  
+
+
+A contemporary treatment of HM uses a purely syntax-directed rule system due to
+Clement[7]
+as an intermediate step. In this system, the specialization is located directly after the original 
+  
+    
+      
+        [
+        
+          
+            V
+            a
+            r
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Var}}]}
+  
+ rule
+and merged into it, while the generalization becomes part of the 
+  
+    
+      
+        [
+        
+          
+            L
+            e
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Let}}]}
+  
+ rule. There the generalization is
+also determined to always produce the most general type by introducing the function 
+  
+    
+      
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Ï
+        )
+      
+    
+    {\displaystyle {\bar {\Gamma }}(\tau )}
+  
+, which quantifies
+all monotype variables not bound in 
+  
+    
+      
+        Î
+      
+    
+    {\displaystyle \Gamma }
+  
+.
+Formally, to validate that this new rule system 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ is equivalent to the original 
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+, one has
+to show that 
+  
+    
+      
+        Î
+        
+          â¢
+          
+            D
+          
+        
+        Â 
+        e
+        :
+        Ï
+        â
+        Î
+        
+          â¢
+          
+            S
+          
+        
+        Â 
+        e
+        :
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash _{D}\ e:\sigma \Leftrightarrow \Gamma \vdash _{S}\ e:\sigma }
+  
+, which decomposes into two sub-proofs:
+
+
+  
+    
+      
+        Î
+        
+          â¢
+          
+            D
+          
+        
+        Â 
+        e
+        :
+        Ï
+        â
+        Î
+        
+          â¢
+          
+            S
+          
+        
+        Â 
+        e
+        :
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash _{D}\ e:\sigma \Leftarrow \Gamma \vdash _{S}\ e:\sigma }
+  
+ (Consistency)
+
+  
+    
+      
+        Î
+        
+          â¢
+          
+            D
+          
+        
+        Â 
+        e
+        :
+        Ï
+        â
+        Î
+        
+          â¢
+          
+            S
+          
+        
+        Â 
+        e
+        :
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash _{D}\ e:\sigma \Rightarrow \Gamma \vdash _{S}\ e:\sigma }
+  
+ (Completeness)
+While consistency can be seen by decomposing the rules 
+  
+    
+      
+        [
+        
+          
+            L
+            e
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Let}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            V
+            a
+            r
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Var}}]}
+  
+
+of 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ into proofs in 
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+, it is likely visible that 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ is incomplete, as
+one cannot show 
+  
+    
+      
+        Î»
+        Â 
+        x
+        .
+        x
+        :
+        â
+        Î±
+        .
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \lambda \ x.x:\forall \alpha .\alpha \rightarrow \alpha }
+  
+ in 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+, for instance, but only
+
+  
+    
+      
+        Î»
+        Â 
+        x
+        .
+        x
+        :
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \lambda \ x.x:\alpha \rightarrow \alpha }
+  
+.  An only slightly weaker version of completeness is provable
+[8] though, namely
+
+
+  
+    
+      
+        Î
+        
+          â¢
+          
+            D
+          
+        
+        Â 
+        e
+        :
+        Ï
+        â
+        Î
+        
+          â¢
+          
+            S
+          
+        
+        Â 
+        e
+        :
+        Ï
+        â§
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Ï
+        )
+        â
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash _{D}\ e:\sigma \Rightarrow \Gamma \vdash _{S}\ e:\tau \wedge {\bar {\Gamma }}(\tau )\sqsubseteq \sigma }
+  
+
+implying, one can derive the principal type for an expression in 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ allowing us to generalize the proof in the end.
+Comparing 
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+ and 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+, now only monotypes appear in the judgments of all rules. Additionally, the shape of any possible proof with the deduction system is now identical to the shape of the expression (both seen as trees). Thus the expression fully determines the shape of the proof. In 
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+ the shape would likely be determined with respect to all rules except 
+  
+    
+      
+        [
+        
+          
+            I
+            n
+            s
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Inst}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            G
+            e
+            n
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Gen}}]}
+  
+, which allow building arbitrarily long branches (chains) between the other nodes.
+
+Degrees of freedom instantiating the rules[edit]
+Now that the shape of the proof is known, one is already close to formulating a type inference algorithm.
+Because any proof for a given expression must have the same shape, one can assume the monotypes in the
+proof's judgements to be undetermined and consider how to determine them.
+Here, the substitution (specialisation) order comes into play. Although at the first glance one cannot determine the types locally, the hope is that it is possible to refine them with the help of the order while traversing the proof tree, additionally assuming, because the resulting algorithm is to become an inference method, that the type in any premise will be determined as the best possible. And in fact, one can, as looking at the rules of 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ suggests:
+
+[Abs]: The critical choice is Ï. At this point, nothing is known about Ï, so one can only assume the most general type, which is 
+  
+    
+      
+        â
+        Î±
+        .
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\alpha }
+  
+. The plan is to specialize the type if it should become necessary. Unfortunately, a polytype is not permitted in this place, so some Î± has to do for the moment. To avoid unwanted captures, a type variable not yet in the proof is a safe choice. Additionally, one has to keep in mind that this monotype is not yet fixed, but might be further refined.
+[Var]: The choice is how to refine Ï. Because any choice of a type Ï here depends on the usage of the variable, which is not locally known, the safest bet is the most general one. Using the same method as above one can instantiate all quantified variables in Ï with fresh monotype variables, again keeping them open to further refinement.
+[Let]: The rule does not leave any choice. Done.
+[App]: Only the application rule might force a refinement to the variables "opened" so far.
+The first premise forces the outcome of the inference to be of the form 
+  
+    
+      
+        Ï
+        â
+        
+          Ï
+          â²
+        
+      
+    
+    {\displaystyle \tau \rightarrow \tau '}
+  
+.
+
+If it is, then fine. One can later pick its Ï' for the result.
+If not, it might be an open variable. Then this can be refined to the required form with two new variables as before.
+Otherwise, the type checking fails because the first premise inferred a type which is not and cannot be made into a function type.
+The second premise requires that the inferred type is equal to Ï of the first premise. Now there are two possibly different types, perhaps with open type variables, at hand to compare and to make equal if it is possible. If it is, a refinement is found, and if not, a type error is detected again. An effective method is known to "make two terms equal" by substitution, Robinson's Unification in combination with the so-called Union-Find algorithm.
+To briefly summarize the union-find algorithm, given the set of all types in a proof, it allows one to group them together into equivalence classes by means of a .mw-parser-output .monospaced{font-family:monospace,monospace}union
+procedure and to pick a representative for each such class using a find procedure. Emphasizing the word procedure in the sense of side effect, we're clearly leaving the realm of logic in order to prepare an effective algorithm. The representative of a 
+  
+    
+      
+        
+          
+            u
+            n
+            i
+            o
+            n
+          
+        
+        (
+        a
+        ,
+        b
+        )
+      
+    
+    {\displaystyle {\mathtt {union}}(a,b)}
+  
+ is determined such that, if both a and b are type variables then the representative is arbitrarily one of them, but while uniting a variable and a term, the term becomes the representative. Assuming an implementation of union-find at hand, one can formulate the unification of two monotypes as follows:
+
+unify(ta, tb):
+    ta = find(ta)
+    tb = find(tb)
+    if both ta,tb are terms of the form D p1..pn with identical D,n then
+        unify(ta[i], tb[i]) for each corresponding ith parameter
+    else
+    if at least one of ta,tb is a type variable then
+        union(ta, tb)
+    else
+        error 'types do not match'
+
+Now having a sketch of an inference algorithm at hand, a more formal presentation is given in the next section. It is described in Milner[2] P. 370 ff. as algorithm J.
+
+Algorithm J[edit]
+
+
+Algorithm J
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  
+                    
+                      
+                        x
+                        :
+                        Ï
+                        â
+                        Î
+                        
+                        Ï
+                        =
+                        
+                          
+                            i
+                            n
+                            s
+                            t
+                          
+                        
+                        (
+                        Ï
+                        )
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        x
+                        :
+                        Ï
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        
+                          Ï
+                          
+                            0
+                          
+                        
+                        
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          
+                            1
+                          
+                        
+                        
+                        
+                          Ï
+                          â²
+                        
+                        =
+                        
+                          
+                            n
+                            e
+                            w
+                            v
+                            a
+                            r
+                          
+                        
+                        
+                        
+                          
+                            u
+                            n
+                            i
+                            f
+                            y
+                          
+                        
+                        (
+                        
+                          Ï
+                          
+                            0
+                          
+                        
+                        ,
+                        Â 
+                        
+                          Ï
+                          
+                            1
+                          
+                        
+                        â
+                        
+                          Ï
+                          â²
+                        
+                        )
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    p
+                    p
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Ï
+                        =
+                        
+                          
+                            n
+                            e
+                            w
+                            v
+                            a
+                            r
+                          
+                        
+                        
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        Ï
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        e
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        Î»
+                        Â 
+                        x
+                        Â 
+                        .
+                        Â 
+                        e
+                        :
+                        Ï
+                        â
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    b
+                    s
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        Ï
+                        
+                        
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        
+                          
+                            
+                              Î
+                              Â¯
+                            
+                          
+                        
+                        (
+                        Ï
+                        )
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            J
+                          
+                        
+                        
+                          
+                            l
+                            e
+                            t
+                          
+                        
+                        Â 
+                        x
+                        =
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          
+                            i
+                            n
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    L
+                    e
+                    t
+                  
+                
+                ]
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{cl}\displaystyle {\frac {x:\sigma \in \Gamma \quad \tau ={\mathit {inst}}(\sigma )}{\Gamma \vdash _{J}x:\tau }}&[{\mathtt {Var}}]\\\\\displaystyle {\frac {\Gamma \vdash _{J}e_{0}:\tau _{0}\quad \Gamma \vdash _{J}e_{1}:\tau _{1}\quad \tau '={\mathit {newvar}}\quad {\mathit {unify}}(\tau _{0},\ \tau _{1}\rightarrow \tau ')}{\Gamma \vdash _{J}e_{0}\ e_{1}:\tau '}}&[{\mathtt {App}}]\\\\\displaystyle {\frac {\tau ={\mathit {newvar}}\quad \Gamma ,\;x:\tau \vdash _{J}e:\tau '}{\Gamma \vdash _{J}\lambda \ x\ .\ e:\tau \rightarrow \tau '}}&[{\mathtt {Abs}}]\\\\\displaystyle {\frac {\Gamma \vdash _{J}e_{0}:\tau \quad \quad \Gamma ,\,x:{\bar {\Gamma }}(\tau )\vdash _{J}e_{1}:\tau '}{\Gamma \vdash _{J}{\mathtt {let}}\ x=e_{0}\ {\mathtt {in}}\ e_{1}:\tau '}}&[{\mathtt {Let}}]\end{array}}}
+  
+
+
+The presentation of Algorithm J is a misuse of the notation of logical rules, since it includes side effects but allows a direct comparison with 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ while expressing an efficient implementation at the same time. The rules now specify a procedure with parameters 
+  
+    
+      
+        Î
+        ,
+        e
+      
+    
+    {\displaystyle \Gamma ,e}
+  
+ yielding 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ in the conclusion where the execution of the premises proceeds from left to right.
+The procedure 
+  
+    
+      
+        i
+        n
+        s
+        t
+        (
+        Ï
+        )
+      
+    
+    {\displaystyle inst(\sigma )}
+  
+ specializes the polytype 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ by copying the term and replacing the bound type variables consistently by new monotype variables. '
+  
+    
+      
+        n
+        e
+        w
+        v
+        a
+        r
+      
+    
+    {\displaystyle newvar}
+  
+' produces a new monotype variable. Likely, 
+  
+    
+      
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Ï
+        )
+      
+    
+    {\displaystyle {\bar {\Gamma }}(\tau )}
+  
+ has to copy the type introducing new variables for the quantification to avoid unwanted captures. Overall, the algorithm now proceeds by always making the most general choice leaving the specialization to the unification, which by itself produces the most general result. As noted above, the final result 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ has to be generalized to 
+  
+    
+      
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Ï
+        )
+      
+    
+    {\displaystyle {\bar {\Gamma }}(\tau )}
+  
+ in the end, to gain the most general type for a given expression.
+Because the procedures used in the algorithm have nearly O(1) cost, the overall cost of the algorithm is close to linear in the size of the expression for which a type is to be inferred. This is in strong contrast to many other attempts to derive type inference algorithms, which often came out to be NP-hard, if not undecidable with respect to termination. Thus the HM performs as well as the best fully informed type-checking algorithms can. Type-checking here means that an algorithm does not have to find a proof, but only to validate a given one.
+Efficiency is slightly reduced because the binding of type variables in the context has to be maintained to allow computation of 
+  
+    
+      
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Ï
+        )
+      
+    
+    {\displaystyle {\bar {\Gamma }}(\tau )}
+  
+ and enable an occurs check to prevent the building of recursive types during 
+  
+    
+      
+        u
+        n
+        i
+        o
+        n
+        (
+        Î±
+        ,
+        Ï
+        )
+      
+    
+    {\displaystyle union(\alpha ,\tau )}
+  
+.
+An example of such a case is 
+  
+    
+      
+        Î»
+        Â 
+        x
+        .
+        (
+        x
+        Â 
+        x
+        )
+      
+    
+    {\displaystyle \lambda \ x.(x\ x)}
+  
+, for which no type can be derived using HM.  Practically, types are only small terms and do not build up expanding structures.  Thus, in complexity analysis, one can treat comparing them as a constant, retaining O(1) costs.
+
+Proving the algorithm[edit]
+In the previous section, while sketching the algorithm its proof was hinted at with metalogical argumentation.  While this leads to an efficient algorithm J, it is not clear whether the algorithm properly reflects the deduction systems D or S which serve as a semantic base line.
+The most critical point in the above argumentation is the refinement of monotype
+variables bound by the context. For instance, the algorithm boldly changes the
+context while inferring e.g. 
+  
+    
+      
+        Î»
+        f
+        .
+        (
+        f
+        Â 
+        1
+        )
+      
+    
+    {\displaystyle \lambda f.(f\ 1)}
+  
+,
+because the monotype variable added to the context for the parameter 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ later needs to be refined
+to 
+  
+    
+      
+        i
+        n
+        t
+        â
+        Î²
+      
+    
+    {\displaystyle int\rightarrow \beta }
+  
+ when handling application.
+The problem is that the deduction rules do not allow such a refinement.
+Arguing that the refined type could have been added earlier instead of the
+monotype variable is an expedient at best.
+The key to reaching a formally satisfying argument is to properly include
+the context within the refinement. Formally,
+typing is compatible with substitution of free type variables.
+
+
+  
+    
+      
+        Î
+        
+          â¢
+          
+            S
+          
+        
+        e
+        :
+        Ï
+        
+        â¹
+        
+        S
+        Î
+        
+          â¢
+          
+            S
+          
+        
+        e
+        :
+        S
+        Ï
+      
+    
+    {\displaystyle \Gamma \vdash _{S}e:\tau \quad \Longrightarrow \quad S\Gamma \vdash _{S}e:S\tau }
+  
+
+To refine the free variables thus means to refine the whole typing.
+
+Algorithm W[edit]
+
+
+Algorithm W
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  
+                    
+                      
+                        x
+                        :
+                        Ï
+                        â
+                        Î
+                        
+                        Ï
+                        =
+                        
+                          
+                            i
+                            n
+                            s
+                            t
+                          
+                        
+                        (
+                        Ï
+                        )
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        x
+                        :
+                        Ï
+                        ,
+                        â
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    V
+                    a
+                    r
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        
+                          
+                            Î
+                            
+                              â¢
+                              
+                                W
+                              
+                            
+                            
+                              e
+                              
+                                0
+                              
+                            
+                            :
+                            
+                              Ï
+                              
+                                0
+                              
+                            
+                            ,
+                            
+                              S
+                              
+                                0
+                              
+                            
+                          
+                          
+                            
+                              S
+                              
+                                0
+                              
+                            
+                            Î
+                            
+                              â¢
+                              
+                                W
+                              
+                            
+                            
+                              e
+                              
+                                1
+                              
+                            
+                            :
+                            
+                              Ï
+                              
+                                1
+                              
+                            
+                            ,
+                            
+                              S
+                              
+                                1
+                              
+                            
+                          
+                        
+                        
+                          
+                            
+                              Ï
+                              â²
+                            
+                            =
+                            
+                              
+                                n
+                                e
+                                w
+                                v
+                                a
+                                r
+                              
+                            
+                          
+                          
+                            
+                              S
+                              
+                                2
+                              
+                            
+                            =
+                            
+                              
+                                m
+                                g
+                                u
+                              
+                            
+                            (
+                            
+                              S
+                              
+                                1
+                              
+                            
+                            
+                              Ï
+                              
+                                0
+                              
+                            
+                            ,
+                            Â 
+                            
+                              Ï
+                              
+                                1
+                              
+                            
+                            â
+                            
+                              Ï
+                              â²
+                            
+                            )
+                          
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          S
+                          
+                            2
+                          
+                        
+                        
+                          Ï
+                          â²
+                        
+                        ,
+                        
+                          S
+                          
+                            2
+                          
+                        
+                        
+                          S
+                          
+                            1
+                          
+                        
+                        
+                          S
+                          
+                            0
+                          
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    p
+                    p
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Ï
+                        =
+                        
+                          
+                            n
+                            e
+                            w
+                            v
+                            a
+                            r
+                          
+                        
+                        
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        Ï
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        e
+                        :
+                        
+                          Ï
+                          â²
+                        
+                        ,
+                        S
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        Î»
+                        Â 
+                        x
+                        Â 
+                        .
+                        Â 
+                        e
+                        :
+                        S
+                        Ï
+                        â
+                        
+                          Ï
+                          â²
+                        
+                        ,
+                        S
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    A
+                    b
+                    s
+                  
+                
+                ]
+              
+            
+            
+              
+            
+            
+              
+                
+                  
+                    
+                      
+                        Î
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        :
+                        Ï
+                        ,
+                        
+                          S
+                          
+                            0
+                          
+                        
+                        
+                        
+                          S
+                          
+                            0
+                          
+                        
+                        Î
+                        ,
+                        
+                        x
+                        :
+                        
+                          
+                            
+                              
+                                S
+                                
+                                  0
+                                
+                              
+                              Î
+                            
+                            Â¯
+                          
+                        
+                        (
+                        Ï
+                        )
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                        ,
+                        
+                          S
+                          
+                            1
+                          
+                        
+                      
+                      
+                        Î
+                        
+                          â¢
+                          
+                            W
+                          
+                        
+                        
+                          
+                            l
+                            e
+                            t
+                          
+                        
+                        Â 
+                        x
+                        =
+                        
+                          e
+                          
+                            0
+                          
+                        
+                        Â 
+                        
+                          
+                            i
+                            n
+                          
+                        
+                        Â 
+                        
+                          e
+                          
+                            1
+                          
+                        
+                        :
+                        
+                          Ï
+                          â²
+                        
+                        ,
+                        
+                          S
+                          
+                            1
+                          
+                        
+                        
+                          S
+                          
+                            0
+                          
+                        
+                      
+                    
+                  
+                
+              
+              
+                [
+                
+                  
+                    L
+                    e
+                    t
+                  
+                
+                ]
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{cl}\displaystyle {\frac {x:\sigma \in \Gamma \quad \tau ={\mathit {inst}}(\sigma )}{\Gamma \vdash _{W}x:\tau ,\emptyset }}&[{\mathtt {Var}}]\\\\\displaystyle {\frac {\begin{array}{ll}\Gamma \vdash _{W}e_{0}:\tau _{0},S_{0}&S_{0}\Gamma \vdash _{W}e_{1}:\tau _{1},S_{1}\\\tau '={\mathit {newvar}}&S_{2}={\mathsf {mgu}}(S_{1}\tau _{0},\ \tau _{1}\rightarrow \tau ')\end{array}}{\Gamma \vdash _{W}e_{0}\ e_{1}:S_{2}\tau ',S_{2}S_{1}S_{0}}}&[{\mathtt {App}}]\\\\\displaystyle {\frac {\tau ={\mathit {newvar}}\quad \Gamma ,\;x:\tau \vdash _{W}e:\tau ',S}{\Gamma \vdash _{W}\lambda \ x\ .\ e:S\tau \rightarrow \tau ',S}}&[{\mathtt {Abs}}]\\\\\displaystyle {\frac {\Gamma \vdash _{W}e_{0}:\tau ,S_{0}\quad S_{0}\Gamma ,\,x:{\overline {S_{0}\Gamma }}(\tau )\vdash _{W}e_{1}:\tau ',S_{1}}{\Gamma \vdash _{W}{\mathtt {let}}\ x=e_{0}\ {\mathtt {in}}\ e_{1}:\tau ',S_{1}S_{0}}}&[{\mathtt {Let}}]\end{array}}}
+  
+
+
+From there, a proof of algorithm J leads to algorithm W, which only makes the
+side effects imposed by the procedure 
+  
+    
+      
+        
+          
+            union
+          
+        
+      
+    
+    {\displaystyle {\textit {union}}}
+  
+ explicit by
+expressing its serial composition by means of the substitutions
+
+  
+    
+      
+        
+          S
+          
+            i
+          
+        
+      
+    
+    {\displaystyle S_{i}}
+  
+. The presentation of algorithm W in the sidebar still makes use of side effects
+in the operations set in italic, but these are now limited to generating
+fresh symbols. The form of judgement is 
+  
+    
+      
+        Î
+        â¢
+        e
+        :
+        Ï
+        ,
+        S
+      
+    
+    {\displaystyle \Gamma \vdash e:\tau ,S}
+  
+,
+denoting a function with a context and expression as parameter producing a monotype together with
+a substitution. 
+  
+    
+      
+        
+          
+            mgu
+          
+        
+      
+    
+    {\displaystyle {\textsf {mgu}}}
+  
+ is a side-effect free version
+of 
+  
+    
+      
+        
+          
+            union
+          
+        
+      
+    
+    {\displaystyle {\textit {union}}}
+  
+ producing a substitution which is the most general unifier.
+While algorithm W is normally considered to be the HM algorithm and is
+often directly presented after the rule system in literature, its purpose is
+described by Milner[2] on P. 369 as follows:
+
+As it stands, W is hardly an efficient algorithm; substitutions are applied too often. It was formulated to aid the proof of soundness. We now present a simpler algorithm J which simulates W in a precise sense.
+While he considered W more complicated and less efficient, he presented it 
+in his publication before J. It has its merits when side effects are unavailable or unwanted.
+By the way, W is also needed to prove completeness, which is factored by him into the soundness proof.
+
+Proof obligations[edit]
+Before formulating the proof obligations, a deviation between the rules systems D and S and the algorithms presented needs to be emphasized.
+While the development above sort of misused the monotypes as "open" proof variables, the possibility that proper monotype variables might be harmed was sidestepped by introducing fresh variables and hoping for the best. But there's a catch: One of the promises made was that these fresh variables would be "kept in mind" as such. This promise is not fulfilled by the algorithm.
+Having a context 
+  
+    
+      
+        1
+        :
+        i
+        n
+        t
+        ,
+        Â 
+        f
+        :
+        Î±
+      
+    
+    {\displaystyle 1:int,\ f:\alpha }
+  
+, the expression 
+  
+    
+      
+        f
+        Â 
+        1
+      
+    
+    {\displaystyle f\ 1}
+  
+
+cannot be typed in either 
+  
+    
+      
+        
+          â¢
+          
+            D
+          
+        
+      
+    
+    {\displaystyle \vdash _{D}}
+  
+ or 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+, but the algorithms come up with
+the type 
+  
+    
+      
+        Î²
+      
+    
+    {\displaystyle \beta }
+  
+, where W additionally delivers the substitution 
+  
+    
+      
+        
+          {
+          
+            Î±
+            â¦
+            i
+            n
+            t
+            â
+            Î²
+          
+          }
+        
+      
+    
+    {\displaystyle \left\{\alpha \mapsto int\rightarrow \beta \right\}}
+  
+,
+meaning that the algorithm fails to detect all type errors. This omission can easily be fixed by more carefully distinguishing proof
+variables and monotype variables.
+The authors were well aware of the problem but decided not to fix it. One might assume a pragmatic reason behind this.
+While more properly implementing the type inference would have enabled the algorithm to deal with abstract monotypes,
+they were not needed for the intended application where none of the items in a preexisting context have free
+variables. In this light, the unneeded complication was dropped in favor of a simpler algorithm.
+The remaining downside is that the proof of the algorithm with respect to the rule system is less general and can only be made
+for contexts with 
+  
+    
+      
+        f
+        r
+        e
+        e
+        (
+        Î
+        )
+        =
+        â
+      
+    
+    {\displaystyle free(\Gamma )=\emptyset }
+  
+ as a side condition.
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  (Correctness)
+                
+              
+              
+                Î
+                
+                  |
+                
+                
+                  â
+                  
+                    W
+                  
+                
+                e
+                :
+                Ï
+                ,
+                S
+              
+              
+                
+                â¹
+                
+                Î
+                
+                  â¢
+                  
+                    S
+                  
+                
+                e
+                :
+                Ï
+              
+            
+            
+              
+                
+                  (Completeness)
+                
+              
+              
+                Î
+                
+                  |
+                
+                
+                  â
+                  
+                    S
+                  
+                
+                e
+                :
+                Ï
+              
+              
+                
+                â¹
+                
+                Î
+                
+                  â¢
+                  
+                    W
+                  
+                
+                e
+                :
+                
+                  Ï
+                  â²
+                
+                ,
+                S
+                
+                
+                
+                  forall
+                
+                Â 
+                Ï
+                Â 
+                
+                  where
+                
+                Â 
+                
+                  
+                    â
+                    Â¯
+                  
+                
+                (
+                
+                  Ï
+                  â²
+                
+                )
+                â
+                Ï
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{lll}{\text{(Correctness)}}&\Gamma |-_{W}e:\tau ,S&\quad \Longrightarrow \quad \Gamma \vdash _{S}e:\tau \\{\text{(Completeness)}}&\Gamma |-_{S}e:\tau &\quad \Longrightarrow \quad \Gamma \vdash _{W}e:\tau ',S\quad \quad {\text{forall}}\ \tau \ {\text{where}}\ {\overline {\emptyset }}(\tau ')\sqsubseteq \tau \end{array}}}
+  
+
+The side condition in the completeness obligation addresses how the deduction may give many types, while the algorithm always produces one. At the same time, the side condition demands that the type inferred is actually the most general.
+To properly prove the obligations one needs to strengthen them first to allow activating the substitution lemma threading the substitution 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ through 
+  
+    
+      
+        
+          â¢
+          
+            S
+          
+        
+      
+    
+    {\displaystyle \vdash _{S}}
+  
+ and 
+  
+    
+      
+        
+          â¢
+          
+            W
+          
+        
+      
+    
+    {\displaystyle \vdash _{W}}
+  
+. From there, the proofs are by induction over the expression.
+Another proof obligation is the substitution lemma itself, i.e. the substitution of the typing, which finally establishes the all-quantification. The later cannot formally be proven, since no such syntax is at hand.
+
+Extensions[edit]
+Recursive definitions[edit]
+To make programming practical recursive functions are needed.
+A central property of the lambda calculus is that recursive definitions
+are not directly available, but can instead be expressed with a fixed point combinator.
+But unfortunately, the fixpoint combinator cannot be formulated in a typed version
+of the lambda calculus without having a disastrous effect on the system as outlined
+below.
+
+Typing rule[edit]
+The original paper[4] shows recursion can be realized by a combinator
+
+  
+    
+      
+        
+          
+            f
+            i
+            x
+          
+        
+        :
+        â
+        Î±
+        .
+        (
+        Î±
+        â
+        Î±
+        )
+        â
+        Î±
+      
+    
+    {\displaystyle {\mathit {fix}}:\forall \alpha .(\alpha \rightarrow \alpha )\rightarrow \alpha }
+  
+. A possible recursive definition could thus be formulated as
+
+  
+    
+      
+        
+          
+            r
+            e
+            c
+          
+        
+        Â 
+        v
+        =
+        
+          e
+          
+            1
+          
+        
+        Â 
+        
+          
+            i
+            n
+          
+        
+        Â 
+        
+          e
+          
+            2
+          
+        
+        Â 
+        ::=
+        
+          
+            l
+            e
+            t
+          
+        
+        Â 
+        v
+        =
+        
+          
+            f
+            i
+            x
+          
+        
+        (
+        Î»
+        v
+        .
+        
+          e
+          
+            1
+          
+        
+        )
+        Â 
+        
+          
+            i
+            n
+          
+        
+        Â 
+        
+          e
+          
+            2
+          
+        
+      
+    
+    {\displaystyle {\mathtt {rec}}\ v=e_{1}\ {\mathtt {in}}\ e_{2}\ ::={\mathtt {let}}\ v={\mathit {fix}}(\lambda v.e_{1})\ {\mathtt {in}}\ e_{2}}
+  
+.
+Alternatively an extension of the expression syntax and an extra typing rule is possible:
+
+
+  
+    
+      
+        
+          
+            
+              
+                Î
+                ,
+                
+                  Î
+                  â²
+                
+                â¢
+                
+                  e
+                  
+                    1
+                  
+                
+                :
+                
+                  Ï
+                  
+                    1
+                  
+                
+                
+                â¦
+                
+                Î
+                ,
+                
+                  Î
+                  â²
+                
+                â¢
+                
+                  e
+                  
+                    n
+                  
+                
+                :
+                
+                  Ï
+                  
+                    n
+                  
+                
+                
+                Î
+                ,
+                
+                  Î
+                  â³
+                
+                â¢
+                e
+                :
+                Ï
+              
+              
+                Î
+                Â 
+                â¢
+                Â 
+                
+                  
+                    r
+                    e
+                    c
+                  
+                
+                Â 
+                
+                  v
+                  
+                    1
+                  
+                
+                =
+                
+                  e
+                  
+                    1
+                  
+                
+                Â 
+                
+                  
+                    a
+                    n
+                    d
+                  
+                
+                Â 
+                â¦
+                Â 
+                
+                  
+                    a
+                    n
+                    d
+                  
+                
+                Â 
+                
+                  v
+                  
+                    n
+                  
+                
+                =
+                
+                  e
+                  
+                    n
+                  
+                
+                Â 
+                
+                  
+                    i
+                    n
+                  
+                
+                Â 
+                e
+                :
+                Ï
+              
+            
+          
+          
+          [
+          
+            
+              R
+              e
+              c
+            
+          
+          ]
+        
+      
+    
+    {\displaystyle \displaystyle {\frac {\Gamma ,\Gamma '\vdash e_{1}:\tau _{1}\quad \dots \quad \Gamma ,\Gamma '\vdash e_{n}:\tau _{n}\quad \Gamma ,\Gamma ''\vdash e:\tau }{\Gamma \ \vdash \ {\mathtt {rec}}\ v_{1}=e_{1}\ {\mathtt {and}}\ \dots \ {\mathtt {and}}\ v_{n}=e_{n}\ {\mathtt {in}}\ e:\tau }}\quad [{\mathtt {Rec}}]}
+  
+
+where
+
+
+  
+    
+      
+        
+          Î
+          â²
+        
+        =
+        
+          v
+          
+            1
+          
+        
+        :
+        
+          Ï
+          
+            1
+          
+        
+        ,
+        Â 
+        â¦
+        ,
+        Â 
+        
+          v
+          
+            n
+          
+        
+        :
+        
+          Ï
+          
+            n
+          
+        
+      
+    
+    {\displaystyle \Gamma '=v_{1}:\tau _{1},\ \dots ,\ v_{n}:\tau _{n}}
+  
+
+
+  
+    
+      
+        
+          Î
+          â³
+        
+        =
+        
+          v
+          
+            1
+          
+        
+        :
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Â 
+        
+          Ï
+          
+            1
+          
+        
+        Â 
+        )
+        ,
+        Â 
+        â¦
+        ,
+        Â 
+        
+          v
+          
+            n
+          
+        
+        :
+        
+          
+            
+              Î
+              Â¯
+            
+          
+        
+        (
+        Â 
+        
+          Ï
+          
+            n
+          
+        
+        Â 
+        )
+      
+    
+    {\displaystyle \Gamma ''=v_{1}:{\bar {\Gamma }}(\ \tau _{1}\ ),\ \dots ,\ v_{n}:{\bar {\Gamma }}(\ \tau _{n}\ )}
+  
+
+basically merging 
+  
+    
+      
+        [
+        
+          
+            A
+            b
+            s
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Abs}}]}
+  
+ and 
+  
+    
+      
+        [
+        
+          
+            L
+            e
+            t
+          
+        
+        ]
+      
+    
+    {\displaystyle [{\mathtt {Let}}]}
+  
+ while including the recursively defined
+variables in monotype positions where they occur to the left of the 
+  
+    
+      
+        
+          
+            i
+            n
+          
+        
+      
+    
+    {\displaystyle {\mathtt {in}}}
+  
+ but as polytypes to the right of it.
+
+Consequences[edit]
+While the above is straightforward it does come at a price.
+Type theory connects lambda calculus with computation and logic.
+The easy modification above has effects on both:
+
+The strong normalisation property is invalidated, because non-terminating terms can be formulated.
+The logic collapses because the type 
+  
+    
+      
+        â
+        a
+        .
+        a
+      
+    
+    {\displaystyle \forall a.a}
+  
+ becomes inhabited.
+Overloading[edit]
+Main article: Type class
+Overloading means that different functions can be defined and used with the same name. Most programming languages at least provide overloading with the built-in arithmetic operations (+,<,etc.), to allow the programmer to write arithmetic expressions in the same form, even for different numerical types like int or real. Because a mixture of these different types within the same expression also demands for implicit conversion, overloading especially for these operations is often built into the programming language itself. In some languages, this feature is generalized and made available to the user, e.g. in C++.
+While ad hoc overloading has been avoided in functional programming for the computation costs both in type checking and inference[citation needed], a means to systematise overloading has been introduced that resembles both in form and naming to object oriented programming, but works one level upwards. "Instances" in this systematic are not objects (i.e. on value level), but rather types.
+The quicksort example mentioned in the introduction uses the overloading in the orders, having the following type annotation in Haskell:
+
+quickSort :: Ord a => [a] -> [a]
+
+Herein, the type a is not only polymorphic, but also restricted to be an instance of some type class Ord, that provides the order predicates < and >= used in the functions body. The proper implementations of these predicates are then passed to quicksorts as additional parameters, as soon as quicksort is used on more concrete types providing a single implementation of the overloaded function quickSort.
+Because the "classes" only allow a single type as their argument, the resulting type system can still provide inference. Additionally, the type classes can then be equipped with some kind of overloading order allowing one to arrange the classes as a lattice.
+
+Higher-order types[edit]
+Main article: Kind (type theory)
+See also: Type class Â§Â Higher-kinded polymorphism
+Parametric polymorphism implies that types themselves are passed as parameters as if they were proper values. Passed as arguments to a proper functions, but also into "type functions" as in the "parametric" type constants, leads to the question how to more properly type types themselves. Higher-order types are used to create an even more expressive type system.
+Unfortunately, unification is no longer decidable in the presence of meta types, rendering type inference impossible in this extend of generality. Additionally, assuming a type of all types that includes itself as type leads into a paradox, as in the set of all sets, so one must proceed in steps of levels of abstraction.
+Research in second order lambda calculus, one step upwards, showed that type inference is undecidable in this generality.
+Parts of one extra level has been introduced into Haskell named kind, where it is used helping to type monads. Kinds are left implicit, working behind the scenes in the inner mechanics of the extended type system.
+
+Subtyping[edit]
+Main article: Subtyping
+Attempts to combine subtyping and type inference have caused quite some frustration.
+It is straightforward to accumulate and propagate subtyping constraints (as opposed to type equality constraints), making the resulting constraints part of the inferred typing schemes,
+for example 
+  
+    
+      
+        â
+        Î±
+        .
+        Â 
+        (
+        Î±
+        â¤
+        T
+        )
+        â
+        Î±
+        â
+        Î±
+      
+    
+    {\displaystyle \forall \alpha .\ (\alpha \leq T)\Rightarrow \alpha \rightarrow \alpha }
+  
+, where 
+  
+    
+      
+        Î±
+        â¤
+        T
+      
+    
+    {\displaystyle \alpha \leq T}
+  
+ is a constraint on the type variable 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+.
+However, because type variables are no longer unified eagerly in this approach, it tends to generate large and unwieldy typing schemes containing many useless type variables and constraints, making them hard to read and understand.
+Therefore, considerable effort was put into simplifying such typing schemes and their constraints,
+using techniques similar to those of nondeterministic finite automaton (NFA) simplification (useful in the presence of inferred recursive types).[9]
+More recently, Dolan and Mycroft[10]
+formalized the relationship between typing scheme simplification and NFA simplification
+and showed that an algebraic take on the formalization of subtyping allowed generating compact principal typing schemes for an ML-like language (called MLsub).
+Notably, their proposed typing scheme used a restricted form of union and intersection types instead of explicit constraints.
+Parreaux later claimed[11]
+that this algebraic formulation was equivalent to a relatively simple algorithm resembling Algorithm W,
+and that the use of union and intersection types was not essential.
+On the other hand, type inference has proven more difficult in the context of object-oriented programming languages,
+because object methods tend to require first-class polymorphism in the style of System F (where type inference is undecidable)
+and because of features like F-bounded polymorphism.
+Consequently, type systems with subtyping enabling object-oriented programming, such as Cardelli's system 
+  
+    
+      
+        
+          F
+          
+            <:
+          
+        
+      
+    
+    {\displaystyle F_{<:}}
+  
+,[12] do not support HM-style type inference.
+Row polymorphism can be used as an alternative to subtyping for supporting language features like structural records.[13]
+While this style of polymorphism is less flexible than subtyping in some ways, notably requiring more polymorphism than strictly necessary to cope with the lack of directionality in type constraints,
+it has the advantage that it can be integrated with the standard HM algorithms quite easily.
+
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ HindleyâMilner type inference is DEXPTIME-complete. In fact, merely deciding whether an ML program is typeable (without having to infer a type) is itself DEXPTIME-complete. Non-linear behaviour does manifest itself, yet mostly on pathological inputs. Thus the complexity theoretic proofs by Mairson (1990) and Kfoury, Tiuryn & Urzyczyn (1990) came as a surprise to the research community.
+
+^ Polytypes are called "type schemes" in the original article.
+
+^ The parametric types 
+  
+    
+      
+        C
+        Â 
+        Ï
+        â¦
+        Ï
+      
+    
+    {\displaystyle C\ \tau \dots \tau }
+  
+ were not present in the original paper on HM and are not needed to present the method. None of the inference rules below will take care or even note them. The same holds for the non-parametric "primitive types" in said paper. All the machinery for polymorphic type inference can be defined without them. They have been included here for sake of examples but also because the nature of HM is all about parametric types. This comes from the function type 
+  
+    
+      
+        Ï
+        â
+        Ï
+      
+    
+    {\displaystyle \tau \rightarrow \tau }
+  
+, hard-wired in the inference rules, below, which already has two parameters and has been presented here as only a special case.
+
+^ Haskell provides the ScopedTypeVariables language extension allowing to bring all-quantified type variables into scope.
+
+
+References[edit]
+
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Hindley, J. Roger (1969). "The Principal Type-Scheme of an Object in Combinatory Logic". Transactions of the American Mathematical Society. 146: 29â60. doi:10.2307/1995158. JSTORÂ 1995158.
+
+^ Jump up to: a b c Milner, Robin (1978). "A Theory of Type Polymorphism in Programming". Journal of Computer and System Sciences. 17 (3): 348â374. CiteSeerXÂ 10.1.1.67.5276. doi:10.1016/0022-0000(78)90014-4.
+
+^ Damas, Luis (1985). Type Assignment in Programming Languages (PhD thesis). University of Edinburgh. hdl:1842/13555. CST-33-85.
+
+^ Jump up to: a b c Damas, Luis; Milner, Robin (1982). Principal type-schemes for functional programs (PDF). 9th Symposium on Principles of programming languages (POPL'82). ACM. pp.Â 207â212. doi:10.1145/582153.582176. ISBNÂ 978-0-89791-065-1.
+
+^ Milner, Robin (1978), "A Theory of Type Polymorphism in Programming", Journal of Computer and System Sciences, 17 (3): 348â375, doi:10.1016/0022-0000(78)90014-4
+
+^ Wells, J.B. (1994). "Typability and type checking in the second-order lambda-calculus are equivalent and undecidable". Proceedings of the 9th Annual IEEE Symposium on Logic in Computer Science (LICS). pp.Â 176â185. doi:10.1109/LICS.1994.316068. ISBNÂ 0-8186-6310-3. S2CIDÂ 15078292.
+
+^ Clement (1986). A Simple Applicative Language: Mini-ML. LFP'86. ACM. doi:10.1145/319838.319847. ISBNÂ 978-0-89791-200-6.
+
+^ Vaughan, Jeff (July 23, 2008) [May 5, 2005]. "A proof of correctness for the HindleyâMilner type inference algorithm" (PDF). Archived from the original (PDF) on 2012-03-24. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Pottier, FranÃ§ois (1998). Type Inference in the Presence of Subtyping: from Theory to Practice (Thesis). Retrieved 2021-08-10.
+
+^ Dolan, Stephen; Mycroft, Alan (2017). "Polymorphism, subtyping, and type inference in MLsub". POPL 2017: Proceedings of the 44th ACM SIGPLAN Symposium on Principles of Programming Languages. doi:10.1145/3009837.3009882.
+
+^ Parreaux, Lionel (2020). "The Simple Essence of Algebraic Subtyping: Principal Type Inference with Subtyping Made Easy". 25th ACM SIGPLAN International Conference on Functional Programming - ICFP 2020, [Online event], August 24-26, 2020. doi:10.1145/3009837.3009882.
+
+^ Cardelli, Luca; Martini, Simone; Mitchell, John C.; Scedrov, Andre (1994). "An extension of system F with subtyping". Information and Computation, vol. 9. North Holland, Amsterdam. pp.Â 4â56. doi:10.1006/inco.1994.1013.
+
+^  Daan Leijen, Extensible records with scoped labels, Institute of Information and Computing Sciences, Utrecht University, Draft, Revision: 76, July 23, 2005
+
+
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Mairson, Harry G. (1990). "Deciding ML typability is complete for deterministic exponential time". Proceedings of the 17th ACM SIGPLAN-SIGACT symposium on Principles of programming languages - POPL '90. Proceedings of the 17th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages. POPL '90. ACM. pp.Â 382â401. doi:10.1145/96709.96748. ISBNÂ 978-0-89791-343-0. S2CIDÂ 75336.
+Kfoury, A. J.; Tiuryn, J.; Urzyczyn, P. (1990). ML typability is dexptime-complete. Lecture Notes in Computer Science. CAAP '90. Vol.Â 431. pp.Â 206â220. doi:10.1007/3-540-52590-4_50. ISBNÂ 978-3-540-52590-5.
+
+External links[edit]
+A literate Haskell implementation of Algorithm W along with its source code on GitHub.
+A simple implementation of Hindley-Milner algorithm in Python.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=HindleyâMilner_type_system&oldid=1067862972"
+		Categories: Type systemsType theoryType inferenceLambda calculusTheoretical computer scienceFormal methods1969 in computing1978 in computing1985 in computingAlgorithmsHidden categories: CS1 errors: missing periodicalAll articles with unsourced statementsArticles with unsourced statements from February 2021Articles with unsourced statements from June 2018
+	

@@ -1,0 +1,585 @@
+
+Title:
+Basic Linear Algebra Subprograms
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Routines for performing common linear algebra operations
+
+
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}BLASStable release3.8.0
+   / 12Â November 2017; 4 years agoÂ (2017-11-12)
+Written independs on implementationPlatformCross-platformTypeLibraryWebsitewww.netlib.org/blas/
+Basic Linear Algebra Subprograms (BLAS) is a specification that prescribes a set of low-level routines for performing common linear algebra operations such as vector addition, scalar multiplication, dot products, linear combinations, and matrix multiplication. They are the de facto standard low-level routines for linear algebra libraries; the routines have bindings for both C ("CBLAS interface") and Fortran ("BLAS interface"). Although the BLAS specification is general, BLAS implementations are often optimized for speed on a particular machine, so using them can bring substantial performance benefits. BLAS implementations will take advantage of special floating point hardware such as vector registers or SIMD instructions.
+It originated as a Fortran library in 1979[1] and its interface was standardized by the BLAS Technical (BLAST) Forum, whose latest BLAS report can be found on the netlib website.[2] This Fortran library is known as the reference implementation (sometimes confusingly referred to as the BLAS library) and is not optimized for speed but is in the public domain.[3][4]
+Most libraries that offer linear algebra routines conform to the BLAS interface, allowing library users to develop programs that are indifferent to the BLAS library being used. BLAS implementations have known a spectacular explosion in uses with the development of GPGPU, with cuBLAS  and rocBLAS being prime examples. CPU-based examples of BLAS libraries include: OpenBLAS, BLIS (BLAS-like Library Instantiation Software), Arm Performance Libraries,[5] ATLAS, and Intel Math Kernel Library (MKL). AMD maintains a fork of BLIS that is optimized for the AMD platform.[6] ATLAS is a portable library that automatically optimizes itself for an arbitrary architecture. MKL is a freeware[7] and proprietary[8] vendor library optimized for x86 and x86-64 with a performance emphasis on Intel processors.[9] OpenBLAS is an open-source library that is hand-optimized for many of the popular architectures. The LINPACK benchmarks rely heavily on the BLAS routine gemm for its performance measurements.
+Many numerical software applications use BLAS-compatible libraries to do linear algebra computations, including LAPACK, LINPACK, Armadillo, GNU Octave, Mathematica,[10] MATLAB,[11] NumPy,[12] R, and Julia.
+
+Contents
+
+1 Background
+2 Functionality
+
+2.1 Level 1
+2.2 Level 2
+2.3 Level 3
+
+
+3 Implementations
+
+3.1 Libraries using BLAS
+
+
+4 Similar libraries (not compatible with BLAS)
+5 Sparse BLAS
+6 Batched BLAS
+7 See also
+8 References
+9 Further reading
+10 External links
+
+
+
+Background[edit]
+With the advent of numerical programming, sophisticated subroutine libraries became useful.  These libraries would contain subroutines for common high-level mathematical operations such as root finding, matrix inversion, and solving systems of equations. The language of choice was FORTRAN. The most prominent numerical programming library was IBM's Scientific Subroutine Package (SSP).[13]  These subroutine libraries allowed programmers to concentrate on their specific problems and avoid re-implementing well-known algorithms.  The library routines would also be better than average implementations; matrix algorithms, for example, might use full pivoting to get better numerical accuracy. The library routines would also have more efficient routines. For example, a library may include a program to solve a matrix that is upper triangular. The libraries would include single-precision and double-precision versions of some algorithms.
+Initially, these subroutines used hard-coded loops for their low-level operations. For example, if a subroutine needed to perform a matrix multiplication, then the subroutine would have three nested loops. Linear algebra programs have many common low-level operations (the so-called "kernel" operations, not related to operating systems).[14] Between 1973 and 1977, several of these kernel operations were identified.[15]  These kernel operations became defined subroutines that math libraries could call.  The kernel calls had advantages over hard-coded loops: the library routine would be more readable, there were fewer chances for bugs, and the kernel implementation could be optimized for speed.  A specification for these kernel operations using scalars and vectors, the level-1 Basic Linear Algebra Subroutines (BLAS), was published in 1979.[16]  BLAS was used to implement the linear algebra subroutine library LINPACK.
+The BLAS abstraction allows customization for high performance. For example, LINPACK is a general purpose library that can be used on many different machines without modification. LINPACK could use a generic version of BLAS. To gain performance, different machines might use tailored versions of BLAS. As computer architectures became more sophisticated, vector machines appeared. BLAS for a vector machine could use the machine's fast vector operations.  (While vector processors eventually fell out of favor, vector instructions in modern CPUs are essential for optimal performance in BLAS routines.)
+Other machine features became available and could also be exploited.  Consequently, BLAS was augmented from 1984 to 1986 with level-2 kernel operations that concerned vector-matrix operations.  Memory hierarchy was also recognized as something to exploit. Many computers have cache memory that is much faster than main memory; keeping matrix manipulations localized allows better usage of the cache. In 1987 and 1988, the level 3 BLAS were identified to do matrix-matrix operations. The level 3 BLAS encouraged block-partitioned algorithms. The LAPACK library uses level 3 BLAS.[17]
+The original BLAS concerned only densely stored vectors and matrices. Further extensions to BLAS, such as for sparse matrices, have been addressed.[18]
+
+Functionality[edit]
+BLAS functionality is categorized into three sets of routines called "levels", which correspond to both the chronological order of definition and publication, as well as the degree of the polynomial in the complexities of algorithms; Level 1 BLAS operations typically take linear time, O(n), Level 2 operations quadratic time and Level 3 operations cubic time.[19] Modern BLAS implementations typically provide all three levels.
+
+Level 1[edit]
+This level consists of all the routines described in the original presentation of BLAS (1979),[1] which defined only vector operations on strided arrays: dot products, vector norms, a generalized vector addition of the form
+
+
+  
+    
+      
+        
+          y
+        
+        â
+        Î±
+        
+          x
+        
+        +
+        
+          y
+        
+      
+    
+    {\displaystyle {\boldsymbol {y}}\leftarrow \alpha {\boldsymbol {x}}+{\boldsymbol {y}}}
+  
+
+(called "axpy", "a x plus y") and several other operations.
+
+Level 2[edit]
+This level contains matrix-vector operations including, among other things, a generalized matrix-vector multiplication (gemv):
+
+
+  
+    
+      
+        
+          y
+        
+        â
+        Î±
+        
+          A
+        
+        
+          x
+        
+        +
+        Î²
+        
+          y
+        
+      
+    
+    {\displaystyle {\boldsymbol {y}}\leftarrow \alpha {\boldsymbol {A}}{\boldsymbol {x}}+\beta {\boldsymbol {y}}}
+  
+
+as well as a solver for x in the linear equation
+
+
+  
+    
+      
+        
+          T
+        
+        
+          x
+        
+        =
+        
+          y
+        
+      
+    
+    {\displaystyle {\boldsymbol {T}}{\boldsymbol {x}}={\boldsymbol {y}}}
+  
+
+with T being triangular. Design of the Level 2 BLAS started in 1984, with results published in 1988.[20] The Level 2 subroutines are especially intended to improve performance of programs using BLAS on vector processors, where Level 1 BLAS are suboptimal "because they hide the matrix-vector nature of the operations from the compiler."[20]
+
+Level 3[edit]
+This level, formally published in 1990,[19] contains matrix-matrix operations, including a "general matrix multiplication" (gemm), of the form
+
+
+  
+    
+      
+        
+          C
+        
+        â
+        Î±
+        
+          A
+        
+        
+          B
+        
+        +
+        Î²
+        
+          C
+        
+        ,
+      
+    
+    {\displaystyle {\boldsymbol {C}}\leftarrow \alpha {\boldsymbol {A}}{\boldsymbol {B}}+\beta {\boldsymbol {C}},}
+  
+
+where A and B can optionally be transposed or hermitian-conjugated inside the routine, and all three matrices may be strided. The ordinary matrix multiplication A B can be performed by setting Î± to one and C to an all-zeros matrix of the appropriate size.
+Also included in Level 3 are routines for computing
+
+
+  
+    
+      
+        
+          B
+        
+        â
+        Î±
+        
+          
+            T
+          
+          
+            â
+            1
+          
+        
+        
+          B
+        
+        ,
+      
+    
+    {\displaystyle {\boldsymbol {B}}\leftarrow \alpha {\boldsymbol {T}}^{-1}{\boldsymbol {B}},}
+  
+
+where T is a triangular matrix, among other functionality.
+Due to the ubiquity of matrix multiplications in many scientific applications, including for the implementation of the rest of Level 3 BLAS,[21] and because faster algorithms exist beyond the obvious repetition of matrix-vector multiplication, gemm is a prime target of optimization for BLAS implementers. E.g., by decomposing one or both of A, B into block matrices, gemm can be implemented recursively. This is one of the motivations for including the Î² parameter,[dubious  â discuss] so the results of previous blocks can be accumulated. Note that this decomposition requires the special case Î² = 1 which many implementations optimize for, thereby eliminating one multiplication for each value of C. This decomposition allows for better locality of reference both in space and time of the data used in the product. This, in turn, takes advantage of the cache on the system.[22] For systems with more than one level of cache, the blocking can be applied a second time to the order in which the blocks are used in the computation. Both of these levels of optimization are used in implementations such as ATLAS. More recently, implementations by Kazushige Goto have shown that blocking only for the L2 cache, combined with careful amortizing of copying to contiguous memory to reduce TLB misses, is superior to ATLAS.[23] A highly tuned implementation based on these ideas is part of the GotoBLAS, OpenBLAS and BLIS.
+A common variation of gemm is the gemm3m, which calculates a complex product using "three real matrix multiplications and five real matrix additions instead of the conventional four real matrix multiplications and two real matrix additions", an algorithm similar to Strassen algorithm first described by Peter Ungar.[24]
+
+Implementations[edit]
+Accelerate
+Apple's framework for macOS and iOS, which includes tuned versions of BLAS and LAPACK.[25][26]
+Arm Performance Libraries
+Arm Performance Libraries, supporting Arm 64-bit AArch64-based processors, available from Arm.[5]
+ATLAS
+Automatically Tuned Linear Algebra Software, an open source implementation of BLAS APIs for C and Fortran 77.[27]
+BLIS
+BLAS-like Library Instantiation Software framework for rapid instantiation. Optimized for most modern CPUs. BLIS is a complete refactoring of the GotoBLAS that reduces the amount of code that must be written for a given platform. [28][29]
+C++ AMP BLAS
+The C++ AMP BLAS Library is an open source implementation of BLAS for Microsoft's AMP language extension for Visual C++.[30]
+cuBLAS
+Optimized BLAS for NVIDIA based GPU cards, requiring few additional library calls.[31]
+NVBLAS
+Optimized BLAS for NVIDIA based GPU cards, providing only Level 3 functions, but as direct drop-in replacement for other BLAS libraries.[32]
+clBLAS
+An OpenCL implementation of BLAS by AMD. Part of the AMD Compute Libraries.[33]
+clBLAST
+A tuned OpenCL implementation of most of the BLAS api.[34]
+Eigen BLAS
+A Fortran 77 and C BLAS library implemented on top of the MPL-licensed Eigen library, supporting x86, x86-64, ARM (NEON), and PowerPC architectures.
+ESSL
+IBM's Engineering and Scientific Subroutine Library, supporting the PowerPC architecture under AIX and Linux.[35]
+GotoBLAS
+Kazushige Goto's BSD-licensed implementation of BLAS, tuned in particular for Intel Nehalem/Atom, VIA Nanoprocessor, AMD Opteron.[36]
+GNU Scientific Library
+Multi-platform implementation of many numerical routines. Contains a CBLAS interface.
+HP MLIB
+HP's Math library supporting IA-64, PA-RISC, x86 and Opteron architecture under HP-UX and Linux.
+Intel MKL
+The Intel Math Kernel Library, supporting x86 32-bits and 64-bits, available free from Intel.[7] Includes optimizations for Intel Pentium, Core and Intel Xeon CPUs and Intel Xeon Phi; support for Linux, Windows and macOS.[37]
+MathKeisan
+NEC's math library, supporting NEC SX architecture under SUPER-UX, and Itanium under Linux[38]
+Netlib BLAS
+The official reference implementation on Netlib, written in Fortran 77.[39]
+Netlib CBLAS
+Reference C interface to the BLAS. It is also possible (and popular) to call the Fortran BLAS from C.[40]
+OpenBLAS
+Optimized BLAS based on GotoBLAS, supporting x86, x86-64, MIPS and ARM processors.[41]
+PDLIB/SX
+NEC's Public Domain Mathematical Library for the NEC SX-4 system.[42]
+rocBLAS
+Implementation that runs on AMD GPUs via ROCm.[43]
+SCSL
+SGI's Scientific Computing Software Library contains BLAS and LAPACK implementations for SGI's Irix workstations.[44]
+Sun Performance Library
+Optimized BLAS and LAPACK for SPARC, Core and AMD64 architectures under Solaris 8, 9, and 10 as well as Linux.[45]
+uBLAS
+A generic C++ template class library providing BLAS functionality. Part of the Boost library. It provides bindings to many hardware-accelerated libraries in a unifying notation. Moreover, uBLAS focuses on correctness of the algorithms using advanced C++ features.[46]
+Libraries using BLAS[edit]
+Armadillo
+Armadillo is a C++ linear algebra library aiming towards a good balance between speed and ease of use. It employs template classes, and has optional links to BLAS/ATLAS and LAPACK. It is sponsored by NICTA (in Australia) and is licensed under a free license.[47]
+LAPACK
+LAPACK is a higher level Linear Algebra library built upon BLAS. Like BLAS, a reference implementation exists, but many alternatives like libFlame and MKL exist.
+Mir
+An LLVM-accelerated generic numerical library for science and machine learning written in D. It provides generic linear algebra subprograms (GLAS). It can be built on a CBLAS implementation.[48]
+Similar libraries (not compatible with BLAS)[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}See also: LAPACK Â§Â Similar projects
+Elemental
+Elemental is an open source software for distributed-memory dense and sparse-direct linear algebra and optimization.[49]
+HASEM
+is a C++ template library, being able to solve linear equations and to compute eigenvalues.  It is licensed under BSD License.[50]
+LAMA
+The Library for Accelerated Math Applications (LAMA) is a C++ template library for writing numerical solvers targeting various kinds of hardware (e.g. GPUs through CUDA or OpenCL) on distributed memory systems, hiding the hardware specific programming from the program developer
+MTL4
+The Matrix Template Library version 4 is a generic C++ template library providing sparse and dense BLAS functionality. MTL4 establishes an intuitive interface (similar to MATLAB) and broad applicability thanks to generic programming.
+Sparse BLAS[edit]
+Several extensions to BLAS for handling sparse matrices have been suggested over the course of the library's history; a small set of sparse matrix kernel routines was finally standardized in 2002.[51]
+
+Batched BLAS[edit]
+The traditional BLAS functions have been also ported to architectures that support large amounts of parallelism such as GPUs. Here, the traditional BLAS functions provide typically good performance for large matrices. However, when computing e.g., matrix-matrix-products of many small matrices by using the GEMM routine, those architectures show significant performance losses. To address this issue, in 2017 a batched version of the BLAS function has been specified.[52]
+Taking the GEMM routine from above as an example, the batched version performs the following computation simultaneously for many matrices:
+
+  
+    
+      
+        
+          C
+        
+        [
+        k
+        ]
+        â
+        Î±
+        
+          A
+        
+        [
+        k
+        ]
+        
+          B
+        
+        [
+        k
+        ]
+        +
+        Î²
+        
+          C
+        
+        [
+        k
+        ]
+        
+        â
+        k
+      
+    
+    {\displaystyle {\boldsymbol {C}}[k]\leftarrow \alpha {\boldsymbol {A}}[k]{\boldsymbol {B}}[k]+\beta {\boldsymbol {C}}[k]\quad \forall k}
+  
+
+The index 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ in square brackets indicates that the operation is performed for all matrices 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ in a stack. Often, this operation is implemented for a strided batched memory layout where all matrices follow concatenated in the arrays 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+, 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ and 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+.
+Batched BLAS functions can be a versatile tool and allow e.g. a fast implementation of exponential integrators and Magnus integrators that handle long integration periods with many time steps.[53] Here, the matrix exponentiation, the computationally expensive part of the integration, can be implemented in parallel for all time-steps by using Batched BLAS functions.
+
+See also[edit]
+List of numerical libraries
+Math Kernel Library, math library optimized for the Intel architecture; includes BLAS, LAPACK
+Numerical linear algebra, the type of problem BLAS solves
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ a b *.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Lawson, C. L.; Hanson, R. J.; Kincaid, D.; Krogh, F. T. (1979). "Basic Linear Algebra Subprograms for FORTRAN usage". ACM Trans. Math. Softw. 5 (3): 308â323. doi:10.1145/355841.355847. hdl:2060/19780018835. S2CIDÂ 6585321. Algorithm 539.
+
+^ "BLAS Technical Forum". netlib.org. Retrieved 2017-07-07.
+
+^ blaseman Archived 2016-10-12 at the Wayback Machine "The products are the implementations of the public domain BLAS (Basic Linear Algebra Subprograms) and LAPACK (Linear Algebra PACKage), which have been developed by groups of people such as Prof. Jack Dongarra, University of Tennessee, USA and all published on the WWW (URL: http://www.netlib.org/)."[permanent dead link]
+
+^ Jack Dongarra; Gene Golub; Eric Grosse; Cleve Moler; Keith Moore. "Netlib and NA-Net: building a scientific computing community" (PDF). netlib.org. Retrieved 2016-02-13. The Netlib software repository was created in 1984 to facilitate quick distribution of public domain software routines for use in scientific computation.
+
+^ a b "Arm Performance Libraries". Arm. 2020. Retrieved 2020-12-16.
+
+^ "BLAS Library".
+
+^ a b "No Cost Options for Intel Math Kernel Library (MKL), Support yourself, Royalty-Free". Intel. 2015. Retrieved 2015-08-31.
+
+^ "Intel Math Kernel Library (Intel MKL)". Intel. 2015. Retrieved 2015-08-25.
+
+^ "Optimization Notice". Intel. 2012. Retrieved 2013-04-10.
+
+^ Douglas Quinney (2003). "So what's new in Mathematica 5.0?" (PDF). MSOR Connections. The Higher Education Academy. 3 (4). Archived from the original (PDF) on 2013-10-29.
+
+^ Cleve Moler (2000). "MATLAB Incorporates LAPACK". MathWorks. Retrieved 2013-10-26.
+
+^ StÃ©fan van der Walt; S. Chris Colbert & GaÃ«l Varoquaux (2011). "The NumPy array: a structure for efficient numerical computation". Computing in Science and Engineering. 13 (2): 22â30. arXiv:1102.1523. Bibcode:2011arXiv1102.1523V. doi:10.1109/MCSE.2011.37. S2CIDÂ 16907816.
+
+^ Boisvert, Ronald F. (2000). "Mathematical software: past, present, and future". Mathematics and Computers in Simulation. 54 (4â5): 227â241. arXiv:cs/0004004. Bibcode:2000cs........4004B. doi:10.1016/S0378-4754(00)00185-3. S2CIDÂ 15157725.
+
+^ Even the SSP (which appeared around 1966) had some basic routines such as RADD (add rows), CADD (add columns), SRMA (scale row and add to another row), and RINT (row interchange). These routines apparently were not used as kernel operations to implement other routines such as matrix inversion.  See IBM (1970), System/360 Scientific Subroutine Package, Version III, Programmer's Manual (5thÂ ed.), International Business Machines, GH20-0205-4.
+
+^ BLAST Forum 2001, p.Â 1.
+
+^ Lawson et al. 1979.
+
+^ BLAST Forum 2001, pp.Â 1â2.
+
+^ BLAST Forum 2001, p.Â 2.
+
+^ a b Dongarra, Jack J.; Du Croz, Jeremy; Hammarling, Sven; Duff, Iain S. (1990). "A set of level 3 basic linear algebra subprograms". ACM Transactions on Mathematical Software. 16 (1): 1â17. doi:10.1145/77626.79170. ISSNÂ 0098-3500. S2CIDÂ 52873593.
+
+^ a b Dongarra, Jack J.; Du Croz, Jeremy; Hammarling, Sven; Hanson, Richard J. (1988). "An extended set of FORTRAN Basic Linear Algebra Subprograms". ACM Trans. Math. Softw. 14: 1â17. CiteSeerXÂ 10.1.1.17.5421. doi:10.1145/42288.42291. S2CIDÂ 3579623.
+
+^ Goto, Kazushige; van de Geijn, Robert A. (2008). "High-performance implementation of the level-3 BLAS" (PDF). ACM Transactions on Mathematical Software. 35 (1): 1â14. doi:10.1145/1377603.1377607. S2CIDÂ 14722514.
+
+^ Golub, Gene H.; Van Loan, Charles F. (1996), Matrix Computations (3rdÂ ed.), Johns Hopkins, ISBNÂ 978-0-8018-5414-9
+
+^ Goto, Kazushige; van de Geijn, Robert A. (2008). "Anatomy of High-Performance Matrix Multiplication". ACM Transactions on Mathematical Software. 34 (3): 12:1â12:25. CiteSeerXÂ 10.1.1.111.3873. doi:10.1145/1356052.1356053. ISSNÂ 0098-3500. S2CIDÂ 9359223. (25 pages) [1]
+
+^ Van Zee, Field G.; Smith, Tyler M. (2017-07-24). "Implementing High-performance Complex Matrix Multiplication via the 3m and 4m Methods". ACM Transactions on Mathematical Software. 44 (1): 1â36. doi:10.1145/3086466. S2CIDÂ 25580883.
+
+^ "Guides and Sample Code". developer.apple.com. Retrieved 2017-07-07.
+
+^ "Guides and Sample Code". developer.apple.com. Retrieved 2017-07-07.
+
+^ "Automatically Tuned Linear Algebra Software (ATLAS)". math-atlas.sourceforge.net. Retrieved 2017-07-07.
+
+^ blis: BLAS-like Library Instantiation Software Framework, flame, 2017-06-30, retrieved 2017-07-07
+
+^ BLIS GitHub Repository, 2021-10-15
+
+^ "C++ AMP BLAS Library". CodePlex. Retrieved 2017-07-07.
+
+^ "cuBLAS". NVIDIA Developer. 2013-07-29. Retrieved 2017-07-07.
+
+^ "NVBLAS". NVIDIA Developer. 2018-05-15. Retrieved 2018-05-15.
+
+^ clBLAS: a software library containing BLAS functions written in OpenCL, clMathLibraries, 2017-07-03, retrieved 2017-07-07
+
+^ Nugteren, Cedric (2017-07-05), CLBlast: Tuned OpenCL BLAS, retrieved 2017-07-07
+
+^ IBM Knowledge Centre: Engineering and Scientific Subroutine Library
+
+^ Milfeld, Kent. "GotoBLAS2". Texas Advanced Computing Center. Archived from the original on 2020-03-23. Retrieved 2013-08-28.
+
+^ "Intel Math Kernel Library (Intel MKL) | Intel Software". software.intel.com. Retrieved 2017-07-07.
+
+^ Mathkeisan, NEC. "MathKeisan". www.mathkeisan.com. Retrieved 2017-07-07.
+
+^ "BLAS (Basic Linear Algebra Subprograms)". www.netlib.org. Retrieved 2017-07-07.
+
+^ "BLAS (Basic Linear Algebra Subprograms)". www.netlib.org. Retrieved 2017-07-07.
+
+^ "OpenBLASÂ : An optimized BLAS library". www.openblas.net. Retrieved 2017-07-07.
+
+^ "Archived copy". Archived from the original on 2007-02-22. Retrieved 2007-05-20.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ "rocBLAS". rocmdocs.amd.com. Retrieved 2021-05-21.
+
+^ "Archived copy". Archived from the original on 2007-05-13. Retrieved 2007-05-20.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ "Oracle Developer Studio". www.oracle.com. Retrieved 2017-07-07.
+
+^ "Boost Basic Linear Algebra - 1.60.0". www.boost.org. Retrieved 2017-07-07.
+
+^ "Armadillo: C++ linear algebra library". arma.sourceforge.net. Retrieved 2017-07-07.
+
+^ "Dlang Numerical and System Libraries".
+
+^ "Elemental: distributed-memory dense and sparse-direct linear algebra and optimization â Elemental". libelemental.org. Retrieved 2017-07-07.
+
+^ "HASEM". SourceForge. Retrieved 2017-07-07.
+
+^ Duff, Iain S.; Heroux, Michael A.; Pozo, Roldan (2002). "An Overview of the Sparse Basic Linear Algebra Subprograms: The New Standard from the BLAS Technical Forum". ACM Transactions on Mathematical Software. 28 (2): 239â267. doi:10.1145/567806.567810. S2CIDÂ 9411006.
+
+^ Dongarra, Jack; Hammarling, Sven; Higham, Nicholas J.; Relton, Samuel D.; Valero-Lara, Pedro; Zounon, Mawussi (2017). "The Design and Performance of Batched BLAS on Modern High-Performance Computing Systems". Procedia Computer Science. 108: 495â504. doi:10.1016/j.procs.2017.05.138.
+
+^ Herb, Konstantin; Welter, Pol (2022). "Parallel time integration using Batched BLAS (Basic Linear Algebra Subprograms) routines". Computer Physics Communications. 270: 108181. arXiv:2108.07126. doi:10.1016/j.cpc.2021.108181.
+
+
+Further reading[edit]
+BLAST Forum (2001-08-21), Basic Linear Algebra Subprograms Technical (BLAST) Forum Standard, Knoxville, TN: University of Tennessee
+Dodson, D. S.; Grimes, R. G. (1982), "Remark on algorithm 539: Basic Linear Algebra Subprograms for Fortran usage", ACM Trans. Math. Softw., 8 (4): 403â404, doi:10.1145/356012.356020, S2CIDÂ 43081631
+Dodson, D. S. (1983), "Corrigendum: Remark on "Algorithm 539: Basic Linear Algebra Subroutines for FORTRAN usage"", ACM Trans. Math. Softw., 9: 140, doi:10.1145/356022.356032, S2CIDÂ 22163977
+J. J. Dongarra, J. Du Croz, S. Hammarling, and R. J. Hanson, Algorithm 656: An extended set of FORTRAN Basic Linear Algebra Subprograms, ACM Trans. Math. Softw., 14 (1988), pp.Â 18â32.
+J. J. Dongarra, J. Du Croz, I. S. Duff, and S. Hammarling, A set of Level 3 Basic Linear Algebra Subprograms, ACM Trans. Math. Softw., 16 (1990), pp.Â 1â17.
+J. J. Dongarra, J. Du Croz, I. S. Duff, and S. Hammarling, Algorithm 679: A set of Level 3 Basic Linear Algebra Subprograms, ACM Trans. Math. Softw., 16 (1990), pp.Â 18â28.
+New BLAS
+L. S. Blackford, J. Demmel, J. Dongarra, I. Duff, S. Hammarling, G. Henry, M. Heroux, L. Kaufman, A. Lumsdaine, A. Petitet, R. Pozo, K. Remington, R. C. Whaley, An Updated Set of Basic Linear Algebra Subprograms (BLAS), ACM Trans. Math. Softw., 28-2 (2002), pp.Â 135â151.
+J. Dongarra, Basic Linear Algebra Subprograms Technical Forum Standard, International Journal of High Performance Applications and Supercomputing, 16(1) (2002), pp.Â 1â111, and International Journal of High Performance Applications and Supercomputing, 16(2) (2002), pp.Â 115â199.
+External links[edit]
+BLAS homepage on Netlib.org
+BLAS FAQ
+BLAS Quick Reference Guide from LAPACK Users' Guide
+Lawson Oral History One of the original authors of the BLAS discusses its creation in an oral history interview. Charles L. Lawson Oral history interview by Thomas Haigh, 6 and 7 November 2004, San Clemente, California. Society for Industrial and Applied Mathematics, Philadelphia, PA.
+Dongarra Oral History In an oral history interview, Jack Dongarra explores the early relationship of BLAS to LINPACK, the creation of higher level BLAS versions for new architectures, and his later work on the ATLAS system to automatically optimize BLAS for particular machines. Jack Dongarra, Oral history interview by Thomas Haigh, 26 April 2005, University of Tennessee, Knoxville TN. Society for Industrial and Applied Mathematics, Philadelphia, PA
+How does BLAS get such extreme performance? Ten naive 1000Ã1000 matrix multiplications (1010 floating point multiply-adds) takes 15.77Â seconds on 2.6Â GHz processor; BLAS implementation takes 1.32Â seconds.
+An Overview of the Sparse Basic Linear Algebra Subprograms: The New Standard from the BLAS Technical Forum [2]
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteNumerical linear algebraKey concepts
+Floating point
+Numerical stability
+Problems
+System of linear equations
+Matrix decompositions
+Matrix multiplication (algorithms)
+Matrix splitting
+Sparse problems
+Hardware
+CPU cache
+TLB
+Cache-oblivious algorithm
+SIMD
+Multiprocessing
+Software
+MATLAB
+Basic Linear Algebra Subprograms (BLAS)
+LAPACK
+Specialized libraries
+General purpose software
+
+vteLinear algebraBasic concepts
+Scalar
+Vector
+Vector space
+Scalar multiplication
+Vector projection
+Linear span
+Linear map
+Linear projection
+Linear independence
+Linear combination
+Basis
+Change of basis
+Row and column vectors
+Row and column spaces
+Kernel
+Eigenvalues and eigenvectors
+Transpose
+Linear equations
+Matrices
+Block
+Decomposition
+Invertible
+Minor
+Multiplication
+Rank
+Transformation
+Cramer's rule
+Gaussian elimination
+Bilinear
+Orthogonality
+Dot product
+Inner product space
+Outer product
+Kronecker product
+GramâSchmidt process
+Multilinear algebra
+Determinant
+Cross product
+Triple product
+Seven-dimensional cross product
+Geometric algebra
+Exterior algebra
+Bivector
+Multivector
+Tensor
+Outermorphism
+Vector space constructions
+Dual
+Direct sum
+Function space
+Quotient
+Subspace
+Tensor product
+Numerical
+Floating-point
+Numerical stability
+Basic Linear Algebra Subprograms
+Sparse matrix
+Comparison of linear algebra libraries
+
+ Category
+ Outline
+ Mathematics portal
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Basic_Linear_Algebra_Subprograms&oldid=1066879204"
+		Categories: Numerical linear algebraNumerical softwarePublic-domain software with source codeHidden categories: Webarchive template wayback linksAll articles with dead external linksArticles with dead external links from October 2016Articles with permanently dead external linksCS1 maint: archived copy as titleArticles with short descriptionShort description matches WikidataUse dmy dates from March 2020All accuracy disputesArticles with disputed statements from January 2015
+	

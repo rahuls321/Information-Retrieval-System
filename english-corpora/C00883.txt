@@ -1,0 +1,923 @@
+
+Title:
+Job-shop scheduling
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Job-shop scheduling or the job-shop problem (JSP) is an optimization problem in computer science and operations research. It is a variant of optimal job scheduling. In a general job scheduling problem, we are given n jobs J1,Â J2,Â ...,Â Jn of varying processing times, which need to be scheduled on m machines with varying processing power, while trying to minimize the makespan â the total length of the schedule (that is, when all the jobs have finished processing). In the specific variant known as job-shop scheduling, each job consists of a set of operations O1,Â O2,Â ...,Â On which need to be processed in a specific order (known as precedence constraints). Each operation has a specific machine that it needs to be processed on and only one operation in a job can be processed at a given time. A common relaxation is the flexible job shop, where each operation can be processed on any machine of a given set (the machines in each set are identical).
+The name originally came from the scheduling of jobs in a job shop, but the theme has wide applications beyond that type of instance. This problem is one of the best known combinatorial optimization problems, and was the first problem for which competitive analysis was presented, by Graham in 1966.[1] Best problem instances for basic model with makespan objective are due to Taillard.[2]
+In the standard three-field notation for optimal job scheduling problems, the job-shop variant is denoted by J in the first field. For example, the problem denoted by " J3|
+  
+    
+      
+        
+          p
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle p_{ij}}
+  
+|
+  
+    
+      
+        
+          C
+          
+            max
+          
+        
+      
+    
+    {\displaystyle C_{\max }}
+  
+" is a 3-machines job-shop problem with unit processing times, where the goal is to minimize the maximum completion time.
+
+Contents
+
+1 Problem variations
+2 NP-hardness
+3 Problem representation
+4 Scheduling efficiency
+5 The problem of infinite cost
+6 Major results
+7 Offline makespan minimization
+
+7.1 Atomic jobs
+7.2 Jobs consisting of multiple operations
+
+7.2.1 Johnson's algorithm
+
+
+
+
+8 Makespan prediction
+9 Example
+10 Related problems
+11 See also
+12 References
+13 External links
+
+
+
+Problem variations[edit]
+Many variations of the problem exist, including the following:
+
+Machines can have duplicates (flexible job shop with duplicate machines) or belong to groups of identical machines (flexible job shop).[3]
+Machines can require a certain gap between jobs or no idle-time.
+Machines can have sequence-dependent setups.
+Objective function can be to minimize the makespan, the Lp norm, tardiness, maximum lateness etc. It can also be multi-objective optimization problem.
+Jobs may have constraints, for example a job i needs to finish before job j can be started (see workflow). Also, the objective function can be multi-criteria.[4]
+Set of jobs can relate to different set of machines.
+Deterministic (fixed) processing times or probabilistic processing times.
+NP-hardness[edit]
+Since the traveling salesman problem is NP-hard, the job-shop problem with sequence-dependent setup is clearly also NP-hard since the TSP is a special case of the JSP with a single job (the cities are the machines and the salesman is the job).[citation needed]
+
+Problem representation[edit]
+The disjunctive graph[5] is one of the popular models used for describing the job-shop scheduling problem instances.[6]
+A mathematical statement of the problem can be made as follows:
+Let 
+  
+    
+      
+        M
+        =
+        {
+        
+          M
+          
+            1
+          
+        
+        ,
+        
+          M
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          M
+          
+            m
+          
+        
+        }
+      
+    
+    {\displaystyle M=\{M_{1},M_{2},\dots ,M_{m}\}}
+  
+ and 
+  
+    
+      
+        J
+        =
+        {
+        
+          J
+          
+            1
+          
+        
+        ,
+        
+          J
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          J
+          
+            n
+          
+        
+        }
+      
+    
+    {\displaystyle J=\{J_{1},J_{2},\dots ,J_{n}\}}
+  
+ be two finite sets. On account of the industrial origins of the problem, the 
+  
+    
+      
+        
+          
+            M
+            
+              i
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle M_{i}}
+  
+ are called machines and the 
+  
+    
+      
+        
+          
+            J
+            
+              j
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle J_{j}}
+  
+ are called jobs.
+Let 
+  
+    
+      
+        
+          Â 
+          
+            
+              X
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle \ {\mathcal {X}}}
+  
+ denote the set of all sequential assignments of jobs to machines, such that every job is done by every machine exactly once; elements 
+  
+    
+      
+        x
+        â
+        
+          
+            X
+          
+        
+      
+    
+    {\displaystyle x\in {\mathcal {X}}}
+  
+ may be written as 
+  
+    
+      
+        n
+        Ã
+        m
+      
+    
+    {\displaystyle n\times m}
+  
+ matrices, in which column 
+  
+    
+      
+        
+          i
+        
+      
+    
+    {\displaystyle \displaystyle i}
+  
+ lists the jobs that machine 
+  
+    
+      
+        
+          
+            M
+            
+              i
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle M_{i}}
+  
+ will do, in order. For example, the matrix
+
+
+  
+    
+      
+        x
+        =
+        
+          
+            (
+            
+              
+                
+                  1
+                
+                
+                  2
+                
+              
+              
+                
+                  2
+                
+                
+                  3
+                
+              
+              
+                
+                  3
+                
+                
+                  1
+                
+              
+            
+            )
+          
+        
+      
+    
+    {\displaystyle x={\begin{pmatrix}1&2\\2&3\\3&1\end{pmatrix}}}
+  
+
+means that machine 
+  
+    
+      
+        
+          
+            M
+            
+              1
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle M_{1}}
+  
+ will do the three jobs 
+  
+    
+      
+        
+          
+            J
+            
+              1
+            
+          
+          ,
+          
+            J
+            
+              2
+            
+          
+          ,
+          
+            J
+            
+              3
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle J_{1},J_{2},J_{3}}
+  
+ in the order 
+  
+    
+      
+        
+          
+            J
+            
+              1
+            
+          
+          ,
+          
+            J
+            
+              2
+            
+          
+          ,
+          
+            J
+            
+              3
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle J_{1},J_{2},J_{3}}
+  
+, while machine 
+  
+    
+      
+        
+          
+            M
+            
+              2
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle M_{2}}
+  
+ will do the jobs in the order 
+  
+    
+      
+        
+          
+            J
+            
+              2
+            
+          
+          ,
+          
+            J
+            
+              3
+            
+          
+          ,
+          
+            J
+            
+              1
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle J_{2},J_{3},J_{1}}
+  
+.
+Suppose also that there is some cost function 
+  
+    
+      
+        C
+        :
+        
+          
+            X
+          
+        
+        â
+        [
+        0
+        ,
+        +
+        â
+        ]
+      
+    
+    {\displaystyle C:{\mathcal {X}}\to [0,+\infty ]}
+  
+. The cost function may be interpreted as a "total processing time", and may have some expression in terms of times 
+  
+    
+      
+        
+          C
+          
+            i
+            j
+          
+        
+        :
+        M
+        Ã
+        J
+        â
+        [
+        0
+        ,
+        +
+        â
+        ]
+      
+    
+    {\displaystyle C_{ij}:M\times J\to [0,+\infty ]}
+  
+, the cost/time for machine 
+  
+    
+      
+        
+          
+            M
+            
+              i
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle M_{i}}
+  
+ to do job 
+  
+    
+      
+        
+          
+            J
+            
+              j
+            
+          
+        
+      
+    
+    {\displaystyle \displaystyle J_{j}}
+  
+.
+The job-shop problem is to find an assignment of jobs 
+  
+    
+      
+        x
+        â
+        
+          
+            X
+          
+        
+      
+    
+    {\displaystyle x\in {\mathcal {X}}}
+  
+ such that 
+  
+    
+      
+        
+          C
+          (
+          x
+          )
+        
+      
+    
+    {\displaystyle \displaystyle C(x)}
+  
+ is a minimum, that is, there is no 
+  
+    
+      
+        y
+        â
+        
+          
+            X
+          
+        
+      
+    
+    {\displaystyle y\in {\mathcal {X}}}
+  
+ such that 
+  
+    
+      
+        
+          C
+          (
+          x
+          )
+          >
+          C
+          (
+          y
+          )
+        
+      
+    
+    {\displaystyle \displaystyle C(x)>C(y)}
+  
+.
+
+Scheduling efficiency[edit]
+Scheduling efficiency can be defined for a schedule through the ratio of total machine idle time to the total processing time as below:
+
+  
+    
+      
+        
+          C
+          â²
+        
+        =
+        1
+        +
+        
+          
+            
+              
+                â
+                
+                  i
+                
+              
+              
+                l
+                
+                  i
+                
+              
+            
+            
+              
+                â
+                
+                  j
+                  ,
+                  k
+                
+              
+              
+                p
+                
+                  j
+                  k
+                
+              
+            
+          
+        
+        =
+        
+          
+            
+              C
+              .
+              m
+            
+            
+              
+                â
+                
+                  j
+                  ,
+                  k
+                
+              
+              
+                p
+                
+                  j
+                  k
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle C'=1+{\sum _{i}l_{i} \over \sum _{j,k}p_{jk}}={C.m \over \sum _{j,k}p_{jk}}}
+  
+
+Here 
+  
+    
+      
+        
+          l
+          
+            i
+          
+        
+      
+    
+    {\displaystyle l_{i}}
+  
+ is the idle time of machine 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+, 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ is the makespan and 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ is the number of machines. Notice that with the above definition, scheduling efficiency is simply the makespan normalized to the number of machines and the total processing time. This makes it possible to compare the usage of resources across JSP instances of different size.[7]
+
+The problem of infinite cost[edit]
+One of the first problems that must be dealt with in the JSP is that many proposed solutions have infinite cost: i.e., there exists 
+  
+    
+      
+        
+          x
+          
+            â
+          
+        
+        â
+        
+          
+            X
+          
+        
+      
+    
+    {\displaystyle x_{\infty }\in {\mathcal {X}}}
+  
+ such that 
+  
+    
+      
+        C
+        (
+        
+          x
+          
+            â
+          
+        
+        )
+        =
+        +
+        â
+      
+    
+    {\displaystyle C(x_{\infty })=+\infty }
+  
+. In fact, it is quite simple to concoct examples of such 
+  
+    
+      
+        
+          x
+          
+            â
+          
+        
+      
+    
+    {\displaystyle x_{\infty }}
+  
+ by ensuring that two machines will deadlock, so that each waits for the output of the other's next step.
+
+Major results[edit]
+This section only describes one highly specialized aspect of its associated subject. Please help improve this article by adding more general information. The talk page may contain suggestions.  (October 2009)
+Graham had already provided the List scheduling algorithm in 1966, which is (2 â 1/m)-competitive, where m is the number of machines.[1]  Also, it was proved that List scheduling is optimum online algorithm for 2 and 3 machines. The CoffmanâGraham algorithm (1972) for uniform-length jobs is also optimum for two machines, and is (2 â 2/m)-competitive.[8][9] In 1992, Bartal, Fiat, Karloff and Vohra presented an algorithm that is 1.986 competitive.[10]  A 1.945-competitive algorithm was presented by Karger, Philips and Torng in 1994.[11]  In 1992, Albers provided a different algorithm that is 1.923-competitive.[12] Currently, the best known result is an algorithm given by Fleischer and Wahl, which achieves a competitive ratio of 1.9201.[13]
+A lower bound of 1.852 was presented by Albers.[14]
+Taillard instances has an important role in developing job-shop scheduling with makespan objective.
+In 1976 Garey provided a proof[15] that this problem is NP-complete for m>2, that is, no optimal solution can be computed in polynomial time for three or more machines (unless P=NP).
+In 2011 Xin Chen et al. provided optimal algorithms for online scheduling on two related machines[16] improving previous results.[17]
+
+Offline makespan minimization[edit]
+Atomic jobs[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}See also: Multiprocessor scheduling
+The simplest form of the offline makespan minimisation problem deals with atomic jobs, that is, jobs that are not subdivided into multiple operations. It is equivalent to packing a number of items of various different sizes into a fixed number of bins, such that the maximum bin size needed is as small as possible. (If instead the number of bins is to be minimised, and the bin size is fixed, the problem becomes a different problem, known as the bin packing problem.)
+Dorit S. Hochbaum and David Shmoys presented a polynomial-time approximation scheme in 1987 that finds an approximate solution to the offline makespan minimisation problem with atomic jobs to any desired degree of accuracy.[18]
+
+Jobs consisting of multiple operations[edit]
+The basic form of the problem of scheduling jobs with multiple (M) operations, over M machines, such that all of the first operations must be done on the first machine, all of the second operations on the second, etc., and a single job cannot be performed in parallel, is known as the flow-shop scheduling problem. Various algorithms exist, including genetic algorithms.[19]
+
+Johnson's algorithm[edit]
+See also: Johnson's rule
+A heuristic algorithm by S. M. Johnson can be used to solve the case of a 2 machine N job problem when all jobs are to be processed in the same order.[20]  The steps of algorithm are as follows:
+Job Pi has two operations, of duration Pi1, Pi2, to be done on Machine M1, M2 in that sequence.
+
+Step 1. List A = { 1, 2, â¦, N }, List L1 = {}, List L2 = {}.
+Step 2. From all available operation durations, pick the minimum.
+If the minimum belongs to Pk1,
+Remove K from list A; Add K to end of List L1.
+If minimum belongs to Pk2,
+Remove K from list A; Add K to beginning of List L2.
+
+Step 3. Repeat Step 2 until List A is empty.
+Step 4. Join List L1, List L2. This is the optimum sequence.
+Johnson's method only works optimally for two machines. However, since it is optimal, and easy to compute, some researchers have tried to adopt it for M machines, (MÂ >Â 2.)
+The idea is as follows: Imagine that each job requires m operations in sequence, on M1, M2 â¦ Mm. We combine the first m/2 machines into an (imaginary) Machining center, MC1, and the remaining Machines into a Machining Center MC2. Then the total processing time for a Job P on MC1 = sum( operation times on first m/2 machines), and processing time for Job P on MC2 = sum(operation times on last m/2 machines).
+By doing so, we have reduced the m-Machine problem into a Two Machining center scheduling problem. We can solve this using Johnson's method.
+
+Makespan prediction[edit]
+Machine learning has been recently used to predict the optimal makespan of a JSP instance without actually producing the optimal schedule.[7] Preliminary results show an accuracy of around 80% when supervised machine learning methods were applied to classify small randomly generated JSP instances based on their optimal scheduling efficiency compared to the average.
+
+Example[edit]
+Here is an example of a job-shop scheduling problem formulated in AMPL as a mixed-integer programming problem with indicator constraints:
+
+param N_JOBS;
+param N_MACHINES;
+
+set JOBS ordered = 1..N_JOBS;
+set MACHINES ordered = 1..N_MACHINES;
+
+param ProcessingTime{JOBS, MACHINES} > 0;
+
+param CumulativeTime{i in JOBS, j in MACHINES} =
+   sum {jj in MACHINES: ord(jj) <= ord(j)} ProcessingTime[i,jj];
+
+param TimeOffset{i1 in JOBS, i2 in JOBS: i1 <> i2} =
+   max {j in MACHINES}
+     (CumulativeTime[i1,j] - CumulativeTime[i2,j] + ProcessingTime[i2,j]);
+
+var end >= 0;
+var start{JOBS} >= 0;
+var precedes{i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)} binary;
+
+minimize makespan: end;
+
+subj to makespan_def{i in JOBS}:
+   end >= start[i] + sum{j in MACHINES} ProcessingTime[i,j];
+
+subj to no12_conflict{i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)}:
+   precedes[i1,i2] ==> start[i2] >= start[i1] + TimeOffset[i1,i2];
+
+subj to no21_conflict{i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)}:
+   !precedes[i1,i2] ==> start[i1] >= start[i2] + TimeOffset[i2,i1];
+
+data;
+
+param N_JOBS := 4;
+param N_MACHINES := 4;
+
+param ProcessingTime:
+  1 2 3 4 :=
+1 4 2 1
+2 3 6 2
+3 7 2 3
+4 1 5 8;
+
+Related problems[edit]
+Flow-shop scheduling is a similar problem but without the constraint that each operation must be done on a specific machine (only the order constraint is kept).
+Open-shop scheduling is a similar problem but also without the order constraint.
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Disjunctive graph
+Dynamic programming
+Genetic algorithm scheduling
+List of NP-complete problems
+Optimal control
+Scheduling (production processes)
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Graham, R. (1966). "Bounds for certain multiprocessing anomalies" (PDF). Bell System Technical Journal. 45 (9): 1563â1581. doi:10.1002/j.1538-7305.1966.tb01709.x.
+
+^ "Taillard Instances".
+
+^ Maccarthy (1993). "Addressing the gap in scheduling research: a review of optimization and heuristic methods in production scheduling".
+
+^ Malakooti, B (2013). Operations and Production Systems with Multiple Objectives. John Wiley & Sons. ISBNÂ 978-1-118-58537-5.
+
+^ B. Roy, B. Sussmann, Les problÃ¨mes dâordonnancement avec constraintes disjonctives, SEMA, Note D.S., No. 9, Paris, 1964.
+
+^ Jacek BÅaÅ¼ewicz, Erwin Pesch, MaÅgorzata Sterna, The disjunctive graph machine representation of the job shop scheduling problem, European Journal of Operational Research, Volume 127, Issue 2, 1 December 2000, Pages 317-331, ISSN 0377-2217, 10.1016/S0377-2217(99)00486-5.
+
+^ Jump up to: a b Mirshekarian, Sadegh; Å ormaz, DuÅ¡an N. (2016). "Correlation of job-shop scheduling problem features with scheduling efficiency" (PDF). Expert Systems with Applications. 62: 131â147. doi:10.1016/j.eswa.2016.06.014.
+
+^ Coffman, E. G. Jr.; Graham, R. L. (1972), "Optimal scheduling for two-processor systems" (PDF), Acta Informatica, 1 (3): 200â213, doi:10.1007/bf00288685, MRÂ 0334913, S2CIDÂ 40603807.
+
+^ Lam, Shui; Sethi, Ravi (1977), "Worst case analysis of two scheduling algorithms", SIAM Journal on Computing, 6 (3): 518â536, doi:10.1137/0206037, MRÂ 0496614.
+
+^ Bartal, Y.; A. Fiat; H. Karloff; R. Vohra (1992). "New Algorithms for an Ancient Scheduling Problem". Proc. 24th ACM Symp. Theory of Computing. pp.Â 51â58. doi:10.1145/129712.129718.
+
+^ Karger, D.; S. Phillips; E. Torng (1994). "A Better Algorithm for an Ancient Scheduling Problem". Proc. Fifth ACM Symp. Discrete Algorithms.
+
+^ Albers, Susanne; Torben Hagerup (1992). "Improved parallel integer sorting without concurrent writing". Proceedings of the third annual ACM-SIAM symposium on Discrete algorithms. Symposium on Discrete Algorithms archive. pp.Â 463â472.
+
+^ Fleischer, Rudolf (2000). Algorithms â ESA 2000. Berlin / Heidelberg: Springer. pp.Â 202â210. doi:10.1007/3-540-45253-2_19. ISBNÂ 978-3-540-41004-1.
+
+^ Albers, Susanne (1999). "Better bounds for online scheduling". SIAM Journal on Computing. 29 (2): 459â473. CiteSeerXÂ 10.1.1.685.8756. doi:10.1137/S0097539797324874.
+
+^ Garey, M.R. (1976). "The Complexity of Flowshop and Jobshop Scheduling". Mathematics of Operations Research. 1 (2): 117â129. doi:10.1287/moor.1.2.117. JSTORÂ 3689278.
+
+^ Chen, Xin; Lan, Yan; BenkÅ, Attila; DÃ³sa, GyÃ¶rgy; Han, Xin (2011). "Optimal algorithms for online scheduling with bounded rearrangement at the end". Theoretical Computer Science. 412 (45): 6269â6278. doi:10.1016/j.tcs.2011.07.014.
+
+^ Liu, M.; Xu, Y.; Chu, C.; Zheng, F. (2009). "Online scheduling on two uniform machines to minimize the makespan". Theoret. Comput. Sci. 410 (21â23): 2099â2109. doi:10.1016/j.tcs.2009.01.007.
+
+^ Hochbaum, Dorit; Shmoys, David (1987). "Using dual approximation algorithms for scheduling problems: theoretical and practical results" (PDF). Journal of the ACM. 34 (1): 144â162. CiteSeerXÂ 10.1.1.125.5753. doi:10.1145/7531.7535. S2CIDÂ 9739129.
+
+^ Khuri, Sami; Miryala, Sowmya Rao (1999). "Genetic Algorithms for Solving Open Shop Scheduling Problems". Proceedings of the 9th Portuguese Conference on Artificial Intelligence: Progress in Artificial Intelligence. London: Springer Verlag. CiteSeerXÂ 10.1.1.29.4699.
+
+^ S.M. Johnson, Optimal two- and three-stage production schedules with setup times included, Naval Res. Log. Quart. I(1954)61-68.
+
+
+External links[edit]
+University of Vienna Directory of methodologies, systems and software for dynamic optimization.
+Taillard instances
+Brucker P. Scheduling Algorithms. Heidelberg, Springer. Fifth ed. ISBNÂ 978-3-540-24804-0
+Job Shop Visual Scheduling
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteOptimal job scheduling problemsOne-stage jobs
+Single machine
+Identical machines
+Uniform machines
+Unrelated machines
+Multi-stage jobs
+Parallel tasks
+Open shop
+Flow shop
+Job shop
+Optimization objectives
+Makespan
+Earliness
+Lateness
+Tardiness
+Throughput
+Other requirements
+Interval scheduling
+Truthful job scheduling
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Job-shop_scheduling&oldid=1060820951"
+		Categories: Optimal schedulingHidden categories: All articles with unsourced statementsArticles with unsourced statements from January 2021Wikipedia articles needing context from October 2009
+	

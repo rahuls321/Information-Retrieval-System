@@ -1,0 +1,191 @@
+
+Title:
+x86 memory segmentation
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "X86 memory segmentation"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (June 2017) (Learn how and when to remove this template message)
+Implementation of memory segmentation on Intel x86
+
+x86 memory segmentation refers to the implementation of memory segmentation in the Intel x86 computer instruction set architecture. Segmentation was introduced on the Intel 8086 in 1978 as a way to allow programs to address more than 64Â KB (65,536Â bytes) of memory. The Intel 80286 introduced a second version of segmentation in 1982 that added support for virtual memory and memory protection.  At this point the original model was renamed real mode, and the new version was named protected mode.  The x86-64 architecture, introduced in 2003, has largely dropped support for segmentation in 64-bit mode.
+In both real and protected modes, the system uses 16-bit segment registers to derive the actual memory address. In real mode, the registers CS, DS, SS, and ES point to the currently used program code segment (CS), the current data segment (DS), the current stack segment (SS), and one extra segment determined by the programmer (ES).  The Intel 80386, introduced in 1985, adds two additional segment registers, FS and GS, with no specific uses defined by the hardware. The way in which the segment registers are used differs between the two modes.[1]
+The choice of segment is normally defaulted by the processor according to the function being executed.  Instructions are always fetched from the code segment.  Any stack push or pop or any data reference referring to the stack uses the stack segment.  All other references to data use the data segment.  The extra segment is the default destination for string operations (for example MOVS or CMPS).  FS and GS have no hardware-assigned uses. The instruction format allows an optional segment prefix byte which can be used to override the default segment for selected instructions if desired.[2]
+
+Contents
+
+1 Real mode
+2 Protected mode
+
+2.1 80286 protected mode
+2.2 Detailed Segmentation Unit Workflow
+2.3 80386 protected mode
+
+
+3 Later developments
+4 Practices
+5 Notes and references
+6 See also
+7 External links
+
+
+
+Real mode[edit]
+  Three segments in real mode memory (click on image to enlarge). There is an overlap between segment 2 and segment 3; the bytes in the turquoise area can be used from both segment selectors.
+In real mode or V86 mode, the size of a segment can range from 1 byte up to 65,536Â bytes (using 16-bit offsets).
+The 16-bit segment selector in the segment register is interpreted as the most significant 16 bits of a linear 20-bit address, called a segment address, of which the remaining four least significant bits are all zeros. The segment address is always added to a 16-bit offset in the instruction to yield a linear address, which is the same as physical address in this mode. For instance, the segmented address 06EFh:1234h (here the suffix "h" means hexadecimal) has a segment selector of 06EFh, representing a segment address of 06EF0h, to which the offset is added, yielding the linear address 06EF0hÂ +Â 1234hÂ =Â 08124h.
+
+
+
+
+Â  0000 0110 1110 1111Â 0000
+
+Segment,
+
+16 bits, shifted 4 bits left (or multiplied by 0x10)
+
+
++ Â Â Â Â  0001 0010 0011 0100
+
+Offset,
+
+16 bits
+
+
+Â  Â Â Â Â Â Â Â Â  Â Â Â Â  Â Â Â Â  Â Â Â Â Â 
+
+
+
+
+Â  0000 1000 0001 0010 0100
+
+Address,
+
+20 bits
+
+Because of the way the segment address and offset are added, a single linear address can be mapped to up to 212 = 4096 distinct segment:offset pairs. For example, the linear address 08124h can have the segmented addresses 06EFh:1234h, 0812h:0004h, 0000h:8124h, etc.
+This could be confusing to programmers accustomed to unique addressing schemes, but it can also be used to advantage, for example when addressing multiple nested data structures.  While real mode segments are always 64Â KB long, the practical effect is only that no segment can be longer than 64Â KB, rather than that every segment must be 64Â KB long.  Because there is no protection or privilege limitation in real mode, even if a segment could be defined to be smaller than 64Â KB, it would still be entirely up to the programs to coordinate and keep within the bounds of their segments, as any program can always access any memory (since it can arbitrarily set segment selectors to change segment addresses with absolutely no supervision).  Therefore, real mode can just as well be imagined as having a variable length for each segment, in the range 1 to 65,536 bytes, that is just not enforced by the CPU.
+(The leading zeros of the linear address, segmented addresses, and the segment and offset fields are shown here for clarity. They are usually omitted.)
+The effective 20-bit address space of real mode limits the addressable memory to 220Â bytes, or 1,048,576Â bytes (1Â MB).  This derived directly from the hardware design of the IntelÂ 8086 (and, subsequently, the closely related 8088), which had exactly 20 address pins.  (Both were packaged in 40-pin DIP packages; even with only 20 address lines, the address and data buses were multiplexed to fit all the address and data lines within the limited pin count.)
+Each segment begins at a multiple of 16Â bytes, called a paragraph, from the beginning of the linear (flat) address space. That is, at 16Â byte intervals. Since all segments are 64Â KB long, this explains how overlap can occur between segments and why any location in the linear memory address space can be accessed with many segment:offset pairs. The actual location of the beginning of a segment in the linear address space can be calculated with segmentÃ16. A segment value of 0Ch (12) would give a linear address at C0h (192) in the linear address space. The address offset can then be added to this number.  0Ch:0Fh (12:15) would be C0h+0Fh=CFh (192+15=207), CFh (207) being the linear address. Such address translations are carried out by the segmentation unit of the CPU. The last segment, FFFFh (65535), begins at linear address FFFF0h (1048560), 16Â bytes before the end of the 20Â bit address space, and thus, can access, with an offset of up to 65,536Â bytes, up to 65,520 (65536â16) bytes past the end of the 20Â bit 8088 address space. On the 8088, these address accesses were wrapped around to the beginning of the address space such that 65535:16 would access address 0 and 65533:1000 would access addressÂ 952 of the linear address space.  The use of this feature by programmers led to the Gate A20 compatibility issues in later CPU generations, where the linear address space was expanded past 20Â bits.
+In 16-bit real mode, enabling applications to make use of multiple memory segments (in order to access more memory than available in any one 64K-segment) is quite complex, but was viewed as a necessary evil for all but the smallest tools (which could do with less memory). The root of the problem is that no appropriate address-arithmetic instructions suitable for flat addressing of the entire memory range are available.[citation needed] Flat addressing is possible by applying multiple instructions, which however leads to slower programs.
+The memory model concept derives from the setup of the segment registers.  For example, in the tiny model CS=DS=SS, that is the program's code, data, and stack are all contained within a single 64Â KB segment. In the small memory model DS=SS, so both data and stack reside in the same segment; CS points to a different code segment of up to 64Â KB.
+
+Protected mode[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (August 2015) (Learn how and when to remove this template message)
+  Three segments in protected mode memory (click on image to enlarge), with the local descriptor table.
+80286 protected mode[edit]
+The 80286's protected mode extends the processor's address space to 224 bytes (16 megabytes), but not by adjusting the shift value.  Instead, the 16-bit segment registers now contain an index into a table of segment descriptors containing 24-bit base addresses to which the offset is added. To support old software, the processor starts up in "real mode", a mode in which it uses the segmented addressing model of the 8086.  There is a small difference though: the resulting physical address is no longer truncated to 20Â bits, so real mode pointers (but not 8086 pointers) can now refer to addresses between 10000016 and 10FFEF16.  This roughly 64-kilobyte region of memory was known as the High Memory Area (HMA), and later versions of DOS could use it to increase the available "conventional" memory (i.e. within the first MB).  With the addition of the HMA, the total address space is approximately 1.06Â MB.  Though the 80286 does not truncate real-mode addresses to 20Â bits, a system containing an 80286 can do so with hardware external to the processor, by gating off the 21st address line, the A20 line.  The IBMÂ PCÂ AT provided the hardware to do this (for full backward compatibility with software for the original IBMÂ PC and PC/XT models), and so all subsequent "AT-class" PC clones did as well.
+286 protected mode was seldom used as it would have excluded the large body of users with 8086/88 machines. Moreover, it still necessitated dividing memory into 64k segments like was done in real mode. This limitation can be worked around on 32-bit CPUs which permit the use of memory pointers greater than 64k in size, however as the Segment Limit field is only 24-bit long, the maximum segment size that can be created is 16MB (although paging can be used to allocate more memory, no individual segment may exceed 16MB). This method was commonly used on Windows 3.x applications to produce a flat memory space, although as the OS itself was still 16-bit, API calls could not be made with 32-bit instructions. Thus, it was still necessary to place all code that performs API calls in 64k segments.
+Once 286 protected mode is invoked, it could not be exited except by performing a hardware reset. Machines following the rising IBM PC/AT standard could feign a reset to the CPU via the standardised keyboard controller, but this was significantly sluggish. Windows 3.x worked around both of these problems by intentionally triggering a triple fault in the interrupt-handling mechanisms of the CPU, which would cause the CPU to drop back into real mode, nearly instantly.[3]
+
+Detailed Segmentation Unit Workflow[edit]
+A logical address consists of a 16-bit segment selector (supplying 13+1 address bits) and a 16-bit offset. The segment selector must be located in one of the segment registers. That selector consists of a 2-bit Requested Privilege Level (RPL), a 1-bit Table Indicator (TI), and a 13-bit index.
+When attempting address translation of a given logical address, the processor reads the 64-bit segment descriptor structure from either the Global Descriptor Table when TI=0 or the Local Descriptor Table when TI=1. It then performs the privilege check:
+
+max(CPL,âRPL) â¤ DPL
+where CPL is the current privilege level (found in the lower 2Â bits of the CS register), RPL is the requested privilege level from the segment selector, and DPL is the descriptor privilege level of the segment (found in the descriptor).  All privilege levels are integers in the range 0â3, where the lowest number corresponds to the highest privilege.
+If the inequality is false, the processor generates a general protection (GP) fault.  Otherwise, address translation continues.  The processor then takes the 32-bit or 16-bit offset and compares it against the segment limit specified in the segment descriptor.  If it is larger, a GP fault is generated.  Otherwise, the processor adds the 24-bit segment base, specified in descriptor, to the offset, creating a linear physical address.
+The privilege check is done only when the segment register is loaded, because segment descriptors are cached in hidden parts of the segment registers.[citation needed][1]
+
+80386 protected mode[edit]
+In the Intel 80386 and later, protected mode retains the segmentation mechanism of 80286 protected mode, but a paging unit has been added as a second layer of address translation between the segmentation unit and the physical bus.  Also, importantly, address offsets are 32-bit (instead of 16-bit), and the segment base in each segment descriptor is also 32-bit (instead of 24-bit).  The general operation of the segmentation unit is otherwise unchanged.  The paging unit may be enabled or disabled; if disabled, operation is the same as on the 80286.  If the paging unit is enabled, addresses in a segment are now virtual addresses, rather than physical addresses as they were on the 80286.  That is, the segment starting address, the offset, and the final 32-bit address the segmentation unit derived by adding the two are all virtual (or logical) addresses when the paging unit is enabled.  When the segmentation unit generates and validates these 32-bit virtual addresses, the enabled paging unit finally translates these virtual addresses into physical addresses.  The physical addresses are 32-bit on the 386, but can be larger on newer processors which support Physical Address Extension.
+The 80386 also introduced two new general-purpose data segment registers, FS and GS, to the original set of four segment registers (CS, DS, ES, and SS).
+A 386 CPU can be put back into real mode by clearing a bit in the CR0 control register, however this is a privileged operation in order to enforce security and robustness. By way of comparison, a 286 could only be returned to real mode by forcing a processor reset, e.g. by a triple fault or using external hardware.
+
+Later developments[edit]
+The x86-64 architecture does not use segmentation in long mode (64-bit mode). Four of the segment registers, CS, SS, DS, and ES, are forced to base address 0, and the limit to 264. The segment registers FS and GS can still have a nonzero base address. This allows operating systems to use these segments for special purposes. Unlike the global descriptor table mechanism used by legacy modes, the base address of these segments is stored in a model-specific register. The x86-64 architecture further provides the special SWAPGS instruction, which allows swapping the kernel mode and user mode base addresses.
+For instance, Microsoft Windows on x86-64 uses the GSÂ segment to point to the Thread Environment Block, a small data structure for each thread, which contains information about exception handling, thread-local variables, and other per-thread state. Similarly, the Linux kernel uses the GSÂ segment to store per-CPU data.
+GS/FS are also used in gcc's thread-local storage and canary-based stack protector.
+
+Practices[edit]
+Logical addresses can be explicitly specified in x86 assembly language, e.g. (AT&T syntax):
+
+movl $42, %fs:(%eax) Â ; Equivalent to M[fs:eax]<-42) in RTL
+
+or in Intel syntax:
+
+mov dword [fs:eax], 42
+
+However, segment registers are usually used implicitly.
+
+All CPU instructions are implicitly fetched from the code segment specified by the segment selector held in the CSÂ register.
+Most memory references come from the data segment specified by the segment selector held in the DSÂ register.  These may also come from the extra segment specified by the segment selector held in the ESÂ register, if a segment-override prefix precedes the instruction that makes the memory reference.  Most, but not all, instructions that use DS by default will accept an ES override prefix.
+Processor stack references, either implicitly (e.g. push and pop instructions) or explicitly (memory accesses using the (E)SP or (E)BP registers) use the stack segment specified by the segment selector held in the SSÂ register.
+String instructions (e.g. stos, movs), along with data segment, also use the extra segment specified by the segment selector held in the ESÂ register.
+Segmentation cannot be turned off on x86-32 processors (this is true for 64-bit mode as well, but beyond the scope of discussion), so many 32-bit operating systems simulate a flat memory model by setting all segments' bases to 0 in order to make segmentation neutral to programs.  For instance, the Linux kernel sets up only 4 general purpose segments:
+
+
+
+
+Name
+Description
+Base
+Limit
+DPL
+
+
+__KERNEL_CS
+Kernel code segment
+0
+4Â GiB
+0
+
+
+__KERNEL_DS
+Kernel data segment
+0
+4Â GiB
+0
+
+
+__USER_CS
+User code segment
+0
+4Â GiB
+3
+
+
+__USER_DS
+User data segment
+0
+4Â GiB
+3
+
+Since the base is set to 0 in all cases and the limit 4Â GiB, the segmentation unit does not affect the addresses the program issues before they arrive at the paging unit.  (This, of course, refers to 80386 and later processors, as the earlier x86 processors do not have a paging unit.)
+Current Linux also uses GS to point to thread-local storage.
+Segments can be defined to be either code, data, or system segments.  Additional permission bits are present to make segments read only, read/write, execute, etc.
+In protected mode, code may always modify all segment registers except CS (the code segment selector).  This is because the current privilege level (CPL) of the processor is stored in the lower 2Â bits of the CSÂ register.  The only ways to raise the processor privilege level (and reload CS) are through the lcall (far call) and int (interrupt) instructions.  Similarly, the only ways to lower the privilege level (and reload CS) are through lret (far return) and iret (interrupt return) instructions.  In real mode, code may also modify the CSÂ register by making a far jump (or using an undocumented POP CS instruction on the 8086 or 8088)[4]).  Of course, in real mode, there are no privilege levels; all programs have absolute unchecked access to all of memory and all CPU instructions.
+For more information about segmentation, see the IA-32 manuals freely available on the AMD or Intel websites.
+
+Notes and references[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b "Intel 64 and IA-32 Architectures Software Developer's Manual", Volume 3, "System Programming Guide", published in 2011, Page "Vol. 3A 3-11", the book is written: "Every segment register has a âvisibleâ part and a âhiddenâ part. (The hidden part is sometimes referred to as a âdescriptor cacheâ or a âshadow register.â) When a segment selector is loaded into the visible part of a segment register, the processor also loads the hidden part of the segment register with the base address, segment limit, and access control information from the segment descriptor pointed to by the segment selector. The information cached in the segment register (visible and hidden) allows the processor to translate addresses without taking extra bus cycles to read the base address and limit from the segment descriptor."
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Intel Corporation (2004). IA-32 Intel Architecture Software Developer's Manual Volume 1: Basic Architecture (PDF).
+
+^ "DevBlogs".
+
+^ POP CS must be used with extreme care and has limited usefulness, because it immediately changes the effective address that will be computed from the instruction pointer to fetch the next instruction.  Generally, a far jump is much more useful.  The existence of POP CS is probably an accident, as it follows a pattern of PUSH and POP instruction opcodes for the four segment registers on the 8086 and 8088.
+
+
+See also[edit]
+Intel Memory Model
+THE multiprogramming system
+External links[edit]
+Home of the IA-32 Intel Architecture Software Developer's Manual
+The Segment:Offset Addressing Scheme
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=X86_memory_segmentation&oldid=1055044340"
+		Categories: X86 memory managementHidden categories: Articles needing additional references from June 2017All articles needing additional referencesArticles with short descriptionShort description is different from WikidataUse dmy dates from May 2019All articles with unsourced statementsArticles with unsourced statements from July 2011Articles needing additional references from August 2015
+	

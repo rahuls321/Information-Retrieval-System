@@ -1,0 +1,805 @@
+
+Title:
+B+ tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		hideThis article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article's use of external links may not follow Wikipedia's policies or guidelines. Please improve this article by removing excessive or inappropriate external links, and converting useful links where appropriate into footnote references.  (October 2016) (Learn how and when to remove this template message)
+This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "B+ tree"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (November 2012) (Learn how and when to remove this template message)
+    
+ (Learn how and when to remove this template message)
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}B+ treeTypeTree (data structure)Time complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)
+O(n)Search
+
+O(log n)
+O(log n + log L)Insert
+
+O(log n)
+O(M*log n + log L)Delete
+
+O(log n)
+O(M*log n + log L)
+  A simple B+ tree example linking the keys 1â7 to data values d1-d7. The linked list (red) allows rapid in-order traversal. This particular tree's branching factor is 
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+=4.
+A B+ tree is an m-ary tree with a variable but often large number of children per node. A B+ tree consists of a root, internal nodes and leaves.[1] The root may be either a leaf or a node with two or more children.[2]
+A B+ tree can be viewed as a B-tree in which each node contains only keys (not keyâvalue pairs), and to which an additional level is added at the bottom with linked leaves.
+The primary value of a B+ tree is in storing data for efficient retrieval in a block-oriented storage context â in particular, filesystems. This is primarily because unlike binary search trees, B+ trees have very high fanout (number of pointers to child nodes in a node,[1] typically on the order of 100 or more), which reduces the number of I/O operations required to find an element in the tree.
+The ReiserFS, NSS, XFS, JFS, ReFS, and BFS filesystems all use this type of tree for metadata indexing; BFS also uses B+ trees for storing directories. NTFS uses B+ trees for directory and security-related metadata indexing. EXT4 uses extent trees (a modified B+ tree data structure) for file extent indexing.[3] APFS uses B+ trees to store mappings from filesystem object IDs to their locations on disk, and to store filesystem records (including directories), though these trees' leaf nodes lack sibling pointers.[4] Relational database management systems such as IBM DB2,[5] Informix,[5] Microsoft SQL Server,[5] Oracle 8,[5] Sybase ASE,[5] and SQLite[6] support this type of tree for table indices. Keyâvalue database management systems such as CouchDB[7] and Tokyo Cabinet[8] support this type of tree for data access.
+
+Contents
+
+1 Overview
+2 Algorithms
+
+2.1 Search
+2.2 Prefix key compression
+2.3 Insertion
+2.4 Bulk-loading
+
+
+3 Characteristics
+4 Implementation
+5 History
+6 See also
+7 References
+8 External links
+
+8.1 Implementations
+
+
+
+
+
+Overview[edit]
+The order, or branching factor, b of a B+ tree measures the capacity of nodes (i.e., the number of children nodes) for internal nodes in the tree. The actual number of children for a node, referred to here as  m, is constrained for internal nodes so that 
+  
+    
+      
+        â
+        b
+        
+          /
+        
+        2
+        â
+        â¤
+        m
+        â¤
+        b
+      
+    
+    {\displaystyle \lceil b/2\rceil \leq m\leq b}
+  
+. The root is an exception: it is allowed to have as few as two children.[1] For example, if the order of a B+ tree is 7, each internal node (except for the root) may have between 4 and 7 children; the root may have between 2 and 7. Leaf nodes have no children, but are constrained so that the number of keys must be at least 
+  
+    
+      
+        â
+        b
+        
+          /
+        
+        2
+        â
+      
+    
+    {\displaystyle \lceil b/2\rceil }
+  
+ and at most 
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+. In the situation where a B+ tree is empty or contains one node the root is the single leaf. This node is permitted to have no keys if necessary and at most  
+  
+    
+      
+        b
+        â
+        1
+      
+    
+    {\displaystyle b-1}
+  
+.
+
+
+
+
+Node Type
+Children Type
+Min Number of Children
+Max Number of Children
+
+Example 
+  
+    
+      
+        b
+        =
+        7
+      
+    
+    {\displaystyle b=7}
+  
+
+Example 
+  
+    
+      
+        b
+        =
+        100
+      
+    
+    {\displaystyle b=100}
+  
+
+
+
+Root Node (when it is the only node in the tree)
+Records
+0
+
+  
+    
+      
+        b
+        â
+        1
+      
+    
+    {\displaystyle b-1}
+  
+
+
+0â6
+1â99
+
+
+Root Node
+Internal Nodes or Leaf Nodes
+2
+b
+
+2â7
+2â100
+
+
+Internal Node
+Internal Nodes or Leaf Nodes
+
+  
+    
+      
+        â
+        b
+        
+          /
+        
+        2
+        â
+      
+    
+    {\displaystyle \lceil b/2\rceil }
+  
+
+b
+
+4â7
+50â100
+
+
+Leaf Node
+Records
+
+  
+    
+      
+        â
+        b
+        
+          /
+        
+        2
+        â
+      
+    
+    {\displaystyle \lceil b/2\rceil }
+  
+
+
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+
+
+4â7
+50â100
+
+Algorithms[edit]
+Search[edit]
+The root of a B+ Tree represents the whole range of values in the tree, where every internal node is a subinterval.
+We are looking for a value k in the B+ Tree. Starting from the root, we are looking for the leaf which may contain the value k. At each node, we figure out which internal pointer we should follow. An internal B+ Tree node has at most 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ â¤ 
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+  children, where every one of them represents a different sub-interval. We select the corresponding node by searching on the key values of the node.
+
+function search(k) is
+    return tree_search(k, root)
+
+function: tree_search(k, node) is
+    if node is a leaf then
+        return node
+    switch k do
+    case k â¤ k_0
+        return tree_search(k, p_0)
+    case k_i < k â¤ k_{i+1}
+        return tree_search(k, p_{i+1})
+    case k_d < k
+        return tree_search(k, p_{d})
+
+This pseudocode assumes that no duplicates are allowed.
+
+Prefix key compression[edit]
+It is important to increase fanout, as this allows to direct searches to the leaf level more efficiently.
+Index Entries are only to 'direct traffic', thus we can compress them.
+Insertion[edit]
+Perform a search to determine what bucket the new record should go into.
+If the bucket is not full (at most 
+  
+    
+      
+        b
+        â
+        1
+      
+    
+    {\displaystyle b-1}
+  
+ entries after the insertion), add the record.
+Otherwise, before inserting the new record
+split the bucket.
+original node has â¡(L+1)/2â¤ items
+new node has â£(L+1)/2â¦ items
+Move â¡(L+1)/2â¤-th key to the parent, and insert the new node to the parent.
+Repeat until a parent is found that need not split.
+If the root splits, treat it as if it has an empty parent and split as outline above.
+B-trees grow at the root and not at the leaves.[1]
+
+Bulk-loading[edit]
+Given a collection of data records, we want to create a B+ tree index on some key field. One approach is to insert each record into an empty tree. However, it is quite expensive, because each entry requires us to start from the root and go down to the appropriate leaf page. An efficient alternative is to use bulk-loading.
+
+The first step is to sort the data entries according to a search key in ascending order.
+We allocate an empty page to serve as the root, and insert a pointer to the first page of entries into it.
+When the root is full, we split the root, and create a new root page.
+Keep inserting entries to the right most index page just above the leaf level, until all entries are indexed.
+NoteÂ :
+
+when the right-most index page above the leaf level fills up, it is split;
+this action may, in turn, cause a split of the right-most index page one step closer to the root;
+splits only occur on the right-most path from the root to the leaf level.[9]
+Characteristics[edit]
+For a b-order B+ tree with h levels of index:[citation needed]
+
+The maximum number of records stored is 
+  
+    
+      
+        
+          n
+          
+            max
+          
+        
+        =
+        
+          b
+          
+            h
+          
+        
+        â
+        
+          b
+          
+            h
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle n_{\max }=b^{h}-b^{h-1}}
+  
+
+The minimum number of records stored is 
+  
+    
+      
+        
+          n
+          
+            min
+          
+        
+        =
+        2
+        
+          
+            â
+            
+              
+                
+                  b
+                  2
+                
+              
+            
+            â
+          
+          
+            h
+            â
+            1
+          
+        
+        â
+        2
+        
+          
+            â
+            
+              
+                
+                  b
+                  2
+                
+              
+            
+            â
+          
+          
+            h
+            â
+            2
+          
+        
+      
+    
+    {\displaystyle n_{\min }=2\left\lceil {\tfrac {b}{2}}\right\rceil ^{h-1}-2\left\lceil {\tfrac {b}{2}}\right\rceil ^{h-2}}
+  
+
+The minimum number of keys is 
+  
+    
+      
+        
+          n
+          
+            
+              k
+              m
+              i
+              n
+            
+          
+        
+        =
+        2
+        
+          
+            â
+            
+              
+                
+                  b
+                  2
+                
+              
+            
+            â
+          
+          
+            h
+            â
+            1
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle n_{\mathrm {kmin} }=2\left\lceil {\tfrac {b}{2}}\right\rceil ^{h-1}-1}
+  
+
+The maximum number of keys is 
+  
+    
+      
+        
+          n
+          
+            
+              k
+              m
+              a
+              x
+            
+          
+        
+        =
+        
+          b
+          
+            h
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle n_{\mathrm {kmax} }=b^{h}-1}
+  
+
+The space required to store the tree is 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+
+Inserting a record requires 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            b
+          
+        
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(\log _{b}n)}
+  
+ operations
+Finding a record requires 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            b
+          
+        
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(\log _{b}n)}
+  
+ operations
+Removing a (previously located) record requires 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            b
+          
+        
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(\log _{b}n)}
+  
+ operations
+Performing a range query with k elements occurring within the range requires 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            b
+          
+        
+        â¡
+        n
+        +
+        k
+        )
+      
+    
+    {\displaystyle O(\log _{b}n+k)}
+  
+ operations
+Implementation[edit]
+The leaves (the bottom-most index blocks) of the B+ tree are often linked to one another in a linked list; this makes range queries or an (ordered) iteration through the blocks simpler and more efficient (though the aforementioned upper bound can be achieved even without this addition). This does not substantially increase space consumption or maintenance on the tree. This illustrates one of the significant advantages of a B+tree over a B-tree; in a B-tree, since not all keys are present in the leaves, such an ordered linked list cannot be constructed. A B+tree is thus particularly useful as a database system index, where the data typically resides on disk, as it allows the B+tree to actually provide an efficient structure for housing the data itself (this is described in[5]:â238â as index structure "Alternative 1").
+If a storage system has a block size of B bytes, and the keys to be stored have a size of k, arguably the most efficient B+ tree is one where 
+  
+    
+      
+        b
+        =
+        
+          
+            
+              B
+              k
+            
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle b={\tfrac {B}{k}}-1}
+  
+. Although theoretically the one-off is unnecessary, in practice there is often a little extra space taken up by the index blocks (for example, the linked list references in the leaf blocks). Having an index block which is slightly larger than the storage system's actual block represents a significant performance decrease; therefore erring on the side of caution is preferable.
+If nodes of the B+ tree are organized as arrays of elements, then it may take a considerable time to insert or delete an element as half of the array will need to be shifted on average. To overcome this problem, elements inside a node can be organized in a binary tree or a B+ tree instead of an array.
+B+ trees can also be used for data stored in RAM. In this case a reasonable choice for block size would be the size of processor's cache line.
+Space efficiency of B+ trees can be improved by using some compression techniques. One possibility is to use delta encoding to compress keys stored into each block. For internal blocks, space saving can be achieved by either compressing keys or pointers. For string keys, space can be saved by using the following technique: Normally the i-th entry of an internal block contains the first key of block 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+. Instead of storing the full key, we could store the shortest prefix of the first key of block 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+ that is strictly greater (in lexicographic order) than last key of block i. There is also a simple way to compress pointers: if we suppose that some consecutive blocks 
+  
+    
+      
+        i
+        ,
+        i
+        +
+        1
+        ,
+        .
+        .
+        .
+        i
+        +
+        k
+      
+    
+    {\displaystyle i,i+1,...i+k}
+  
+ are stored contiguously, then it will suffice to store only a pointer to the first block and the count of consecutive blocks.
+All the above compression techniques have some drawbacks. First, a full block must be decompressed to extract a single element. One technique to overcome this problem is to divide each block into sub-blocks and compress them separately. In this case searching or inserting an element will only need to decompress or compress a sub-block instead of a full block. Another drawback of compression techniques is that the number of stored elements may vary considerably from a block to another depending on how well the elements are compressed inside each block.
+
+History[edit]
+The B tree was first described in the paper Organization and Maintenance of Large Ordered Indices. Acta Informatica 1: 173â189 (1972) by Rudolf Bayer and Edward M. McCreight. There is no single paper introducing the B+ tree concept. Instead, the notion of maintaining all data in leaf nodes is repeatedly brought up as an interesting variant. An early survey of B trees also covering B+ trees is Douglas Comer.[10] Comer notes that the B+ tree was used in IBM's VSAM data access software and he refers to an IBM published article from 1973.
+
+See also[edit]
+Binary search tree
+B-tree
+Divide and conquer algorithm
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Navathe, Ramez Elmasri, Shamkant B. (2010). Fundamentals of database systems (6thÂ ed.). Upper Saddle River, N.J.: Pearson Education. pp.Â 652â660. ISBNÂ 9780136086208.
+
+^ http://www.seanster.com/BplusTree/BplusTree.html
+
+^ Giampaolo, Dominic (1999). Practical File System Design with the Be File System (PDF). Morgan Kaufmann. ISBNÂ 1-55860-497-9. Archived from the original (PDF) on 2017-02-13. Retrieved 2014-07-29.
+
+^ "B-Trees". Apple File System Reference (PDF). Apple Inc. 2020-06-22. p.Â 122. Retrieved 2021-03-10.{{cite book}}:  CS1 maint: date and year (link)
+
+^ Jump up to: a b c d e f Ramakrishnan Raghu, Gehrke Johannes â Database Management Systems, McGraw-Hill Higher Education (2000), 2nd edition (en) page 267
+
+^ SQLite Version 3 Overview
+
+^ CouchDB Guide (see note after 3rd paragraph)
+
+^ Tokyo Cabinet reference Archived September 12, 2009, at the Wayback Machine
+
+^ "ECS 165B: Database System Implementation Lecture 6" (PDF). UC Davis CS department. April 9, 2010. pp.Â 21â23.
+
+^ "The Ubiquitous B-Tree", ACM Computing Surveys 11(2): 121â137 (1979).
+
+
+External links[edit]
+
+
+
+Wikibooks has a book on the topic of: Algorithm Implementation/Trees/B+ tree
+
+This article's use of external links may not follow Wikipedia's policies or guidelines. Please improve this article by removing excessive or inappropriate external links, and converting useful links where appropriate into footnote references.  (January 2019) (Learn how and when to remove this template message)
+B+ tree in Python, used to implement a list
+Dr. Monge's B+ Tree index notes
+Evaluating the performance of CSB+-trees on Mutithreaded Architectures
+Effect of node size on the performance of cache conscious B+-trees
+Fractal Prefetching B+-trees
+Towards pB+-trees in the field: implementations Choices and performance
+Cache-Conscious Index Structures for Main-Memory Databases
+Cache Oblivious B(+)-trees
+The Power of B-Trees: CouchDB B+ Tree Implementation
+B+ Tree Visualization
+B +-trees by Kerttu Pollari-Malmi
+Data Structures B-Trees and B+ Trees
+Implementations[edit]
+Interactive B+ Tree Implementation in C
+Interactive B+ Tree Implementation in C++
+Memory based B+ tree implementation as C++ template library
+2019 improvement of previous
+Stream based B+ tree implementation as C++ template library
+Open Source JavaScript B+ Tree Implementation
+Perl implementation of B+ trees
+Java/C#/Python implementations of B+ trees
+C# B+ tree and related "A-List" data structures
+File based B+Tree in C# with threading and MVCC support
+Fast semi-persistent in-memory B+ Tree in TypeScript/JavaScript, MIT License
+JavaScript B+ Tree, MIT License
+JavaScript B+ Tree, Interactive and Open Source
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=B%2B_tree&oldid=1024342526"
+		Categories: B-tree1972 in computingComputer-related introductions in 1972Hidden categories: CS1 maint: date and yearWebarchive template wayback linksWikipedia external links cleanup from October 2016Wikipedia spam cleanup from October 2016Articles needing additional references from November 2012All articles needing additional referencesArticles with multiple maintenance issuesAll articles with unsourced statementsArticles with unsourced statements from December 2016Wikipedia external links cleanup from January 2019Wikipedia spam cleanup from January 2019
+	

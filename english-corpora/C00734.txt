@@ -1,0 +1,1660 @@
+
+Title:
+Suffix tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Tree containing all suffixes of a given text
+  Suffix tree for the text BANANA. Each substring is terminated with special character $. The six paths from the root to the leaves (shown as boxes) correspond to the six suffixes A$, NA$, ANA$, NANA$, ANANA$ and BANANA$. The numbers in the leaves give the start position of the corresponding suffix. Suffix links, drawn dashed, are used during construction.
+In computer science, a suffix tree (also called PAT tree or, in an earlier form, position tree) is a compressed trie containing all the suffixes of the given text as their keys and positions in the text as their values. Suffix trees allow particularly fast implementations of many important string operations.
+The construction of such a tree for the string 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ takes time and space linear in the length of 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+. Once constructed, several operations can be performed quickly, for instance locating a substring in 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+, locating a substring if a certain number of mistakes are allowed, locating matches for a regular expression pattern etc. Suffix trees also provide one of the first linear-time solutions for the longest common substring problem. These speedups come at a cost: storing a string's suffix tree typically requires significantly more space than storing the string itself.
+
+Contents
+
+1 Definition
+2 History
+3 Functionality
+4 Applications
+5 Implementation
+6 Parallel construction
+7 External construction
+8 See also
+9 Notes
+10 References
+11 External links
+
+
+
+Definition[edit]
+The suffix tree for the string 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ of length 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ is defined as a tree such that:[1]
+
+The tree has exactly n leaves numbered from 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ to 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+.
+Except for the root, every internal node has at least two children.
+Each edge is labelled with a non-empty substring of 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+.
+No two edges starting out of a node can have string-labels beginning with the same character.
+The string obtained by concatenating all the string-labels found on the path from the root to leaf 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ spells out suffix 
+  
+    
+      
+        S
+        [
+        i
+        .
+        .
+        n
+        ]
+      
+    
+    {\displaystyle S[i..n]}
+  
+, for 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ from 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ to 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+.
+Since such a tree does not exist for all strings, 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ is padded with a terminal symbol not seen in the string (usually denoted $). This ensures that no suffix is a prefix of another, and that there will be 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ leaf nodes, one for each of the 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ suffixes of 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+. Since all internal non-root nodes are branching, there can be at most nÂ âÂ  1 such nodes, and nÂ +Â (nÂ âÂ 1)Â +Â 1Â =Â 2n nodes in total (n leaves, nÂ âÂ 1 internal non-root nodes, 1 root).
+Suffix links are a key feature for older linear-time construction algorithms, although most newer algorithms, which are based on Farach's algorithm, dispense with suffix links. In a complete suffix tree, all internal non-root nodes have a suffix link to another internal node. If the path from the root to a node spells the string 
+  
+    
+      
+        Ï
+        Î±
+      
+    
+    {\displaystyle \chi \alpha }
+  
+, where 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \chi }
+  
+ is a single character and 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ is a string (possibly empty), it has a suffix link to the internal node representing 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+. See for example the suffix link from the node for ANA to the node for NA in the figure above. Suffix links are also used in some algorithms running on the tree.
+A generalized suffix tree is a suffix tree made for a set of strings instead of a single string. It represents all suffixes from this set of strings. Each string must be terminated by a different termination symbol.
+
+History[edit]
+The concept was first introduced by Weiner (1973).
+Rather than the suffix S[i..n], Weiner stored in his trie[2] the prefix identifier for each position, that is, the shortest string starting at i and occurring only once in S. His Algorithm D takes an uncompressed[3] trie for S[k+1..n] and extends it into a trie for S[k..n]. This way, starting from the trivial trie for S[n..n], a trie for S[1..n] can be built by n-1 successive calls to Algorithm D; however, the overall run time is O(n2). Weiner's Algorithm B maintains several auxiliary data structures, to achieve an over all run time linear in the size of the constructed trie. The latter can still be O(n2) nodes, e.g. for S = anbnanbn$. Weiner's Algorithm C finally uses compressed tries to achieve linear overall storage size and run time.[4]
+Donald Knuth subsequently characterized the latter as "Algorithm of the Year 1973".[citation needed] 
+The text book Aho, Hopcroft & Ullman (1974, Sect.9.5) reproduced Weiner's results in a simplified and more elegant form, introducing the term position tree.
+McCreight (1976) was the first to build a (compressed) trie of all suffixes of S. Although the suffix starting at i is usually longer than the prefix identifier, their path representations in a compressed trie do not differ in size. On the other hand, McCreight could dispense with most of Weiner's auxiliary data structures; only suffix links remained.
+Ukkonen (1995) further simplified the construction.[5] He provided the first online-construction of suffix trees, now known as Ukkonen's algorithm, with running time that matched the then fastest algorithms.
+These algorithms are all linear-time for a constant-size alphabet, and have worst-case running time of 
+  
+    
+      
+        O
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(n\log n)}
+  
+ in general.
+Farach (1997) gave the first suffix tree construction algorithm that is optimal for all alphabets.  In particular, this is the first linear-time algorithm 
+for strings drawn from an alphabet of integers in a polynomial range.  Farach's algorithm has become the basis for new algorithms for constructing both suffix trees and suffix arrays, for example, in external memory, compressed, succinct, etc.
+
+Functionality[edit]
+A suffix tree for a string 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ of length 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ can be built in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time, if the letters come from an alphabet of integers in a polynomial range (in particular, this is true for constant-sized alphabets).[6]
+For larger alphabets, the running time is dominated by first sorting the letters to bring them into a range of size 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+; in general, this takes 
+  
+    
+      
+        O
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(n\log n)}
+  
+ time.
+The costs below are given under the assumption that the alphabet is constant.
+Assume that a suffix tree has been built for the string 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ of length 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+, or that a generalised suffix tree has been built for the set of strings 
+  
+    
+      
+        D
+        =
+        {
+        
+          S
+          
+            1
+          
+        
+        ,
+        
+          S
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          S
+          
+            K
+          
+        
+        }
+      
+    
+    {\displaystyle D=\{S_{1},S_{2},\dots ,S_{K}\}}
+  
+ of total length 
+  
+    
+      
+        n
+        =
+        
+          n
+          
+            1
+          
+        
+        +
+        
+          n
+          
+            2
+          
+        
+        +
+        â¯
+        +
+        
+          n
+          
+            K
+          
+        
+      
+    
+    {\displaystyle n=n_{1}+n_{2}+\cdots +n_{K}}
+  
+.
+You can:
+
+Search for strings:
+Check if a string 
+  
+    
+      
+        P
+      
+    
+    {\displaystyle P}
+  
+ of length 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ is a substring in 
+  
+    
+      
+        O
+        (
+        m
+        )
+      
+    
+    {\displaystyle O(m)}
+  
+ time.[7]
+Find the first occurrence of the patterns 
+  
+    
+      
+        
+          P
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          P
+          
+            q
+          
+        
+      
+    
+    {\displaystyle P_{1},\dots ,P_{q}}
+  
+ of total length 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ as substrings in 
+  
+    
+      
+        O
+        (
+        m
+        )
+      
+    
+    {\displaystyle O(m)}
+  
+ time.
+Find all 
+  
+    
+      
+        z
+      
+    
+    {\displaystyle z}
+  
+ occurrences of the patterns 
+  
+    
+      
+        
+          P
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          P
+          
+            q
+          
+        
+      
+    
+    {\displaystyle P_{1},\dots ,P_{q}}
+  
+ of total length 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ as substrings in 
+  
+    
+      
+        O
+        (
+        m
+        +
+        z
+        )
+      
+    
+    {\displaystyle O(m+z)}
+  
+ time.[8]
+Search for a regular expression P in time expected sublinear in 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+.[9]
+Find for each suffix of a pattern 
+  
+    
+      
+        P
+      
+    
+    {\displaystyle P}
+  
+, the length of the longest match between a prefix of 
+  
+    
+      
+        P
+        [
+        i
+        â¦
+        m
+        ]
+      
+    
+    {\displaystyle P[i\dots m]}
+  
+ and a substring in 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+ in 
+  
+    
+      
+        Î
+        (
+        m
+        )
+      
+    
+    {\displaystyle \Theta (m)}
+  
+ time.[10] This is termed the matching statistics for 
+  
+    
+      
+        P
+      
+    
+    {\displaystyle P}
+  
+.
+Find properties of the strings:
+Find the longest common substrings of the string 
+  
+    
+      
+        
+          S
+          
+            i
+          
+        
+      
+    
+    {\displaystyle S_{i}}
+  
+ and 
+  
+    
+      
+        
+          S
+          
+            j
+          
+        
+      
+    
+    {\displaystyle S_{j}}
+  
+ in 
+  
+    
+      
+        Î
+        (
+        
+          n
+          
+            i
+          
+        
+        +
+        
+          n
+          
+            j
+          
+        
+        )
+      
+    
+    {\displaystyle \Theta (n_{i}+n_{j})}
+  
+ time.[11]
+Find all maximal pairs, maximal repeats or supermaximal repeats in 
+  
+    
+      
+        Î
+        (
+        n
+        +
+        z
+        )
+      
+    
+    {\displaystyle \Theta (n+z)}
+  
+ time.[12]
+Find the LempelâZiv decomposition in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.[13]
+Find the longest repeated substrings in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.
+Find the most frequently occurring substrings of a minimum length in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.
+Find the shortest strings from 
+  
+    
+      
+        Î£
+      
+    
+    {\displaystyle \Sigma }
+  
+ that do not occur in 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+, in 
+  
+    
+      
+        O
+        (
+        n
+        +
+        z
+        )
+      
+    
+    {\displaystyle O(n+z)}
+  
+ time, if there are 
+  
+    
+      
+        z
+      
+    
+    {\displaystyle z}
+  
+ such strings.
+Find the shortest substrings occurring only once in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.
+Find, for each 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+, the shortest substrings of 
+  
+    
+      
+        
+          S
+          
+            i
+          
+        
+      
+    
+    {\displaystyle S_{i}}
+  
+ not occurring elsewhere in 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+ in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.
+The suffix tree can be prepared for constant time lowest common ancestor retrieval between nodes in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.[14] One can then also:
+
+Find the longest common prefix between the suffixes 
+  
+    
+      
+        
+          S
+          
+            i
+          
+        
+        [
+        p
+        .
+        .
+        
+          n
+          
+            i
+          
+        
+        ]
+      
+    
+    {\displaystyle S_{i}[p..n_{i}]}
+  
+ and 
+  
+    
+      
+        
+          S
+          
+            j
+          
+        
+        [
+        q
+        .
+        .
+        
+          n
+          
+            j
+          
+        
+        ]
+      
+    
+    {\displaystyle S_{j}[q..n_{j}]}
+  
+ in 
+  
+    
+      
+        Î
+        (
+        1
+        )
+      
+    
+    {\displaystyle \Theta (1)}
+  
+.[15]
+Search for a pattern P of length m with at most k mismatches in 
+  
+    
+      
+        O
+        (
+        k
+        n
+        +
+        z
+        )
+      
+    
+    {\displaystyle O(kn+z)}
+  
+ time, where z is the number of hits.[16]
+Find all 
+  
+    
+      
+        z
+      
+    
+    {\displaystyle z}
+  
+ maximal palindromes in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+,[17] or 
+  
+    
+      
+        Î
+        (
+        g
+        n
+        )
+      
+    
+    {\displaystyle \Theta (gn)}
+  
+ time if gaps of length 
+  
+    
+      
+        g
+      
+    
+    {\displaystyle g}
+  
+ are allowed, or 
+  
+    
+      
+        Î
+        (
+        k
+        n
+        )
+      
+    
+    {\displaystyle \Theta (kn)}
+  
+ if 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ mismatches are allowed.[18]
+Find all 
+  
+    
+      
+        z
+      
+    
+    {\displaystyle z}
+  
+ tandem repeats in 
+  
+    
+      
+        O
+        (
+        n
+        log
+        â¡
+        n
+        +
+        z
+        )
+      
+    
+    {\displaystyle O(n\log n+z)}
+  
+, and k-mismatch tandem repeats in 
+  
+    
+      
+        O
+        (
+        k
+        n
+        log
+        â¡
+        (
+        n
+        
+          /
+        
+        k
+        )
+        +
+        z
+        )
+      
+    
+    {\displaystyle O(kn\log(n/k)+z)}
+  
+.[19]
+Find the longest common substrings to at least 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ strings in 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+ for 
+  
+    
+      
+        k
+        =
+        2
+        ,
+        â¦
+        ,
+        K
+      
+    
+    {\displaystyle k=2,\dots ,K}
+  
+ in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time.[20]
+Find the longest palindromic substring of a given string (using the generalized suffix tree of the string and its reverse) in linear time.[21]
+Applications[edit]
+Suffix trees can be used to solve a large number of string problems that occur in text-editing, free-text search, computational biology and other application areas.[22] Primary applications include:[22]
+
+String search, in O(m) complexity, where m is the length of the sub-string (but with initial O(n) time required to build the suffix tree for the string)
+Finding the longest repeated substring
+Finding the longest common substring
+Finding the longest palindrome in a string
+Suffix trees are often used in bioinformatics applications, searching for patterns in DNA or protein sequences (which can be viewed as long strings of characters). The ability to search efficiently with mismatches might be considered their greatest strength. Suffix trees are also used in data compression; they can be used to find repeated data, and can be used for the sorting stage of the BurrowsâWheeler transform. Variants of the LZW compression schemes use suffix trees (LZSS). A suffix tree is also used in suffix tree clustering, a data clustering algorithm used in some search engines.[23]
+
+Implementation[edit]
+If each node and edge can be represented in 
+  
+    
+      
+        Î
+        (
+        1
+        )
+      
+    
+    {\displaystyle \Theta (1)}
+  
+ space, the entire tree can be represented in 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ space. The total length of all the strings on all of the edges in the tree is 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+, but each edge can be stored as the position and length of a substring of S, giving a total space usage of 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ computer words. The worst-case space usage of a suffix tree is seen with a fibonacci word, giving the full 
+  
+    
+      
+        2
+        n
+      
+    
+    {\displaystyle 2n}
+  
+ nodes.
+An important choice when making a suffix tree implementation is the parent-child relationships between nodes. The most common is using linked lists called sibling lists. Each node has a pointer to its first child, and to the next node in the child list it is a part of. Other implementations with efficient running time properties use hash maps, sorted or unsorted arrays (with array doubling), or balanced search trees. We are interested in:
+
+The cost of finding the child on a given character.
+The cost of inserting a child.
+The cost of enlisting all children of a node (divided by the number of children in the table below).
+Let Ï be the size of the alphabet. Then you have the following costs:
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                  Lookup
+                
+              
+              
+                
+                  Insertion
+                
+              
+              
+                
+                  Traversal
+                
+              
+            
+            
+              
+                
+                  Sibling lists / unsorted arrays
+                
+              
+              
+                O
+                (
+                Ï
+                )
+              
+              
+                Î
+                (
+                1
+                )
+              
+              
+                Î
+                (
+                1
+                )
+              
+            
+            
+              
+                
+                  Bitwise sibling trees
+                
+              
+              
+                O
+                (
+                log
+                â¡
+                Ï
+                )
+              
+              
+                Î
+                (
+                1
+                )
+              
+              
+                Î
+                (
+                1
+                )
+              
+            
+            
+              
+                
+                  Hash maps
+                
+              
+              
+                Î
+                (
+                1
+                )
+              
+              
+                Î
+                (
+                1
+                )
+              
+              
+                O
+                (
+                Ï
+                )
+              
+            
+            
+              
+                
+                  Balanced search tree
+                
+              
+              
+                O
+                (
+                log
+                â¡
+                Ï
+                )
+              
+              
+                O
+                (
+                log
+                â¡
+                Ï
+                )
+              
+              
+                O
+                (
+                1
+                )
+              
+            
+            
+              
+                
+                  Sorted arrays
+                
+              
+              
+                O
+                (
+                log
+                â¡
+                Ï
+                )
+              
+              
+                O
+                (
+                Ï
+                )
+              
+              
+                O
+                (
+                1
+                )
+              
+            
+            
+              
+                
+                  Hash maps + sibling lists
+                
+              
+              
+                O
+                (
+                1
+                )
+              
+              
+                O
+                (
+                1
+                )
+              
+              
+                O
+                (
+                1
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{r|lll}&{\text{Lookup}}&{\text{Insertion}}&{\text{Traversal}}\\\hline {\text{Sibling lists / unsorted arrays}}&O(\sigma )&\Theta (1)&\Theta (1)\\{\text{Bitwise sibling trees}}&O(\log \sigma )&\Theta (1)&\Theta (1)\\{\text{Hash maps}}&\Theta (1)&\Theta (1)&O(\sigma )\\{\text{Balanced search tree}}&O(\log \sigma )&O(\log \sigma )&O(1)\\{\text{Sorted arrays}}&O(\log \sigma )&O(\sigma )&O(1)\\{\text{Hash maps + sibling lists}}&O(1)&O(1)&O(1)\end{array}}}
+  
+
+The insertion cost is amortised, and that the costs for hashing are given for perfect hashing.
+The large amount of information in each edge and node makes the suffix tree very expensive, consuming about 10 to 20 times the memory size of the source text in good implementations. The suffix array reduces this requirement to a factor of 8 (for array including LCP values built within 32-bit address space and 8-bit characters.) This factor depends on the properties and may reach 2 with usage of 4-byte wide characters (needed to contain any symbol in some UNIX-like systems, see wchar_t) on 32-bit systems. Researchers have continued to find smaller indexing structures.
+
+Parallel construction[edit]
+Various parallel algorithms to speed up suffix tree construction have been proposed.[24][25][26][27][28]
+Recently, a practical parallel algorithm for suffix tree construction with 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ work (sequential time) and 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            2
+          
+        
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(\log ^{2}n)}
+  
+ span has been developed. The algorithm achieves good parallel scalability on shared-memory multicore machines and can index the human genome â approximately 3GB â in under 3 minutes using a 40-core machine.[29]
+
+External construction[edit]
+Though linear, the memory usage of a suffix tree is significantly higher
+than the actual size of the sequence collection.  For a large text,
+construction may require external memory approaches.
+There are theoretical results for constructing suffix trees in external
+memory.
+The algorithm by Farach-Colton, Ferragina & Muthukrishnan (2000)
+is theoretically optimal, with an I/O complexity equal to that of sorting.
+However the overall intricacy of this algorithm has prevented, so far, its
+practical implementation.[30]
+On the other hand, there have been practical works for constructing
+disk-based suffix trees
+which scale to (few) GB/hours.
+The state of the art methods are TDD,[31]
+TRELLIS,[32]
+DiGeST,[33]
+and
+B2ST.[34]
+TDD and TRELLIS scale up to the entire human genome resulting in a disk-based suffix tree of a size in the tens of gigabytes.[31][32] However, these methods cannot handle efficiently collections of sequences exceeding 3GB.[33]  DiGeST performs significantly better and is able to handle collections of sequences in the order of 6GB in about 6 hours.[33]
+.
+All these methods can efficiently build suffix trees for the case when the
+tree does not fit in main memory,
+but the input does.
+The most recent method, B2ST,[34] scales to handle
+inputs that do not fit in main memory. ERA  is a recent parallel suffix tree construction method that is significantly faster. ERA can index the entire human genome in 19 minutes on an 8-core desktop computer with 16GB RAM. On a simple Linux cluster with 16 nodes (4GB RAM per node), ERA can index the entire human genome in less than 9 minutes.[35]
+
+See also[edit]
+
+
+
+Wikimedia Commons has media related to Suffix tree.
+
+Suffix array
+Suffix automaton
+Generalised suffix tree
+Trie
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ http://www.cs.uoi.gr/~kblekas/courses/bioinformatics/Suffix_Trees1.pdf[permanent dead link]
+
+^ This term is used here to distinguish Weiner's precursor data structures from proper suffix trees as defined above and unconsidered before McCreight (1976).
+
+^ i.e., with each branch labelled by a single character
+
+^ See File:WeinerB aaaabbbbaaaabbbb.gif and File:WeinerC aaaabbbbaaaabbbb.gif for an uncompressed example tree and its compressed correspondant.
+
+^ Giegerich & Kurtz (1997).
+
+^ Farach (1997).
+
+^ Gusfield (1999), p.92.
+
+^ Gusfield (1999), p.123.
+
+^ Baeza-Yates & Gonnet (1996).
+
+^ Gusfield (1999), p.132.
+
+^ Gusfield (1999), p.125.
+
+^ Gusfield (1999), p.144.
+
+^ Gusfield (1999), p.166.
+
+^ Gusfield (1999), Chapter 8.
+
+^ Gusfield (1999), p.196.
+
+^ Gusfield (1999), p.200.
+
+^ Gusfield (1999), p.198.
+
+^ Gusfield (1999), p.201.
+
+^ Gusfield (1999), p.204.
+
+^ Gusfield (1999), p.205.
+
+^ Gusfield (1999), pp.197â199.
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Allison, L. "Suffix Trees". Archived from the original on 2008-10-13. Retrieved 2008-10-14.
+
+^ First introduced by Zamir & Etzioni (1998).
+
+^ Apostolico et al. (1988).
+
+^ Hariharan (1994).
+
+^ Sahinalp & Vishkin (1994).
+
+^ Farach & Muthukrishnan (1996).
+
+^ Iliopoulos & Rytter (2004).
+
+^ Shun & Blelloch (2014).
+
+^ Smyth (2003).
+
+^ Jump up to: a b Tata, Hankins & Patel (2003).
+
+^ Jump up to: a b Phoophakdee & Zaki (2007).
+
+^ Jump up to: a b c Barsky et al. (2008).
+
+^ Jump up to: a b Barsky et al. (2009).
+
+^ Mansour et al. (2011).
+
+
+References[edit]
+Aho, Alfred V.; Hopcroft, John E.; Ullman, Jeffrey D. (1974), The Design and Analysis of Computer Algorithms, Reading/MA: Addison-Wesley, ISBNÂ 0-201-00029-6.
+Apostolico, A.; Iliopoulos, C.; Landau, G. M.; Schieber, B.; Vishkin, U. (1988), "Parallel construction of a suffix tree with applications", Algorithmica, 3 (1â4): 347â365, doi:10.1007/bf01762122, S2CIDÂ 5024136.
+Baeza-Yates, Ricardo A.; Gonnet, Gaston H. (1996), "Fast text searching for regular expressions or automaton searching on tries", Journal of the ACM, 43 (6): 915â936, doi:10.1145/235809.235810, S2CIDÂ 1420298.
+Barsky, Marina; Stege, Ulrike; Thomo, Alex; Upton, Chris (2008), "A new method for indexing genomes using on-disk suffix trees", CIKM '08: Proceedings of the 17th ACM Conference on Information and Knowledge Management, New York, NY, USA: ACM, pp.Â 649â658.
+Barsky, Marina; Stege, Ulrike; Thomo, Alex; Upton, Chris (2009), "Suffix trees for very large genomic sequences", CIKM '09: Proceedings of the 18th ACM Conference on Information and Knowledge Management, New York, NY, USA: ACM.
+Farach, Martin (1997), "Optimal Suffix Tree Construction with Large Alphabets" (PDF), 38th IEEE Symposium on Foundations of Computer Science (FOCS '97), pp.Â 137â143.
+Farach, Martin; Muthukrishnan, S. (1996), "Optimal Logarithmic Time Randomized Suffix Tree Construction", International Colloquium on Automata Languages and Programming.
+Farach-Colton, Martin; Ferragina, Paolo; Muthukrishnan, S. (2000), "On the sorting-complexity of suffix tree construction.", Journal of the ACM, 47 (6): 987â1011, doi:10.1145/355541.355547, S2CIDÂ 8164822.
+Giegerich, R.; Kurtz, S. (1997), "From Ukkonen to McCreight and Weiner: A Unifying View of Linear-Time Suffix Tree Construction" (PDF), Algorithmica, 19 (3): 331â353, doi:10.1007/PL00009177, S2CIDÂ 18039097, archived from the original (PDF) on 2016-03-03, retrieved 2012-07-13.
+Gusfield, Dan (1999), Algorithms on Strings, Trees and Sequences: Computer Science and Computational Biology, Cambridge University Press, ISBNÂ 0-521-58519-8.
+Hariharan, Ramesh (1994), "Optimal Parallel Suffix Tree Construction", ACM Symposium on Theory of Computing.
+Iliopoulos, Costas; Rytter, Wojciech (2004), "On Parallel Transformations of Suffix Arrays into Suffix Trees", 15th Australasian Workshop on Combinatorial Algorithms.
+Mansour, Essam; Allam, Amin; Skiadopoulos, Spiros; Kalnis, Panos (2011), "ERA: Efficient Serial and Parallel Suffix Tree Construction for Very Long Strings" (PDF), Proceedings of the VLDB Endowment, 5 (1): 49â60, arXiv:1109.6884, Bibcode:2011arXiv1109.6884M, doi:10.14778/2047485.2047490, S2CIDÂ 7582116.
+McCreight, Edward M. (1976), "A Space-Economical Suffix Tree Construction Algorithm", Journal of the ACM, 23 (2): 262â272, CiteSeerXÂ 10.1.1.130.8022, doi:10.1145/321941.321946, S2CIDÂ 9250303.
+Phoophakdee, Benjarath; Zaki, Mohammed J. (2007), "Genome-scale disk-based suffix tree indexing", SIGMOD '07: Proceedings of the ACM SIGMOD International Conference on Management of Data, New York, NY, USA: ACM, pp.Â 833â844.
+Sahinalp, Cenk; Vishkin, Uzi (1994), "Symmetry breaking for suffix tree construction", ACM Symposium on Theory of Computing
+Smyth, William (2003), Computing Patterns in Strings, Addison-Wesley.
+Shun, Julian; Blelloch, Guy E. (2014), "A Simple Parallel Cartesian Tree Algorithm and its Application to Parallel Suffix Tree Construction", ACM Transactions on Parallel Computing, 1: 1â20, doi:10.1145/2661653, S2CIDÂ 1912378.
+Tata, Sandeep; Hankins, Richard A.; Patel, Jignesh M. (2003), "Practical Suffix Tree Construction", VLDB '03: Proceedings of the 30th International Conference on Very Large Data Bases, Morgan Kaufmann, pp.Â 36â47.
+Ukkonen, E. (1995), "On-line construction of suffix trees" (PDF), Algorithmica, 14 (3): 249â260, doi:10.1007/BF01206331, S2CIDÂ 6027556.
+Weiner, P. (1973), "Linear pattern matching algorithms" (PDF), 14th Annual IEEE Symposium on Switching and Automata Theory, pp.Â 1â11, doi:10.1109/SWAT.1973.13.
+Zamir, Oren; Etzioni, Oren (1998), "Web document clustering: a feasibility demonstration", SIGIR '98: Proceedings of the 21st annual international ACM SIGIR conference on Research and development in information retrieval, New York, NY, USA: ACM, pp.Â 46â54.
+External links[edit]
+Suffix Trees by Sartaj Sahni
+NIST's Dictionary of Algorithms and Data Structures: Suffix Tree
+Universal Data Compression Based on the Burrows-Wheeler Transformation: Theory and Practice, application of suffix trees in the BWT
+Theory and Practice of Succinct Data Structures, C++ implementation of a compressed suffix tree
+Ukkonen's Suffix Tree Implementation in C Part 1 Part 2 Part 3 Part 4 Part 5 Part 6
+Online Demo: Ukkonen's Suffix Tree Visualization
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+showvteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Suffix_tree&oldid=1068660274"
+		Categories: Trees (data structures)Substring indicesString data structuresComputer science suffixesHidden categories: All articles with dead external linksArticles with dead external links from June 2018Articles with permanently dead external linksArticles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from February 2020Commons category link is on Wikidata
+	

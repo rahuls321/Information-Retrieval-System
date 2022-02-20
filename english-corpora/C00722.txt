@@ -1,0 +1,1003 @@
+
+Title:
+Fold (higher-order function)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In functional programming, fold (also termed reduce, accumulate, aggregate, compress, or inject) refers to a family of higher-order functions that analyze a recursive data structure and through use of a given combining operation, recombine the results of recursively processing its constituent parts, building up a return value. Typically, a fold is presented with a combining function, a top node of a data structure, and possibly some default values to be used under certain conditions. The fold then proceeds to combine elements of the data structure's hierarchy, using the function in a systematic way.
+Folds are in a sense dual to unfolds, which take a seed value and apply a function corecursively to decide how to progressively construct a corecursive data structure, whereas a fold recursively breaks that structure down, replacing it with the results of applying a combining function at each node on its terminal values and the recursive results (catamorphism, versus anamorphism of unfolds).
+
+Contents
+
+1 As structural transformations
+2 On lists
+
+2.1 Linear vs. tree-like folds
+2.2 Special folds for non-empty lists
+2.3 Implementation
+
+2.3.1 Linear folds
+2.3.2 Tree-like folds
+2.3.3 Folds for non-empty lists
+
+
+2.4 Evaluation order considerations
+2.5 Examples
+
+
+3 In various languages
+4 Universality
+5 See also
+6 References
+7 External links
+
+
+
+As structural transformations[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (June 2013) (Learn how and when to remove this template message)
+Folds can be regarded as consistently replacing the structural components of a data structure with functions and values. Lists, for example, are built up in many functional languages from two primitives: any list is either an empty list, commonly called nilâ ([]), or is constructed by prefixing an element in front of another list, creating what is called a consâ node (Â  Cons(X1,Cons(X2,Cons(...(Cons(Xn,nil)))))Â ), resulting from application of a cons function (written down as a colon (:)  in Haskell). One can view a fold on lists as replacingâ the nil at the end of the list with a specific value, and replacing each cons with a specific function. These replacements can be viewed as a diagram:
+
+
+There's another way to perform the structural transformation in a consistent manner, with the order of the two links of each node flipped when fed into the combining function:
+
+
+These pictures illustrate right and left fold of a list visually. They also highlight the fact that foldr (:) [] is the identity function on lists (a shallow copy in Lisp parlance), as replacing cons with cons and nil with nil will not change the result. The left fold diagram suggests an easy way to reverse a list, foldl (flip (:)) []. Note that the parameters to cons must be flipped, because the element to add is now the right hand parameter of the combining function. Another easy result to see from this vantage-point is to write the higher-order map function in terms of foldr, by composing the function to act on the elements with cons, as:
+
+ map f = foldr ((:) . f) []
+
+where the period (.) is an operator denoting function composition.
+This way of looking at things provides a simple route to designing fold-like functions on other algebraic data types and structures, like various sorts of trees. One writes a function which recursively replaces the constructors of the datatype with provided functions, and any constant values of the type with provided values. Such a function is generally referred to as a catamorphism.
+
+On lists[edit]
+The folding of the list [1,2,3,4,5] with the addition operator would result in 15, the sum of the elements of the list [1,2,3,4,5]. To a rough approximation, one can think of this fold as replacing the commas in the list with the + operation, giving 1 + 2 + 3 + 4 + 5.
+In the example above, + is an associative operation, so the final result will be the same regardless of parenthesization, although the specific way in which it is calculated will be different. In the general case of non-associative binary functions, the order in which the elements are combined may influence the final result's value. On lists, there are two obvious ways to carry this out: either by combining the first element with the result of recursively combining the rest (called a right fold), or by combining the result of recursively combining all elements but the last one, with the last element (called a left fold). This corresponds to a binary operator being either right-associative or left-associative, in Haskell's or Prolog's terminology. With a right fold, the sum would be parenthesized as 1 + (2 + (3 + (4 + 5))), whereas with a left fold it would be parenthesized as (((1 + 2) + 3) + 4) + 5.
+In practice, it is convenient and natural to have an initial value which in the case of a right fold is used when one reaches the end of the list, and in the case of a left fold is what is initially combined with the first element of the list. In the example above, the value 0 (the additive identity) would be chosen as an initial value, giving 1 + (2 + (3 + (4 + (5 + 0)))) for the right fold, and ((((0 + 1) + 2) + 3) + 4) + 5 for the left fold. For multiplication, an initial choice of 0 wouldn't work: 0 * 1 * 2 * 3 * 4 * 5 = 0. The identity element for multiplication is 1. This would give us the outcome 1 * 1 * 2 * 3 * 4 * 5 = 120 = 5!. 
+
+Linear vs. tree-like folds[edit]
+The use of an initial value is necessary when the combining function fâ is asymmetrical in its types (e.g. a â b â b), i.e. when the type of its result is different from the type of the list's elements. Then an initial value must be used, with the same type as that of fâ's result, for a linear chain of applications to be possible. Whether it will be left- or right-oriented will be determined by the types expected of its arguments by the combining function. If it is the second argument that must be of the same type as the result, then fâ could be seen as a binary operation that associates on the right, and vice versa.
+When the function is a magma, i.e. symmetrical in its types (a â a â a), and the result type is the same as the list elements' type, the parentheses may be placed in arbitrary fashion thus creating a tree of nested sub-expressions, e.g., ((1 + 2) + (3 + 4)) + 5. If the binary operation fâ is associative this value will be well-defined, i.e., same for any parenthesization, although the operational details of how it is calculated will be different. This can have significant impact on efficiency if fâ is non-strict.
+Whereas linear folds are node-oriented and operate in a consistent manner for each node of a list, tree-like folds are whole-list oriented and operate in a consistent manner across groups of nodes.
+
+Special folds for non-empty lists[edit]
+One often wants to choose the identity element of the operation f as the initial value z. When no initial value seems appropriate, for example, when one wants to fold the function which computes the maximum of its two parameters over a non-empty list to get the maximum element of the list, there are variants of foldr and foldl which use the last and first element of the list respectively as the initial value. In Haskell and several other languages, these are called foldr1 and foldl1, the 1 making reference to the automatic provision of an initial element, and the fact that the lists they are applied to must have at least one element.
+These folds use type-symmetrical binary operation: the types of both its arguments, and its result, must be the same. Richard Bird in his 2010 book proposes[1] "a general fold function on non-empty lists" foldrn which transforms its last element, by applying an additional argument function to it, into a value of the result type before starting the folding itself, and is thus able to use type-asymmetrical binary operation like the regular foldr to produce a result of type different from the list's elements type.
+
+Implementation[edit]
+Linear folds[edit]
+Using Haskell as an example, foldl and foldr can be formulated in a few equations.
+
+ foldl :: (b -> a -> b) -> b -> [a] -> b
+ foldl f z []     = z
+ foldl f z (x:xs) = foldl f (f z x) xs
+
+If the list is empty, the result is the initial value. If not, fold the tail of the list using as new initial value the result of applying f to the old initial value and the first element.
+
+ foldr :: (a -> b -> b) -> b -> [a] -> b
+ foldr f z []     = z
+ foldr f z (x:xs) = f x (foldr f z xs)
+
+If the list is empty, the result is the initial value z. If not, apply f to the first element and the result of folding the rest.
+
+Tree-like folds[edit]
+Lists can be folded over in a tree-like fashion, both for finite and for indefinitely defined lists:
+
+foldt f z []     = z
+foldt f z [x]    = f x z
+foldt f z xs     = foldt f z (pairs f xs)
+ 
+foldi f z []     = z
+foldi f z (x:xs) = f x (foldi f z (pairs f xs))
+ 
+pairs f (x:y:t)  = f x y : pairs f t
+pairs _ t        = t
+
+In the case of foldi function, to avoid its runaway evaluation on indefinitely defined lists the function f must not always demand its second argument's value, at least not all of it, or not immediately (see example below).
+
+Folds for non-empty lists[edit]
+foldl1 f [x]      = x
+foldl1 f (x:y:xs) = foldl1 f (f x y : xs)
+
+foldr1 f [x]      = x
+foldr1 f (x:xs)   = f x (foldr1 f xs)
+
+foldt1 f [x]      = x
+foldt1 f (x:y:xs) = foldt1 f (f x y : pairs f xs)
+ 
+foldi1 f [x]      = x
+foldi1 f (x:xs)   = f x (foldi1 f (pairs f xs))
+
+Evaluation order considerations[edit]
+In the presence of lazy, or non-strict evaluation, foldr will immediately return the application of f to the head of the list and the recursive case of folding over the rest of the list. Thus, if f is able to produce some part of its result without reference to the recursive case on its "right" i.e., in its second argument, and the rest of the result is never demanded, then the recursion will stop (e.g., head == foldr (\a b->a) (error "empty list")). This allows right folds to operate on infinite lists. By contrast, foldl will immediately call itself with new parameters until it reaches the end of the list. This tail recursion can be efficiently compiled as a loop, but can't deal with infinite lists at all â it will recurse forever in an infinite loop.
+Having reached the end of the list, an expression is in effect built by foldl of nested left-deepening f-applications, which is then presented to the caller to be evaluated. Were the function f to refer to its second argument first here, and be able to produce some part of its result without reference to the recursive case (here, on its left i.e., in its first argument), then the recursion would stop. This means that while foldr recurses on the right, it allows for a lazy combining function to inspect list's elements from the left; and conversely, while foldl recurses on the left, it allows for a lazy combining function to inspect list's elements from the right, if it so chooses (e.g., last == foldl (\a b->b) (error "empty list")).
+Reversing a list is also tail-recursive (it can be implemented using rev = foldl (\ys x -> x : ys) []). On finite lists, that means that left-fold and reverse can be composed to perform a right fold in a tail-recursive way (cf.â 1+>(2+>(3+>0)) == ((0<+3)<+2)<+1), with a modification to the function f so it reverses the order of its arguments (i.e., foldr f z == foldl (flip f) z . foldl (flip (:)) []), tail-recursively building a representation of expression that right-fold would build. The extraneous intermediate list structure can be eliminated with the continuation-passing style technique, foldr f z xs == foldl (\k x-> k . f x) id xs z; similarly, foldl f z xs == foldr (\x k-> k . flip f x) id xs z (âflip is only needed in languages like Haskell with its flipped order of arguments to the combining function of foldl unlike e.g., in Scheme where the same order of arguments is used for combining functions to both foldl and foldr).
+Another technical point is that, in the case of left folds using lazy evaluation, the new initial parameter is not being evaluated before the recursive call is made. This can lead to stack overflows when one reaches the end of the list and tries to evaluate the resulting potentially gigantic expression. For this reason, such languages often provide a stricter variant of left folding which forces the evaluation of the initial parameter before making the recursive call. In Haskell this is the foldl' (note the apostrophe, pronounced 'prime') function in the Data.List library (one needs to be aware of the fact though that forcing a value built with a lazy data constructor won't force its constituents automatically by itself). Combined with tail recursion, such folds approach the efficiency of loops, ensuring constant space operation, when lazy evaluation of the final result is impossible or undesirable.
+
+Examples[edit]
+Using a Haskell interpreter, the structural transformations which fold functions perform can be illustrated by constructing a string:
+
+Î»> foldr (\x y -> concat ["(",x,"+",y,")"]) "0" (map show [1..13])
+"(1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+0)))))))))))))"
+ 
+Î»> foldl (\x y -> concat ["(",x,"+",y,")"]) "0" (map show [1..13])
+"(((((((((((((0+1)+2)+3)+4)+5)+6)+7)+8)+9)+10)+11)+12)+13)"
+ 
+Î»> foldt (\x y -> concat ["(",x,"+",y,")"]) "0" (map show [1..13])
+"(((((1+2)+(3+4))+((5+6)+(7+8)))+(((9+10)+(11+12))+13))+0)"
+ 
+Î»> foldi (\x y -> concat ["(",x,"+",y,")"]) "0" (map show [1..13])
+"(1+((2+3)+(((4+5)+(6+7))+((((8+9)+(10+11))+(12+13))+0))))"
+
+Infinite tree-like folding is demonstrated e.g., in recursive primes production by unbounded sieve of Eratosthenes in Haskell:
+
+primes = 2 : _Y ((3 :) . minus [5,7..] . foldi (\(x:xs) ys -> x : union xs ys) [] 
+                       . map (\p-> [p*p, p*p+2*p..]))
+_Y g = g (_Y g)     -- = g . g . g . g . ...
+
+where the function union operates on ordered lists in a local manner to efficiently produce their set union, and minus their set difference.
+For finite lists, e.g., merge sort (and its duplicates-removing variety, nubsort) could be easily defined using tree-like folding as
+
+mergesort xs = foldt merge [] [[x] | x <- xs]
+nubsort   xs = foldt union [] [[x] | x <- xs]
+
+with the function merge a duplicates-preserving variant of union.
+Functions head and last could have been defined through folding as
+
+head = foldr (\x r -> x) (error "head: Empty list")
+last = foldl (\a x -> x) (error "last: Empty list")
+
+In various languages[edit]
+
+
+
+Language
+
+Left fold
+
+Right fold
+
+Left fold without initial value
+
+Right fold without initial value
+
+Unfold
+
+Notes
+
+
+APL
+
+funcâ¨/â½initval,vector
+
+func/vector,initval
+
+funcâ¨/â½vector
+
+func/vector
+
+
+
+
+
+
+C# 3.0
+
+ienum.Aggregate(initval, func)
+
+ienum.Reverse().Aggregate(initval, func)
+
+ienum.Aggregate(func)
+
+ienum.Reverse().Aggregate(func)
+
+
+
+Aggregate is an extension method ienum is an IEnumerable<T> Similarly in all .NET languages
+
+
+C++
+
+std::accumulate(begin, end, initval, func)
+
+std::accumulate(rbegin, rend, initval, func)
+
+
+
+
+
+
+
+in header <numeric>begin, end, rbegin, rend are iteratorsfunc can be a function pointer or a function object
+
+
+C++17
+
+(initval op ... op pack)
+
+(pack op ... op initval)
+
+(... op pack)
+
+(pack op ...)
+
+
+
+Fold expression (only for variadic function templates): op is a binary operator (both ops must be the same, e.g., (std::cout << ... << args)), pack is an unexpanded parameter pack.
+
+
+CFML
+
+obj.reduce(func,initial)
+
+
+
+obj.reduce(func)
+
+
+
+
+
+Where func receives as arguments the result of the previous operation (or the initial value on the first iteration); the current item; the current item's index or key; and a reference to the obj
+
+
+Clojure
+
+(reduce func initval list)
+
+(reduce func initval (reverse list'))
+
+(reduce func list)
+
+(reduce func" (reverse list))
+
+
+
+See also clojure.core.reducers/fold
+
+
+Common Lisp
+
+(reduce func list :initial-value initval)
+
+(reduce func list :from-end t :initial-value initval)
+
+(reduce func list)
+
+(reduce func list :from-end t)
+
+
+
+
+
+
+Curl
+
+{{TreeNode.default treeNode ...} .to-Iterator}
+
+{{TreeNode.default treeNode ...} .reverse}.to-Iterator}
+
+{for {treeNode.to-Iterator} do}
+
+{for {{treeNode.reverse}.to-Iterator} do}
+
+
+
+also DefaultListModel and HashTable implement to-Iterator
+
+
+D
+
+reduce!func(initval, list)
+
+reduce!func(initval, list.reverse)
+
+reduce!func(list)
+
+reduce!func(list.reverse)
+
+
+
+in module std.algorithm
+
+
+Elixir
+
+List.foldl(list, acc, fun)
+
+List.foldr(list, acc, fun)
+
+
+
+
+
+
+
+See documentation for example usage
+
+
+Elm
+
+List.foldl(Fun, Accumulator, List)
+
+List.foldr(Fun, Accumulator, List)
+
+
+
+
+
+
+
+See also List API [1]
+
+
+Erlang
+
+lists:foldl(Fun, Accumulator, List)
+
+lists:foldr(Fun, Accumulator, List)
+
+
+
+
+
+
+
+
+
+
+F#
+
+Seq/List.fold func initval list
+
+List.foldBack func list initval
+
+Seq/List.reduce func list
+
+List.reduceBack func list
+
+Seq.unfold func initval
+
+
+
+
+Gosu
+
+Iterable.fold(f(agg, e))Iterable.reduce(init, f(agg, e)) Iterable.partition(f(e))
+
+
+
+
+
+
+
+
+
+All are extension methods on Java's Iterable interface, arrays are also supported
+
+
+Groovy
+
+list.inject(initval, func)
+
+list.reverse().inject(initval, func)
+
+list.inject(func)
+
+list.reverse().inject(func)
+
+
+
+
+
+
+Haskell
+
+foldl func initval list
+
+foldr func initval list
+
+foldl1 func list
+
+foldr1 func list
+
+unfoldr func initval
+
+For foldl, the folding function takes arguments in the opposite order as that for foldr.
+
+
+Haxe
+
+Lambda.fold(iterable, func, initval)
+
+
+
+
+
+
+
+
+
+
+
+
+J
+
+verb~/|. initval,array
+
+verb/ array,initval
+
+verb~/|. array
+
+verb/ array
+
+
+
+u/y applies the dyad u between the items of y. "J Dictionary: Insert"
+
+
+Java 8+
+
+stream.reduce(initval, func)
+
+
+
+stream.reduce(func)
+
+
+
+
+
+
+
+
+JavaScript 1.8ECMAScript 5
+
+array.reduce(func, initval)
+
+
+
+array.reduce(func)
+
+
+
+
+
+
+
+
+Julia
+
+foldl(op, itr; [init])
+
+foldr(op, itr; [init])
+
+foldl(op, itr)
+
+foldr(op, itr)
+
+
+
+
+
+
+Kotlin
+
+Iterable.fold(initval, func)
+
+Iterable.foldRight(initval, func)
+
+Iterable.reduce(func)
+
+Iterable.reduceRight(func)
+
+
+
+Other collections also support fold[2] and reduce.[3] There is also Result.fold(onSuccess, onFailure),[4] which reduces a Result<T> (either success or failure) to the return type of onSuccess and onFailure.
+
+
+LFE
+
+(lists:foldl func accum list)
+
+(lists:foldr func accum list)
+
+
+
+
+
+
+
+
+
+
+Logtalk
+
+fold_left(Closure, Initial, List, Result)
+
+fold_right(Closure, Initial, List, Result)
+
+
+
+
+
+
+
+Meta-predicates provided by the meta standard library object. The abbreviations foldl and foldr may also be used.
+
+
+Maple
+
+foldl(func, initval, sequence)
+
+foldr(func, initval, sequence)
+
+
+
+
+
+
+
+
+
+
+Mathematica
+
+Fold[func, initval, list]
+
+Fold[func, initval, Reverse[list]]
+
+Fold[func, list]
+
+Fold[func, Reverse[list]]
+
+NestWhileList[func,, initval, predicate]
+
+Fold without an initial value is supported in versions 10.0 and higher.
+
+
+MATLAB
+
+fold(@func, list, defaultVal)
+
+fold(@func, flip(list), defaultVal)
+
+fold(@func, list)
+
+fold(@func, flip(list))
+
+
+
+Requires Symbolic Math Toolbox, supported from R2016b.
+
+
+Maxima
+
+lreduce(func, list, initval)
+
+rreduce(func, list, initval)
+
+lreduce(func, list)
+
+rreduce(func, list)
+
+
+
+
+
+
+Mythryl
+
+fold_left func initval list vector::fold_left func initval vector
+
+fold_right func initval list vector::fold_right func initval vector
+
+
+
+
+
+
+
+The supplied function takes its arguments in a tuple.
+
+
+OCaml
+
+List.fold_left func initval list Array.fold_left func initval array
+
+List.fold_right func list initval Array.fold_right func array initval
+
+
+
+
+
+Base.Sequence.unfold ~init ~f [5]
+
+
+
+
+Oz
+
+{FoldL List Func InitVal}
+
+{FoldR List Func InitVal}
+
+
+
+
+
+
+
+
+
+
+PARI/GP
+
+fold( f, A )
+
+
+
+
+
+
+
+
+
+
+
+
+Perl
+
+reduce block initval, list
+
+
+
+reduce block list
+
+
+
+
+
+in List::Util module
+
+
+PHP
+
+array_reduce(array, func, initval)
+
+array_reduce(array_reverse(array), func, initval)
+
+array_reduce(array, func)
+
+array_reduce(array_reverse(array), func)
+
+
+
+When initval is not supplied, NULL is used, so this is not a true foldl1. Before PHP 5.3, initval can only be integer. "func" is a callback. Try array_reduce online.
+
+
+Python 2.x
+
+reduce(func, list, initval)
+
+reduce(lambda x,y: func(y,x), reversed(list), initval)
+
+reduce(func, list)
+
+reduce(lambda x,y: func(y,x), reversed(list))
+
+
+
+
+
+
+Python 3.x
+
+functools.reduce(func, list, initval)
+
+functools.reduce(lambda x,y: func(y,x), reversed(list), initval)
+
+functools.reduce(func, list)
+
+functools.reduce(lambda x,y: func(y,x), reversed(list))
+
+
+
+In module functools.[6]
+
+
+R
+
+Reduce(func, list, initval)
+
+Reduce(func, list, initval, right=TRUE)
+
+Reduce(func, list)
+
+Reduce(func, list, right=TRUE)
+
+
+
+R supports right folding and left or right folding with or without an initial value through the right and init arguments to the Reduce function.
+
+
+Ruby
+
+enum.inject(initval, &block) enum.reduce(initval, &block)
+
+enum.reverse_each.inject(initval, &block) enum.reverse_each.reduce(initval, &block)
+
+enum.inject(&block) enum.reduce(&block)
+
+enum.reverse_each.inject(&block) enum.reverse_each.reduce(&block)
+
+
+
+In Ruby 1.8.7+, can also pass a symbol representing a function instead of a block.  enum is an Enumeration  Please notice that these implementations of right folds are wrong for non-commutative &block (also initial value is put on wrong side).
+
+
+Rust
+
+iterator.fold(initval, func)
+
+iterator.rev().fold(initval, func)
+
+
+
+
+
+
+
+iterator.rev() requires iterator to be a DoubleEndedIterator.[7]
+
+
+Scala
+
+list.foldLeft(initval)(func)(initval /: list)(func)
+
+list.foldRight(initval)(func)(listÂ :\ initval)(func)
+
+list.reduceLeft(func)
+
+list.reduceRight(func)
+
+
+
+Scala's symbolic fold syntax was intended to resemble the left- or right-leaning tree commonly used to explain the fold operation,[8] but has since been reinterpreted as an illustration of a toppling domino.[9] The colon comes from a general Scala syntax mechanism whereby the apparent infix operator is invoked as a method on the left operand with the right operand passed as an argument, or vice versa if the operator's last character is a colon, here applied symmetrically.
+Scala also features the tree-like folds using the method list.fold(z)(op).[10]
+
+
+
+Scheme R6RS
+
+(fold-left func initval list) (vector-fold func initval vector)
+
+(fold-right func initval list) (vector-fold-right func initval vector)
+
+(reduce-left func defaultval list)
+
+(reduce-right func defaultval list)
+
+(unfold p f g seed [tail-gen])unfold-right p f g seed [tail](vector-unfold f length initial-seed Â·Â·Â·)(vector-unfold-right f length initial-seed Â·Â·Â·)
+
+srfi/1 srfi/43
+
+
+Smalltalk
+
+aCollection inject: aValue into: aBlock
+
+
+
+aCollection reduce: aBlock
+
+
+
+
+
+ANSI Smalltalk doesn't define #reduce: but many implementations do.
+
+
+Standard ML
+
+foldl func initval list Array.foldl func initval array
+
+foldr func initval list Array.foldr func initval array
+
+
+
+
+
+
+
+The supplied function takes its arguments in a tuple. For foldl, the folding function takes arguments in the same order as for foldr.
+
+
+Swift
+
+array.reduce(initval, func) reduce(sequence, initval, func)
+
+array.reverse().reduce(initval, func)
+
+
+
+
+
+
+
+
+
+
+XPath 3.1
+
+array:fold-left(
+  $array as array(*),
+  $zero as item()*,
+  $f as function(
+    item()*, item()* 
+  } as item()*
+) as item()*
+[11]
+fn:fold-left(
+  $seq as item()*,
+  $zero as item()*,
+  $f as function(
+    item()*, item()
+  ) as item()*
+) as item()*
+[12]
+
+array:fold-right(
+  $array as array(*),
+  $zero as item()*,
+  $f as function(
+    item()*, item()* 
+  } as item()*
+) as item()*
+[13]
+fn:fold-right(
+  $seq as item()*,
+  $zero as item()*,
+  $f as function(
+    item(), item()*
+  ) as item()*
+) as item()*
+[14]
+
+
+
+
+
+
+
+In XPath 3.1 due to historical reasons the array and sequence types are incompatible -- thus the need for separate fold functions for array and for sequence
+
+The difference in the signatures is due to the fact that the value of an array item can be a sequence, while XPath doesn't have sequence of sequences
+
+
+
+Xtend
+
+iterable.fold(initval,[func])
+
+
+
+iterable.reduce[func]
+
+
+
+
+
+
+
+Universality[edit]
+Fold is a polymorphic function. For any g having a definition
+
+ g [] = v
+ g (x:xs) = f x (g xs)
+
+then g can be expressed as[15]
+
+ g = foldr f v
+
+Also, in a lazy language with infinite lists, a fixed point combinator can be implemented via fold,[16] proving that iterations can be reduced to folds:
+
+  y f = foldr (\_ -> f) undefined (repeat undefined)
+
+See also[edit]
+Aggregate function
+Iterated binary operation
+Catamorphism, a generalization of fold
+Homomorphism
+Map (higher-order function)
+Prefix sum
+Recursive data type
+Reduction Operator
+Structural recursion
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Richard Bird, "Pearls of Functional Algorithm Design", Cambridge University Press 2010, .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}ISBNÂ 978-0-521-51338-8, p. 42
+
+^ "fold - Kotlin Programming Language". Kotlin. Jetbrains. Retrieved 29 March 2019.
+
+^ "reduce - Kotlin Programming Language". Kotlin. Jetbrains. Retrieved 29 March 2019.
+
+^ "Result - Kotlin Programming Language". Kotlin. Jetbrains. Retrieved 29 March 2019.
+
+^ "Base". Jane Street Capital. Retrieved February 26, 2019.
+
+^ 
+For reference functools.reduce: import functools
+For reference reduce: from functools import reduce
+
+^ "Iterator in core::iter". Rust. Rust Team. Retrieved 2021-06-22.
+
+^ Odersky, Martin (2008-01-05). "Re: Blog: My verdict on the Scala language". Newsgroup:Â comp.scala.lang. Retrieved 14 October 2013.
+
+^ Sterling, Nicholas. "An intuitive feel for Scala's /: operator (foldLeft)". Retrieved 24 June 2016.
+
+^ "Fold API - Scala Standard Library". www.scala-lang.org. Retrieved 2018-04-10.
+
+^ array:fold-left
+
+^ fold-left
+
+^ array:fold-right
+
+^ fold-right
+
+^ Hutton, Graham. "A tutorial on the universality and expressiveness of fold" (PDF). Journal of Functional Programming (9 (4)): 355â372. Retrieved March 26, 2009.
+
+^ Pope, Bernie. "Getting a Fix from the Right Fold" (PDF). The Monad.Reader (6): 5â16. Retrieved May 1, 2011.
+
+
+External links[edit]
+"Higher order functions â map, fold and filter"
+"Unit 6: The Higher-order fold Functions"
+"Fold in Tcl"
+"Constructing List Homomorphism from Left and Right Folds"
+"The magic foldr"
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData structures and algorithmsData structures
+Array
+Associative array
+Binary search tree
+Fenwick tree
+Graph
+Hash table
+Heap
+Linked list
+Queue
+Segment tree
+Stack
+String
+Tree
+Trie
+Algorithms
+Backtracking
+Binary search
+Breadth-first search
+Depth-first search
+Divide and conquer
+Dynamic programming
+Fold
+Greedy
+Minimax
+Recursion
+Sorting
+Streaming
+Sweep line
+Topological sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Fold_(higher-order_function)&oldid=1066368771"
+		Categories: Higher-order functionsRecursionProgramming language comparisonsArticles with example Scheme (programming language) codeIteration in programmingHidden categories: Articles needing additional references from June 2013All articles needing additional referencesArticles with example Haskell code
+	

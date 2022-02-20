@@ -1,0 +1,2389 @@
+
+Title:
+Shellsort
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Sorting algorithm which uses multiple comparison intervals
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}ShellsortShellsort with gaps 23, 10, 4, 1 in actionClassSorting algorithmData structureArrayWorst-case performanceO(n2) (worst known worst case gap sequence)O(n log2n) (best known worst case gap sequence)[1]Best-case performanceO(n log n) (most gap sequences)O(n log2n) (best known worst-case gap sequence)[2]Average performancedepends on gap sequenceWorst-case space complexityÐ(n) total, O(1) auxiliary
+  Swapping pairs of items in successive steps of Shellsort with gaps 5, 3, 1
+Shellsort, also known as Shell sort or Shell's method, is an in-place comparison sort. It can be seen as either a generalization of sorting by exchange (bubble sort) or sorting by insertion (insertion sort).[3] The method starts by sorting pairs of elements far apart from each other, then progressively reducing the gap between elements to be compared. By starting with far apart elements, it can move some out-of-place elements into position faster than a simple nearest neighbor exchange. Donald Shell published the first version of this sort in 1959.[4][5] The running time of Shellsort is heavily dependent on the gap sequence it uses. For many practical variants, determining their time complexity remains an open problem.
+
+Contents
+
+1 Description
+2 Pseudocode
+3 Gap sequences
+4 Computational complexity
+5 Applications
+6 See also
+7 References
+8 Bibliography
+9 External links
+
+
+
+Description[edit]
+Shellsort is an optimization of insertion sort that allows the exchange of items that are far apart. The idea is to arrange the list of elements so that, starting anywhere, taking every hth element produces a sorted list. Such a list is said to be h-sorted. It can also be thought of as h interleaved lists, each individually sorted.[6] Beginning with large values of h allows elements to move long distances in the original list, reducing large amounts of disorder quickly, and leaving less work for smaller h-sort steps to do.[7] If the list is then k-sorted for some smaller integer k, then the list remains h-sorted. Following this idea for a decreasing sequence of h values ending in 1 is guaranteed to leave a sorted list in the end.[6]
+In simplistic terms, this means if we have an array of 1024 numbers, our first gap (h) could be 512. We then run through the list comparing each element in the first half to the element in the second half. Our second gap (k) is 256, which breaks the array into four sections (starting at 0,256,512,768), and we make sure the first items in each section are sorted relative to each other, then the second item in each section, and so on. In practice the gap sequence could be anything, but the last gap is always 1 to finish the sort (effectively finishing with an ordinary insertion sort).
+An example run of Shellsort with gaps 5, 3 and 1 is shown below.
+
+
+
+
+
+a1
+a2
+a3
+a4
+
+a5
+a6
+a7
+a8
+
+a9
+a10
+a11
+a12
+
+
+Input data
+
+62
+83
+18
+53
+07
+17
+95
+86
+47
+69
+25
+28
+
+
+After 5-sorting
+
+17
+28
+18
+47
+07
+
+25
+83
+86
+53
+69
+
+62
+95
+
+
+After 3-sorting
+
+17
+07
+18
+
+47
+28
+25
+
+69
+62
+53
+
+83
+86
+95
+
+
+After 1-sorting
+
+07
+17
+18
+25
+28
+47
+53
+62
+69
+83
+86
+95
+
+The first pass, 5-sorting, performs insertion sort on five  separate subarrays (a1, a6, a11), (a2, a7, a12), (a3, a8), (a4, a9), (a5, a10). For instance, it changes the subarray (a1, a6, a11) from (62, 17, 25) to (17, 25, 62). The next pass, 3-sorting, performs insertion sort on the three subarrays (a1, a4, a7, a10), (a2, a5, a8, a11), (a3, a6, a9, a12). The last pass, 1-sorting, is an ordinary insertion sort of the entire array (a1,..., a12).
+As the example illustrates, the subarrays that Shellsort operates on are initially short; later they are longer but almost ordered. In both cases insertion sort works efficiently.
+Shellsort is not stable: it may change the relative order of elements with equal values. It is an adaptive sorting algorithm in that it executes faster when the input is partially sorted.
+
+Pseudocode[edit]
+Using Marcin Ciura's gap sequence, with an inner insertion sort.
+
+# Sort an array a[0...n-1].
+gaps = [701, 301, 132, 57, 23, 10, 4, 1]  // Ciura gap sequence
+
+# Start with the largest gap and work down to a gap of 1
+# similar to insertion sort but instead of 1, gap is being used in each step
+foreach (gap in gaps)
+{
+    # Do a gapped insertion sort for every elements in gaps
+    # Each gap sort includes (0..gap-1) offset interleaved sorting.
+    for (offset = 0; offset < gap; offset++)
+      for (i = offset; i < n; i += gap)
+      {
+          # save a[i] in temp and make a hole at position i
+          temp = a[i]
+          # shift earlier gap-sorted elements up until the correct location for a[i] is found
+          for (j = i; j >= gap and a[j - gap] > temp; j -= gap)
+          {
+              a[j] = a[j - gap]
+          }
+          # put temp (the original a[i]) in its correct location
+          a[j] = temp
+       }
+}
+
+Gap sequences[edit]
+The question of deciding which gap sequence to use is difficult. Every gap sequence that contains 1 yields a correct sort (as this makes the final pass an ordinary insertion sort); however, the properties of thus obtained versions of Shellsort may be very different. Too few gaps slows down the passes, and too many gaps produces an overhead.
+The table below compares most proposed gap sequences published so far. Some of them have decreasing elements that depend on the size of the sorted array (N). Others are increasing infinite sequences, whose elements less than N should be used in reverse order.
+
+
+
+
+OEIS
+
+General term (k â¥ 1)
+
+Concrete gaps
+
+Worst-casetime complexity
+
+Author and year of publication
+
+
+
+
+
+  
+    
+      
+        
+          â
+          
+            
+              N
+              
+                2
+                
+                  k
+                
+              
+            
+          
+          â
+        
+      
+    
+    {\displaystyle \left\lfloor {\frac {N}{2^{k}}}\right\rfloor }
+  
+
+
+
+  
+    
+      
+        
+          â
+          
+            
+              N
+              2
+            
+          
+          â
+        
+        ,
+        
+          â
+          
+            
+              N
+              4
+            
+          
+          â
+        
+        ,
+        â¦
+        ,
+        1
+      
+    
+    {\displaystyle \left\lfloor {\frac {N}{2}}\right\rfloor ,\left\lfloor {\frac {N}{4}}\right\rfloor ,\ldots ,1}
+  
+
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            N
+            
+              2
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(N^{2}\right)}
+  
+ [e.g. when N = 2p]
+
+Shell, 1959[4]
+
+
+
+
+
+  
+    
+      
+        2
+        
+          â
+          
+            
+              N
+              
+                2
+                
+                  k
+                  +
+                  1
+                
+              
+            
+          
+          â
+        
+        +
+        1
+      
+    
+    {\displaystyle 2\left\lfloor {\frac {N}{2^{k+1}}}\right\rfloor +1}
+  
+
+
+
+  
+    
+      
+        2
+        
+          â
+          
+            
+              N
+              4
+            
+          
+          â
+        
+        +
+        1
+        ,
+        â¦
+        ,
+        3
+        ,
+        1
+      
+    
+    {\displaystyle 2\left\lfloor {\frac {N}{4}}\right\rfloor +1,\ldots ,3,1}
+  
+
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            N
+            
+              
+                3
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(N^{\frac {3}{2}}\right)}
+  
+
+
+Frank & Lazarus, 1960[8]
+
+
+A000225
+
+
+  
+    
+      
+        
+          2
+          
+            k
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle 2^{k}-1}
+  
+
+
+
+  
+    
+      
+        1
+        ,
+        3
+        ,
+        7
+        ,
+        15
+        ,
+        31
+        ,
+        63
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,3,7,15,31,63,\ldots }
+  
+
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            N
+            
+              
+                3
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(N^{\frac {3}{2}}\right)}
+  
+
+
+Hibbard, 1963[9]
+
+
+A083318
+
+
+  
+    
+      
+        
+          2
+          
+            k
+          
+        
+        +
+        1
+      
+    
+    {\displaystyle 2^{k}+1}
+  
+, prefixed with 1
+
+
+  
+    
+      
+        1
+        ,
+        3
+        ,
+        5
+        ,
+        9
+        ,
+        17
+        ,
+        33
+        ,
+        65
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,3,5,9,17,33,65,\ldots }
+  
+
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            N
+            
+              
+                3
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(N^{\frac {3}{2}}\right)}
+  
+
+
+Papernov & Stasevich, 1965[10]
+
+
+A003586
+
+Successive numbers of the form 
+  
+    
+      
+        
+          2
+          
+            p
+          
+        
+        
+          3
+          
+            q
+          
+        
+      
+    
+    {\displaystyle 2^{p}3^{q}}
+  
+ (3-smooth numbers)
+
+
+  
+    
+      
+        1
+        ,
+        2
+        ,
+        3
+        ,
+        4
+        ,
+        6
+        ,
+        8
+        ,
+        9
+        ,
+        12
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,2,3,4,6,8,9,12,\ldots }
+  
+
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            N
+            
+              log
+              
+                2
+              
+            
+            â¡
+            N
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(N\log ^{2}N\right)}
+  
+
+
+Pratt, 1971[1]
+
+
+A003462
+
+
+  
+    
+      
+        
+          
+            
+              
+                3
+                
+                  k
+                
+              
+              â
+              1
+            
+            2
+          
+        
+      
+    
+    {\displaystyle {\frac {3^{k}-1}{2}}}
+  
+, not greater than 
+  
+    
+      
+        
+          â
+          
+            
+              N
+              3
+            
+          
+          â
+        
+      
+    
+    {\displaystyle \left\lceil {\frac {N}{3}}\right\rceil }
+  
+
+
+
+  
+    
+      
+        1
+        ,
+        4
+        ,
+        13
+        ,
+        40
+        ,
+        121
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,4,13,40,121,\ldots }
+  
+
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            N
+            
+              
+                3
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(N^{\frac {3}{2}}\right)}
+  
+
+
+Knuth, 1973,[3] based on Pratt, 1971[1]
+
+
+A036569
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                
+                  â
+                  
+                    I
+                  
+                
+                
+                  a
+                  
+                    q
+                  
+                
+                ,
+                
+                  
+                    where
+                  
+                
+              
+            
+            
+              
+                
+                  a
+                  
+                    0
+                  
+                
+                =
+                
+
+                
+              
+              
+                3
+              
+            
+            
+              
+                
+                  a
+                  
+                    q
+                  
+                
+                =
+                
+
+                
+              
+              
+                
+                min
+                
+                  {
+                  
+                    n
+                    â
+                    
+                      N
+                    
+                    :
+                    n
+                    â¥
+                    
+                      
+                        (
+                        
+                          
+                            5
+                            2
+                          
+                        
+                        )
+                      
+                      
+                        q
+                        +
+                        1
+                      
+                    
+                    ,
+                    â
+                    p
+                    :
+                    0
+                    â¤
+                    p
+                    <
+                    q
+                    â
+                    gcd
+                    (
+                    
+                      a
+                      
+                        p
+                      
+                    
+                    ,
+                    n
+                    )
+                    =
+                    1
+                  
+                  }
+                
+              
+            
+            
+              
+                I
+                =
+                
+
+                
+              
+              
+                
+                  {
+                  
+                    0
+                    â¤
+                    q
+                    <
+                    r
+                    â£
+                    q
+                    â 
+                    
+                      
+                        1
+                        2
+                      
+                    
+                    
+                      (
+                      
+                        
+                          r
+                          
+                            2
+                          
+                        
+                        +
+                        r
+                      
+                      )
+                    
+                    â
+                    k
+                  
+                  }
+                
+              
+            
+            
+              
+                r
+                =
+                
+
+                
+              
+              
+                
+                  â
+                  
+                    
+                      2
+                      k
+                      +
+                      
+                        
+                          2
+                          k
+                        
+                      
+                    
+                  
+                  â
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\prod \limits _{I}a_{q},{\hbox{where}}\\a_{0}={}&3\\a_{q}={}&\min \left\{n\in \mathbb {N} \colon n\geq \left({\frac {5}{2}}\right)^{q+1},\forall p\colon 0\leq p<q\Rightarrow \gcd(a_{p},n)=1\right\}\\I={}&\left\{0\leq q<r\mid q\neq {\frac {1}{2}}\left(r^{2}+r\right)-k\right\}\\r={}&\left\lfloor {\sqrt {2k+{\sqrt {2k}}}}\right\rfloor \end{aligned}}}
+  
+
+
+
+  
+    
+      
+        1
+        ,
+        3
+        ,
+        7
+        ,
+        21
+        ,
+        48
+        ,
+        112
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,3,7,21,48,112,\ldots }
+  
+
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            N
+            
+              1
+              +
+              
+                
+                  
+                    
+                      8
+                      ln
+                      â¡
+                      
+                        (
+                        
+                          5
+                          
+                            /
+                          
+                          2
+                        
+                        )
+                      
+                    
+                    
+                      ln
+                      â¡
+                      (
+                      N
+                      )
+                    
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(N^{1+{\sqrt {\frac {8\ln \left(5/2\right)}{\ln(N)}}}}\right)}
+  
+
+
+Incerpi & Sedgewick, 1985,[11] Knuth[3]
+
+
+A036562
+
+
+  
+    
+      
+        
+          4
+          
+            k
+          
+        
+        +
+        3
+        â
+        
+          2
+          
+            k
+            â
+            1
+          
+        
+        +
+        1
+      
+    
+    {\displaystyle 4^{k}+3\cdot 2^{k-1}+1}
+  
+, prefixed with 1
+
+
+  
+    
+      
+        1
+        ,
+        8
+        ,
+        23
+        ,
+        77
+        ,
+        281
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,8,23,77,281,\ldots }
+  
+
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            N
+            
+              
+                4
+                3
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(N^{\frac {4}{3}}\right)}
+  
+
+
+Sedgewick, 1982[6]
+
+
+A033622
+
+
+  
+    
+      
+        
+          
+            {
+            
+              
+                
+                  9
+                  
+                    (
+                    
+                      
+                        2
+                        
+                          k
+                        
+                      
+                      â
+                      
+                        2
+                        
+                          
+                            k
+                            2
+                          
+                        
+                      
+                    
+                    )
+                  
+                  +
+                  1
+                
+                
+                  k
+                  
+                    Â even
+                  
+                  ,
+                
+              
+              
+                
+                  8
+                  â
+                  
+                    2
+                    
+                      k
+                    
+                  
+                  â
+                  6
+                  â
+                  
+                    2
+                    
+                      (
+                      k
+                      +
+                      1
+                      )
+                      
+                        /
+                      
+                      2
+                    
+                  
+                  +
+                  1
+                
+                
+                  k
+                  
+                    Â odd
+                  
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{cases}9\left(2^{k}-2^{\frac {k}{2}}\right)+1&k{\text{ even}},\\8\cdot 2^{k}-6\cdot 2^{(k+1)/2}+1&k{\text{ odd}}\end{cases}}}
+  
+
+
+
+  
+    
+      
+        1
+        ,
+        5
+        ,
+        19
+        ,
+        41
+        ,
+        109
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,5,19,41,109,\ldots }
+  
+
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            N
+            
+              
+                4
+                3
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(N^{\frac {4}{3}}\right)}
+  
+
+
+Sedgewick, 1986[12]
+
+
+
+
+
+  
+    
+      
+        
+          h
+          
+            k
+          
+        
+        =
+        max
+        
+          {
+          
+            
+              â
+              
+                
+                  
+                    5
+                    
+                      h
+                      
+                        k
+                        â
+                        1
+                      
+                    
+                    â
+                    1
+                  
+                  11
+                
+              
+              â
+            
+            ,
+            1
+          
+          }
+        
+        ,
+        
+          h
+          
+            0
+          
+        
+        =
+        N
+      
+    
+    {\displaystyle h_{k}=\max \left\{\left\lfloor {\frac {5h_{k-1}-1}{11}}\right\rfloor ,1\right\},h_{0}=N}
+  
+
+
+
+  
+    
+      
+        
+          â
+          
+            
+              
+                5
+                N
+                â
+                1
+              
+              11
+            
+          
+          â
+        
+        ,
+        
+          â
+          
+            
+              
+                5
+                11
+              
+            
+            
+              â
+              
+                
+                  
+                    5
+                    N
+                    â
+                    1
+                  
+                  11
+                
+              
+              â
+            
+            â
+            1
+          
+          â
+        
+        ,
+        â¦
+        ,
+        1
+      
+    
+    {\displaystyle \left\lfloor {\frac {5N-1}{11}}\right\rfloor ,\left\lfloor {\frac {5}{11}}\left\lfloor {\frac {5N-1}{11}}\right\rfloor -1\right\rfloor ,\ldots ,1}
+  
+
+
+UnÂ­known
+
+Gonnet & Baeza-Yates, 1991[13]
+
+
+A108870
+
+
+  
+    
+      
+        
+          â
+          
+            
+              
+                1
+                5
+              
+            
+            
+              (
+              
+                9
+                â
+                
+                  
+                    (
+                    
+                      
+                        9
+                        4
+                      
+                    
+                    )
+                  
+                  
+                    k
+                    â
+                    1
+                  
+                
+                â
+                4
+              
+              )
+            
+          
+          â
+        
+      
+    
+    {\displaystyle \left\lceil {\frac {1}{5}}\left(9\cdot \left({\frac {9}{4}}\right)^{k-1}-4\right)\right\rceil }
+  
+
+
+
+  
+    
+      
+        1
+        ,
+        4
+        ,
+        9
+        ,
+        20
+        ,
+        46
+        ,
+        103
+        ,
+        â¦
+      
+    
+    {\displaystyle 1,4,9,20,46,103,\ldots }
+  
+
+
+UnÂ­known
+
+Tokuda, 1992[14]
+
+
+A102549
+
+Unknown (experimentally derived)
+
+
+  
+    
+      
+        1
+        ,
+        4
+        ,
+        10
+        ,
+        23
+        ,
+        57
+        ,
+        132
+        ,
+        301
+        ,
+        701
+      
+    
+    {\displaystyle 1,4,10,23,57,132,301,701}
+  
+
+
+UnÂ­known
+
+Ciura, 2001[15]
+
+When the binary representation of N contains many consecutive zeroes, Shellsort using Shell's original gap sequence makes Î(N2) comparisons in the worst case. For instance, this case occurs for N equal to a power of two when elements greater and smaller than the median occupy odd and even positions respectively, since they are compared only in the last pass.
+Although it has higher complexity than the O(NÂ logÂ N) that is optimal for comparison sorts, Pratt's version lends itself to sorting networks and has the same asymptotic gate complexity as Batcher's bitonic sorter.
+Gonnet and Baeza-Yates observed that Shellsort makes the fewest comparisons on average when the ratios of successive gaps are roughly equal to 2.2.[13] This is why their sequence with ratio 2.2 and Tokuda's sequence with ratio 2.25 prove efficient. However, it is not known why this is so. Sedgewick recommends using gaps which have low greatest common divisors or are pairwise coprime.[16][failed verification]
+With respect to the average number of comparisons, Ciura's sequence[15] has the best known performance; gaps from 701 were not determined but the sequence can be further extended according to the recursive formula 
+  
+    
+      
+        
+          h
+          
+            k
+          
+        
+        =
+        â
+        2.25
+        
+          h
+          
+            k
+            â
+            1
+          
+        
+        â
+      
+    
+    {\displaystyle h_{k}=\lfloor 2.25h_{k-1}\rfloor }
+  
+.
+Tokuda's sequence, defined by the simple formula 
+  
+    
+      
+        
+          h
+          
+            k
+          
+        
+        =
+        â
+        
+          h
+          
+            k
+          
+          â²
+        
+        â
+      
+    
+    {\displaystyle h_{k}=\lceil h'_{k}\rceil }
+  
+, where 
+  
+    
+      
+        
+          h
+          
+            k
+          
+          â²
+        
+        =
+        2.25
+        
+          h
+          
+            k
+            â
+            1
+          
+          â²
+        
+        +
+        1
+      
+    
+    {\displaystyle h'_{k}=2.25h'_{k-1}+1}
+  
+, 
+  
+    
+      
+        
+          h
+          
+            1
+          
+          â²
+        
+        =
+        1
+      
+    
+    {\displaystyle h'_{1}=1}
+  
+, can be recommended for practical applications.
+If the maximum input size is small, as may occur if Shellsort is used on small subarrays by another recursive sorting algorithm such as quicksort or merge sort, then it is possible to tabulate an optimal sequence for each input size.[17]
+
+Computational complexity[edit]
+The following property holds: after h2-sorting of any h1-sorted array, the array remains h1-sorted.[18] Every h1-sorted and h2-sorted array is also (a1h1+a2h2)-sorted, for any nonnegative integers a1 and a2. The worst-case complexity of Shellsort is therefore connected with the Frobenius problem: for given integers h1,..., hn with gcd = 1, the Frobenius number g(h1,..., hn) is the greatest integer that cannot be represented as a1h1+ ... +anhn with nonnegative integer a1,..., an. Using known formulae for Frobenius numbers, we can determine the worst-case complexity of Shellsort for several classes of gap sequences.[19] Proven results are shown in the above table.
+With respect to the average number of operations, none of the proven results concerns a practical gap sequence. For gaps that are powers of two, Espelid computed this average as 
+  
+    
+      
+        0.5349
+        N
+        
+          
+            N
+          
+        
+        â
+        0.4387
+        N
+        â
+        0.097
+        
+          
+            N
+          
+        
+        +
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle 0.5349N{\sqrt {N}}-0.4387N-0.097{\sqrt {N}}+O(1)}
+  
+.[20] Knuth determined the average complexity of sorting an N-element array with two gaps (h, 1) to be 
+  
+    
+      
+        
+          
+            
+              2
+              
+                N
+                
+                  2
+                
+              
+            
+            h
+          
+        
+        +
+        
+          
+            Ï
+            
+              N
+              
+                3
+              
+            
+            h
+          
+        
+      
+    
+    {\displaystyle {\frac {2N^{2}}{h}}+{\sqrt {\pi N^{3}h}}}
+  
+.[3] It follows that a two-pass Shellsort with h = Î(N1/3) makes on average O(N5/3) comparisons/inversions/running time. Yao found the average complexity of a three-pass Shellsort.[21] His result was refined by Janson and Knuth:[22] the average number of comparisons/inversions/running time made during a Shellsort with three gaps (ch, cg, 1), where h and g are coprime, is 
+  
+    
+      
+        
+          
+            
+              N
+              
+                2
+              
+            
+            
+              4
+              c
+              h
+            
+          
+        
+        +
+        O
+        (
+        N
+        )
+      
+    
+    {\displaystyle {\frac {N^{2}}{4ch}}+O(N)}
+  
+ in the first pass, 
+  
+    
+      
+        
+          
+            1
+            
+              8
+              g
+            
+          
+        
+        
+          
+            
+              Ï
+              
+                c
+                h
+              
+            
+          
+        
+        (
+        h
+        â
+        1
+        )
+        
+          N
+          
+            3
+            
+              /
+            
+            2
+          
+        
+        +
+        O
+        (
+        h
+        N
+        )
+      
+    
+    {\displaystyle {\frac {1}{8g}}{\sqrt {\frac {\pi }{ch}}}(h-1)N^{3/2}+O(hN)}
+  
+ in the second pass and 
+  
+    
+      
+        Ï
+        (
+        h
+        ,
+        g
+        )
+        N
+        +
+        
+          
+            1
+            8
+          
+        
+        
+          
+            
+              Ï
+              c
+            
+          
+        
+        (
+        c
+        â
+        1
+        )
+        
+          N
+          
+            3
+            
+              /
+            
+            2
+          
+        
+        +
+        O
+        
+          (
+          
+            (
+            c
+            â
+            1
+            )
+            g
+            
+              h
+              
+                1
+                
+                  /
+                
+                2
+              
+            
+            N
+          
+          )
+        
+        +
+        O
+        
+          (
+          
+            
+              c
+              
+                2
+              
+            
+            
+              g
+              
+                3
+              
+            
+            
+              h
+              
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \psi (h,g)N+{\frac {1}{8}}{\sqrt {\frac {\pi }{c}}}(c-1)N^{3/2}+O\left((c-1)gh^{1/2}N\right)+O\left(c^{2}g^{3}h^{2}\right)}
+  
+ in the third pass. Ï(h, g) in the last formula is a complicated function asymptotically equal to 
+  
+    
+      
+        
+          
+            
+              
+                Ï
+                h
+              
+              128
+            
+          
+        
+        g
+        +
+        O
+        
+          (
+          
+            
+              g
+              
+                â
+                1
+                
+                  /
+                
+                2
+              
+            
+            
+              h
+              
+                1
+                
+                  /
+                
+                2
+              
+            
+          
+          )
+        
+        +
+        O
+        
+          (
+          
+            g
+            
+              h
+              
+                â
+                1
+                
+                  /
+                
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle {\sqrt {\frac {\pi h}{128}}}g+O\left(g^{-1/2}h^{1/2}\right)+O\left(gh^{-1/2}\right)}
+  
+. In particular, when h = Î(N7/15) and g = Î(N1/5), the average time of sorting is O(N23/15).
+Based on experiments, it is conjectured that Shellsort with Hibbard's gap sequence runs in O(N5/4) average time,[3] and that Gonnet and Baeza-Yates's sequence requires on average 0.41NÂ lnÂ NÂ (lnÂ lnÂ NÂ +Â 1/6) element moves.[13] Approximations of the average number of operations formerly put forward for other sequences fail when sorted arrays contain millions of elements.
+The graph below shows the average number of element comparisons in various variants of Shellsort, divided by the theoretical lower bound, i.e. log2N!, where the sequence 1, 4, 10, 23, 57, 132, 301, 701 has been extended according to the formula 
+  
+    
+      
+        
+          h
+          
+            k
+          
+        
+        =
+        â
+        2.25
+        
+          h
+          
+            k
+            â
+            1
+          
+        
+        â
+      
+    
+    {\displaystyle h_{k}=\lfloor 2.25h_{k-1}\rfloor }
+  
+.
+
+
+Applying the theory of Kolmogorov complexity, Jiang, Li, and VitÃ¡nyi 
+[23] proved the following lower bound for the order of the average number of operations/running time in a p-pass Shellsort: Î©(pN1+1/p) when pÂ â¤Â log2N and Î©(pN) when pÂ >Â log2N.
+Therefore, Shellsort has prospects of running in an average time that asymptotically grows like N logN only when using gap sequences whose number of gaps grows in proportion to the logarithm of the array size. It is, however, unknown whether Shellsort can reach this asymptotic order of average-case complexity, which is optimal for comparison sorts. The lower bound was improved by VitÃ¡nyi[24] for every number of passes 
+  
+    
+      
+        p
+      
+    
+    {\displaystyle p}
+  
+ to  
+
+  
+    
+      
+        Î©
+        (
+        N
+        
+          â
+          
+            k
+            =
+            1
+          
+          
+            p
+          
+        
+        
+          h
+          
+            k
+            â
+            1
+          
+        
+        
+          /
+        
+        
+          h
+          
+            k
+          
+        
+        )
+      
+    
+    {\displaystyle \Omega (N\sum _{k=1}^{p}h_{k-1}/h_{k})}
+  
+
+where 
+  
+    
+      
+        
+          h
+          
+            0
+          
+        
+        =
+        N
+      
+    
+    {\displaystyle h_{0}=N}
+  
+. This result implies for example the Jiang-Li-VitÃ¡nyi lower bound for all 
+  
+    
+      
+        p
+      
+    
+    {\displaystyle p}
+  
+-pass increment sequences and improves that lower bound for particular increment sequences. In fact all bounds (lower and upper) currently known for the average case are precisely matched by this lower bound. For example, this gives the new result that the Janson-Knuth upper bound is matched by the resulting lower bound for the used increment sequence, showing that three pass Shellsort for this increment sequence uses 
+  
+    
+      
+        Î
+        (
+        
+          N
+          
+            23
+            
+              /
+            
+            15
+          
+        
+        )
+      
+    
+    {\displaystyle \Theta (N^{23/15})}
+  
+ comparisons/inversions/running time.
+The formula allows us to search for increment sequences that yield lower bounds which are unknown; for example an increment sequence for four passes which has a lower bound greater than
+
+  
+    
+      
+        Î©
+        (
+        p
+        
+          n
+          
+            1
+            +
+            1
+            
+              /
+            
+            p
+          
+        
+        )
+        =
+        Î©
+        (
+        
+          n
+          
+            5
+            
+              /
+            
+            4
+          
+        
+        )
+      
+    
+    {\displaystyle \Omega (pn^{1+1/p})=\Omega (n^{5/4})}
+  
+ for the increment sequence
+
+  
+    
+      
+        
+          h
+          
+            1
+          
+        
+        =
+        
+          n
+          
+            11
+            
+              /
+            
+            16
+          
+        
+        ,
+      
+    
+    {\displaystyle h_{1}=n^{11/16},}
+  
+ 
+  
+    
+      
+        
+          h
+          
+            2
+          
+        
+        =
+        
+          n
+          
+            7
+            
+              /
+            
+            16
+          
+        
+        ,
+      
+    
+    {\displaystyle h_{2}=n^{7/16},}
+  
+ 
+  
+    
+      
+        
+          h
+          
+            3
+          
+        
+        =
+        
+          n
+          
+            3
+            
+              /
+            
+            16
+          
+        
+        ,
+      
+    
+    {\displaystyle h_{3}=n^{3/16},}
+  
+ 
+  
+    
+      
+        
+          h
+          
+            4
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle h_{4}=1}
+  
+. The lower bound becomes
+
+  
+    
+      
+        T
+        =
+        Î©
+        (
+        n
+        â
+        (
+        
+          n
+          
+            1
+            â
+            11
+            
+              /
+            
+            16
+          
+        
+        +
+        
+          n
+          
+            11
+            
+              /
+            
+            16
+            â
+            7
+            
+              /
+            
+            16
+          
+        
+        +
+        
+          n
+          
+            7
+            
+              /
+            
+            16
+            â
+            3
+            
+              /
+            
+            16
+          
+        
+        +
+        
+          n
+          
+            3
+            
+              /
+            
+            16
+          
+        
+        )
+        =
+        Î©
+        (
+        
+          n
+          
+            1
+            +
+            5
+            
+              /
+            
+            16
+          
+        
+        )
+        =
+        Î©
+        (
+        
+          n
+          
+            21
+            
+              /
+            
+            16
+          
+        
+        )
+        .
+      
+    
+    {\displaystyle T=\Omega (n\cdot (n^{1-11/16}+n^{11/16-7/16}+n^{7/16-3/16}+n^{3/16})=\Omega (n^{1+5/16})=\Omega (n^{21/16}).}
+  
+
+The worst-case complexity of any version of Shellsort is of higher order: Plaxton, Poonen, and Suel showed that it grows at least as rapidly as 
+  
+    
+      
+        Î©
+        
+          (
+          
+            N
+            
+              
+                (
+                
+                  
+                    
+                      log
+                      â¡
+                      N
+                    
+                    
+                      log
+                      â¡
+                      log
+                      â¡
+                      N
+                    
+                  
+                
+                )
+              
+              
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Omega \left(N\left({\log N \over \log \log N}\right)^{2}\right)}
+  
+.[25][26]
+
+Applications[edit]
+Shellsort performs more operations and has higher cache miss ratio than quicksort. However, since it can be implemented using little code and does not use the call stack, some implementations of the qsort function in the C standard library targeted at embedded systems use it instead of quicksort. Shellsort is, for example, used in the uClibc library.[27] For similar reasons, in the past, Shellsort was used in the Linux kernel.[28]
+Shellsort can also serve as a sub-algorithm of introspective sort, to sort short subarrays and to prevent a slowdown when the recursion depth exceeds a given limit. This principle is employed, for instance, in the bzip2 compressor.[29]
+
+See also[edit]
+Comb sort
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Pratt, Vaughan Ronald (1979). Shellsort and Sorting Networks (Outstanding Dissertations in the Computer Sciences) (PDF). Garland. ISBNÂ 978-0-8240-4406-0.
+
+^ "Shellsort & Comparisons".
+
+^ Jump up to: a b c d e Knuth, Donald E. (1997). "Shell's method". The Art of Computer Programming. Volume 3: Sorting and Searching (2ndÂ ed.). Reading, Massachusetts: Addison-Wesley. pp.Â 83â95. ISBNÂ 978-0-201-89685-5.
+
+^ Jump up to: a b Shell, D. L. (1959). "A High-Speed Sorting Procedure" (PDF). Communications of the ACM. 2 (7): 30â32. doi:10.1145/368370.368387.
+
+^ Some older textbooks and references call this the "ShellâMetzner" sort after Marlene Metzner Norton, but according to Metzner, "I had nothing to do with the sort, and my name should never have been attached to it." See "Shell sort". National Institute of Standards and Technology. Retrieved 17 July 2007.
+
+^ Jump up to: a b c 
+ Sedgewick, Robert (1998). Algorithms in C. Vol.Â 1 (3rdÂ ed.). Addison-Wesley. pp.Â 273â281. ISBNÂ 978-0-201-31452-6.
+
+^ 
+ Kernighan, Brian W.; Ritchie, Dennis M. (1996). The C Programming Language (2ndÂ ed.). Prentice Hall. p.Â 62. ISBNÂ 978-7-302-02412-5.
+
+^ Frank, R. M.; Lazarus, R. B. (1960). "A High-Speed Sorting Procedure". Communications of the ACM. 3 (1): 20â22. doi:10.1145/366947.366957.
+
+^ Hibbard, Thomas N. (1963). "An Empirical Study of Minimal Storage Sorting". Communications of the ACM. 6 (5): 206â213. doi:10.1145/366552.366557.
+
+^ Papernov, A. A.; Stasevich, G. V. (1965). "A Method of Information Sorting in Computer Memories" (PDF). Problems of Information Transmission. 1 (3): 63â75.
+
+^ Incerpi, Janet; Sedgewick, Robert (1985). "Improved Upper Bounds on Shellsort" (PDF). Journal of Computer and System Sciences. 31 (2): 210â224. doi:10.1016/0022-0000(85)90042-x.
+
+^ 
+  Sedgewick, Robert (1986). "A New Upper Bound for Shellsort". Journal of Algorithms. 7 (2): 159â173. doi:10.1016/0196-6774(86)90001-5.
+
+^ Jump up to: a b c Gonnet, Gaston H.; Baeza-Yates, Ricardo (1991). "Shellsort". Handbook of Algorithms and Data Structures: In Pascal and C (2ndÂ ed.). Reading, Massachusetts: Addison-Wesley. pp.Â 161â163. ISBNÂ 978-0-201-41607-7. Extensive experiments indicate that the sequence defined by Î± = 0.45454 < 5/11 performs significantly better than other sequences. The easiest way to compute â0.45454nâ is by (5 * n â 1)/11 using integer arithmetic.
+
+^ Tokuda, Naoyuki (1992). "An Improved Shellsort".  In van Leeuven, Jan (ed.). Proceedings of the IFIP 12th World Computer Congress on Algorithms, Software, Architecture. Amsterdam: North-Holland Publishing Co. pp.Â 449â457. ISBNÂ 978-0-444-89747-3.
+
+^ Jump up to: a b Ciura, Marcin (2001). "Best Increments for the Average Case of Shellsort" (PDF).  In Freiwalds, Rusins (ed.). Proceedings of the 13th International Symposium on Fundamentals of Computation Theory. London: Springer-Verlag. pp.Â 106â117. ISBNÂ 978-3-540-42487-1.
+
+^ Sedgewick, Robert (1998). "Shellsort". Algorithms in C++, Parts 1â4: Fundamentals, Data Structure, Sorting, Searching. Reading, Massachusetts: Addison-Wesley. pp.Â 285â292. ISBNÂ 978-0-201-35088-3.
+
+^ Forshell, Olof (22 May 2018). "How to choose the lengths of my sub sequences for a shell sort?". Stack Overflow.  Additional commentary at Fastest gap sequence for shell sort? (23 May 2018).
+
+^ Gale, David; Karp, Richard M. (April 1972). "A Phenomenon in the Theory of Sorting" (PDF). Journal of Computer and System Sciences. 6 (2): 103â115. doi:10.1016/S0022-0000(72)80016-3.
+
+^ Selmer, Ernst S. (March 1989). "On Shellsort and the Frobenius Problem" (PDF). BIT Numerical Mathematics. 29 (1): 37â40. doi:10.1007/BF01932703. hdl:1956/19572.
+
+^ Espelid, Terje O. (December 1973). "Analysis of a Shellsort Algorithm". BIT Numerical Mathematics. 13 (4): 394â400. doi:10.1007/BF01933401.  The quoted result is equation (8) on p. 399.
+
+^ Yao, Andrew Chi-Chih (1980). "An Analysis of (h, k, 1)-Shellsort" (PDF). Journal of Algorithms. 1 (1): 14â50. doi:10.1016/0196-6774(80)90003-6. STAN-CS-79-726. Archived from the original (PDF) on 4 March 2019.
+
+^ Janson, Svante; Knuth, Donald E. (1997). "Shellsort with Three Increments" (PDF). Random Structures and Algorithms. 10 (1â2): 125â142. arXiv:cs/9608105. CiteSeerXÂ 10.1.1.54.9911. doi:10.1002/(SICI)1098-2418(199701/03)10:1/2<125::AID-RSA6>3.0.CO;2-X.
+
+^ Jiang, Tao; Li, Ming; VitÃ¡nyi, Paul (September 2000). "A Lower Bound on the Average-Case Complexity of Shellsort" (PDF). Journal of the ACM. 47 (5): 905â911. arXiv:cs/9906008. CiteSeerXÂ 10.1.1.6.6508. doi:10.1145/355483.355488.
+
+^ VitÃ¡nyi, Paul (March 2018). "On the average-case complexity of Shellsort" (PDF). Random Structures and Algorithms. 52 (2): 354â363. arXiv:1501.06461. doi:10.1002/rsa.20737.
+
+^ Plaxton, C. Greg; Poonen, Bjorn; Suel, Torsten (24â27 October 1992). Improved Lower Bounds for Shellsort (PDF). Annual Symposium on Foundations of Computer Science (FOCS 1992). Vol.Â 33. Pittsburgh, United States. pp.Â 226â235. CiteSeerXÂ 10.1.1.43.1393. doi:10.1109/SFCS.1992.267769. ISBNÂ 978-0-8186-2900-6.
+
+^ Plaxton, C. Greg; Suel, Torsten (May 1997). "Lower Bounds for Shellsort" (PDF). Journal of Algorithms. 23 (2): 221â240. CiteSeerXÂ 10.1.1.460.2429. doi:10.1006/jagm.1996.0825.
+
+^ Novoa, Manuel III. "libc/stdlib/stdlib.c". Retrieved 29 October 2014.
+
+^ "kernel/groups.c". Retrieved 5 May 2012.
+
+^ Julian Seward. "bzip2/blocksort.c". Retrieved 30 March 2011.
+
+
+Bibliography[edit]
+Knuth, Donald E. (1997). "Shell's method". The Art of Computer Programming. Volume 3: Sorting and Searching (2ndÂ ed.). Reading, Massachusetts: Addison-Wesley. pp.Â 83â95. ISBNÂ 978-0-201-89685-5.
+Analysis of Shellsort and Related Algorithms, Robert Sedgewick, Fourth European Symposium on Algorithms, Barcelona, September 1996.
+External links[edit]
+
+
+
+The Wikibook Algorithm implementation has a page on the topic of: Shell sort
+
+Animated Sorting Algorithms: Shell Sort at the Wayback Machine (archived 10 March 2015) â graphical demonstration
+Shellsort with gaps 5, 3, 1 as a Hungarian folk dance
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSorting algorithmsTheory
+Computational complexity theory
+Big O notation
+Total order
+Lists
+Inplacement
+Stability
+Comparison sort
+Adaptive sort
+Sorting network
+Integer sorting
+X + Y sorting
+Transdichotomous model
+Quantum sort
+Exchange sorts
+Bubble sort
+Cocktail shaker sort
+Oddâeven sort
+Comb sort
+Gnome sort
+Proportion extend sort
+Quicksort
+Slowsort
+Stooge sort
+Bogosort
+Selection sorts
+Selection sort
+Heapsort
+Smoothsort
+Cartesian tree sort
+Tournament sort
+Cycle sort
+Weak-heap sort
+Insertion sorts
+Insertion sort
+Shellsort
+Splaysort
+Tree sort
+Library sort
+Patience sorting
+Merge sorts
+Merge sort
+Cascade merge sort
+Oscillating merge sort
+Polyphase merge sort
+Distribution sorts
+American flag sort
+Bead sort
+Bucket sort
+Burstsort
+Counting sort
+Interpolation sort
+Pigeonhole sort
+Proxmap sort
+Radix sort
+Flashsort
+Concurrent sorts
+Bitonic sorter
+Batcher oddâeven mergesort
+Pairwise sorting network
+Samplesort
+Hybrid sorts
+Block merge sort
+Kirkpatrick-Reisch sort
+Timsort
+Introsort
+Spreadsort
+Merge-insertion sort
+Other
+Topological sorting
+Pre-topological order
+Pancake sorting
+Spaghetti sort
+
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Shellsort&oldid=1057025182"
+		Categories: Sorting algorithmsComparison sortsHidden categories: Articles with short descriptionShort description is different from WikidataAll articles with failed verificationArticles with failed verification from February 2021Webarchive template wayback linksUse dmy dates from April 2020AC with 0 elements
+	

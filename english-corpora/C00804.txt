@@ -1,0 +1,793 @@
+
+Title:
+Chain-of-responsibility pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In object-oriented design, the chain-of-responsibility pattern is a behavioral design pattern consisting of a source of command objects and a series of processing objects.[1]  Each processing object contains logic that defines the types of command objects that it can handle; the rest are passed to the next processing object in the chain. A mechanism also exists for adding new processing objects to the end of this chain.
+In a variation of the standard chain-of-responsibility model, some handlers may act as dispatchers, capable of sending commands out in a variety of directions, forming a tree of responsibility. In some cases, this can occur recursively, with processing objects calling higher-up processing objects with commands that attempt to solve some smaller part of the problem; in this case recursion continues until the command is processed, or the entire tree has been explored. An XML interpreter might work in this manner.
+This pattern promotes the idea of loose coupling.
+The chain-of-responsibility pattern is structurally nearly identical to the decorator pattern, the difference being that for the decorator, all classes handle the request, while for the chain of responsibility, exactly one of the classes in the chain handles the request. This is a strict definition of the Responsibility concept in the GoF book. However, many implementations (such as loggers below, or UI event handling, or servlet filters in Java, etc) allow several elements in the chain to take responsibility.
+
+Contents
+
+1 Overview
+
+1.1 What problems can the Chain of Responsibility design pattern solve?
+1.2 What solution does the Chain of Responsibility design pattern describe?
+
+
+2 Structure
+
+2.1 UML class and sequence diagram
+
+
+3 Example
+
+3.1 Java example
+3.2 C# example
+3.3 Crystal example
+3.4 Python 3 example
+3.5 PHP example
+
+
+4 Implementations
+
+4.1 Cocoa and Cocoa Touch
+
+
+5 See also
+6 References
+
+
+
+Overview[edit]
+The Chain of Responsibility   
+[2]
+design pattern is one of the twenty-three well-known 
+GoF design patterns 
+that describe common solutions to recurring design problems when designing flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+
+What problems can the Chain of Responsibility design pattern solve?[edit]
+[3]
+
+Coupling the sender of a request to its receiver should be avoided.
+It should be possible that more than one receiver can handle a request.
+Implementing a request directly within the class that sends the request is inflexible
+because it couples the class to a particular receiver and makes it impossible to support multiple receivers.
+
+What solution does the Chain of Responsibility design pattern describe?[edit]
+Define a chain of receiver objects having the responsibility, depending on run-time conditions, to either handle a request or forward it to the next receiver on the chain (if any).
+This enables us to send a request to a chain of receivers
+without having to know which one handles the request.
+The request gets passed along the chain until a receiver handles the request.
+The sender of a request is no longer coupled to a particular receiver.
+See also the UML class and sequence diagram below.
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Chain of Responsibility design pattern. [4]
+In the above UML class diagram, the Sender class doesn't refer to a particular receiver class directly.
+Instead, Sender refers to the Handler interface for handling a request (handler.handleRequest()), which makes the Sender independent of which receiver handles the request.
+The Receiver1, Receiver2, and Receiver3 classes implement the Handler interface by either handling or forwarding a request (depending on run-time conditions).
+
+The UML sequence diagram
+shows the run-time interactions: In this example, the Sender object calls handleRequest() on the receiver1 object (of type Handler). 
+The receiver1 forwards the request to receiver2, which in turn forwards the request to receiver3, which handles (performs) the request.
+
+Example[edit]
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Chain-of-responsibility implementations in various languages
+
+Java example[edit]
+Below is an example of this pattern in Java.
+A logger is created using a chain of loggers, each one configured with different log levels.
+
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.function.Consumer;
+
+@FunctionalInterface
+public interface Logger {
+    public enum LogLevel {
+        INFO, DEBUG, WARNING, ERROR, FUNCTIONAL_MESSAGE, FUNCTIONAL_ERROR;
+
+        public static LogLevel[] all() {
+            return values();
+        }
+    }
+
+    abstract void message(String msg, LogLevel severity);
+
+    default Logger appendNext(Logger nextLogger) {
+        return (msg, severity) -> {
+            message(msg, severity);
+            nextLogger.message(msg, severity);
+        };
+    }
+
+    static Logger writeLogger(LogLevel[] levels, Consumer<String> stringConsumer) {
+        EnumSet<LogLevel> set = EnumSet.copyOf(Arrays.asList(levels));
+        return (msg, severity) -> {
+            if (set.contains(severity)) {
+                stringConsumer.accept(msg);
+            }
+        };
+    }
+
+    static Logger consoleLogger(LogLevel... levels) {
+        return writeLogger(levels, msg -> System.err.println("Writing to console: " + msg));
+    }
+
+    static Logger emailLogger(LogLevel... levels) {
+        return writeLogger(levels, msg -> System.err.println("Sending via email: " + msg));
+    }
+
+    static Logger fileLogger(LogLevel... levels) {
+        return writeLogger(levels, msg -> System.err.println("Writing to Log File: " + msg));
+    }
+}
+
+class Runner {
+    public static void main(String[] args) {
+        // Build an immutable chain of responsibility
+        Logger logger = consoleLogger(LogLevel.all())
+                .appendNext(emailLogger(LogLevel.FUNCTIONAL_MESSAGE, LogLevel.FUNCTIONAL_ERROR))
+                .appendNext(fileLogger(LogLevel.WARNING, LogLevel.ERROR));
+
+        // Handled by consoleLogger since the console has a LogLevel of all
+        logger.message("Entering function ProcessOrder().", LogLevel.DEBUG);
+        logger.message("Order record retrieved.", LogLevel.INFO);
+
+        // Handled by consoleLogger and emailLogger since emailLogger implements Functional_Error & Functional_Message
+        logger.message("Unable to Process Order ORD1 Dated D1 For Customer C1.", LogLevel.FUNCTIONAL_ERROR);
+        logger.message("Order Dispatched.", LogLevel.FUNCTIONAL_MESSAGE);
+
+        // Handled by consoleLogger and fileLogger since fileLogger implements Warning & Error
+        logger.message("Customer Address details missing in Branch DataBase.", LogLevel.WARNING);
+        logger.message("Customer Address details missing in Organization DataBase.", LogLevel.ERROR);
+    }
+}
+
+C# example[edit]
+This C# examples uses the logger application to select different sources based on the log level;
+
+namespace ChainOfResponsibility;
+
+[Flags]
+public enum LogLevel
+{
+    None = 0,                 //        0
+    Info = 1,                 //        1
+    Debug = 2,                //       10
+    Warning = 4,              //      100
+    Error = 8,                //     1000
+    FunctionalMessage = 16,   //    10000
+    FunctionalError = 32,     //   100000
+    All = 63                  //   111111
+}
+
+/// <summary>
+/// Abstract Handler in chain of responsibility pattern.
+/// </summary>
+public abstract class Logger
+{
+    protected LogLevel logMask;
+
+    // The next Handler in the chain
+    protected Logger next;
+
+    public Logger(LogLevel mask)
+    {
+        this.logMask = mask;
+    }
+
+    /// <summary>
+    /// Sets the Next logger to make a list/chain of Handlers.
+    /// </summary>
+    public Logger SetNext(Logger nextlogger)
+    {
+        Logger lastLogger = this;
+
+        while (lastLogger.next != null)
+        {
+            lastLogger = lastLogger.next;
+        }
+
+        lastLogger.next = nextlogger;
+        return this;
+    }
+
+    public void Message(string msg, LogLevel severity)
+    {
+        if ((severity & logMask) != 0) // True only if any of the logMask bits are set in severity
+        {
+            WriteMessage(msg);
+        }
+        if (next != null) 
+        {
+            next.Message(msg, severity); 
+        }
+    }
+
+    abstract protected void WriteMessage(string msg);
+}
+
+public class ConsoleLogger : Logger
+{
+    public ConsoleLogger(LogLevel mask)
+        : base(mask)
+    { }
+
+    protected override void WriteMessage(string msg)
+    {
+        Console.WriteLine("Writing to console: " + msg);
+    }
+}
+
+public class EmailLogger : Logger
+{
+    public EmailLogger(LogLevel mask)
+        : base(mask)
+    { }
+
+    protected override void WriteMessage(string msg)
+    {
+        // Placeholder for mail send logic, usually the email configurations are saved in config file.
+        Console.WriteLine("Sending via email: " + msg);
+    }
+}
+
+class FileLogger : Logger
+{
+    public FileLogger(LogLevel mask)
+        : base(mask)
+    { }
+
+    protected override void WriteMessage(string msg)
+    {
+        // Placeholder for File writing logic
+        Console.WriteLine("Writing to Log File: " + msg);
+    }
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        // Build the chain of responsibility
+        Logger logger;
+        logger = new ConsoleLogger(LogLevel.All)
+                         .SetNext(new EmailLogger(LogLevel.FunctionalMessage | LogLevel.FunctionalError))
+                         .SetNext(new FileLogger(LogLevel.Warning | LogLevel.Error));
+
+        // Handled by ConsoleLogger since the console has a loglevel of all
+        logger.Message("Entering function ProcessOrder().", LogLevel.Debug);
+        logger.Message("Order record retrieved.", LogLevel.Info);
+
+        // Handled by ConsoleLogger and FileLogger since filelogger implements Warning & Error
+        logger.Message("Customer Address details missing in Branch DataBase.", LogLevel.Warning);
+        logger.Message("Customer Address details missing in Organization DataBase.", LogLevel.Error);
+
+        // Handled by ConsoleLogger and EmailLogger as it implements functional error
+        logger.Message("Unable to Process Order ORD1 Dated D1 For Customer C1.", LogLevel.FunctionalError);
+
+        // Handled by ConsoleLogger and EmailLogger
+        logger.Message("Order Dispatched.", LogLevel.FunctionalMessage);
+    }
+}
+ 
+/* Output
+Writing to console: Entering function ProcessOrder().
+Writing to console: Order record retrieved.
+Writing to console: Customer Address details missing in Branch DataBase.
+Writing to Log File: Customer Address details missing in Branch DataBase.
+Writing to console: Customer Address details missing in Organization DataBase.
+Writing to Log File: Customer Address details missing in Organization DataBase.
+Writing to console: Unable to Process Order ORD1 Dated D1 For Customer C1.
+Sending via email: Unable to Process Order ORD1 Dated D1 For Customer C1.
+Writing to console: Order Dispatched.
+Sending via email: Order Dispatched.
+*/
+
+Crystal example[edit]
+enum LogLevel
+  None
+  Info
+  Debug
+  Warning
+  Error
+  FunctionalMessage
+  FunctionalError
+  All
+end
+
+abstract class Logger
+  property log_levels
+  property next : Logger | Nil
+
+  def initialize(*levels)
+    @log_levels = [] of LogLevel
+
+    levels.each do |level|
+      @log_levels << level
+    end
+  end
+
+  def message(msg : String, severity : LogLevel)
+    if @log_levels.includes?(LogLevel::All) || @log_levels.includes?(severity)
+      write_message(msg)
+    end
+    @next.try(&.message(msg, severity))
+  end
+
+  abstract def write_message(msg : String)
+end
+
+class ConsoleLogger < Logger
+  def write_message(msg : String)
+    puts "Writing to console: #{msg}"
+  end
+end
+
+class EmailLogger < Logger
+  def write_message(msg : String)
+    puts "Sending via email: #{msg}"
+  end
+end
+
+class FileLogger < Logger
+  def write_message(msg : String)
+    puts "Writing to Log File: #{msg}"
+  end
+end
+
+# Program
+# Build the chain of responsibility
+logger = ConsoleLogger.new(LogLevel::All)
+logger1 = logger.next = EmailLogger.new(LogLevel::FunctionalMessage, LogLevel::FunctionalError)
+logger2 = logger1.next = FileLogger.new(LogLevel::Warning, LogLevel::Error)
+
+# Handled by ConsoleLogger since the console has a loglevel of all
+logger.message("Entering function ProcessOrder().", LogLevel::Debug)
+logger.message("Order record retrieved.", LogLevel::Info)
+
+# Handled by ConsoleLogger and FileLogger since filelogger implements Warning & Error
+logger.message("Customer Address details missing in Branch DataBase.", LogLevel::Warning)
+logger.message("Customer Address details missing in Organization DataBase.", LogLevel::Error)
+
+# Handled by ConsoleLogger and EmailLogger as it implements functional error
+logger.message("Unable to Process Order ORD1 Dated D1 For Customer C1.", LogLevel::FunctionalError)
+
+# Handled by ConsoleLogger and EmailLogger
+logger.message("Order Dispatched.", LogLevel::FunctionalMessage)
+
+Output
+
+Writing to console: Entering function ProcessOrder().
+Writing to console: Order record retrieved.
+Writing to console: Customer Address details missing in Branch DataBase.
+Writing to Log File: Customer Address details missing in Branch DataBase.
+Writing to console: Customer Address details missing in Organization DataBase.
+Writing to Log File: Customer Address details missing in Organization DataBase.
+Writing to console: Unable to Process Order ORD1 Dated D1 For Customer C1.
+Sending via email: Unable to Process Order ORD1 Dated D1 For Customer C1.
+Writing to console: Order Dispatched.
+Sending via email: Order Dispatched.
+
+Python 3 example[edit]
+"""
+Chain of responsibility pattern example.
+"""
+from abc import ABCMeta, abstractmethod
+from enum import Enum, auto
+
+
+class LogLevel(Enum):
+    """ Log Levels Enum."""
+    NONE = auto()
+    INFO = auto()
+    DEBUG = auto()
+    WARNING = auto()
+    ERROR = auto()
+    FUNCTIONAL_MESSAGE = auto()
+    FUNCTIONAL_ERROR = auto()
+    ALL = auto()
+
+
+class Logger:
+    """Abstract handler in chain of responsibility pattern."""
+    __metaclass__ = ABCMeta
+
+    next = None
+
+    def __init__(self, levels) -> None:
+        """Initialize new logger.
+
+        Arguments:
+            levels (list[str]): List of log levels.
+        """
+        self.log_levels = []
+
+        for level in levels:
+            self.log_levels.append(level)
+
+    def set_next(self, next_logger: Logger):
+        """Set next responsible logger in the chain.
+
+        Arguments:
+            next_logger (Logger): Next responsible logger.
+        Returns: Logger: Next responsible logger.
+        """
+        self.next = next_logger
+        return self.next
+
+    def message(self, msg: str, severity: LogLevel) -> None:
+        """Message writer handler.
+
+        Arguments:
+            msg (str): Message string.
+            severity (LogLevel): Severity of message as log level enum.
+        """
+        if LogLevel.ALL in self.log_levels or severity in self.log_levels:
+            self.write_message(msg)
+
+        if self.next is not None:
+            self.next.message(msg, severity)
+
+    @abstractmethod
+    def write_message(self, msg: str) -> None:
+        """Abstract method to write a message.
+
+        Arguments:
+            msg (str): Message string.
+        Raises: NotImplementedError
+        """
+        raise NotImplementedError("You should implement this method.")
+
+
+class ConsoleLogger(Logger):
+    def write_message(self, msg: str) -> None:
+        """Overrides parent's abstract method to write to console.
+
+        Arguments:
+            msg (str): Message string.
+        """
+        print("Writing to console:", msg)
+
+
+class EmailLogger(Logger):
+    """Overrides parent's abstract method to send an email.
+
+    Arguments:
+        msg (str): Message string.
+    """
+    def write_message(self, msg: str) -> None:
+        print(f"Sending via email: {msg}")
+
+
+class FileLogger(Logger):
+    """Overrides parent's abstract method to write a file.
+
+    Arguments:
+        msg (str): Message string.
+    """
+    def write_message(self, msg: str) -> None:
+        print(f"Writing to log file: {msg}")
+
+
+def main():
+    """Building the chain of responsibility."""
+    logger = ConsoleLogger([LogLevel.ALL])
+    email_logger = logger.set_next(
+        EmailLogger([LogLevel.FUNCTIONAL_MESSAGE, LogLevel.FUNCTIONAL_ERROR])
+    )
+    # As we don't need to use file logger instance anywhere later
+    # We will not set any value for it.
+    email_logger.set_next(
+        FileLogger([LogLevel.WARNING, LogLevel.ERROR])
+    )
+
+    # ConsoleLogger will handle this part of code since the message
+    # has a log level of all
+    logger.message("Entering function ProcessOrder().", LogLevel.DEBUG)
+    logger.message("Order record retrieved.", LogLevel.INFO)
+
+    # ConsoleLogger and FileLogger will handle this part since file logger
+    # implements WARNING and ERROR
+    logger.message(
+        "Customer Address details missing in Branch DataBase.",
+        LogLevel.WARNING
+    )
+    logger.message(
+        "Customer Address details missing in Organization DataBase.",
+        LogLevel.ERROR
+    )
+
+    # ConsoleLogger and EmailLogger will handle this part as they implement
+    # functional error
+    logger.message(
+        "Unable to Process Order ORD1 Dated D1 for customer C1.",
+        LogLevel.FUNCTIONAL_ERROR
+    )
+    logger.message("OrderDispatched.", LogLevel.FUNCTIONAL_MESSAGE)
+
+
+if __name__ == "__main__":
+    main()
+
+PHP example[edit]
+<?php
+
+abstract class Logger
+{
+
+    /**
+     * Bitmask flags for severity.
+     */
+    public const NONE = 0;
+    public const INFO = 0b000001;
+    public const DEBUG = 0b000010;
+    public const WARNING = 0b000100;
+    public const ERROR = 0b001000;
+    public const FUNCTIONAL_MESSAGE = 0b010000;
+    public const FUNCTIONAL_ERROR = 0b100000;
+    public const ALL = 0b111111;
+
+    /** @var int A bitmask flag from this class. */
+    protected int $logMask;
+
+    /** @var \Logger|null An optional next logger to handle the message */
+    protected ?Logger $next = null;
+
+    /**
+     * Logger constructor.
+     *
+     * @param int $mask
+     *   A bitmask flag from this class.
+     */
+    public function __construct(int $mask)
+    {
+        $this->logMask = $mask;
+    }
+
+    /**
+     * Set next responsible logger in the chain.
+     *
+     * @param \Logger $nextLogger
+     *   Next responsible logger.
+     *
+     * @return \Logger
+     *    Logger: Next responsible logger.
+     */
+    public function setNext(Logger $nextLogger): Logger
+    {
+        $this->next = $nextLogger;
+
+        return $nextLogger;
+    }
+
+    /**
+     * Message writer handler.
+     *
+     * @param string $msg
+     *   Message string.
+     * @param int $severity
+     *   Severity of message as a bitmask flag from this class.
+     *
+     * @return $this
+     */
+    public function message(string $msg, int $severity): Logger
+    {
+        if ($severity & $this->logMask) {
+            $this->writeMessage($msg);
+        }
+        if ($this->next !== null) {
+            $this->next->message($msg, $severity);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Abstract method to write a message
+     *
+     * @param string $msg
+     *   Message string.
+     */
+    abstract protected function writeMessage(string $msg): void;
+
+}
+
+class ConsoleLogger extends Logger
+{
+
+    protected function writeMessage(string $msg): void
+    {
+        echo "Writing to console: $msg\n";
+    }
+
+}
+
+class EmailLogger extends Logger
+{
+
+    protected function writeMessage(string $msg): void
+    {
+        echo "Sending via email: $msg\n";
+    }
+
+}
+
+class FileLogger extends Logger
+{
+
+    protected function writeMessage(string $msg): void
+    {
+        echo "Writing to a log file: $msg\n";
+    }
+
+}
+
+$logger = new ConsoleLogger(Logger::ALL);
+$logger
+    ->setNext(new EmailLogger(Logger::FUNCTIONAL_MESSAGE | Logger::FUNCTIONAL_ERROR))
+    ->setNext(new FileLogger(Logger::WARNING | Logger::ERROR));
+
+$logger
+    // Handled by ConsoleLogger since the console has a loglevel of all
+    ->message("Entering function ProcessOrder().", Logger::DEBUG)
+    ->message("Order record retrieved.", Logger::INFO)
+    // Handled by ConsoleLogger and FileLogger since filelogger implements Warning & Error
+    ->message("Customer Address details missing in Branch DataBase.", Logger::WARNING)
+    ->message("Customer Address details missing in Organization DataBase.", Logger::ERROR)
+    // Handled by ConsoleLogger and EmailLogger as it implements functional error
+    ->message("Unable to Process Order ORD1 Dated D1 For Customer C1.", Logger::FUNCTIONAL_ERROR)
+    // Handled by ConsoleLogger and EmailLogger
+    ->message("Order Dispatched.", Logger::FUNCTIONAL_MESSAGE);
+
+/* Output
+Writing to console: Entering function ProcessOrder().
+Writing to console: Order record retrieved.
+Writing to console: Customer Address details missing in Branch DataBase.
+Writing to a log file: Customer Address details missing in Branch DataBase.
+Writing to console: Customer Address details missing in Organization DataBase.
+Writing to a log file: Customer Address details missing in Organization DataBase.
+Writing to console: Unable to Process Order ORD1 Dated D1 For Customer C1.
+Sending via email: Unable to Process Order ORD1 Dated D1 For Customer C1.
+Writing to console: Order Dispatched.
+Sending via email: Order Dispatched.
+*/
+
+Implementations[edit]
+Cocoa and Cocoa Touch[edit]
+The Cocoa and Cocoa Touch frameworks, used for OS X and iOS applications respectively, actively use the chain-of-responsibility pattern for handling events. Objects that participate in the chain are called responder objects, inheriting from the NSResponder (OS X)/UIResponder (iOS) class. All view objects (NSView/UIView), view controller objects (NSViewController/UIViewController), window objects (NSWindow/UIWindow), and the application object (NSApplication/UIApplication) are responder objects.
+Typically, when a view receives an event which it can't handle, it dispatches it to its superview until it reaches the view controller or window object. If the window can't handle the event, the event is dispatched to the application object, which is the last object in the chain. For example:
+
+On OS X, moving a textured window with the mouse can be done from any location (not just the title bar), unless on that location there's a view which handles dragging events, like slider controls. If no such view (or superview) is there, dragging events are sent up the chain to the window which does handle the dragging event.
+On iOS, it's typical to handle view events in the view controller which manages the view hierarchy, instead of subclassing the view itself. Since a view controller lies in the responder chain after all of its managed subviews, it can intercept any view events and handle them.
+See also[edit]
+Software design pattern
+Single responsibility principle
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Archived copy". Archived from the original on 2018-02-27. Retrieved 2013-11-08.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 223ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Chain of Responsibility design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "The Chain of Responsibility design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Chain-of-responsibility_pattern&oldid=1068069882"
+		Categories: Software design patternsHidden categories: CS1 maint: archived copy as titleCS1 maint: multiple names: authors listArticles with example Java code
+	

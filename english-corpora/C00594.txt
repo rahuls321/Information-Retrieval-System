@@ -1,0 +1,334 @@
+
+Title:
+R-tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about the data structure. For the type of metric space, see Real tree.
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}R-treeTypetreeInvented1984Invented byAntonin GuttmanTime complexity in big O notationAlgorithm
+
+Average
+Worst caseSearch
+
+O(logMn)
+O(n)[1]
+  Simple example of an R-tree for 2D rectangles
+  Visualization of an R*-tree for 3D points using ELKI (the cubes are directory pages)
+R-trees are tree data structures used for spatial access methods, i.e., for indexing multi-dimensional information such as geographical coordinates, rectangles or polygons. The R-tree was proposed by Antonin Guttman in 1984[2] and has found significant use in both theoretical and applied contexts.[3] A common real-world usage for an R-tree might be to store spatial objects such as restaurant locations or the polygons that typical maps are made of: streets, buildings, outlines of lakes, coastlines, etc. and then find answers quickly to queries such as "Find all museums within 2 km of my current location", "retrieve all road segments within 2 km of my location" (to display them in a navigation system) or "find the nearest gas station" (although not taking roads into account). The R-tree can also accelerate nearest neighbor search[4] for various distance metrics, including great-circle distance.[5]
+
+Contents
+
+1 R-tree idea
+2 Variants
+3 Algorithm
+
+3.1 Data layout
+3.2 Search
+3.3 Insertion
+
+3.3.1 Choosing the insertion subtree
+3.3.2 Splitting an overflowing node
+
+
+3.4 Deletion
+3.5 Bulk-loading
+
+
+4 See also
+5 References
+6 External links
+
+
+
+R-tree idea[edit]
+The key idea of the data structure is to group nearby objects and represent them with their minimum bounding rectangle in the next higher level of the tree; the "R" in R-tree is for rectangle. Since all objects lie within this bounding rectangle, a query that does not intersect the bounding rectangle also cannot intersect any of the contained objects. At the leaf level, each rectangle describes a single object; at higher levels the aggregation includes an increasing number of objects. This can also be seen as an increasingly coarse approximation of the data set.
+Similar to the B-tree, the R-tree is also a balanced search tree (so all leaf nodes are at the same depth), organizes the data in pages, and is designed for storage on disk (as used in databases). Each page can contain a maximum number of entries, often denoted as 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+. It also guarantees a minimum fill (except for the root node), however best performance has been experienced with a minimum fill of 30%â40% of the maximum number of entries (B-trees guarantee 50% page fill, and B*-trees even 66%). The reason for this is the more complex balancing required for spatial data as opposed to linear data stored in B-trees.
+As with most trees, the searching algorithms (e.g., intersection, containment, nearest neighbor search) are rather simple. The key idea is to use the bounding boxes to decide whether or not to search inside a subtree. In this way, most of the nodes in the tree are never read during a search. Like B-trees, R-trees are suitable for large data sets and databases, where nodes can be paged to memory when needed, and the whole tree cannot be kept in main memory. Even if data can be fit in memory (or cached), the R-trees in most practical applications will usually provide performance advantages over naive check of all objects when the number of objects is more than few hundred or so. However, for in-memory applications, there are similar alternatives that can provide slightly better performance or be simpler to implement in practice.
+The key difficulty of R-tree is to build an efficient tree that on one hand is balanced (so the leaf nodes are at the same height) on the other hand the rectangles do not cover too much empty space and do not overlap too much (so that during search, fewer subtrees need to be processed). For example, the original idea for inserting elements to obtain an efficient tree is to always insert into the subtree that requires least enlargement of its bounding box. Once that page is full, the data is split into two sets that should cover the minimal area each. Most of the research and improvements for R-trees aims at improving the way the tree is built and can be grouped into two objectives: building an efficient tree from scratch (known as bulk-loading) and performing changes on an existing tree (insertion and deletion).
+R-trees do not guarantee good worst-case performance, but generally perform well with real-world data.[6] While more of theoretical interest, the (bulk-loaded) Priority R-tree variant of the R-tree is worst-case optimal,[7] but due to the increased complexity, has not received much attention in practical applications so far.
+When data is organized in an R-tree, the neighbors within a given distance r and the k nearest neighbors (for any Lp-Norm) of all points can efficiently be computed using a spatial join.[8][9] This is beneficial for many algorithms based on such queries, for example the Local Outlier Factor. DeLi-Clu,[10] Density-Link-Clustering is a cluster analysis algorithm that uses the R-tree structure for a similar kind of spatial join to efficiently compute an OPTICS clustering.
+
+Variants[edit]
+Priority R-tree
+R*-tree
+R+ tree
+RR* tree
+Hilbert R-tree
+X-tree
+Algorithm[edit]
+Data layout[edit]
+Data in R-trees is organized in pages that can have a variable number of entries (up to some pre-defined maximum, and usually above a minimum fill). Each entry within a non-leaf node stores two pieces of data: a way of identifying a child node, and the bounding box of all entries within this child node. Leaf nodes store the data required for each child, often a point or bounding box representing the child and an external identifier for the child. For point data, the leaf entries can be just the points themselves. For polygon data (that often requires the storage of large polygons) the common setup is to store only the MBR (minimum bounding rectangle) of the polygon along with a unique identifier in the tree.
+
+Search[edit]
+In range searching, the input is a search rectangle (Query box). Searching is quite similar to searching in a B+ tree. The search starts from the root node of the tree. Every internal node contains a set of rectangles and pointers to the corresponding child node and every leaf node contains the rectangles of spatial objects (the pointer to some spatial object can be there). For every rectangle in a node, it has to be decided if it overlaps the search rectangle or not. If yes, the corresponding child node has to be searched also. Searching is done like this in a recursive manner until all overlapping nodes have been traversed. When a leaf node is reached, the contained bounding boxes (rectangles) are tested against the search rectangle and their objects (if there are any) are put into the result set if they lie within the search rectangle.
+For priority search such as nearest neighbor search, the query consists of a point or rectangle. The root node is inserted into the priority queue. Until the queue is empty or the desired number of results have been returned the search continues by processing the nearest entry in the queue. Tree nodes are expanded and their children reinserted. Leaf entries are returned when encountered in the queue.[11] This approach can be used with various distance metrics, including great-circle distance for geographic data.[5]
+
+Insertion[edit]
+To insert an object, the tree is traversed recursively from the root node. At each step, all rectangles in the current directory node are examined, and a candidate is chosen using a heuristic such as choosing the rectangle which requires least enlargement. The search then descends into this page, until reaching a leaf node. If the leaf node is full, it must be split before the insertion is made. Again, since an exhaustive search is too expensive, a heuristic is employed to split the node into two. Adding the newly created node to the previous level, this level can again overflow, and these overflows can propagate up to the root node; when this node also overflows, a new root node is created and the tree has increased in height.
+
+Choosing the insertion subtree[edit]
+The algorithm needs to decide in which subtree to insert. When a data object is fully contained in a single rectangle, the choice is clear.  When there are multiple options or rectangles in need of enlargement, the choice can have a significant impact on the performance of the tree.
+The objects are inserted into the subtree that needs the least enlargement. A Mixture heuristic is employed throughout. What happens next is it tries to minimize the overlap (in case of ties, prefer least enlargement and then least area); at the higher levels, it behaves similar to the R-tree, but on ties again preferring the subtree with smaller area. The decreased overlap of rectangles in the R*-tree is one of the key benefits over the traditional R-tree.
+
+Splitting an overflowing node[edit]
+Finally, the X-tree[12] can be seen as a R*-tree variant that can also decide to not split a node, but construct a so-called super-node containing all the extra entries, when it doesn't find a good split (in particular for high-dimensional data).
+
+Deletion[edit]
+Deleting an entry from a page may require updating the bounding rectangles of parent pages. However, when a page is underfull, it will not be balanced with its neighbors. Instead, the page will be dissolved and all its children (which may be subtrees, not only leaf objects) will be reinserted. If during this process the root node has a single element, the tree height can decrease.
+
+This section needs expansion. You can help by adding to it.  (October 2011)
+Bulk-loading[edit]
+Nearest-X: Objects are sorted by their first coordinate ("X") and then split into pages of the desired size.
+Packed Hilbert R-tree: variation of Nearest-X, but sorting using the Hilbert value of the center of a rectangle instead of using the X coordinate. There is no guarantee the pages will not overlap.
+Sort-Tile-Recursive (STR):[13] Another variation of Nearest-X, that estimates the total number of leaves required as 
+  
+    
+      
+        l
+        =
+        â
+        
+          number of objects
+        
+        
+          /
+        
+        
+          capacity
+        
+        â
+      
+    
+    {\displaystyle l=\lceil {\text{number of objects}}/{\text{capacity}}\rceil }
+  
+, the required split factor in each dimension to achieve this as 
+  
+    
+      
+        s
+        =
+        â
+        
+          l
+          
+            1
+            
+              /
+            
+            d
+          
+        
+        â
+      
+    
+    {\displaystyle s=\lceil l^{1/d}\rceil }
+  
+, then repeatedly splits each dimensions successively into 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ equal sized partitions using 1-dimensional sorting. The resulting pages, if they occupy more than one page, are again bulk-loaded using the same algorithm. For point data, the leaf nodes will not overlap, and "tile" the data space into approximately equal sized pages.
+Overlap Minimizing Top-down (OMT):[14] Improvement over STR using a top-down approach which minimizes overlaps between slices and improves query performance.
+Priority R-tree
+This section needs expansion. You can help by adding to it.  (June 2008)
+See also[edit]
+Segment tree
+Interval tree â A degenerate R-tree for one dimension (usually time).
+K-d tree
+Bounding volume hierarchy
+Spatial index
+GiST
+References[edit]
+
+^ https://www2.cs.sfu.ca/CourseCentral/454/jpei/slides/R-Tree.pdf
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Guttman, A. (1984). "R-Trees: A Dynamic Index Structure for Spatial Searching" (PDF). Proceedings of the 1984 ACM SIGMOD international conference on Management of data â SIGMOD '84. p.Â 47. doi:10.1145/602259.602266. ISBNÂ 978-0897911283. S2CIDÂ 876601.
+
+^ Y. Manolopoulos; A. Nanopoulos; Y. Theodoridis (2006). R-Trees: Theory and Applications. Springer. ISBNÂ 978-1-85233-977-7. Retrieved 8 October 2011.
+
+^ Roussopoulos, N.; Kelley, S.; Vincent, F. D. R. (1995). "Nearest neighbor queries". Proceedings of the 1995 ACM SIGMOD international conference on Management of data â SIGMOD '95. p.Â 71. doi:10.1145/223784.223794. ISBNÂ 0897917316.
+
+^ Jump up to: a b Schubert, E.; Zimek, A.; Kriegel, H. P. (2013). "Geodetic Distance Queries on R-Trees for Indexing Geographic Data". Advances in Spatial and Temporal Databases. Lecture Notes in Computer Science. Vol.Â 8098. p.Â 146. doi:10.1007/978-3-642-40235-7_9. ISBNÂ 978-3-642-40234-0.
+
+^ Hwang, S.; Kwon, K.; Cha, S. K.; Lee, B. S. (2003). "Performance Evaluation of Main-Memory R-tree Variants". Advances in Spatial and Temporal Databases. Lecture Notes in Computer Science. Vol.Â 2750. pp.Â 10. doi:10.1007/978-3-540-45072-6_2. ISBNÂ 978-3-540-40535-1.
+
+^ Arge, L.; De Berg, M.; Haverkort, H. J.; Yi, K. (2004). "The Priority R-tree" (PDF). Proceedings of the 2004 ACM SIGMOD international conference on Management of data â SIGMOD '04. p.Â 347. doi:10.1145/1007568.1007608. ISBNÂ 978-1581138597. S2CIDÂ 6817500.
+
+^ Brinkhoff, T.; Kriegel, H. P.; Seeger, B. (1993). "Efficient processing of spatial joins using R-trees". ACM SIGMOD Record. 22 (2): 237. CiteSeerXÂ 10.1.1.72.4514. doi:10.1145/170036.170075.
+
+^ BÃ¶hm, Christian; Krebs, Florian (2003-09-01). Supporting KDD Applications by the k-Nearest Neighbor Join. Database and Expert Systems Applications. Lecture Notes in Computer Science. Springer, Berlin, Heidelberg. pp.Â 504â516. CiteSeerXÂ 10.1.1.71.454. doi:10.1007/978-3-540-45227-0_50. ISBNÂ 9783540408062.
+
+^ Achtert, E.; BÃ¶hm, C.; KrÃ¶ger, P. (2006). DeLi-Clu: Boosting Robustness, Completeness, Usability, and Efficiency of Hierarchical Clustering by a Closest Pair Ranking. LNCS: Advances in Knowledge Discovery and Data Mining. Lecture Notes in Computer Science. Vol.Â 3918. pp.Â 119â128. doi:10.1007/11731139_16. ISBNÂ 978-3-540-33206-0.
+
+^ Kuan, J.; Lewis, P. (1997). "Fast k nearest neighbour search for R-tree family". Proceedings of ICICS, 1997 International Conference on Information, Communications and Signal Processing. Theme: Trends in Information Systems Engineering and Wireless Multimedia Communications (Cat. No.97TH8237). p.Â 924. doi:10.1109/ICICS.1997.652114. ISBNÂ 0-7803-3676-3.
+
+^ Berchtold, Stefan; Keim, Daniel A.; Kriegel, Hans-Peter (1996). "The X-Tree: An Index Structure for High-Dimensional Data". Proceedings of the 22nd VLDB Conference. Mumbai, India: 28â39.
+
+^ Leutenegger, Scott T.; Edgington, Jeffrey M.; Lopez, Mario A. (February 1997). "STR: A Simple and Efficient Algorithm for R-Tree Packing". {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Lee, Taewon; Lee, Sukho (June 2003). "OMT: Overlap Minimizing Top-down Bulk Loading Algorithm for R-tree" (PDF). {{cite journal}}: Cite journal requires |journal= (help)
+
+
+External links[edit]
+ Media related to R-tree at Wikimedia Commons
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=R-tree&oldid=1053596556"
+		Categories: R-treeHidden categories: CS1 errors: missing periodicalArticles to be expanded from October 2011All articles to be expandedArticles using small message boxesArticles to be expanded from June 2008Commons category link is on Wikidata
+	

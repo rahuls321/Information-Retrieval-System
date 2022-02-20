@@ -1,0 +1,424 @@
+
+Title:
+SchÃ¶nhageâStrassen algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Multiplication algorithm
+  The SchÃ¶nhageâStrassen algorithm is based on the Fast Fourier transform (FFT) method of integer multiplication. This figure demonstrates multiplying 1234 Ã 5678 = 7006652 using the simple FFT method. Number-theoretic transforms in the integers modulo 337 are used, selecting 85 as an 8th root of unity. Base 10 is used in place of base 2w for illustrative purposes. SchÃ¶nhageâStrassen improves on this by using negacyclic convolutions.
+  SchÃ¶nhage(r)  and Strassen (l) playing chess in Oberwolfach, 1979
+The SchÃ¶nhageâStrassen algorithm is an asymptotically fast multiplication algorithm for large integers. It was developed by Arnold SchÃ¶nhage and Volker Strassen in 1971.[1] The run-time bit complexity is, in Big O notation, 
+  
+    
+      
+        O
+        (
+        n
+        â
+        log
+        â¡
+        n
+        â
+        log
+        â¡
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(n\cdot \log n\cdot \log \log n)}
+  
+  for two n-digit numbers. The algorithm uses recursive Fast Fourier transforms in rings with 2n+1 elements, a specific type of number theoretic transform.
+The SchÃ¶nhageâStrassen algorithm was the asymptotically fastest multiplication method known from 1971 until 2007, when a new method, FÃ¼rer's algorithm, was announced with lower asymptotic complexity;[2] however, FÃ¼rer's algorithm currently only achieves an advantage for astronomically large values and is used only in Basic Polynomial Algebra Subprograms (BPAS)[3][4] (see Galactic algorithms).
+In practice the SchÃ¶nhageâStrassen algorithm starts to outperform older methods such as Karatsuba and ToomâCook multiplication for numbers beyond 2215 to 2217 (10,000 to 40,000 decimal digits).[5][6][7] The GNU Multi-Precision Library uses it[8] for values of at least 1728 to 7808 64-bit words (33,000 to 150,000 decimal digits), depending on architecture.[9][10] There is a Java implementation of SchÃ¶nhageâStrassen which uses it above 74,000 decimal digits.[11]
+Applications of the SchÃ¶nhageâStrassen algorithm include mathematical empiricism, such as the Great Internet Mersenne Prime Search and computing approximations of Ï, as well as practical applications such as Kronecker substitution, in which multiplication of polynomials with integer coefficients can be efficiently reduced to large integer multiplication; this is used in practice by GMP-ECM for Lenstra elliptic curve factorization.[12]
+
+Contents
+
+1 Details
+
+1.1 Convolutions
+1.2 Convolution theorem
+1.3 Choice of ring
+1.4 Shift optimizations
+1.5 Algorithm
+
+
+2 Optimizations
+3 References
+
+
+
+Details[edit]
+This section explains in detail how SchÃ¶nhageâStrassen is implemented. It is based primarily on an overview of the method by Crandall and Pomerance in their Prime Numbers: A Computational Perspective.[13] This variant differs somewhat from SchÃ¶nhage's original method in that it exploits the discrete weighted transform to perform negacyclic convolutions more efficiently. Another source for detailed information is Knuth's The Art of Computer Programming.[14]  The section begins by discussing the building blocks and concludes with a step-by-step description of the algorithm itself.
+
+Convolutions[edit]
+Suppose we are multiplying two numbers like 123 and 456 using long multiplication with base B digits, but without performing any carrying. The result might look something like this:
+
+
+
+
+
+1
+2
+3
+
+
+
+Ã
+4
+5
+6
+
+
+
+
+
+
+
+6
+12
+18
+
+
+
+5
+10
+15
+
+
+
+4
+8
+12
+
+
+
+
+
+
+
+4
+13
+28
+27
+18
+
+This sequence (4, 13, 28, 27, 18) is called the acyclic or linear convolution of the two original sequences (1,2,3) and (4,5,6). Once we have the acyclic convolution of two sequences, computing the product of the original numbers is easy: we just perform the carrying (for example, in the rightmost column, we keep the 8 and add the 1 to the column containing 27). In the example this yields the correct product 56088.
+There are two other types of convolutions that will be useful. Suppose the input sequences have n elements (here 3). Then the acyclic convolution has n+nâ1 elements; if we take the rightmost n elements and add the leftmost nâ1 elements, this produces the cyclic convolution:
+
+
+
+
+28
+27
+18
+
+
++
+
+4
+13
+
+
+
+
+
+
+28
+31
+31
+
+If we perform carrying on the cyclic convolution, the result is equivalent to the product of the inputs mod BnÂ âÂ 1. In the example, 103Â âÂ 1 = 999, performing carrying on (28, 31, 31) yields 3141, and 3141 â¡ 56088 (mod 999).
+Conversely, if we take the rightmost n elements and subtract the leftmost nâ1 elements, this produces the negacyclic convolution:
+
+
+
+
+28
+27
+18
+
+
+â
+
+4
+13
+
+
+
+
+
+
+28
+23
+5
+
+If we perform carrying on the negacyclic convolution, the result is equivalent to the product of the inputs mod BnÂ +Â 1. In the example, 103Â +Â 1 = 1001, performing carrying on (28, 23, 5) yields 3035, and 3035 â¡ 56088 (mod 1001). The negacyclic convolution can contain negative numbers, which can be eliminated during carrying using borrowing, as is done in long subtraction.
+
+Convolution theorem[edit]
+Like other multiplication methods based on the Fast Fourier transform, SchÃ¶nhageâStrassen depends fundamentally on the convolution theorem, which provides an efficient way to compute the cyclic convolution of two sequences. It states that:
+
+The cyclic convolution of two vectors can be found by taking the discrete Fourier transform (DFT) of each of them, multiplying the resulting vectors element by element, and then taking the inverse discrete Fourier transform (IDFT).
+Or in symbols:
+
+CyclicConvolution(X, Y) = IDFT(DFT(X) Â· DFT(Y))
+If we compute the DFT and IDFT using a fast Fourier transform algorithm, and invoke our multiplication algorithm recursively to multiply the entries of the transformed vectors DFT(X) and DFT(Y), this yields an efficient algorithm for computing the cyclic convolution.
+In this algorithm, it will be more useful to compute the negacyclic convolution; as it turns out, a slightly modified version of the convolution theorem (see discrete weighted transform) can enable this as well. Suppose the vectors X and Y have length n, and a is a primitive root of unity of order 2n (that is, a2n = 1 and a to all smaller powers is not 1). Then we can define a third vector A, called the weight vector, as:
+
+A = (aj), 0 â¤ j < n
+Aâ1 = (aâj), 0 â¤ j < n
+Now, we can state:
+
+NegacyclicConvolution(X, Y) = Aâ1 Â· IDFT(DFT(A Â· X) Â· DFT(A Â· Y))
+In other words, it's the same as before except that the inputs are first multiplied by A, and the result is multiplied by Aâ1.
+
+Choice of ring[edit]
+The discrete Fourier transform is an abstract operation that can be performed in any algebraic ring; typically it's performed in the complex numbers, but actually performing complex arithmetic to sufficient precision to ensure accurate results for multiplication is slow and error-prone. Instead, we will use the approach of the number theoretic transform, which is to perform the transform in the integers mod N for some integer N.
+Just like there are primitive roots of unity of every order in the complex plane, given any order n we can choose a suitable N such that b is a primitive root of unity of order n in the integers mod N (in other words, bn â¡ 1 (mod N), and no smaller power of b is equivalent to 1 mod N).
+The algorithm will spend most of its time performing recursive multiplications of smaller numbers; with a naive algorithm, these occur in a number of places:
+
+Inside the fast Fourier transform algorithm, where the primitive root of unity b is repeatedly powered, squared, and multiplied by other values.
+When taking powers of the primitive root of unity a to form the weight vector A and when multiplying A or Aâ1 by other vectors.
+When performing element-by-element multiplication of the transformed vectors.
+The key insight to SchÃ¶nhageâStrassen is to choose N, the modulus, to be equal to 2nÂ +Â 1 for some integer n that is a multiple of the number of pieces P=2p being transformed. This has a number of benefits in standard systems that represent large integers in binary form:
+
+Any value can be rapidly reduced modulo 2nÂ +Â 1 using only shifts and adds, as explained in the next section.
+All roots of unity used by the transform can be written in the form 2k; consequently we can multiply or divide any number by a root of unity using a shift, and power or square a root of unity by operating only on its exponent.
+The element-by-element recursive multiplications of the transformed vectors can be performed using a negacyclic convolution, which is faster than an acyclic convolution and already has "for free" the effect of reducing its result mod 2nÂ +Â 1.
+To make the recursive multiplications convenient, we will frame SchÃ¶nhageâStrassen as being a specialized multiplication algorithm for computing not just the product of two numbers, but the product of two numbers mod 2nÂ +Â 1 for some given n. This is not a loss of generality, since one can always choose n large enough so that the product mod 2nÂ +Â 1 is simply the product.
+
+Shift optimizations[edit]
+In the course of the algorithm, there are many cases in which multiplication or division by a power of two (including all roots of unity) can be profitably replaced by a small number of shifts and adds. This makes use of the observation that:
+
+(2n)k â¡ (â1)k mod (2n + 1)
+Note that a k-digit number in base 2n written in positional notation can be expressed as (dkâ1,...,d1,d0). It represents the number 
+  
+    
+      
+        
+          
+            â
+            
+              i
+              =
+              0
+            
+            
+              k
+              â
+              1
+            
+          
+          
+            d
+            
+              i
+            
+          
+          â
+          (
+          
+            2
+            
+              n
+            
+          
+          
+            )
+            
+              i
+            
+          
+        
+      
+    
+    {\displaystyle \scriptstyle \sum _{i=0}^{k-1}d_{i}\cdot (2^{n})^{i}}
+  
+. Also note that for each di we have 0 â¤ di < 2n.
+This makes it simple to reduce a number represented in binary mod 2nÂ +Â 1: take the rightmost (least significant) n bits, subtract the next n bits, add the next n bits, and so on until the bits are exhausted. If the resulting value is still not between 0 and 2n, normalize it by adding or subtracting a multiple of the modulus 2nÂ +Â 1. For example, if n=3 (and so the modulus is 23+1 = 9) and the number being reduced is 656, we have:
+
+656 = 10100100002 â¡ 0002 â 0102 + 0102 â 12 = 0 â 2 + 2 â 1 = â1 â¡ 8 (mod 23 + 1).
+Moreover, it's possible to effect very large shifts without ever constructing the shifted result. Suppose we have a number A between 0 and 2n, and wish to multiply it by 2k. Dividing k by n we find  k = qn + r with r < n. It follows that:
+
+A(2k) = A(2qn + r) = A[(2n)q(2r)] â¡ (â1)q Shift Left(A, r) (mod 2n + 1).
+Since A is â¤ 2n and r < n, A shift-left r has at most 2nâ1 bits, and so only one shift and subtraction (followed by normalization) is needed.
+Finally, to divide by 2k, observe that squaring the first equivalence above yields:
+
+22n â¡ 1 (mod 2n + 1)
+Hence,
+
+A/2k = A(2âk) â¡ A(22n â k) = Shift_Left(A, 2n â k) (mod 2n + 1).
+Algorithm[edit]
+The algorithm follows a split, evaluate (forward FFT), pointwise multiply, interpolate (inverse FFT), and combine phases similar to Karatsuba and Toom-Cook methods.
+Given input numbers x and y, and an integer N, the following algorithm computes the product xy mod 2NÂ +Â 1. Provided N is sufficiently large this is simply the product.
+
+Split each input number into vectors X and Y of 2k parts each, where 2k divides N. (e.g. 12345678 â (12, 34, 56, 78)).
+In order to make progress, it's necessary to use a smaller N for recursive multiplications. For this purpose choose N as the smallest integer at least 2N/2k + k and divisible by 2k.
+Compute the product of X and Y mod 2NÂ +Â 1 using the negacyclic convolution:
+Multiply X and Y each by the weight vector A using shifts (shift the jth entry left by jn/2k).
+Compute the DFT of X and Y using the number-theoretic FFT (perform all multiplications using shifts; for the 2k-th root of unity, use 22n/2k).
+Recursively apply this algorithm to multiply corresponding elements of the transformed X and Y.
+Compute the IDFT of the resulting vector to get the result vector C (perform all multiplications using shifts). This corresponds to interpolation phase.
+Multiply the result vector C by Aâ1 using shifts.
+Adjust signs: some elements of the result may be negative. We compute the largest possible positive value for the jth element of C, (j + 1)22N/2k, and if it exceeds this we subtract the modulus 2nÂ +Â 1.
+Finally, perform carrying mod 2NÂ +Â 1 to get the final result.
+The optimal number of pieces to divide the input into is proportional to 
+  
+    
+      
+        
+          
+            N
+          
+        
+      
+    
+    {\displaystyle {\sqrt {N}}}
+  
+, where N is the number of input bits, and this setting achieves the running time of O(N log N log log N),[1][13] so the parameter k should be set accordingly. In practice, it is set empirically based on the input sizes and the architecture, typically to a value between 4 and 16.[12]
+In step 2, the observation is used that:
+
+Each element of the input vectors has at most n/2k bits;
+The product of any two input vector elements has at most 2n/2k bits;
+Each element of the convolution is the sum of at most 2k such products, and so cannot exceed 2n/2k + k bits.
+n must be divisible by 2k to ensure that in the recursive calls the condition "2k divides N" holds in step 1.
+Optimizations[edit]
+This section explains a number of important practical optimizations that have been considered when implementing SchÃ¶nhageâStrassen in real systems. It is based primarily on a 2007 work by Gaudry, Kruppa, and Zimmermann describing enhancements to the GNU Multi-Precision Library.[12]
+Below a certain cutoff point, it's more efficient to perform the recursive multiplications using other algorithms, such as ToomâCook multiplication. The results must be reduced mod 2nÂ +Â 1, which can be done efficiently as explained above in Shift optimizations with shifts and adds/subtracts.
+Computing the IDFT involves dividing each entry by the primitive root of unity 22n/2k, an operation that is frequently combined with multiplying the vector by Aâ1 afterwards, since both involve division by a power of two.
+In a system where a large number is represented as an array of 2w-bit words, it's useful to ensure that the vector size 2k is also a multiple of the bits per word by choosing k â¥ w (e.g. choose k â¥ 5 on a 32-bit computer and k â¥ 6 on a 64-bit computer); this allows the inputs to be broken up into pieces without bit shifts, and provides a uniform representation for values mod 2nÂ +Â 1 where the high word can only be zero or one.
+Normalization involves adding or subtracting the modulus 2nÂ +Â 1; this value has only two bits set, which means this can be done in constant time on average with a specialized operation.
+Iterative FFT algorithms such as the CooleyâTukey FFT algorithm, although frequently used for FFTs on vectors of complex numbers, tend to exhibit very poor cache locality with the large vector entries used in SchÃ¶nhageâStrassen. The straightforward recursive, not in-place implementation of FFT is more successful, with all operations fitting in the cache beyond a certain point in the call depth, but still makes suboptimal use of the cache in higher call depths. Gaudry, Kruppa, and Zimmerman used a technique combining Bailey's 4-step algorithm with higher radix transforms that combine multiple recursive steps. They also mix phases, going as far into the algorithm as possible on each element of the vector before moving on to the next one.
+The "square root of 2 trick", first described by SchÃ¶nhage, is to note that, provided k â¥ 2, 23n/4â2n/4 is a square root of 2 mod 2n+1, and so a 4n-th root of unity (since 22n â¡ 1). This allows the transform length to be extended from 2k to 2k + 1.
+Finally, the authors are careful to choose the right value of k for different ranges of input numbers, noting that the optimal value of k may go back and forth between the same values several times as the input size increases.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b A. SchÃ¶nhage and V. Strassen, "Schnelle Multiplikation groÃer Zahlen", Computing 7 (1971), pp. 281â292.
+
+^ Martin FÃ¼rer, "Faster integer multiplication Archived 2013-04-25 at the Wayback Machine", STOC 2007 Proceedings, pp. 57â66.
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"FFT over large vectors >=2^16 -- FFT_test_exe test1 error in index Â· Issue #1 Â· orcca-uwo/BPAS". GitHub. Retrieved 2021-09-04.
+
+^ Covanov, Sviatoslav; Mohajerani, Davood; Moreno-Maza, Marc; Wang, Lin-Xiao (2018-11-04). "Putting FÃ¼rer Algorithm into Practice with the BPAS Library". arXiv:1811.01490 [cs.SC].
+
+^ Van Meter, Rodney; Itoh, Kohei M. (2005). "Fast Quantum Modular Exponentiation". Physical Review. A. 71 (5): 052320. arXiv:quant-ph/0408006. Bibcode:2005PhRvA..71e2320V. doi:10.1103/PhysRevA.71.052320. S2CIDÂ 14983569.
+
+^ Overview of Magma V2.9 Features, arithmetic section Archived 2006-08-20 at the Wayback Machine: Discusses practical crossover points between various algorithms.
+
+^ Luis Carlos Coronado GarcÃ­a, "Can SchÃ¶nhage multiplication speed up the RSA encryption or decryption? Archived", University of Technology, Darmstadt (2005)
+
+^ "FFT Multiplication (GNU MP 6.2.1)". gmplib.org. Retrieved 2021-07-20.
+
+^ "MUL_FFT_THRESHOLD". GMP developers' corner. Archived from the original on 24 November 2010. Retrieved 3 November 2011.
+
+^ "MUL_FFT_THRESHOLD". gmplib.org. Retrieved 2021-07-20.
+
+^ "An improved BigInteger class which uses efficient algorithms, including SchÃ¶nhageâStrassen". Oracle. Retrieved 2014-01-10.
+
+^ Jump up to: a b c Pierrick Gaudry, Alexander Kruppa, and Paul Zimmermann. A GMP-based Implementation of SchÃ¶nhageâStrassenâs Large Integer Multiplication AlgorithmArchived. Proceedings of the 2007 International Symposium on Symbolic and Algebraic Computation, pp.167â174.
+
+^ Jump up to: a b R. Crandall & C. Pomerance. Prime Numbers â A Computational Perspective. Second Edition, Springer, 2005. Section 9.5.6: SchÃ¶nhage method, p. 502. ISBNÂ 0-387-94777-9
+
+^ Donald E. Knuth, The Art of Computer Programming, Volume 2: Seminumerical Algorithms (3rd Edition), 1997. Addison-Wesley Professional, ISBNÂ 0-201-89684-2. Section 4.3.3.C: Discrete Fourier transforms, pg.305.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteNumber-theoretic algorithmsPrimality tests
+AKS
+APR
+BaillieâPSW
+Elliptic curve
+Pocklington
+Fermat
+Lucas
+LucasâLehmer
+LucasâLehmerâRiesel
+Proth's theorem
+PÃ©pin's
+Quadratic Frobenius
+SolovayâStrassen
+MillerâRabin
+Prime-generating
+Sieve of Atkin
+Sieve of Eratosthenes
+Sieve of Sundaram
+Wheel factorization
+Integer factorization
+Continued fraction (CFRAC)
+Dixon's
+Lenstra elliptic curve (ECM)
+Euler's
+Pollard's rho
+p â 1
+p + 1
+Quadratic sieve (QS)
+General number field sieve (GNFS)
+Special number field sieve (SNFS)
+Rational sieve
+Fermat's
+Shanks's square forms
+Trial division
+Shor's
+Multiplication
+Ancient Egyptian
+Long
+Karatsuba
+ToomâCook
+SchÃ¶nhageâStrassen
+FÃ¼rer's
+Euclidean division
+Binary
+Chunking
+Fourier
+Goldschmidt
+Newton-Raphson
+Long
+Short
+SRT
+Discrete logarithm
+Baby-step giant-step
+Pollard rho
+Pollard kangaroo
+PohligâHellman
+Index calculus
+Function field sieve
+Greatest common divisor
+Binary
+Euclidean
+Extended Euclidean
+Lehmer's
+Modular square root
+Cipolla
+Pocklington's
+TonelliâShanks
+Berlekamp
+Kunerth
+Other algorithms
+Chakravala
+Cornacchia
+Exponentiation by squaring
+Integer square root
+Integer relation (LLL; KZ)
+Modular exponentiation
+Montgomery reduction
+Schoof
+
+Italics indicate that algorithm is for numbers of special forms
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=SchÃ¶nhageâStrassen_algorithm&oldid=1068923394"
+		Categories: Computer arithmetic algorithmsMultiplicationHidden categories: Webarchive template wayback linksArticles with short descriptionShort description matches Wikidata
+	

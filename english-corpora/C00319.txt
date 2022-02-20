@@ -1,0 +1,1086 @@
+
+Title:
+Sparse matrix
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+
+Example of sparse matrix
+
+  
+    
+      
+        
+          (
+          
+            
+              
+                
+                  
+                    11
+                  
+                  
+                    22
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                
+                
+                  
+                    0
+                  
+                  
+                    33
+                  
+                  
+                    44
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                
+                
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    55
+                  
+                  
+                    66
+                  
+                  
+                    77
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                
+                
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    88
+                  
+                  
+                    0
+                  
+                
+                
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    0
+                  
+                  
+                    99
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \left({\begin{smallmatrix}11&22&0&0&0&0&0\\0&33&44&0&0&0&0\\0&0&55&66&77&0&0\\0&0&0&0&0&88&0\\0&0&0&0&0&0&99\\\end{smallmatrix}}\right)}
+  
+
+
+
+The above sparse matrix contains only 9 non-zero elements, with 26 zero elements. Its sparsity is 74%, and its density is 26%.
+
+  A sparse matrix obtained when solving a finite element problem in two dimensions. The non-zero elements are shown in black.
+In numerical analysis and scientific computing, a sparse matrix or sparse array is a matrix in which most of the elements are zero.[1] There is no strict definition regarding the proportion of zero-value elements for a matrix to qualify as sparse but a common criterion is that the number of non-zero elements is roughly equal to the number of rows or columns. By contrast, if most of the elements are non-zero, the matrix is considered dense.[1] The number of zero-valued elements divided by the total number of elements (e.g., m Ã n for an m Ã n matrix) is sometimes referred to as the sparsity of the matrix.
+Conceptually, sparsity corresponds to systems with few pairwise interactions. For example, consider a line of balls connected by springs from one to the next: this is a sparse system as only adjacent balls are coupled. By contrast, if the same line of balls were to have springs connecting each ball to all other balls, the system would correspond to a dense matrix. The concept of sparsity is useful in combinatorics and application areas such as network theory and numerical analysis, which typically have a low density of significant data or connections. Large sparse matrices often appear in scientific or engineering applications when solving partial differential equations.
+When storing and manipulating sparse matrices on a computer, it is beneficial and often necessary to use specialized algorithms and data structures that take advantage of the sparse structure of the matrix. Specialized computers have been made for sparse matrices,[2] as they are common in the machine learning field.[3] Operations using standard dense-matrix structures and algorithms are slow and inefficient when applied to large sparse matrices as processing and memory are wasted on the zeros. Sparse data is by nature more easily compressed and thus requires significantly less storage. Some very large sparse matrices are infeasible to manipulate using standard dense-matrix algorithms.
+
+Contents
+
+1 Storing a sparse matrix
+
+1.1 Dictionary of keys (DOK)
+1.2 List of lists (LIL)
+1.3 Coordinate list (COO)
+1.4 Compressed sparse row (CSR, CRS or Yale format)
+1.5 Compressed sparse column (CSC or CCS)
+
+
+2 Special structure
+
+2.1 Banded
+2.2 Diagonal
+2.3 Symmetric
+2.4 Block diagonal
+
+
+3 Reducing fill-in
+4 Solving sparse matrix equations
+5 Software
+6 History
+7 See also
+8 Notes
+9 References
+10 Further reading
+
+
+
+ Storing a sparse matrix[edit]
+A matrix is typically stored as a two-dimensional array. Each entry in the array represents an element ai,j of the matrix and is accessed by the two indices i and j. Conventionally, i is the row index, numbered from top to bottom, and j is the column index, numbered from left to right. For an m Ã n matrix, the amount of memory required to store the matrix in this format is proportional to m Ã n (disregarding the fact that the dimensions of the matrix also need to be stored).
+In the case of a sparse matrix, substantial memory requirement reductions can be realized by storing only the non-zero entries. Depending on the number and distribution of the non-zero entries, different data structures can be used and yield huge savings in memory when compared to the basic approach. The trade-off is that accessing the individual elements becomes more complex and additional structures are needed to be able to recover the original matrix unambiguously.
+Formats can be divided into two groups:
+
+Those that support efficient modification, such as DOK (Dictionary of keys), LIL (List of lists), or COO (Coordinate list). These are typically used to construct the matrices.
+Those that support efficient access and matrix operations, such as CSR (Compressed Sparse Row) or CSC (Compressed Sparse Column).
+Dictionary of keys (DOK)[edit]
+DOK consists of a dictionary that maps (row, column)-pairs to the value of the elements. Elements that are missing from the dictionary are taken to be zero. The format is good for incrementally constructing a sparse matrix in random order, but poor for iterating over non-zero values in lexicographical order. One typically constructs a matrix in this format and then converts to another more efficient format for processing.[4]
+
+List of lists (LIL)[edit]
+LIL stores one list per row, with each entry containing the column index and the value. Typically, these entries are kept sorted by column index for faster lookup. This is another format good for incremental matrix construction.[5]
+
+Coordinate list (COO)[edit]
+COO stores a list of (row, column, value) tuples. Ideally, the entries are sorted first by row index and then by column index, to improve random access times. This is another format that is good for incremental matrix construction.[6]
+
+Compressed sparse row (CSR, CRS or Yale format)[edit]
+The compressed sparse row (CSR) or compressed row storage (CRS) or Yale format represents a matrix M by three (one-dimensional) arrays, that respectively contain nonzero values, the extents of rows, and column indices. It is similar to COO, but compresses the row indices, hence the name. This format allows fast row access and matrix-vector multiplications (Mx). The CSR format has been in use since at least the mid-1960s, with the first complete description appearing in 1967.[7]
+The CSR format stores a sparse m Ã n matrix M in row form using three (one-dimensional) arrays (V, COL_INDEX, ROW_INDEX). Let NNZ denote the number of nonzero entries in M. (Note that zero-based indices shall be used here.)
+
+The arrays V and COL_INDEX are of length NNZ, and contain the non-zero values and the column indices of those values respectively.
+The array ROW_INDEX is of length m + 1 and encodes the index in V and COL_INDEX where the given row starts. This is equivalent to ROW_INDEX[j] encoding the total number of nonzeros above row j.  The last element is NNZ , i.e., the fictitious index in V immediately after the last valid index NNZ - 1. [8]
+For example, the matrix
+
+
+  
+    
+      
+        
+          
+            (
+            
+              
+                
+                  5
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  8
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  3
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  6
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            )
+          
+        
+      
+    
+    {\displaystyle {\begin{pmatrix}5&0&0&0\\0&8&0&0\\0&0&3&0\\0&6&0&0\\\end{pmatrix}}}
+  
+
+is a 4 Ã 4 matrix with 4 nonzero elements, hence
+
+   V         = [ 5 8 3 6 ]
+   COL_INDEX = [ 0 1 2 1 ]
+   ROW_INDEX = [ 0 1 2 3 4 ] 
+
+assuming a zero-indexed language.
+To extract a row, we first define:
+
+   row_start = ROW_INDEX[row]
+   row_end   = ROW_INDEX[row + 1]
+
+Then we take slices from V and COL_INDEX starting at row_start and ending at row_end.
+To extract the row 1 (the second row) of this matrix we set row_start=1 and row_end=2. Then we make the slices V[1:2] = [8] and COL_INDEX[1:2] = [1]. We now know that in row 1 we have one element at column 1 with value 8.
+In this case the CSR representation contains 13 entries, compared to 16 in the original matrix. The CSR format saves on memory only when NNZ < (m (n â 1) â 1) / 2.
+Another example, the matrix
+
+
+  
+    
+      
+        
+          
+            (
+            
+              
+                
+                  10
+                
+                
+                  20
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  30
+                
+                
+                  0
+                
+                
+                  40
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  50
+                
+                
+                  60
+                
+                
+                  70
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  80
+                
+              
+            
+            )
+          
+        
+      
+    
+    {\displaystyle {\begin{pmatrix}10&20&0&0&0&0\\0&30&0&40&0&0\\0&0&50&60&70&0\\0&0&0&0&0&80\\\end{pmatrix}}}
+  
+
+is a 4 Ã 6 matrix (24 entries) with 8 nonzero elements, so
+
+   V         = [ 10 20 30 40 50 60 70 80 ]
+   COL_INDEX = [  0  1  1  3  2  3  4  5 ]   
+   ROW_INDEX = [  0  2  4  7  8 ]
+
+The whole is stored as 21 entries: 8 in V, 8 in COL_INDEX, and 5 in ROW_INDEX.
+
+ROW_INDEX splits the array V into rows: (10, 20) (30, 40) (50, 60, 70) (80), indicating the index of V (and COL_INDEX) where each row starts and ends;
+COL_INDEX aligns values in columns: (10, 20, ...) (0, 30, 0, 40, ...)(0, 0, 50, 60, 70, 0) (0, 0, 0, 0, 0, 80).
+Note that in this format, the first value of ROW_INDEX is always zero and the last is always NNZ, so they are in some sense redundant (although in programming languages where the array length needs to be explicitly stored, NNZ would not be redundant). Nonetheless, this does avoid the need to handle an exceptional case when computing the length of each row, as it guarantees the formula ROW_INDEX[i + 1] â ROW_INDEX[i] works for any row i. Moreover, the memory cost of this redundant storage is likely insignificant for a sufficiently large matrix.
+The (old and new) Yale sparse matrix formats are instances of the CSR scheme. The old Yale format works exactly as described above, with three arrays; the new format combines ROW_INDEX and COL_INDEX into a single array and handles the diagonal of the matrix separately.[9]
+For  logical  adjacency matrices, the data array can be omitted, as the existence of an entry in the row array is sufficient to model a binary adjacency relation.
+It is likely known as the Yale format because it was proposed in the 1977 Yale Sparse Matrix Package report from Department of Computer Science at Yale University.[10]
+
+Compressed sparse column (CSC or CCS)[edit]
+CSC is similar to CSR except that values are read first by column, a row index is stored for each value, and column pointers are stored. For example, CSC is (val, row_ind, col_ptr), where val is an array of the (top-to-bottom, then left-to-right) non-zero values of the matrix; row_ind is the row indices corresponding to the values; and, col_ptr is the list of val indexes where each column starts. The name is based on the fact that column index information is compressed relative to the COO format. One typically uses another format (LIL, DOK, COO) for construction. This format is efficient for arithmetic operations, column slicing, and matrix-vector products.  See scipy.sparse.csc_matrix. This is the traditional format for specifying a sparse matrix in MATLAB (via the sparse function).
+
+Special structure[edit]
+Banded[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Band matrix
+An important special type of sparse matrices is band matrix, defined as follows. The lower bandwidth of a matrix A is the smallest number p such that the entry ai,j vanishes whenever i > j + p. Similarly, the upper bandwidth is the smallest number p such that ai,j = 0 whenever i < j â p (Golub & Van Loan 1996, Â§1.2.1). For example, a tridiagonal matrix has lower bandwidth 1 and upper bandwidth 1. As another example, the following sparse matrix has lower and upper bandwidth both equal to 3. Notice that zeros are represented with dots for clarity.
+
+
+  
+    
+      
+        
+          (
+          
+            
+              
+                
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                
+                
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                
+                
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                
+                
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                
+                
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                
+                
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                
+                
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                    â
+                  
+                  
+                    X
+                  
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \left({\begin{smallmatrix}X&X&X&\cdot &\cdot &\cdot &\cdot &\\X&X&\cdot &X&X&\cdot &\cdot &\\X&\cdot &X&\cdot &X&\cdot &\cdot &\\\cdot &X&\cdot &X&\cdot &X&\cdot &\\\cdot &X&X&\cdot &X&X&X&\\\cdot &\cdot &\cdot &X&X&X&\cdot &\\\cdot &\cdot &\cdot &\cdot &X&\cdot &X&\\\end{smallmatrix}}\right)}
+  
+
+Matrices with reasonably small upper and lower bandwidth are known as band matrices and often lend themselves to simpler algorithms than general sparse matrices; or one can sometimes apply dense matrix algorithms and gain efficiency simply by looping over a reduced number of indices.
+By rearranging the rows and columns of a matrix A it may be possible to obtain a matrix Aâ² with a lower bandwidth. A number of algorithms are designed for bandwidth minimization.
+
+Diagonal[edit]
+A very efficient structure for an extreme case of band matrices, the diagonal matrix, is to store just the entries in the main diagonal as a one-dimensional array, so a diagonal n Ã n matrix requires only n entries.
+
+Symmetric[edit]
+A symmetric sparse matrix arises as the adjacency matrix of an undirected graph; it can be stored efficiently as an adjacency list.
+
+Block diagonal[edit]
+A block-diagonal matrix consists of sub-matrices along its diagonal blocks. A block-diagonal matrix A has the form
+
+
+  
+    
+      
+        
+          A
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    
+                      A
+                    
+                    
+                      1
+                    
+                  
+                
+                
+                  0
+                
+                
+                  â¯
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  
+                    
+                      A
+                    
+                    
+                      2
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  0
+                
+              
+              
+                
+                  â®
+                
+                
+                  â®
+                
+                
+                  â±
+                
+                
+                  â®
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  â¯
+                
+                
+                  
+                    
+                      A
+                    
+                    
+                      n
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        ,
+      
+    
+    {\displaystyle \mathbf {A} ={\begin{bmatrix}\mathbf {A} _{1}&0&\cdots &0\\0&\mathbf {A} _{2}&\cdots &0\\\vdots &\vdots &\ddots &\vdots \\0&0&\cdots &\mathbf {A} _{n}\end{bmatrix}},}
+  
+
+where Ak is a square matrix for all k = 1, ..., n.
+
+Reducing fill-in[edit]
+The fill-in of a matrix are those entries that change from an initial zero to a non-zero value during the execution of an algorithm. To reduce the memory requirements and the number of arithmetic operations used during an algorithm, it is useful to minimize the fill-in by switching rows and columns in the matrix. The symbolic Cholesky decomposition can be used to calculate the worst possible fill-in before doing the actual Cholesky decomposition.
+There are other methods than the Cholesky decomposition in use. Orthogonalization methods (such as QR factorization) are common, for example, when solving problems by least squares methods. While the theoretical fill-in is still the same, in practical terms the "false non-zeros" can be different for different methods. And symbolic versions of those algorithms can be used in the same manner as the symbolic Cholesky to compute worst case fill-in.
+
+Solving sparse matrix equations[edit]
+Both iterative and direct methods exist for sparse matrix solving.
+Iterative methods, such as conjugate gradient method and GMRES utilize fast computations of matrix-vector products 
+  
+    
+      
+        A
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle Ax_{i}}
+  
+, where matrix 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ is sparse. The use of preconditioners can significantly accelerate convergence of such iterative methods.
+
+Software[edit]
+Many software libraries support sparse matrices, and provide solvers for sparse matrix equations. The following are open-source:
+
+SuiteSparse, a suite of sparse matrix algorithms, geared toward the direct solution of sparse linear systems.
+PETSc, a large C library, containing many different matrix solvers for a variety of matrix storage formats.
+Trilinos, a large C++ library, with sub-libraries dedicated to the storage of dense and sparse matrices and solution of corresponding linear systems.
+Eigen3 is a C++ library that contains several sparse matrix solvers. However, none of them are parallelized.
+MUMPS (MUltifrontal Massively Parallel sparse direct Solver), written in Fortran90, is a frontal solver.
+deal.II, a finite element library that also has a sub-library for sparse linear systems and their solution.
+DUNE, another finite element library that also has a sub-library for sparse linear systems and their solution.
+PaStix.
+SuperLU.
+Armadillo provides a user-friendly C++ wrapper for BLAS and LAPACK.
+SciPy provides support for several sparse matrix formats, linear algebra, and solvers.
+SPArse Matrix (spam) R and Python package for sparse matrices.
+Wolfram Language Tools for handling sparse arrays
+ALGLIB is a C++ and C# library with sparse linear algebra support
+ARPACK Fortran 77 library for sparse matrix diagonalization and manipulation, using the Arnoldi algorithm
+SPARSE Reference (old) NIST package for (real or complex) sparse matrix diagonalization
+SLEPc Library for solution of large scale linear systems and sparse matrices
+Sympiler, a domain-specific code generator and library for solving linear systems and quadratic programming problems.
+Scikit-learn A Python package for data analysis including sparse matrices.
+sprs implements sparse matrix data structures and linear algebra algorithms in pure Rust.
+Basic Matrix Library (bml) supports several sparse matrix formats and linear algebra algorithms with bindings for C, C++, and Fortran.
+History[edit]
+The term sparse matrix was possibly coined by Harry Markowitz who initiated some pioneering work but then left the field.[11]
+
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Matrix representation
+Pareto principle
+Ragged matrix
+Single-entry matrix
+Skyline matrix
+Sparse graph code
+Sparse file
+Harwell-Boeing file format
+Matrix Market exchange formats
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Yan, Di; Wu, Tao; Liu, Ying; Gao, Yang (2017). An efficient sparse-dense matrix multiplication on a multicore system. IEEE. doi:10.1109/icct.2017.8359956. ISBNÂ 978-1-5090-3944-9. The computation kernel of DNN is large sparse-dense matrix multiplication. In the field of numerical analysis, a sparse matrix is a matrix populated primarily with zeros as elements of the table. By contrast, if the number of non-zero elements in a matrix is relatively large, then it is commonly considered a dense matrix. The fraction of zero elements (non-zero elements) in a matrix is called the sparsity (density). Operations using standard dense-matrix structures and algorithms are relatively slow and consume large amounts of memory when applied to large sparse matrices.
+
+^ "Cerebras Systems Unveils the Industry's First Trillion Transistor Chip". www.businesswire.com. 2019-08-19. Retrieved 2019-12-02. The WSE contains 400,000 AI-optimized compute cores. Called SLACâ¢ for Sparse Linear Algebra Cores, the compute cores are flexible, programmable, and optimized for the sparse linear algebra that underpins all neural network computation
+
+^ "Argonne National Laboratory Deploys Cerebras CS-1, the World's Fastest Artificial Intelligence Computer | Argonne National Laboratory". www.anl.gov (Press release). Retrieved 2019-12-02. The WSE is the largest chip ever made at 46,225 square millimeters in area, it is 56.7 times larger than the largest graphics processing unit. It contains 78 times more AI optimized compute cores, 3,000 times more high speed, on-chip memory, 10,000 times more memory bandwidth, and 33,000 times more communication bandwidth.
+
+^ See scipy.sparse.dok_matrix
+
+^ See scipy.sparse.lil_matrix
+
+^ See scipy.sparse.coo_matrix
+
+^ BuluÃ§, AydÄ±n; Fineman, Jeremy T.; Frigo, Matteo; Gilbert, John R.; Leiserson, Charles E. (2009). Parallel sparse matrix-vector and matrix-transpose-vector multiplication using compressed sparse blocks (PDF). ACM Symp. on Parallelism in Algorithms and Architectures. CiteSeerXÂ 10.1.1.211.5256.
+
+^ Saad, Yousef (2003). Iterative methods for sparse linear systems. SIAM.
+
+^ Bank, Randolph E.; Douglas, Craig C. (1993), "Sparse Matrix Multiplication Package (SMMP)" (PDF), Advances in Computational Mathematics, 1: 127â137, doi:10.1007/BF02070824, S2CIDÂ 6412241
+
+^ Eisenstat, S. C.; Gursky, M. C.; Schultz, M. H.; Sherman, A. H. (April 1977). "Yale Sparse Matrix Package" (PDF). Retrieved 6 April 2019.
+
+^ Oral history interview with Harry M. Markowitz, pp.Â 9, 10.
+
+
+References[edit]
+Golub, Gene H.; Van Loan, Charles F. (1996). Matrix Computations (3rdÂ ed.). Baltimore: Johns Hopkins. ISBNÂ 978-0-8018-5414-9.
+Stoer, Josef; Bulirsch, Roland (2002). Introduction to Numerical Analysis (3rdÂ ed.). Berlin, New York: Springer-Verlag. ISBNÂ 978-0-387-95452-3.
+Tewarson, Reginald P. (May 1973). Sparse Matrices (Part of the Mathematics in Science & Engineering series). Academic Press Inc. (This book, by a professor at the State University of New York at Stony Book, was the first book exclusively dedicated to Sparse Matrices.  Graduate courses using this as a textbook were offered at that University in the early 1980s).
+Bank, Randolph E.; Douglas, Craig C. "Sparse Matrix Multiplication Package" (PDF).
+Pissanetzky, Sergio (1984). Sparse Matrix Technology. Academic Press. ISBNÂ 9780125575805.
+Snay, Richard A. (1976). "Reducing the profile of sparse symmetric matrices". Bulletin GÃ©odÃ©sique. 50 (4): 341â352. Bibcode:1976BGeod..50..341S. doi:10.1007/BF02521587. hdl:2027/uc1.31210024848523. S2CIDÂ 123079384. Also NOAA Technical Memorandum NOS NGS-4, National Geodetic Survey, Rockville, MD.[1]
+
+
+Further reading[edit]
+Gibbs, Norman E.; Poole, William G.; Stockmeyer, Paul K. (1976). "A comparison of several bandwidth and profile reduction algorithms". ACM Transactions on Mathematical Software. 2 (4): 322â330. doi:10.1145/355705.355707. S2CIDÂ 14494429.
+Gilbert, John R.; Moler, Cleve; Schreiber, Robert (1992). "Sparse matrices in MATLAB: Design and Implementation". SIAM Journal on Matrix Analysis and Applications. 13 (1): 333â356. CiteSeerXÂ 10.1.1.470.1054. doi:10.1137/0613024.
+Sparse Matrix Algorithms Research at the Texas A&M University.
+SuiteSparse Matrix Collection
+SMALL project A EU-funded project on sparse models, algorithms and dictionary learning for large-scale data.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+vteMatrix classesExplicitly constrained entries
+Alternant
+Anti-diagonal
+Anti-Hermitian
+Anti-symmetric
+Arrowhead
+Band
+Bidiagonal
+Bisymmetric
+Block-diagonal
+Block
+Block tridiagonal
+Boolean
+Cauchy
+Centrosymmetric
+Conference
+Complex Hadamard
+Copositive
+Diagonally dominant
+Diagonal
+Discrete Fourier Transform
+Elementary
+Equivalent
+Frobenius
+Generalized permutation
+Hadamard
+Hankel
+Hermitian
+Hessenberg
+Hollow
+Integer
+Logical
+Matrix unit
+Metzler
+Moore
+Nonnegative
+Pentadiagonal
+Permutation
+Persymmetric
+Polynomial
+Quaternionic
+Signature
+Skew-Hermitian
+Skew-symmetric
+Skyline
+Sparse
+Sylvester
+Symmetric
+Toeplitz
+Triangular
+Tridiagonal
+Unitary
+Vandermonde
+Walsh
+Z
+Constant
+Exchange
+Hilbert
+Identity
+Lehmer
+Of ones
+Pascal
+Pauli
+Redheffer
+Shift
+Zero
+Conditions on eigenvalues or eigenvectors
+Companion
+Convergent
+Defective
+Diagonalizable
+Hurwitz
+Positive-definite
+Stieltjes
+Satisfying conditions on products or inverses
+Congruent
+Idempotent or Projection
+Invertible
+Involutory
+Nilpotent
+Normal
+Orthogonal
+Unimodular
+Unipotent
+Totally unimodular
+Weighing
+With specific applications
+Adjugate
+Alternating sign
+Augmented
+BÃ©zout
+Carleman
+Cartan
+Circulant
+Cofactor
+Commutation
+Confusion
+Coxeter
+Distance
+Duplication and elimination
+Euclidean distance
+Fundamental (linear differential equation)
+Generator
+Gram
+Hessian
+Householder
+Jacobian
+Moment
+Payoff
+Pick
+Random
+Rotation
+Seifert
+Shear
+Similarity
+Symplectic
+Totally positive
+Transformation
+Used in statistics
+Centering
+Correlation
+Covariance
+Design
+Doubly stochastic
+Fisher information
+Hat
+Precision
+Stochastic
+Transition
+Used in graph theory
+Adjacency
+Biadjacency
+Degree
+Edmonds
+Incidence
+Laplacian
+Seidel adjacency
+Tutte
+Used in science and engineering
+CabibboâKobayashiâMaskawa
+Density
+Fundamental (computer vision)
+Fuzzy associative
+Gamma
+Gell-Mann
+Hamiltonian
+Irregular
+Overlap
+S
+State transition
+Substitution
+Z (chemistry)
+Related terms
+Jordan normal form
+Linear independence
+Matrix exponential
+Matrix representation of conic sections
+Perfect matrix
+Pseudoinverse
+Row echelon form
+Wronskian
+
+List of matrices
+Category:Matrices
+
+vteNumerical linear algebraKey concepts
+Floating point
+Numerical stability
+Problems
+System of linear equations
+Matrix decompositions
+Matrix multiplication (algorithms)
+Matrix splitting
+Sparse problems
+Hardware
+CPU cache
+TLB
+Cache-oblivious algorithm
+SIMD
+Multiprocessing
+Software
+MATLAB
+Basic Linear Algebra Subprograms (BLAS)
+LAPACK
+Specialized libraries
+General purpose software
+
+
+^ Saad, Yousef (2003). Iterative methods for sparse linear systems. SIAM.
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Sparse_matrix&oldid=1068138170"
+		Categories: Sparse matrices
+	

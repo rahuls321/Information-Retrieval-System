@@ -1,0 +1,245 @@
+
+Title:
+Null-terminated string
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}See also: String (computer science) Â§Â Null-terminated
+
+In computer programming, a null-terminated string is a character string stored as an array containing the characters and terminated with a null character (a character with a value of zero, called NUL in this article). Alternative names are C string, which refers to the C programming language and ASCIIZ[citation needed] (although C can use encodings other than ASCII).
+The length of a string is found by searching for the (first) NUL. This can be slow as it takes O(n) (linear time) with respect to the string length. It also means that a string cannot contain a NUL (there is a NUL in memory, but it is after the last character, not "in" the string).
+
+Contents
+
+1 History
+2 Limitations
+3 Character encodings
+4 Improvements
+5 See also
+6 References
+
+
+
+History[edit]
+Null-terminated strings were produced by the .ASCIZ directive of the PDP-11 assembly languages and the ASCIZ directive of the MACRO-10 macro assembly language for the PDP-10. These predate the development of the C programming language, but other forms of strings were often used.
+At the time C (and the languages that it was derived from) was developed, memory was extremely limited, so using only one byte of overhead to store the length of a string was attractive. The only popular alternative at that time, usually called a "Pascal string" (a more modern term is "length-prefixed"), used a leading byte to store the length of the string. This allows the string to contain NUL and made finding the length of an already stored string, need only one memory access (O(1) (constant) time), but limited string length to 255 characters (on a machine using 8-bit bytes). C designer Dennis Ritchie chose to follow the convention of null-termination to avoid the limitation on the length of a string and because maintaining the count seemed, in his experience, less convenient than using a terminator.[1][2]
+This had some influence on CPU instruction set design. Some CPUs in the 1970s and 1980s, such as the Zilog Z80 and the DEC VAX, had dedicated instructions for handling length-prefixed strings. However, as the null-terminated string gained traction, CPU designers began to take it into account, as seen for example in IBM's decision to add the "Logical String Assist" instructions to the ES/9000 520 in 1992 and the vector string instructions to the IBM z13 in 2015.[3]
+FreeBSD developer Poul-Henning Kamp, writing in ACM Queue, referred to the victory of null-terminated strings over a 2-byte (not one-byte) length as "the most expensive one-byte mistake" ever.[4]
+
+Limitations[edit]
+While simple to implement, this representation has been prone to errors and performance problems.
+Null-termination has historically created security problems.[5] A NUL inserted into the middle of a string will truncate it unexpectedly.[6] A common bug was to not allocate the additional space for the NUL, so it was written over adjacent memory. Another was to not write the NUL at all, which was often not detected during testing because the block of memory already contained zeros. Due to the expense of finding the length, many programs did not bother before copying a string to a fixed-size buffer, causing a buffer overflow if it was too long.
+The inability to store a zero requires that text and binary data be kept distinct and handled by different functions (with the latter requiring the length of the data to also be supplied). This can lead to code redundancy and errors when the wrong function is used.
+The speed problems with finding the length can usually be mitigated by combining it with another operation that is O(n) anyway, such as in strlcpy. However, this does not always result in an intuitive API.
+
+Character encodings[edit]
+Null-terminated strings require that the encoding does not use a zero byte (0x00) anywhere; therefore it is not possible to store every possible ASCII or UTF-8 string.[7][8][9] However, it is common to store the subset of ASCII or UTF-8 â every character except NUL â in null-terminated strings. Some systems use "modified UTF-8" which encodes NUL as two non-zero bytes (0xC0, 0x80) and thus allow all possible strings to be stored. This is not allowed by the UTF-8 standard, because it is an overlong encoding, and it is seen as a security risk. Some other byte may be used as end of string instead, like 0xFE or 0xFF, which are not used in UTF-8.
+UTF-16 uses 2-byte integers and as either byte may be zero (and in fact every other byte is, when representing ASCII text), cannot be stored in a null-terminated byte string. However, some languages implement a string of 16-bit UTF-16 characters, terminated by a 16-bit NUL
+
+Improvements[edit]
+Many attempts to make C string handling less error prone have been made. One strategy is to add safer functions such as strdup and strlcpy, whilst deprecating the use of unsafe functions such as  gets. Another is to add an object-oriented wrapper around C strings so that only safe calls can be done. However, it is possible to call the unsafe functions anyway.
+Most modern libraries replace C strings with a structure containing a 32-bit or larger length value (far more than were ever considered for length-prefixed strings), and often add another pointer, a reference count, and even a NUL to speed up conversion back to a C string. Memory is far larger now, such that if the addition of 3 (or 16, or more) bytes to each string is a real problem the software will have to be dealing with so many small strings that some other storage method will save even more memory (for instance there may be so many duplicates that a hash table will use less memory). Examples include the C++ Standard Template Library std::string, the Qt QString, the MFC CString, and the C-based implementation CFString from Core Foundation as well as its Objective-C sibling NSString from Foundation, both by Apple. More complex structures may also be used to store strings such as the rope.
+
+See also[edit]
+Empty string
+Sentinel value
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Ritchie, Dennis M. (April 1993). The development of the C language. Second History of Programming Languages conference. Cambridge, MA.
+
+^ Ritchie, Dennis M. (1996). "The development of the C language".  In Bergin, Jr., Thomas J.; Gibson, Jr., Richard G. (eds.). History of Programming Languages (2Â ed.). New York: ACM Press. ISBNÂ 0-201-89502-1 â via Addison-Wesley (Reading, Mass).
+
+^ IBM z/Architecture Principles of Operation
+
+^ Kamp, Poul-Henning (25 July 2011), "The Most Expensive One-byte Mistake", ACM Queue, 9 (7): 40â43, doi:10.1145/2001562.2010365, ISSNÂ 1542-7730, S2CIDÂ 30282393
+
+^ Rain Forest Puppy (9 September 1999). "Perl CGI problems". Phrack Magazine. artofhacking.com. 9 (55): 7. Retrieved 3 January 2016.
+
+^ "Null byte injection on PHP?".
+
+^ "UTF-8, a transformation format of ISO 10646". Retrieved 19 September 2013.
+
+^ "Unicode/UTF-8-character table". Retrieved 13 September 2013.
+
+^ Kuhn, Markus. "UTF-8 and Unicode FAQ". Retrieved 13 September 2013.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteC programming language
+ANSI C
+C99
+C11
+C17
+C2x
+Embedded C
+MISRA C
+Features
+Functions
+Header files
+Operators
+String
+Syntax
+Preprocessor
+Data types
+Standard library
+Char
+File I/O
+Math
+Dynamic memory
+String
+Time
+Variadic
+POSIX
+Standard libraryimplementations
+Bionic
+libhybris
+dietlibc
+glibc
+EGLIBC
+klibc
+Windows CRT
+musl
+Newlib
+uClibc
+Compilers
+ACK
+Borland Turbo C
+Clang
+GCC
+ICC
+LCC
+Norcroft C
+PCC
+SDCC
+TCC
+Microsoft Visual Studio / Express / C++
+Watcom C/C++
+IDEs
+Anjuta
+CLion
+Code::Blocks
+CodeLite
+Eclipse
+Geany
+GNOME Builder
+KDevelop
+Microsoft Visual Studio
+NetBeans
+Comparison withother languages
+Compatibility of C and C++
+Comparison with Pascal
+Descendantlanguages
+C++
+C#
+D
+Objective-C
+Alef
+Limbo
+Go
+Vala
+
+ Category
+
+vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Null-terminated_string&oldid=1054773966"
+		Categories: String data structuresHidden categories: Use dmy dates from August 2021All articles with unsourced statementsArticles with unsourced statements from November 2021
+	

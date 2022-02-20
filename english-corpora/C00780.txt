@@ -1,0 +1,730 @@
+
+Title:
+Datalog
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Declarative logic programming language
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}DatalogParadigmLogic, DeclarativeFamilyPrologFirstÂ appeared1986; 36Â years agoÂ (1986)Stable release2.0
+   
+Typing disciplineWeakDialectsDatomic, pyDatalog, Dyna, etc.Influenced byProlog
+Datalog is a declarative logic programming language that syntactically is a subset of Prolog.  It is often used as a query language for deductive databases.  In recent years, Datalog has found new application in data integration, information extraction, networking, program analysis, security, cloud computing and machine learning.[1][2]
+Its origins date back to the beginning of logic programming, but it became prominent as a separate area around 1977 when HervÃ© Gallaire and Jack Minker organized a workshop on logic and databases.[3] David Maier is credited with coining the term Datalog.[4]
+
+Contents
+
+1 Features, limitations and extensions
+2 Fragments
+3 Expressiveness
+4 Example
+5 Syntax
+6 Semantics
+
+6.1 Model theory
+6.2 Fixpoint semantics
+
+
+7 Evaluation
+
+7.1 Bottom-Up Evaluation Strategies
+
+7.1.1 NaÃ¯ve Evaluation
+
+
+
+
+8 Systems implementing Datalog
+
+8.1 Free software/open source
+8.2 Non-free software
+
+
+9 See also
+10 References
+11 Bibliography
+12 Further reading
+
+
+
+Features, limitations and extensions[edit]
+Unlike in Prolog, statements of a Datalog program can be stated in any order. Furthermore, Datalog queries on finite sets are guaranteed to terminate, so Datalog does not have Prolog's cut operator. This makes Datalog a fully declarative language.
+In contrast to Prolog, Datalog
+
+disallows complex terms as arguments of predicates, e.g., p (1, 2) is admissible but not p (f (1), 2),
+imposes certain stratification restrictions on the use of negation and recursion,
+requires that every variable that appears in the head of a clause also appears in a nonarithmetic positive (i.e. not negated) literal in the body of the clause,
+requires that every variable appearing in a negative literal in the body of a clause also appears in some positive literal in the body of the clause[5]
+Query evaluation with Datalog is based on first-order logic, and is thus sound and complete. However, Datalog is not Turing complete, and is thus used as a domain-specific language that can take advantage of efficient algorithms developed for query resolution. Indeed, various methods have been proposed to efficiently perform queries, e.g., the Magic Sets algorithm,[6] tabled logic programming[7] or SLG resolution.[8]
+Some widely used database systems include ideas and algorithms developed for Datalog. For example, the SQL:1999 standard includes recursive queries, and the Magic Sets algorithm (initially developed for the faster evaluation of Datalog queries) is implemented in IBM's DB2.[9] Moreover, Datalog engines are behind specialised database systems such as Intellidimension's database for the semantic web.[citation needed]
+Several extensions have been made to Datalog, e.g., to support aggregate functions, to allow object-oriented programming, or to allow disjunctions as heads of clauses. These extensions have significant impacts on the definition of Datalog's semantics and on the implementation of a corresponding Datalog interpreter.
+
+Fragments[edit]
+Datalog programs may or may not use negation in rule bodies: Datalog programs with negation are often required to use it as stratified negation to ensure that the semantics are well-defined. Datalog programs may or may not use inequalities between variables in rule bodies.
+Some syntactic fragments of Datalog have been defined, such as the following (from most restricted to least restricted):
+
+linear Datalog, where rule bodies must consist of a single atom
+guarded Datalog, where for every rule, all the variables that occur in the rule bodies must occur together in at least one atom, called a guard atom
+frontier-guarded Datalog, where for every rule, all the variables that are shared between the rule body and the rule head (called the frontier variables) must all occur together in a guard atom
+Another restriction concerns the use of recursion: nonrecursive Datalog is defined by disallowing recursion in the definition of Datalog programs. This fragment of Datalog is as expressive as unions of conjunctive queries, but writing queries as nonrecursive Datalog can be more concise.
+
+Expressiveness[edit]
+The boundedness problem for Datalog asks, given a Datalog program, whether it is bounded, i.e., the maximal recursion depth reached when evaluating the program on an input database can be bounded by some constant. In other words, this question asks whether the Datalog program could be rewritten as a nonrecursive Datalog program. Solving the boundedness problem on arbitrary Datalog programs is undecidable,[10] but it can be made decidable by restricting to some fragments of Datalog.
+
+Example[edit]
+These two lines define two facts, i.e. things that always hold:
+
+parent(xerces, brooke).
+parent(brooke, damocles).
+
+This is what they mean: xerces is a parent of brooke and brooke is a parent of damocles. The names are written in lowercase because strings beginning with an uppercase letter stand for variables.
+These two lines define rules, which define how new facts can be inferred from known facts.
+
+ancestor(X, Y) :- parent(X, Y).
+ancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).
+
+meaning:
+
+X is an ancestor of Y if X is a parent of Y.
+X is an ancestor of Y if X is a parent of some Z, and Z is an ancestor of Y.
+This line is a query:
+
+?- ancestor(xerces, X).
+
+It asks the following: Who are all the X that xerces is an ancestor of? It would return brooke and damocles when posed against a Datalog system containing the facts and rules described above.
+More about rules: a rule has a :- symbol in the middle: the part to the left of this symbol is the head of the rule, the part to the right is the body. A rule reads like this: <head> is known to be true if it is known that <body> is true. Uppercase letters in rules stand for variables: in the example, we don't know who X or Y are, but some X is the ancestor of some Y if that X is the parent of that Y. The ordering of the clauses is irrelevant in Datalog, in contrast to Prolog, which depends on the ordering of clauses for computing the result of the query call.
+Datalog distinguishes between extensional predicate symbols (defined by facts) and intensional predicate symbols (defined by rules).[11] In the example above ancestor is an intensional predicate symbol, and parent is extensional. Predicates may also be defined by facts and rules and therefore neither be purely extensional nor intensional, but any Datalog program can be rewritten into an equivalent program without such predicate symbols with duplicate roles.
+
+Syntax[edit]
+A Datalog program consists of a list of facts and rules (Horn clauses).[12] If constant and variable are two countable sets of constants and variables respectively and relation is a countable set of predicate symbols, then the following grammar expresses the structure of a Datalog program:
+
+<program> ::= <fact> <program> | <rule> <program> | É
+<fact> ::=  <relation> "(" <constant-list> ")." 
+<rule> ::= <atom> ":-" <atom-list> "."
+<atom> ::= <relation> "(" <term-list> ")"
+<atom-list> ::= <atom> | <atom> "," <atom-list>
+<term> ::= <constant> | <variable>
+<term-list> ::= <term> | <term> "," <term-list>
+<constant-list> ::= <constant> | <constant> "," <constant-list>
+
+Atoms are also referred to as literals in the literature.
+
+Semantics[edit]
+There are three widely-used approaches to the semantics of Datalog programs: model-theoretic, fixed-point, and proof-theoretic, developed and shown to be equivalent for Horn clause logic programs more generally by Maarten van Emden and Robert Kowalski[13]
+
+Model theory[edit]
+A fact or rule is called ground if all of its subterms are constants. A ground rule R1 is a ground instance of another rule R2 if R1 is the result of a substitution of constants for all the variables in R2.
+The Herbrand base of a Datalog program is the set of all ground atoms that can be made with the constants appearing in the program. An interpretation (also known as a database instance) is a subset of the Herbrand base. A ground atom is true in an interpretation I if it is an element of I. A rule is true in an interpretation I if for each ground instance of that rule, if all the clauses in the body are true in I, then the head of the rule is also true in I.
+A model of a Datalog program P is an interpretation I of P which contains all the ground facts of P, and makes all of the rules of P true in I. Model-theoretic semantics state that the meaning of a Datalog program is its minimal model (equivalently, the intersection of all its models).[14]
+
+Fixpoint semantics[edit]
+Let I be the set of interpretations of a Datalog program P (i.e. I = P(H), where H is the Herbrand base of P and P is the powerset operator). Define a map from I to I as follows: For each ground instance of each rule in P, if every clause in the body is in the input interpretation, then add the head of the ground instance to the output interpretation. Then the fixed point of this map is the minimal model of the program. The fixpoint semantics suggest an algorithm for computing the minimal model: Start with the set of ground facts in the program, then repeatedly add consequences of the rules until a fixpoint is reached.[15]
+
+Evaluation[edit]
+There are many different ways to evaluate a Datalog program, with different performance characteristics.
+
+Bottom-Up Evaluation Strategies[edit]
+Bottom-up evaluation strategies start with the facts in the program and repeatedly apply the rules until the either some goal or query is established, or until the complete minimal model of the program is produced.
+
+NaÃ¯ve Evaluation[edit]
+NaÃ¯ve evaluation mirrors the fixpoint semantics for Datalog programs. NaÃ¯ve evaluation uses a set of "known facts", which is initialized to the facts in the program. It proceeds by repeatedly enumerating all ground instances of each rule in the program. If each atom in the body of the ground instance is in the set of known facts, then the head atom is added to the set of known facts. This process is repeated until a fixed point is reached, and no more facts may be deduced. NaÃ¯ve evaluation produces the entire minimal model of the program.[16]
+
+Systems implementing Datalog[edit]
+Here is a short list of systems that are either based on Datalog or provide a Datalog interpreter:
+
+Free software/open source[edit]
+
+
+
+Written in
+
+Name
+
+Try it online
+
+External Database
+
+Description
+
+Licence
+
+
+C
+
+XSB
+
+
+
+
+
+A logic programming and deductive database system for Unix and Microsoft Windows with tabling giving Datalog-like termination and efficiency, including incremental evaluation[17]
+
+GNU LGPL
+
+
+
+
+C++
+
+Coral[18]
+
+
+
+
+
+A deductive database system written in C++ with semi-naÃ¯ve datalog evaluation. Developed 1988-1997.
+
+custom licence, free for non-commercial use
+
+
+DLV[19]
+
+
+
+
+
+A Datalog extension that supports disjunctive head clauses.
+
+custom licence, free for academic and non-commercial educational use, as well as for use by non-profit organisations[20]
+
+
+Inter4QL[21]
+
+
+
+
+
+an open-source command-line interpreter of Datalog-like 4QL query language implemented in C++ for Windows, Mac OS X and Linux. Negation is allowed in heads and bodies of rules as well as in recursion
+
+GNU GPL v3
+
+
+RDFox[22]
+
+
+
+in-memory
+
+A high-performance RDF triple store with Datalog reasoning. Implements the FBF algorithm for incremental evaluation.
+
+custom licence, free for non-commercial use[23]
+
+
+Souffle[24]
+
+Yes
+
+file, in-memory, sqlite3
+
+an open-source Datalog engine that has a compiler translating Datalog to high-performance, parallel C++ code and a high-performance interpreter; specifically designed for complex Datalog queries over large data sets as encountered in the context of static program analysis
+
+UPL v1.0
+
+
+Clojure
+
+Cascalog
+
+
+
+Hadoop
+
+a Clojure library for querying data stored on Hadoop clusters
+
+Apache
+
+
+Clojure Datalog
+
+
+
+
+
+a contributed library implementing aspects of Datalog
+
+Eclipse Public License 1.0
+
+
+XTDB (formerly Crux)
+
+Yes
+
+Apache Kafka
+
+A general-purpose database with an "unbundled" architecture, using log-centric streaming of documents and transactions to achieve significant architectural flexibility and elegant horizontal scaling. Pluggable components include Kafka, RocksDB and LMDB. Indexes are bitemporal to support point-in-time Datalog queries by default. Java and HTTP APIs are provided.
+
+MIT License
+
+
+Datascript
+
+
+
+in-memory
+
+Immutable database and Datalog query engine that runs in the browser
+
+Eclipse Public License 1.0
+
+
+Datalevin
+
+
+
+LMDB
+
+A fork of Datascript that is optimized for the LMDB durable storage
+
+Eclipse Public License 1.0
+
+
+Datahike
+
+
+
+file, in-memory
+
+A fork of Datascript with a durable backend using a hitchiker tree.
+
+Eclipse Public License 1.0
+
+
+Naga/Asami
+
+
+
+file, in-memory
+
+A combination of a graph database (Asami), and a rules processing system (Naga) that evaluates native Datalog syntax and executes using the database. Runs in browsers (memory), on the JVM (memory/files), or natively (memory/files).
+
+Eclipse Public License 1.0
+
+
+Erlang
+
+Datalog
+
+
+
+
+
+The library is designed to query and formalise relation of n-ary streams using datalog. It implements an ad-hoc query engine using simplified version of general logic programming paradigm. The library facilitates development of data integration, information exchange and semantic web applications.
+
+Apache v2
+
+
+Haskell
+
+Dyna[25]
+
+
+
+
+
+Dyna is a declarative programming language for statistical AI programming. The language is based on Datalog, supports both forward and backward chaining, and incremental evaluation.
+
+GNU AGPL v3
+
+
+DDlog[26]
+
+
+
+
+
+DDlog is an incremental, in-memory, typed Datalog engine. It is well suited for writing programs that incrementally update their output in response to input changes. The DDlog programmer specifies the desired input-output mapping in a declarative manner, using a dialect of Datalog. The DDlog compiler then synthesizes an efficient incremental implementation. DDlog is based on the differential dataflow[27] library.
+
+MIT License
+
+
+Java
+
+AbcDatalog[28]
+
+
+
+
+
+AbcDatalog is an open-source implementation of the logic programming language Datalog written in Java. It provides ready-to-use implementations of common Datalog evaluation algorithms, as well as some experimental multi-threaded evaluation engines. It supports language features beyond core Datalog such as explicit (dis-)unification of terms and stratified negation. Additionally, AbcDatalog is designed to be easily extensible with new evaluation engines and new language features.
+
+BSD
+
+
+IRIS[29]
+
+
+
+
+
+IRIS extends Datalog with function symbols, built-in predicates, locally stratified or un-stratified logic programs (using the well-founded semantics), unsafe rules and XML schema data types
+
+GNU LGPL v2.1
+
+
+Jena
+
+
+
+
+
+a Semantic Web framework which includes a Datalog implementation as part of its general purpose rule engine, which provides OWL and RDFS support.[30]
+
+Apache v2
+
+
+SociaLite[31]
+
+
+
+
+
+SociaLite is a datalog variant for large-scale graph analysis developed in Stanford
+
+Apache v2
+
+
+Graal[32]
+
+
+
+
+
+Graal is a Java toolkit dedicated to querying knowledge bases within the framework of existential rules, aka Datalog+/-.
+
+CeCILL v2.1
+
+
+Flix
+
+Yes
+
+
+
+A functional and logic programming language inspired by Datalog extended with user-defined lattices and monotone filter/transfer functions.
+
+Apache v2
+
+
+Lua
+
+Datalog[33]
+
+Yes[34]
+
+
+
+a lightweight deductive database system.
+
+GNU LGPL
+
+
+OCaml
+
+datalog[35]
+
+
+
+
+
+An in-memory datalog implementation for OCaml featuring bottom-up and top-down algorithms.
+
+BSD 2-clause
+
+
+Prolog
+
+DES[36]
+
+
+
+
+
+an open-source implementation to be used for teaching Datalog in courses
+
+GNU LGPL
+
+
+Python
+
+pyDatalog
+
+
+
+11 dialects of SQL
+
+adds logic programming to Python's toolbox.  It can run logic queries on databases or Python objects, and use logic clauses to define the behavior of Python classes.
+
+GNU LGPL
+
+
+Racket
+
+Datalog for Racket[37]
+
+
+
+
+
+
+
+GNU LGPL
+
+
+Datafun[38]
+
+
+
+
+
+Generalized Datalog on Semilattices
+
+GNU LGPL
+
+
+Ruby
+
+bloom / bud
+
+
+
+
+
+A Ruby DSL for programming with data-centric constructs, based on the Dedalus extension of Datalog which adds a temporal dimension to the logic.
+
+BSD 3-Clause
+
+
+Rust
+
+Crepe
+
+
+
+
+
+Crepe is a library that allows you to write declarative logic programs in Rust, with a Datalog-like syntax. It provides a procedural macro that generates efficient, safe code and interoperates seamlessly with Rust programs. It also supports extensions like stratified negation, semi-naive evaluation, and calling external functions within Datalog rules.
+
+MIT License / Apache 2.0
+
+
+Datafrog
+
+
+
+
+
+Datafrog is a lightweight Datalog engine intended to be embedded in other Rust programs.
+
+MIT License / Apache 2.0
+
+
+TerminusDB
+
+
+
+In-memory
+
+TerminusDB is an open source graph database and document store. Designed for collaboratively building data-intensive applications and knowledge graphs.
+
+Apache v2
+
+
+Tcl
+
+tclbdd[39]
+
+
+
+
+
+Implementation based on binary decision diagrams. Built to support development of an optimizing compiler for Tcl.
+
+BSD
+
+
+Other or Unknown Languages
+
+bddbddb[40]
+
+
+
+
+
+an implementation of Datalog done at Stanford University. It is mainly used to query Java bytecode including points-to analysis on large Java programs
+
+GNU LGPL
+
+
+ConceptBase[41]
+
+
+
+
+
+a deductive and object-oriented database system based on a Datalog query evaluatorÂ : Prolog for triggered procedures and rewrites, axiomatized Datalog called Â«Â TelosÂ Â» for (meta)modeling. It is mainly used for conceptual modeling and metamodeling
+
+BSD 2-Clause
+
+Non-free software[edit]
+Datomic is a distributed database designed to enable scalable, flexible and intelligent applications, running on new cloud architectures. It uses Datalog as the query language.
+FoundationDB provides a free-of-charge database binding for pyDatalog, with a tutorial on its use.[42]
+Leapsight Semantic Dataspace (LSD) is a distributed deductive database that offers high availability, fault tolerance, operational simplicity, and scalability.  LSD uses Leaplog (a Datalog implementation) for querying and reasoning and was create by Leapsight.[43]
+LogicBlox, a commercial implementation of Datalog used for web-based retail planning and insurance applications.
+Profium Sense is a native RDF compliant graph database written in Java. It provides Datalog evaluation support of user defined rules.
+.QL, a commercial object-oriented variant of Datalog created by Semmle for analyzing source code to detect security vulnerabilities.[44]
+SecPAL a security policy language developed by Microsoft Research.[45]
+Stardog is a graph database, implemented in Java. It provides support for RDF and all OWL 2 profiles providing extensive reasoning capabilities, including datalog evaluation.
+StrixDB: a commercial RDF graph store, SPARQL compliant with Lua API and Datalog inference capabilities. Could be used as httpd (Apache HTTP Server) module or standalone (although beta versions are under the Perl Artistic License 2.0).
+See also[edit]
+Answer set programming
+Conjunctive query
+DLV
+Flix
+SWRL
+Tuple-generating dependency (TGD), a language for integrity constraints on relational databases with a similar syntax to Datalog
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Huang, Green, and Loo, "Datalog and Emerging applications", SIGMOD 2011 (PDF), UC Davis{{citation}}:  CS1 maint: multiple names: authors list (link).
+
+^ "Neural Datalog Through Time: Informed Temporal Modeling via Logical Specification". Proceedings of ICML 2020.
+
+^ Gallaire, HervÃ©; Minker, John âJackâ, eds. (1978), "Logic and Data Bases, Symposium on Logic and Data Bases, Centre d'Ã©tudes et de recherches de Toulouse, 1977", Advances in Data Base Theory, New York: Plenum Press, ISBNÂ 978-0-306-40060-5.
+
+^ Abiteboul, Serge; Hull, Richard; Vianu, Victor (1995), Foundations of databases, p.Â 305, ISBNÂ 9780201537710.
+
+^ Datalog
+
+^ Bancilhon. "Magic sets and other strange ways to implement logic programs" (PDF). PT: UNL. Archived from the original (PDF) on 2012-03-08. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Pfenning, Frank; Schuermann, Carsten. "Twelf User's Guide". CMU. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "Efficient top-down computation of queries under the well-founded semantics" (PDF). {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Gryz; Guo; Liu; Zuzarte (2004). "Query sampling in DB2 Universal Database" (PDF). Proceedings of the 2004 ACM SIGMOD international conference on Management of data - SIGMOD '04. p.Â 839. doi:10.1145/1007568.1007664. ISBNÂ 978-1581138597. S2CIDÂ 7775190.
+
+^ Hillebrand, Gerd G; Kanellakis, Paris C; Mairson, Harry G; Vardi, Moshe Y (1995-11-01). "Undecidable boundedness problems for datalog programs". The Journal of Logic Programming. 25 (2): 163â190. doi:10.1016/0743-1066(95)00051-K. ISSNÂ 0743-1066.
+
+^ Lifschitz (2011). "Datalog Programs and Their Stable Models". Datalog Reloaded. Lecture Notes in Computer Science. Vol.Â 6702. DE: Springer. pp.Â 78â87. CiteSeerXÂ 10.1.1.225.4027. doi:10.1007/978-3-642-24206-9_5. ISBNÂ 978-3-642-24205-2.
+
+^ Ceri, Gottlob & Tanca 1989, p.Â 146.
+
+^ Van Emden, M.H. and Kowalski, R.A., 1976. The semantics of predicate logic as a programming language. Journal of the ACM (JACM), 23(4), pp.733-742.
+
+^ Ceri, Gottlob & Tanca 1989, p.Â 149.
+
+^ Ceri, Gottlob & Tanca 1989, p.Â 150.
+
+^ Ceri, Gottlob & Tanca 1989, p.Â 154.
+
+^ The XSB System, Version 3.7.x, Volume 1: Programmer's Manual (PDF).
+
+^ Coral Database Project web page.
+
+^ "DLVSYSTEM S.r.l. | DLV". www.dlvsystem.com. Retrieved 2018-11-29..
+
+^ "DLVSYSTEM S.r.l. | DLV". www.dlvsystem.com. Retrieved 2018-11-29.
+
+^ 4QL.
+
+^ RDFox web page.
+
+^ RDFox licence, archived from the original on 2018-02-21, retrieved 2018-11-29.
+
+^ Souffle Compiler, 2018-12-12.
+
+^ "Dyna", Dyna web page, archived from the original on 2016-01-17, retrieved 2016-11-07.
+
+^ DDlog
+
+^ Differential Dataflow
+
+^ AbcDatalog.
+
+^ Iris reasoner.
+
+^ "Jena". Source forge.
+
+^ SociaLite homepage, archived from the original on 2017-09-11, retrieved 2015-10-12.
+
+^ Graal library.
+
+^ Ramsdell, "Datalog", Tools, NEU.
+
+^ Sangkok, Y, "Wrapper", Mitre Datalog, Git hub, (compiled to JavaScript).
+
+^ Cruanes, Simon, "datalog", datalog, GitHub.
+
+^ Saenz-Perez (2011), "DES: A Deductive Database System", Electronic Notes in Theoretical Computer Science, ES, 271: 63â78, doi:10.1016/j.entcs.2011.02.011.
+
+^ "Datalog", Racket (technical documentation).
+
+^ "Datafun", Datafun in Racket (Links to paper, talk and github site).
+
+^ Kenny, Kevin B (12â14 November 2014). Binary decision diagrams, relational algebra, and Datalog: deductive reasoning for Tcl (PDF). Twenty-first Annual Tcl/Tk Conference. Portland, Oregon. Retrieved 29 December 2015.
+
+^ "bddbddb", Source forge.
+
+^ ConceptBase.
+
+^ FoundationDB Datalog Tutorial, archived from the original on 2013-08-09.
+
+^ "Leapsight". Archived from the original on 2018-11-11.
+
+^ Semmle QL.
+
+^ "SecPAL". Microsoft Research. Archived from the original on 2007-02-23.
+
+
+Bibliography[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Ceri, S.; Gottlob, G.; Tanca, L. (March 1989). "What you always wanted to know about Datalog (and never dared to ask)". IEEE Transactions on Knowledge and Data Engineering. 1 (1): 146â166. CiteSeerXÂ 10.1.1.210.1118. doi:10.1109/69.43410. ISSNÂ 1041-4347.
+
+Further reading[edit]
+GrÃ¤del, Erich; Kolaitis, Phokion G.; Libkin, Leonid; Maarten, Marx; Spencer, Joel; Vardi, Moshe Y.; Venema, Yde; Weinstein, Scott (2007), Finite model theory and its applications, Texts in Theoretical Computer Science. An EATCS Series, Berlin: Springer-Verlag, ISBNÂ 978-3-540-00428-8, ZblÂ 1133.03001
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteQuery languagesIn current use
+.QL
+ALPHA
+CQL
+Cypher
+D
+DMX
+Datalog
+GraphQL
+Gremlin
+ISBL
+LDAP
+LINQ
+MQL
+MDX
+OQL
+OCL
+QUEL
+SMARTS
+SPARQL
+SQL
+XQuery
+XPath
+YQL
+Proprietary
+YQL
+LINQ
+Superseded
+CODASYL
+
+Authority control: National libraries  
+United States
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Datalog&oldid=1064721744"
+		Categories: Query languagesLogic programming languagesDeclarative programming languagesHidden categories: CS1 maint: multiple names: authors listCS1 errors: missing periodicalArticles with short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from November 2012Articles with LCCN identifiers
+	

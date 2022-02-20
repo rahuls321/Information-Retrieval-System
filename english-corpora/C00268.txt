@@ -1,0 +1,625 @@
+
+Title:
+Magic number (programming)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Sequence of bytes used to identify or indicate the format of a file
+
+In computer programming, the term magic number has multiple meanings.  It could refer to one or more of the following:
+
+Unique values with unexplained meaning or multiple occurrences which could (preferably) be replaced with named constants
+A constant numerical or text value used to identify a file format or protocol; for files, see List of file signatures
+Distinctive unique values that are unlikely to be mistaken for other meanings (e.g., Globally Unique Identifiers)
+Contents
+
+1 Unnamed numerical constants
+
+1.1 Accepted uses
+
+
+2 Format indicators
+
+2.1 Origin
+2.2 In files
+2.3 In protocols
+2.4 In interfaces
+2.5 Other uses
+
+
+3 Data type limits
+4 GUIDs
+5 Debug values
+6 See also
+7 References
+
+
+
+Unnamed numerical constants[edit]
+The term magic number or magic constant refers to the anti-pattern of using numbers directly in source code. This has been referred to as breaking one of the oldest rules of programming, dating back to the COBOL, FORTRAN and PL/1 manuals of the 1960s.[1]  The use of unnamed magic numbers in code obscures the developers' intent in choosing that number,[2] increases opportunities for subtle errors (e.g. is every digit correct in 3.14159265358979323846 and is this equal to 3.14159?) and makes it more difficult for the program to be adapted and extended in the future.[3] Replacing all significant magic numbers with named constants makes programs easier to read, understand and maintain.[4]
+Names chosen to be meaningful in the context of the program can result in code that is more easily understood by a maintainer who is not the original author (or even by the original author after a period of time). An example of an uninformatively-named constant is int SIXTEEN = 16, while int NUMBER_OF_BITS = 16 is more descriptive.
+The problems associated with magic 'numbers' described above are not limited to numerical types and the term is also applied to other data types where declaring a named constant would be more flexible and communicative.[1] Thus, declaring const string testUserName = "John" is better than several occurrences of the 'magic value' "John" in a test suite.
+For example, if it is required to randomly shuffle the values in an array representing a standard pack of playing cards, this pseudocode does the job using the FisherâYates shuffle algorithm:
+
+for i from 1 to 52
+    jÂ := i + randomInt(53 - i) - 1
+    a.swapEntries(i, j)
+
+where a is an array object, the function randomInt(x) chooses a random integer between 1 and x, inclusive, and swapEntries(i, j) swaps the ith and jth entries in the array. In the preceding example, 52 is a magic number.  It is considered better programming style to write the following:
+
+constant int deckSizeÂ := 52
+for i from 1 to deckSize
+    jÂ := i + randomInt(deckSize + 1 - i) - 1
+    a.swapEntries(i, j)
+
+This is preferable for several reasons:
+
+It is easier to read and understand.  A programmer reading the first example might wonder, What does the number 52 mean here?  Why 52?  The programmer might infer the meaning after reading the code carefully, but it is not obvious. Magic numbers become particularly confusing when the same number is used for different purposes in one section of code.
+It is easier to alter the value of the number, as it is not duplicated.  Changing the value of a magic number is error-prone, because the same value is often used several times in different places within a program. Also, when two semantically distinct variables or numbers have the same value they may be accidentally both edited together. To modify the first example to shuffle a Tarot deck, which has 78 cards, a programmer might naively replace every instance of 52 in the program with 78.  This would cause two problems.  First, it would miss the value 53 on the second line of the example, which would cause the algorithm to fail in a subtle way.  Second, it would likely replace the characters "52" everywhere, regardless of whether they refer to the deck size or to something else entirely, such as the number of weeks in a Gregorian calendar year, or more insidiously, are part of a number like "1523", all of which would introduce bugs.  By contrast, changing the value of the deckSize variable in the second example would be a simple, one-line change.
+It encourages and facilitates documentation.  The single place where the named variable is declared makes a good place to document what the value means and why it has the value it does.  Having the same value in a plethora of places either leads to duplicate comments (and attendant problems when updating some but missing some) or leaves no one place where it's both natural for the author to explain the value and likely the reader shall look for an explanation.
+The declarations of "magic number" variables are placed together, usually at the top of a function or file, facilitating their review and change.
+It helps detect typos.  Using a variable (instead of a literal) takes advantage of a compiler's checking. Accidentally typing "62" instead of "52" would go undetected, whereas typing "dekSize" instead of "deckSize" would result in the compiler's warning that dekSize is undeclared.
+It can reduce typing in some IDEs. If an IDE supports code completion, it will fill in most of the variable's name from the first few letters.
+It facilitates parameterization. For example, to generalize the above example into a procedure that shuffles a deck of any number of cards, it would be sufficient to turn deckSize into a parameter of that procedure, whereas the first example would require several changes.
+function shuffle (int deckSize)
+   for i from 1 to deckSize
+       jÂ := i + randomInt(deckSize + 1 - i) - 1
+       a.swapEntries(i, j)
+
+Disadvantages are:
+
+When the named constant is not defined near its use, it hurts the locality, and thus comprehensibility, of the code. Putting the 52 in a possibly distant place means that, to understand the workings of the âforâ loop completely (for example to estimate the run-time of the loop), one must track down the definition and verify that it is the expected number.  This is easy to avoid (by relocating the declaration) when the constant is only used in one portion of the code.  When the named constant is used in disparate portions, on the other hand, the remote location is a clue to the reader that the same value appears in other places in the code, which may also be worth looking into.
+It may make the code more verbose.  The declaration of the constant adds a line.  When the constant's name is longer than the value's, particularly if several such constants appear in one line, it may make it necessary to split one logical statement of the code across several lines.  An increase in verbosity may be justified when there is some likelihood of confusion about the constant, or when there is a likelihood the constant may need to be changed, such as reuse of a shuffling routine for other card games.  It may equally be justified as an increase in expressiveness.
+It may be slower to process the expression deckSize + 1 at run-time than the value "53", although most modern compilers and interpreters will notice that deckSize has been declared as a constant and pre-calculate the value 53 in the compiled code.  Even when that's not an option, loop optimization will move the addition so that it is performed before the loop.  There is therefore usually no (or negligible) speed penalty compared to using magic numbers in code.
+It can make debugging more difficult on systems where the debugger doesn't display the values of constants (for example, because the compiler has optimized them out).
+Accepted uses [edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (March 2010) (Learn how and when to remove this template message)
+In some contexts, the use of unnamed numerical constants is generally accepted (and arguably "not magic").  While such acceptance is subjective, and often depends on individual coding habits, the following are common examples:
+
+the use of 0 and 1 as initial or incremental values in a for loop, such as for (int i = 0; i < max; i += 1)
+the use of 2 to check whether a number is even or odd, as in isEven = (xÂ % 2 == 0), where % is the modulo operator
+the use of simple arithmetic constants, e.g., in expressions such as circumference = 2 * Math.PI * radius,[1] or for calculating the discriminant of a quadratic equation as d = b^2 â 4*a*c
+the use of powers of 10 to convert metric values (e.g. between grams and kilograms) or to calculate percentage and per mille values
+exponents in expressions such as (f(x) ** 2 + f(y) ** 2) ** 0.5 for 
+  
+    
+      
+        
+          
+            f
+            (
+            x
+            
+              )
+              
+                2
+              
+            
+            +
+            f
+            (
+            y
+            
+              )
+              
+                2
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\sqrt {f(x)^{2}+f(y)^{2}}}}
+  
+
+The constants 1 and 0 are sometimes used to represent the boolean values True and False in programming languages without a boolean type, such as older versions of C. Most modern programming languages provide a boolean or bool primitive type and so the use of 0 and 1 is ill-advised. This can be more confusing since 0 sometimes means programmatic success (when -1 means failure) and failure in other cases (when 1 means success).
+In C and C++, 0 is sometimes used to represent the null pointer.  As with boolean values, the C standard library includes a macro definition NULL whose use is encouraged. Other languages provide a specific null or nil value and when this is the case no alternative should be used. The typed pointer constant nullptr has been introduced with C++11.
+
+Format indicators [edit]
+Origin [edit]
+Format indicators were first used in early Version 7 Unix source code.[citation needed]
+Unix was ported to one of the first DEC PDP-11/20s, which did not have memory protection. So early versions of Unix used the relocatable memory reference model.[5] Pre-Sixth Edition Unix versions read an executable file into memory and jumped to the first low memory address of the program, relative address zero. With the development of paged versions of Unix, a header was created to describe the executable image components. Also, a branch instruction was inserted as the first word of the header to skip the header and start the program. In this way a program could be run in the older relocatable memory reference (regular) mode or in paged mode. As more executable formats were developed, new constants were added by incrementing the branch offset.[6]
+In the Sixth Edition source code of the Unix program loader, the exec() function read the executable (binary) image from the file system. The first 8 bytes of the file was a header containing the sizes of the program (text) and initialized (global) data areas. Also, the first 16-bit word of the header was compared to two constants to determine if the executable image contained relocatable memory references (normal), the newly implemented paged read-only executable image, or the separated instruction and data paged image.[7] There was no mention of the dual role of the header constant, but the high order byte of the constant was, in fact, the operation code for the PDP-11 branch instruction (octal 000407 or hex 0107). Adding seven to the program counter showed that if this constant was executed, it would branch the Unix exec() service over the executable image eight byte header and start the program.
+Since the Sixth and Seventh Editions of Unix employed paging code, the dual role of the header constant was hidden. That is, the exec() service read the executable file header (meta) data into a kernel space buffer, but read the executable image into user space, thereby not using the constant's branching feature. Magic number creation was implemented in the Unix linker and loader and magic number branching was probably still used in the suite of stand-alone diagnostic programs that came with the Sixth and Seventh Editions. Thus, the header constant did provide an illusion and met the criteria for magic.
+In Version Seven Unix, the header constant was not tested directly, but assigned to a variable labeled ux_mag[8] and subsequently referred to as the magic number. Probably because of its uniqueness, the term magic number came to mean executable format type, then expanded to mean file system type, and expanded again to mean any type of file.
+
+In files [edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: File format Â§Â Magic number
+See also: List of file signatures
+Magic numbers are common in programs across many operating systems. Magic numbers implement strongly typed data and are a form of in-band signaling to the controlling program that reads the data type(s) at program run-time. Many files have such constants that identify the contained data. Detecting such constants in files is a simple and effective way of distinguishing between many file formats and can yield further run-time information.
+
+Examples
+Compiled Java class files (bytecode) and Mach-O binaries start with hex CAFEBABE. When compressed with Pack200 the bytes are changed to CAFED00D.
+GIF image files have the ASCII code for "GIF89a" (47Â 49Â 46Â 38Â 39Â 61) or "GIF87a" (47Â 49Â 46Â 38Â 37Â 61)
+JPEG image files begin with FFÂ D8 and end with FFÂ D9. JPEG/JFIF files contain the ASCII code for "JFIF" (4AÂ 46Â 49Â 46) as a null terminated string. JPEG/Exif files contain the  ASCII code for "Exif" (45Â 78Â 69Â 66) also as a null terminated string, followed by more metadata about the file.
+PNG image files begin with an 8-byte signature which identifies the file as a PNG file and allows detection of common file transfer problems: \211Â PÂ NÂ GÂ \rÂ \nÂ \032Â \n (89Â 50Â 4EÂ 47Â 0DÂ 0AÂ 1AÂ 0A). That signature contains various newline characters to permit detecting unwarranted automated newline conversions, such as transferring the file using FTP with the ASCII transfer mode instead of the binary mode.[9]
+Standard MIDI audio files have the ASCII code for "MThd" (MIDI Track header, 4DÂ 54Â 68Â 64) followed by more metadata.
+Unix or Linux scripts may start with a "shebang" (#!,  23Â 21) followed by the path to an interpreter, if the interpreter is likely to be different from the one from which the script was invoked.
+ELF executables start with 7FÂ EÂ LÂ F
+PostScript files and programs start with "%!" (25Â 21).
+PDF files start with "%PDF" (hex 25Â 50Â 44Â 46).
+DOS MZ executable files and the EXE stub of the Microsoft Windows PE (Portable Executable) files start with the characters "MZ" (4DÂ 5A), the initials of the designer of the file format, Mark Zbikowski. The definition allows the uncommon "ZM" (5AÂ 4D) as well for dosZMXP, a non-PE EXE.[10]
+The Berkeley Fast File System superblock format is identified as either 19Â 54Â 01Â 19 or 01Â 19Â 54 depending on version; both represent the birthday of the author, Marshall Kirk McKusick.
+The Master Boot Record of bootable storage devices on almost all IA-32 IBM PC compatibles has a code of 55Â AA as its last two bytes.
+Executables for the Game Boy and Game Boy Advance handheld video game systems have a 48-byte or 156-byte magic number, respectively, at a fixed spot in the header. This magic number encodes a bitmap of the Nintendo logo.
+Amiga software executable Hunk files running on Amiga classic 68000 machines all started with the hexadecimal number $000003f3, nicknamed the "Magic Cookie."
+In the Amiga, the only absolute address in the system is hex $0000 0004 (memory location 4), which contains the start location called SysBase, a pointer to exec.library, the so-called kernel of Amiga.
+PEF files, used by the classic Mac OS and BeOS for PowerPC executables, contain the ASCII code for "Joy!" (4AÂ 6FÂ 79Â 21) as a prefix.
+TIFF files begin with either II or MM followed by 42 as a two-byte integer in little or big endian byte ordering. II is for Intel, which uses little endian byte ordering, so the magic number is 49Â 49Â 2AÂ 00. MM is for Motorola, which uses big endian byte ordering, so the magic number is 4DÂ 4DÂ 00Â 2A.
+Unicode text files encoded in UTF-16 often start with the Byte Order Mark to detect endianness (FEÂ FF for big endian and FFÂ FE for little endian). And on Microsoft Windows, UTF-8 text files often start with the UTF-8 encoding of the same character, EFÂ BBÂ BF.
+LLVM Bitcode files start with BC (0x42, 0x43)
+WAD files start with IWAD or PWAD (for Doom), WAD2 (for Quake) and WAD3 (for Half-Life).
+Microsoft Compound File Binary Format (mostly known as one of the older formats of Microsoft Office documents) files start with D0Â CFÂ 11Â E0, which is visually suggestive of the word "DOCFILE0".
+Headers in ZIP files begin with "PK" (50Â 4B), the initials of Phil Katz, author of DOS compression utility PKZIP.
+Headers in 7z files begin with "7z" (full magic number: 37Â 7AÂ BCÂ AFÂ 27Â 1C).
+Detection
+The Unix utility program file can read and interpret magic numbers from files, and the file which is used to parse the information is called magic. The Windows utility TrID has a similar purpose.
+
+In protocols [edit]
+Examples
+The OSCAR protocol, used in AIM/ICQ, prefixes requests with 2A.
+In the RFB protocol used by VNC, a client starts its conversation with a server by sending "RFB" (52 46 42, for "Remote Frame Buffer") followed by the client's protocol version number.
+In the SMB protocol used by Microsoft Windows, each SMB request or server reply begins with 'FF 53 4D 42', or "\xFFSMB" at the start of the SMB request.
+In the MSRPC protocol used by Microsoft Windows, each TCP-based request begins with 05 at the start of the request (representing Microsoft DCE/RPC Version 5), followed immediately by a 00 or 01 for the minor version.   In UDP-based MSRPC requests the first byte is always 04.
+In COM and DCOM marshalled interfaces, called OBJREFs, always start with the byte sequence "MEOW" (4D 45 4F 57). Debugging extensions (used for DCOM channel hooking) are prefaced with the byte sequence "MARB" (4D 41 52 42).
+Unencrypted BitTorrent tracker requests begin with a single byte containing the value 19 representing the header length, followed immediately by the phrase "BitTorrent protocol" at byte position 1.
+eDonkey2000/eMule traffic begins with a single byte representing the client version.  Currently E3 represents an eDonkey client, C5 represents eMule, and D4 represents compressed eMule.
+The first 04 bytes of a block in the Bitcoin Blockchain contains a magic number which serves as the network identifier. The value is a constant 0xD9B4BEF9, which indicates the main network, while the constant  0xDAB5BFFA indicates the testnet.
+SSL transactions always begin with a "client hello" message.  The record encapsulation scheme used to prefix all SSL packets consists of two- and three- byte header forms.  Typically an SSL version 2 client hello message is prefixed with a 80 and an SSLv3 server response to a client hello begins with 16 (though this may vary).
+DHCP packets use a "magic cookie" value of '0x63 0x82 0x53 0x63' at the start of the options section of the packet. This value is included in all DHCP packet types.
+HTTP/2 connections are opened with the preface '0x505249202a20485454502f322e300d0a0d0a534d0d0a0d0a', or "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n". The preface is designed to avoid the processing of frames by servers and intermediaries which support earlier versions of HTTP but not 2.0.
+In interfaces [edit]
+Magic numbers are common in API functions and interfaces across many operating systems, including DOS, Windows and NetWare:
+
+Examples
+IBM PC-compatible BIOSes use magic values 0000 and 1234 to decide if the system should count up memory or not on reboot, thereby performing a cold or a warm boot. Theses values are also used by EMM386 memory managers intercepting boot requests.[11] BIOSes also use magic values 55 AA to determine if a disk is bootable.[12]
+The MS-DOS disk cache SMARTDRV (codenamed "Bambi") uses magic values BABE and EBAB in API functions.[11]
+Many DR DOS, Novell DOS and OpenDOS drivers developed in the former European Development Centre in the UK use the value 0EDC as magic token when invoking or providing additional functionality sitting on top of the (emulated) standard DOS functions, NWCACHE being one example.[11]
+Other uses [edit]
+Examples
+The default MAC address on Texas Instruments SOCs is DE:AD:BE:EF:00:00.[13]
+Data type limits[edit]
+This is a list of limits of data storage types:[14]
+
+
+
+Decimal
+
+Hex
+
+Description
+
+
+18,446,744,073,709,551,615
+
+FFFFâFFFFâFFFFâFFFF
+
+The maximum unsigned 64 bit value (264 â 1)
+
+
+9,223,372,036,854,775,807
+
+7FFFâFFFFâFFFFâFFFF
+
+The maximum signed 64 bit value (263 â 1)
+
+
+4,294,967,295
+
+FFFFâFFFF
+
+The maximum unsigned 32 bit value (232 â 1)
+
+
+2,147,483,647
+
+7FFFâFFFF
+
+The maximum signed 32 bit value (231 â 1)
+
+
+65,535
+
+FFFF
+
+The maximum unsigned 16 bit value (216 â 1)
+
+
+32,767
+
+7FFF
+
+The maximum signed 16 bit value (215 â 1)
+
+
+255
+
+FF
+
+The maximum unsigned 8 bit value (28 â 1)
+
+
+127
+
+7F
+
+The maximum signed 8 bit value (27 â 1)
+
+
+â128
+
+80
+
+Minimum signed 8 bit value
+
+
+â32,768
+
+8000
+
+Minimum signed 16 bit value
+
+
+â2,147,483,648
+
+8000â0000
+
+Minimum signed 32 bit value
+
+
+â9,223,372,036,854,775,808
+
+8000â0000â0000â0000
+
+Minimum signed 64 bit value
+
+GUIDs [edit]
+It is possible to create or alter globally unique identifiers (GUIDs) so that they are memorable, but this is highly discouraged as it compromises their strength as near-unique identifiers.[15][16] The specifications for generating GUIDs and UUIDs are quite complex, which is what leads to them being virtually unique, if properly implemented. They should only be generated by a reputable software tool.[citation needed]
+Microsoft Windows product ID numbers for Microsoft Office products sometimes end with 0000-0000-0000000FF1CE ("OFFICE"),  such as {90160000-008C-0000-0000-0000000FF1CE}, the product ID for the "Office 16 Click-to-Run Extensibility Component".
+Java uses several GUIDs starting with CAFEEFAC.[17]
+In the GUID Partition Table of the GPT partitioning scheme, BIOS Boot partitions use the special GUID {21686148-6449-6E6F-744E-656564454649}[18] which does not follow the GUID definition; instead, it is formed by using the ASCII codes for the string "Hah!IdontNeedEFI" partially in little endian order.[19]
+
+Debug values [edit]
+Magic debug values are specific values written to memory during allocation or deallocation, so that it will later be possible to tell whether or not they have become corrupted, and to make it obvious when values taken from uninitialized memory are being used. Memory is usually viewed in hexadecimal, so memorable repeating or hexspeak values are common. Numerically odd values may be preferred so that processors without byte addressing will fault when attempting to use them as pointers (which must fall at even addresses). Values should be chosen that are away from likely addresses (the program code, static data, heap data, or the stack). Similarly, they may be chosen so that they are not valid codes in the instruction set for the given architecture.
+Since it is very unlikely, although possible, that a 32-bit integer would take this specific value, the appearance of such a number in a debugger or memory dump most likely indicates an error such as a buffer overflow or an uninitialized variable.
+Famous and common examples include:
+
+
+
+
+Code
+
+Description
+
+
+00008123
+Used in MS Visual C++. Deleted pointers are set to this value, so they throw an exception, when they are used after; it is a more recognizable alias for the zero address. It is activated with the Security Development Lifecycle (/sdl) option.[20]
+
+
+..FACADE
+"Facade", Used by a number of RTOSes
+
+
+1BADB002
+"1 bad boot", Multiboot header magic number[21]
+
+
+8BADF00D
+"Ate bad food", Indicates that an Apple iOS application has been terminated because a watchdog timeout occurred.[22]
+
+
+A5A5A5A5
+Used in embedded development because the alternating bit pattern (1010 0101) creates an easily recognized pattern on oscilloscopes and logic analyzers.
+
+
+A5
+Used in FreeBSD's PHK malloc(3) for debugging when /etc/malloc.conf is symlinked to "-J" to initialize all newly allocated memory as this value is not a NULL pointer or ASCII NUL character.
+
+
+ABABABAB
+Used by Microsoft's debug HeapAlloc() to mark "no man's land" guard bytes after allocated heap memory.[23]
+
+
+ABADBABE
+"A bad babe", Used by Apple as the "Boot Zero Block" magic number
+
+
+ABBABABE
+"ABBA babe", used by Driver Parallel Lines memory heap.
+
+
+ABADCAFE
+"A bad cafe", Used to initialize all unallocated memory (Mungwall, AmigaOS)
+
+
+B16B00B5
+"Big Boobs", Formerly required by Microsoft's Hyper-V hypervisor to be used by Linux guests as the upper half of their "guest id"[24]
+
+
+BAADF00D
+"Bad food", Used by Microsoft's debug HeapAlloc() to mark uninitialized allocated heap memory[23]
+
+
+BAAAAAAD
+"Baaaaaad", Indicates that the Apple iOS log is a stackshot of the entire system, not a crash report[22]
+
+
+BAD22222
+"Bad too repeatedly", Indicates that an Apple iOS VoIP application has been terminated because it resumed too frequently[22]
+
+
+BADBADBADBAD
+"Bad bad bad bad", Burroughs large systems "uninitialized" memory (48-bit words)
+
+
+BADC0FFEE0DDF00D
+"Bad coffee odd food", Used on IBM RS/6000 64-bit systems to indicate uninitialized CPU registers
+
+
+BADDCAFE
+"Bad cafe", On Sun Microsystems' Solaris, marks uninitialized kernel memory (KMEM_UNINITIALIZED_PATTERN)
+
+
+BBADBEEF
+"Bad beef", Used in WebKit[clarification needed]
+
+
+BEEFCACE
+"Beef cake", Used by Microsoft .NET as a magic number in resource files
+
+
+C00010FF
+"Cool off", Indicates Apple iOS app was killed by the operating system in response to a thermal event[22]
+
+
+CAFEBABE
+"Cafe babe", Used by Java for class files
+
+
+CAFED00D
+"Cafe dude", Used by Java for their pack200 compression
+
+
+CAFEFEED
+"Cafe feed", Used by Sun Microsystems' Solaris debugging kernel to mark kmemfree() memory
+
+
+CCCCCCCC
+Used by Microsoft's C++ debugging runtime library and many DOS environments to mark uninitialized stack memory. CC resembles the opcode of the INT 3 debug breakpoint interrupt on x86 processors. [25]
+
+
+CDCDCDCD
+Used by Microsoft's C/C++ debug malloc() function to mark uninitialized heap memory, usually returned from HeapAlloc()[23]
+
+
+0D15EA5E
+"Zero Disease", Used as a flag to indicate regular boot on the Nintendo GameCube and Wii consoles
+
+
+DDDDDDDD
+Used by MicroQuill's SmartHeap and Microsoft's C/C++ debug free() function to mark freed heap memory[23]
+
+
+DEAD10CC
+"Dead lock", Indicates that an Apple iOS application has been terminated because it held on to a system resource while running in the background[22]
+
+
+DEADBABE
+"Dead babe", Used at the start of Silicon Graphics' IRIX arena files
+
+
+DEADBEEF
+"Dead beef", Famously used on IBM systems such as the RS/6000, also used in the classic Mac OS operating systems, OPENSTEP Enterprise, and the Commodore Amiga. On Sun Microsystems' Solaris, marks freed kernel memory (KMEM_FREE_PATTERN)
+
+
+DEADCAFE
+"Dead cafe", Used by Microsoft .NET as an error number in DLLs
+
+
+DEADC0DE
+"Dead code", Used as a marker in OpenWRT firmware to signify the beginning of the to-be created jffs2 file system at the end of the static firmware
+
+
+DEADFA11
+"Dead fail", Indicates that an Apple iOS application has been force quit by the user[22]
+
+
+DEADF00D
+"Dead food", Used by Mungwall on the Commodore Amiga to mark allocated but uninitialized memory[26]
+
+
+DEFEC8ED
+"Defecated", Used for OpenSolaris core dumps
+
+
+DEADDEAD
+"Dead Dead" indicates that the user deliberately initiated a crash dump from either the kernel debugger or the keyboard under Microsoft Windows.[27]
+
+
+D00D2BAD
+
+"Dude, Too Bad", Used by Safari crashes on macOS Big Sur.[28]
+
+
+
+EBEBEBEB
+From MicroQuill's SmartHeap
+
+
+FADEDEAD
+"Fade dead", Comes at the end to identify every AppleScript script
+
+
+FDFDFDFD
+Used by Microsoft's C/C++ debug malloc() function to mark "no man's land" guard bytes before and after allocated heap memory,[23] and some debug Secure C-Runtime functions implemented by Microsoft (e.g. strncat_s) [29]
+
+
+FEE1DEAD
+"Feel dead", Used by Linux reboot() syscall
+
+
+FEEDFACE
+"Feed face", Seen in PowerPC Mach-O binaries on Apple Inc.'s macOS platform. On Sun Microsystems' Solaris, marks the red zone (KMEM_REDZONE_PATTERN)
+Used by VLC player and some IP cameras in RTP/RTCP protocol, VLC player sends four bytes in the order of the endianness of the system. Some IP cameras expect the player to send this magic number and do not start the stream if it is not received.
+
+
+
+FEEEFEEE
+"Fee fee", Used by Microsoft's debug HeapFree() to mark freed heap memory. Some nearby internal bookkeeping values may have the high word set to FEEE as well.[23]
+
+Most of these are each 32 bits longÂ â the word size of most 32-bit architecture computers.
+The prevalence of these values in Microsoft technology is no coincidence; they are discussed in detail in Steve Maguire's book Writing Solid Code from Microsoft Press. He gives a variety of criteria for these values, such as:
+
+They should not be useful; that is, most algorithms that operate on them should be expected to do something unusual. Numbers like zero don't fit this criterion.
+They should be easily recognized by the programmer as invalid values in the debugger.
+On machines that don't have byte alignment, they should be odd numbers, so that dereferencing them as addresses causes an exception.
+They should cause an exception, or perhaps even a debugger break, if executed as code.
+Since they were often used to mark areas of memory that were essentially empty, some of these terms came to be used in phrases meaning "gone, aborted, flushed from memory"; e.g. "Your program is DEADBEEF"[citation needed].
+
+See also[edit]
+Magic string
+File format Â§Â Magic number
+List of file signatures
+FourCC
+Hard coding
+Magic (programming)
+NaN (Not a Number)
+Enumerated type
+Hexspeak, for another set of magic values
+Nothing up my sleeve number about magic constants in cryptographic algorithms
+Time formatting and storage bugs, for problems that can be caused by magics
+Sentinel value (aka flag value, trip value, rogue value, signal value, dummy data)
+Canary value, special value to detect buffer overflows
+XYZZY (magic word)
+Fast inverse square root, using the constant 0x5F3759DF
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Martin, Robert C. (2009). "Chapter 17: Smells and Heuristics - G25 Replace Magic Numbers with Named Constants". Clean Code - A handbook of agile software craftsmanship. Boston: Prentice Hall. p.Â 300. ISBNÂ 978-0-13-235088-4.
+
+^ Martin, Robert C. (2009). "Chapter 17: Smells and Heuristics - G16 Obscured Intent". Clean Code - A handbook of agile software craftsmanship. Boston: Prentice Hall. p.Â 295. ISBNÂ 978-0-13-235088-4.
+
+^ Maguire, James (2008-12-09). "Bjarne Stroustrup on Educating Software Developers". Datamation.com. Archived from the original on 2018-06-23.
+
+^ Vogel, Jeff (2007-05-29). "Six ways to write more comprehensible code". IBM Developer.
+
+^ "Odd Comments and Strange Doings in Unix". Bell Labs. 2002-06-22. Archived from the original on 2006-11-04.
+
+^ Personal communication with Dennis M. Ritchie.
+
+^ "The Unix Tree V6/usr/sys/ken/sys1.c". The Unix Heritage Society. Archived from the original on 2008-10-20.
+
+^ "The Unix Tree V7/usr/sys/sys/sys1.c". The Unix Heritage Society. Archived from the original on 2008-10-20.
+
+^ "PNG (Portable Network Graphics) Specification Version 1.0: 12.11. PNG file signature". MIT. 1996-10-01.
+
+^ Chen, Raymond (2008-03-24). "What's the difference between the COM and EXE extensions?". The Old New Thing. Archived from the original on 2019-02-18.
+
+^ Jump up to: a b c Paul, Matthias R. (2002-04-03). "[fd-dev] Ctrl+Alt+Del". Freedos-dev. Archived from the original on 2017-09-09. Retrieved 2017-09-09. (NB. Mentions a number of magic values used by IBM PC-compatible BIOSes (0000h, 1234h), DOS memory managers like EMM386 (1234h) and disk caches like SMARTDRV (EBABh, BABEh) and NWCACHE (0EDCh, EBABh, 6756h).)
+
+^ "The BIOS/MBR Boot Process". NeoSmart Knowledgebase. 2015-01-25. Retrieved 2019-02-03.
+
+^ "TI E2E Community: Does anyone know if the following configurations can be done with MCP CLI Tool?". Texas Instruments. 2011-08-27.
+
+^ Poley, Josh (2009-09-30). "Magic Numbers: Integers". MSDN.
+
+^ Newcomer, Joseph M. (2001-10-13). "Message Management: Guaranteeing uniqueness". Developer Fusion. Retrieved 2007-11-16.
+
+^ Osterman, Larry (2005-07-21). "UUIDs are only unique if you generate them..." Larry Osterman's WebLog - Confessions of an Old Fogey. MSDN. Retrieved 2007-11-16.
+
+^ "Specifying Family JRE Versions for Java Applets". Oracle. Retrieved 2010-06-18.
+
+^ "GNU GRUB Installation, Section 3.4: BIOS installation". Gnu.org. Retrieved 2014-06-26.
+
+^ Heddings, Lowell (2014-11-03). "Magic Numbers: The Secret Codes that Programmers Hide in Your PC". How-To Geek. Retrieved 2017-10-03.
+
+^ Cavit, Doug (2012-04-24). "Guarding against re-use of stale object references". Microsoft Secure. Retrieved 2018-07-26.
+
+^ Boleyn, Erich Stefan (1995-04-04). "Comments on the "MultiBoot Standard" proposal". Uruk.org.
+
+^ Jump up to: a b c d e f "Technical Note TN2151: Understanding and Analyzing Application Crash Reports". Apple Developer Documentation. 2009-01-29.
+
+^ Jump up to: a b c d e f Birkett, Andrew. "Win32 Debug CRT Heap Internals". Nobugs.org.
+
+^ McNamara, Paul (2012-07-19). "Microsoft code contains the phrase 'big boobs' ... Yes, really". Network World.
+
+^ ""INTEL 80386 PROGRAMMER'S REFERENCE MANUAL"". MIT.
+
+^ Scheppner, Carolyn. "Amiga Mail Vol.2 Guide". Cataclysm.cx. Archived from the original on 2011-07-18. Retrieved 2010-08-20.
+
+^ "Bug Check 0xDEADDEAD MANUALLY_INITIATED_CRASH1". Microsoft Documentation.
+
+^ "Safari Version 14.0.1 Unexpectedly Quits".
+
+^ "strncat_s, _strncat_s_l, wcsncat_s, _wcsncat_s_l, _mbsncat_s, _mbsncat_s_l". Microsoft Documentation. Retrieved 2019-01-16.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteComputer filesTypes
+Binary file / text file
+File format
+List of file formats
+File signatures
+Magic number
+Metafile
+Sidecar file
+Sparse file
+Swap file
+System file
+Temporary file
+Zero-byte file
+Properties
+Filename
+8.3 filename
+Long filename
+Filename mangling
+Filename extension
+List of filename extensions
+File attribute
+Extended file attributes
+File size
+Hidden file / Hidden directory
+Organisation
+Directory/folder
+NTFS links
+Temporary folder
+Directory structure
+File sequence
+File system
+Filesystem Hierarchy Standard
+Path
+Operations
+Open
+Close
+Read
+Write
+Linking
+File descriptor
+Hard link
+Shortcut
+Alias
+Shadow
+Symbolic link
+Management
+File comparison
+Data compression
+File manager
+Comparison of file managers
+File system permissions
+File transfer
+File sharing
+File verification
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Magic_number_(programming)&oldid=1067960643"
+		Categories: Anti-patternsDebuggingComputer programming folkloreSoftware engineering folkloreHidden categories: Articles with short descriptionShort description matches WikidataUse dmy dates from July 2019Articles needing additional references from March 2010All articles needing additional referencesAll articles with unsourced statementsArticles with unsourced statements from November 2019Articles with unsourced statements from November 2008Wikipedia articles needing clarification from January 2013Articles with unsourced statements from June 2020
+	

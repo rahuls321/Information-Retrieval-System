@@ -1,0 +1,1533 @@
+
+Title:
+Binary heap
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}Binary (min) heapTypebinary tree/heapInvented1964Invented byJ. W. J. WilliamsTime complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)
+O(n)Search
+
+O(n)
+O(n)Insert
+
+O(1)
+O(log n)Find-min
+
+O(1)
+O(1)Delete-min
+
+O(log n)
+O(log n)
+  Example of a complete binary max-heap
+  Example of a complete binary min heap
+A binary heap is a heap data structure that takes the form of a binary tree. Binary heaps are a common way of implementing priority queues.[1]:â162â163â The binary heap was introduced by J. W. J. Williams in 1964, as a data structure for heapsort.[2]
+A binary heap is defined as a binary tree with two additional constraints:[3]
+
+Shape property: a binary heap is a complete binary tree; that is, all levels of the tree, except possibly the last one (deepest) are fully filled, and, if the last level of the tree is not complete, the nodes of that level are filled from left to right.
+Heap property: the key stored in each node is either greater than or equal to (â¥) or less than or equal to (â¤) the keys in the node's children, according to some total order.
+Heaps where the parent key is greater than or equal to (â¥) the child keys are called max-heaps; those where it is less than or equal to (â¤) are called min-heaps. Efficient (logarithmic time) algorithms are known for the two operations needed to implement a priority queue on a binary heap: inserting an element, and removing the smallest or largest element from a min-heap or max-heap, respectively. Binary heaps are also commonly employed in the heapsort sorting algorithm, which is an in-place algorithm because binary heaps can be implemented as an implicit data structure, storing keys in an array and using their relative positions within that array to represent childâparent relationships.
+
+Contents
+
+1 Heap operations
+
+1.1 Insert
+1.2 Extract
+1.3 Insert then extract
+1.4 Search
+1.5 Delete
+1.6 Decrease or increase key
+
+
+2 Building a heap
+3 Heap implementation
+4 Derivation of index equations
+
+4.1 Child nodes
+4.2 Parent node
+
+
+5 Related structures
+6 Summary of running times
+7 See also
+8 References
+9 External links
+
+
+
+Heap operations[edit]
+Both the insert and remove operations modify the heap to conform to the shape property first, by adding or removing from the end of the heap. Then the heap property is restored by traversing up or down the heap. Both operations take O(log n) time.
+
+Insert[edit]
+To add an element to a heap, we can perform this algorithm:
+
+Add the element to the bottom level of the heap at the leftmost open space.
+Compare the added element with its parent; if they are in the correct order, stop.
+If not, swap the element with its parent and return to the previous step.
+Steps 2 and 3, which restore the heap property by comparing and possibly swapping a node with its parent, are called the up-heap operation (also known as bubble-up, percolate-up, sift-up, trickle-up, swim-up, heapify-up, or cascade-up).
+The number of operations required depends only on the number of levels the new element must rise to satisfy the heap property. Thus, the insertion operation has a worst-case time complexity of O(log n). For a random heap, and for repeated insertions, the insertion operation has an average-case complexity of O(1).[4][5]
+As an example of binary heap insertion, say we have a max-heap
+
+
+and we want to add the number 15 to the heap. We first place the 15 in the position marked by the X. However, the heap property is violated since 15 > 8, so we need to swap the 15 and the 8. So, we have the heap looking as follows after the first swap:
+
+
+However the heap property is still violated since 15 > 11, so we need to swap again:
+
+
+which is a valid max-heap. There is no need to check the left child after this final step: at the start, the max-heap was valid, meaning the root was already greater than its left child, so replacing the root with an even greater value will maintain the property that each node is greater than its children (11 > 5; if 15 > 11, and 11 > 5, then 15 > 5, because of the transitive relation).
+
+Extract[edit]
+The procedure for deleting the root from the heap (effectively extracting the maximum element in a max-heap or the minimum element in a min-heap) while retaining the heap property is as follows:
+
+Replace the root of the heap with the last element on the last level.
+Compare the new root with its children; if they are in the correct order, stop.
+If not, swap the element with one of its children and return to the previous step. (Swap with its smaller child in a min-heap and its larger child in a max-heap.)
+Steps 2 and 3, which restore the heap property by comparing and possibly swapping a node with one of its children, are called the down-heap (also known as bubble-down, percolate-down, sift-down, sink-down, trickle down, heapify-down, cascade-down, extract-min or extract-max, or simply heapify) operation.
+So, if we have the same max-heap as before
+
+
+We remove the 11 and replace it with the 4.
+
+
+Now the heap property is violated since 8 is greater than 4. In this case, swapping the two elements, 4 and 8, is enough to restore the heap property and we need not swap elements further:
+
+
+The downward-moving node is swapped with the larger of its children in a max-heap (in a min-heap it would be swapped with its smaller child), until it satisfies the heap property in its new position. This functionality is achieved by the Max-Heapify function as defined below in pseudocode for an array-backed heap A of length length(A). Note that A is indexed starting at 1.
+
+// Perform a down-heap or heapify-down operation for a max-heap
+// A: an array representing the heap, indexed starting at 1
+// i: the index to start at when heapifying down
+Max-Heapify(A, i):
+    left â 2Ãi
+    right â 2Ãi + 1
+    largest â i
+    
+    if left â¤ length(A) and A[left] > A[largest] then:
+        largest â left
+    if right â¤ length(A) and A[right] > A[largest] then:
+        largest â right
+    
+    if largest â  i then:
+        swap A[i] and A[largest]
+        Max-Heapify(A, largest)
+
+For the above algorithm to correctly re-heapify the array, no nodes besides the node at index i and its two direct children can violate the heap property. The down-heap operation (without the preceding swap) can also be used to modify the value of the root, even when an element is not being deleted.
+In the worst case, the new root has to be swapped with its child on each level until it reaches the bottom level of the heap, meaning that the delete operation has a time complexity relative to the height of the tree, or O(log n).
+
+Insert then extract[edit]
+Inserting an element then extracting from the heap can be done more efficiently than simply calling the insert and extract functions defined above, which would involve both an upheap and downheap operation. Instead, we can do just a downheap operation, as follows:
+
+Compare whether the item we're pushing or the peeked top of the heap is greater (assuming a max heap)
+If the root of the heap is greater:
+Replace the root with the new item
+Down-heapify starting from the root
+Else, return the item we're pushing
+Python provides such a function for insertion then extraction called "heappushpop", which is paraphrased below.[6][7] The heap array is assumed to have its first element at index 1.
+
+// Push a new item to a (max) heap and then extract the root of the resulting heap. 
+// heap: an array representing the heap, indexed at 1
+// item: an element to insert
+// Returns the greater of the two between item and the root of heap.
+Push-Pop(heap: List<T>, item: T) -> T:
+    if heap is not empty and heap[1] > item then:  // < if min heap
+        swap heap[1] and item
+        _downheap(heap starting from index 1)
+    return item
+
+A similar function can be defined for popping and then inserting, which in Python is called "heapreplace":
+
+// Extract the root of the heap, and push a new item 
+// heap: an array representing the heap, indexed at 1
+// item: an element to insert
+// Returns the current root of heap
+Replace(heap: List<T>, item: T) -> T:
+    swap heap[1] and item
+    _downheap(heap starting from index 1)
+    return item
+
+Search[edit]
+Finding an arbitrary element takes O(n) time.
+
+Delete[edit]
+Deleting an arbitrary element can be done as follows:
+
+Find the index 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ of the element we want to delete
+Swap this element with the last element
+Down-heapify or up-heapify to restore the heap property. In a max-heap (min-heap), up-heapify is only required when the new key of element 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ is greater (smaller) than the previous one because only the heap-property of the parent element might be violated. Assuming that the heap-property was valid between element 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ and its children before the element swap, it can't be violated by a now larger (smaller) key value. When the new key is less (greater) than the previous one then only a down-heapify is required because the heap-property might only be violated in the child elements.
+Decrease or increase key[edit]
+The decrease key operation replaces the value of a node with a given value with a lower value, and the increase key operation does the same but with a higher value. This involves finding the node with the given value, changing the value, and then down-heapifying or up-heapifying to restore the heap property.
+Decrease key can be done as follows:
+
+Find the index of the element we want to modify
+Decrease the value of the node
+Down-heapify (assuming a max heap) to restore the heap property
+Increase key can be done as follows:
+
+Find the index of the element we want to modify
+Increase the value of the node
+Up-heapify (assuming a max heap) to restore the heap property
+Building a heap[edit]
+Building a heap from an array of n input elements can be done by starting with an empty heap, then successively inserting each element. This approach, called Williamsâ method after the inventor of binary heaps, is easily seen to run in O(n log n) time: it performs n insertions at O(log n) cost each.[a]
+However, Williamsâ method is suboptimal. A faster method (due to Floyd[8]) starts by arbitrarily putting the elements on a binary tree, respecting the shape property (the tree could be represented by an array, see below). Then starting from the lowest level and moving upwards, sift the root of each subtree downward as in the deletion algorithm until the heap property is restored. More specifically if all the subtrees starting at some height 
+  
+    
+      
+        h
+      
+    
+    {\displaystyle h}
+  
+ have already been âheapifiedâ (the bottommost level corresponding to 
+  
+    
+      
+        h
+        =
+        0
+      
+    
+    {\displaystyle h=0}
+  
+), the trees at height 
+  
+    
+      
+        h
+        +
+        1
+      
+    
+    {\displaystyle h+1}
+  
+ can be heapified by sending their root down along the path of maximum valued children when building a max-heap, or minimum valued children when building a min-heap. This process takes 
+  
+    
+      
+        O
+        (
+        h
+        )
+      
+    
+    {\displaystyle O(h)}
+  
+ operations (swaps) per node. In this method most of the heapification takes place in the lower levels. Since the height of the heap is 
+  
+    
+      
+        â
+        log
+        â¡
+        n
+        â
+      
+    
+    {\displaystyle \lfloor \log n\rfloor }
+  
+, the number of nodes at height 
+  
+    
+      
+        h
+      
+    
+    {\displaystyle h}
+  
+ is 
+  
+    
+      
+        â¤
+        
+          
+            
+              2
+              
+                â
+                log
+                â¡
+                n
+                â
+              
+            
+            
+              2
+              
+                h
+              
+            
+          
+        
+        â¤
+        
+          
+            n
+            
+              2
+              
+                h
+              
+            
+          
+        
+      
+    
+    {\displaystyle \leq {\frac {2^{\lfloor \log n\rfloor }}{2^{h}}}\leq {\frac {n}{2^{h}}}}
+  
+. Therefore, the cost of heapifying all subtrees is:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  â
+                  
+                    h
+                    =
+                    0
+                  
+                  
+                    â
+                    log
+                    â¡
+                    n
+                    â
+                  
+                
+                
+                  
+                    n
+                    
+                      2
+                      
+                        h
+                      
+                    
+                  
+                
+                O
+                (
+                h
+                )
+              
+              
+                
+                =
+                O
+                
+                  (
+                  
+                    n
+                    
+                      â
+                      
+                        h
+                        =
+                        0
+                      
+                      
+                        â
+                        log
+                        â¡
+                        n
+                        â
+                      
+                    
+                    
+                      
+                        h
+                        
+                          2
+                          
+                            h
+                          
+                        
+                      
+                    
+                  
+                  )
+                
+              
+            
+            
+              
+              
+                
+                =
+                O
+                
+                  (
+                  
+                    n
+                    
+                      â
+                      
+                        h
+                        =
+                        0
+                      
+                      
+                        â
+                      
+                    
+                    
+                      
+                        h
+                        
+                          2
+                          
+                            h
+                          
+                        
+                      
+                    
+                  
+                  )
+                
+              
+            
+            
+              
+              
+                
+                =
+                O
+                (
+                n
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}\sum _{h=0}^{\lfloor \log n\rfloor }{\frac {n}{2^{h}}}O(h)&=O\left(n\sum _{h=0}^{\lfloor \log n\rfloor }{\frac {h}{2^{h}}}\right)\\&=O\left(n\sum _{h=0}^{\infty }{\frac {h}{2^{h}}}\right)\\&=O(n)\end{aligned}}}
+  
+
+This uses the fact that the given infinite series 
+  
+    
+      
+        
+          â
+          
+            i
+            =
+            0
+          
+          
+            â
+          
+        
+        i
+        
+          /
+        
+        
+          2
+          
+            i
+          
+        
+      
+    
+    {\textstyle \sum _{i=0}^{\infty }i/2^{i}}
+  
+ converges.
+The exact value of the above (the worst-case number of comparisons during the heap construction) is known to be equal to:
+
+
+  
+    
+      
+        2
+        n
+        â
+        2
+        
+          s
+          
+            2
+          
+        
+        (
+        n
+        )
+        â
+        
+          e
+          
+            2
+          
+        
+        (
+        n
+        )
+      
+    
+    {\displaystyle 2n-2s_{2}(n)-e_{2}(n)}
+  
+,[9][b]
+where s2(n) is the sum of all digits of the binary representation of n and e2(n) is the exponent of 2 in the prime factorization of n.
+The average case is more complex to analyze, but it can be shown to asymptotically approach 1.8814Â n â 2 log2n + O(1) comparisons.[10][11]
+The Build-Max-Heap function that follows, converts an array A which stores a complete
+binary tree with n nodes to a max-heap by repeatedly using Max-Heapify (down-heapify for a max-heap) in a bottom-up manner.
+The array elements indexed by
+floor(n/2) + 1, floor(n/2) + 2, ..., n
+are all leaves for the tree (assuming that indices start at 1)âthus each is a one-element heap, and does not need to be down-heapified. Build-Max-Heap runs
+Max-Heapify on each of the remaining tree nodes.
+
+Build-Max-Heap (A):
+    for each index i from floor(length(A)/2) downto 1 do:
+        Max-Heapify(A, i)
+
+Heap implementation[edit]
+  A small complete binary tree stored in an array
+  Comparison between a binary heap and an array implementation.
+Heaps are commonly implemented with an array. Any binary tree can be stored in an array, but because a binary heap is always a complete binary tree, it can be stored compactly. No space is required for pointers; instead, the parent and children of each node can be found by arithmetic on array indices. These properties make this heap implementation a simple example of an implicit data structure or Ahnentafel list. Details depend on the root position, which in turn may depend on constraints of a programming language used for implementation, or programmer preference. Specifically, sometimes the root is placed at index 1, in order to simplify arithmetic.
+Let n be the number of elements in the heap and i be an arbitrary valid index of the array storing the heap. If the tree root is at index 0, with valid indices 0 through n â 1, then each element a at index i has
+
+children at indices 2i + 1 and 2i + 2
+its parent at index floor((i â 1) â 2).
+Alternatively, if the tree root is at index 1, with valid indices 1 through n, then each element a at index i has
+
+children at indices 2i and 2i +1
+its parent at index floor(i â 2).
+This implementation is used in the heapsort algorithm, where it allows the space in the input array to be reused to store the heap (i.e. the algorithm is done in-place). The implementation is also useful for use as a Priority queue where use of a dynamic array allows insertion of an unbounded number of items.
+The upheap/downheap operations can then be stated in terms of an array as follows: suppose that the heap property holds for the indices b, b+1, ..., e. The sift-down function extends the heap property to bâ1, b, b+1, ..., e.
+Only index i = bâ1 can violate the heap property.
+Let j be the index of the largest child of a[i] (for a max-heap, or the smallest child for a min-heap) within the range b, ..., e.
+(If no such index exists because 2i > e then the heap property holds for the newly extended range and nothing needs to be done.)
+By swapping the values a[i] and a[j] the heap property for position i is established.
+At this point, the only problem is that the heap property might not hold for index j.
+The sift-down function is applied tail-recursively to index j until the heap property is established for all elements.
+The sift-down function is fast. In each step it only needs two comparisons and one swap. The index value where it is working doubles in each iteration, so that at most log2 e steps are required.
+For big heaps and using virtual memory, storing elements in an array according to the above scheme is inefficient: (almost) every level is in a different page.  B-heaps are binary heaps that keep subtrees in a single page, reducing the number of pages accessed by up to a factor of ten.[12]
+The operation of merging two binary heaps takes Î(n) for equal-sized heaps. The best you can do is (in case of array implementation) simply concatenating the two heap arrays and build a heap of the result.[13] A heap on n elements can be merged with a heap on k elements using O(log n log k) key comparisons, or, in case of a pointer-based implementation, in O(log n log k) time.[14] An algorithm for splitting a heap on n elements into two heaps on k and n-k elements, respectively, based on a new view
+of heaps as an ordered collections of subheaps was presented in.[15] The algorithm requires O(log n * log n)  comparisons. The view also presents a new and conceptually simple algorithm for merging heaps. When merging is a common task, a different heap implementation is recommended, such as binomial heaps, which can be merged in O(log n).
+Additionally, a binary heap can be implemented with a traditional binary tree data structure, but there is an issue with finding the adjacent element on the last level on the binary heap when adding an element. This element can be determined algorithmically or by adding extra data to the nodes, called "threading" the treeâinstead of merely storing references to the children, we store the inorder successor of the node as well.
+It is possible to modify the heap structure to allow extraction of both the smallest and largest element in  
+  
+    
+      
+        O
+      
+    
+    {\displaystyle O}
+  
+
+  
+    
+      
+        (
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle (\log n)}
+  
+ time.[16]  To do this, the rows alternate between min heap and max-heap.  The algorithms are roughly the same, but, in each step, one must consider the alternating rows with alternating comparisons.  The performance is roughly the same as a normal single direction heap. This idea can be generalized to a min-max-median heap.
+
+Derivation of index equations[edit]
+In an array-based heap, the children and parent of a node can be located via simple arithmetic on the node's index. This section derives the relevant equations for heaps with their root at index 0, with additional notes on heaps with their root at index 1.
+To avoid confusion, we'll define the level of a node as its distance from the root, such that the root itself occupies level 0.
+
+Child nodes[edit]
+For a general node located at index i (beginning from 0), we will first derive the index of its right child, 
+  
+    
+      
+        
+          right
+        
+        =
+        2
+        i
+        +
+        2
+      
+    
+    {\displaystyle {\text{right}}=2i+2}
+  
+.
+Let node i be located in level L, and note that any level l contains exactly 
+  
+    
+      
+        
+          2
+          
+            l
+          
+        
+      
+    
+    {\displaystyle 2^{l}}
+  
+ nodes. Furthermore, there are exactly 
+  
+    
+      
+        
+          2
+          
+            l
+            +
+            1
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle 2^{l+1}-1}
+  
+ nodes contained in the layers up to and including layer l (think of binary arithmetic; 0111...111 = 1000...000 - 1). Because the root is stored at 0, the kth node will be stored at index 
+  
+    
+      
+        (
+        k
+        â
+        1
+        )
+      
+    
+    {\displaystyle (k-1)}
+  
+. Putting these observations together yields the following expression for the index of the last node in layer l.
+
+
+  
+    
+      
+        
+          last
+        
+        (
+        l
+        )
+        =
+        (
+        
+          2
+          
+            l
+            +
+            1
+          
+        
+        â
+        1
+        )
+        â
+        1
+        =
+        
+          2
+          
+            l
+            +
+            1
+          
+        
+        â
+        2
+      
+    
+    {\displaystyle {\text{last}}(l)=(2^{l+1}-1)-1=2^{l+1}-2}
+  
+
+Let there be j nodes after node i in layer L, such that
+
+
+  
+    
+      
+        
+          
+            
+              
+                i
+                =
+              
+              
+                
+                
+                  last
+                
+                (
+                L
+                )
+                â
+                j
+              
+            
+            
+              
+                =
+              
+              
+                
+                
+                (
+                
+                  2
+                  
+                    L
+                    +
+                    1
+                  
+                
+                â
+                2
+                )
+                â
+                j
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{alignedat}{2}i=&\quad {\text{last}}(L)-j\\=&\quad (2^{L+1}-2)-j\\\end{alignedat}}}
+  
+
+Each of these j nodes must have exactly 2 children, so there must be 
+  
+    
+      
+        2
+        j
+      
+    
+    {\displaystyle 2j}
+  
+ nodes separating i's right child from the end of its layer (
+  
+    
+      
+        L
+        +
+        1
+      
+    
+    {\displaystyle L+1}
+  
+).
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  right
+                
+                =
+              
+              
+                
+                
+                  last(L + 1)
+                
+                â
+                2
+                j
+              
+            
+            
+              
+                =
+              
+              
+                
+                
+                (
+                
+                  2
+                  
+                    L
+                    +
+                    2
+                  
+                
+                â
+                2
+                )
+                â
+                2
+                j
+              
+            
+            
+              
+                =
+              
+              
+                
+                2
+                (
+                
+                  2
+                  
+                    L
+                    +
+                    1
+                  
+                
+                â
+                2
+                â
+                j
+                )
+                +
+                2
+              
+            
+            
+              
+                =
+              
+              
+                
+                2
+                i
+                +
+                2
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{alignedat}{2}{\text{right}}=&\quad {\text{last(L + 1)}}-2j\\=&\quad (2^{L+2}-2)-2j\\=&\quad 2(2^{L+1}-2-j)+2\\=&\quad 2i+2\end{alignedat}}}
+  
+
+As required.
+Noting that the left child of any node is always 1 place before its right child, we get 
+  
+    
+      
+        
+          left
+        
+        =
+        2
+        i
+        +
+        1
+      
+    
+    {\displaystyle {\text{left}}=2i+1}
+  
+.
+If the root is located at index 1 instead of 0, the last node in each level is instead at index 
+  
+    
+      
+        
+          2
+          
+            l
+            +
+            1
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle 2^{l+1}-1}
+  
+. Using this throughout yields 
+  
+    
+      
+        
+          left
+        
+        =
+        2
+        i
+      
+    
+    {\displaystyle {\text{left}}=2i}
+  
+ and 
+  
+    
+      
+        
+          right
+        
+        =
+        2
+        i
+        +
+        1
+      
+    
+    {\displaystyle {\text{right}}=2i+1}
+  
+ for heaps with their root at 1.
+
+Parent node[edit]
+Every node is either the left or right child of its parent, so we know that either of the following is true.
+
+
+  
+    
+      
+        i
+        =
+        2
+        Ã
+        (
+        
+          parent
+        
+        )
+        +
+        1
+      
+    
+    {\displaystyle i=2\times ({\text{parent}})+1}
+  
+
+
+  
+    
+      
+        i
+        =
+        2
+        Ã
+        (
+        
+          parent
+        
+        )
+        +
+        2
+      
+    
+    {\displaystyle i=2\times ({\text{parent}})+2}
+  
+
+Hence,
+
+
+  
+    
+      
+        
+          parent
+        
+        =
+        
+          
+            
+              i
+              â
+              1
+            
+            2
+          
+        
+        
+        
+          
+            or
+          
+        
+        
+        
+          
+            
+              i
+              â
+              2
+            
+            2
+          
+        
+      
+    
+    {\displaystyle {\text{parent}}={\frac {i-1}{2}}\;{\textrm {or}}\;{\frac {i-2}{2}}}
+  
+
+Now consider the expression 
+  
+    
+      
+        
+          â
+          
+            
+              
+                
+                  i
+                  â
+                  1
+                
+                2
+              
+            
+          
+          â
+        
+      
+    
+    {\displaystyle \left\lfloor {\dfrac {i-1}{2}}\right\rfloor }
+  
+.
+If node 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ is a left child, this gives the result immediately, however, it also gives the correct result if node 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ is a right child. In this case, 
+  
+    
+      
+        (
+        i
+        â
+        2
+        )
+      
+    
+    {\displaystyle (i-2)}
+  
+ must be even, and hence 
+  
+    
+      
+        (
+        i
+        â
+        1
+        )
+      
+    
+    {\displaystyle (i-1)}
+  
+ must be odd.
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  â
+                  
+                    
+                      
+                        
+                          i
+                          â
+                          1
+                        
+                        2
+                      
+                    
+                  
+                  â
+                
+                =
+              
+              
+                
+                
+                  â
+                  
+                    
+                      
+                        
+                          
+                            i
+                            â
+                            2
+                          
+                          2
+                        
+                      
+                    
+                    +
+                    
+                      
+                        
+                          1
+                          2
+                        
+                      
+                    
+                  
+                  â
+                
+              
+            
+            
+              
+                =
+              
+              
+                
+                
+                  
+                    
+                      i
+                      â
+                      2
+                    
+                    2
+                  
+                
+              
+            
+            
+              
+                =
+              
+              
+                
+                
+                  parent
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{alignedat}{2}\left\lfloor {\dfrac {i-1}{2}}\right\rfloor =&\quad \left\lfloor {\dfrac {i-2}{2}}+{\dfrac {1}{2}}\right\rfloor \\=&\quad {\frac {i-2}{2}}\\=&\quad {\text{parent}}\end{alignedat}}}
+  
+
+Therefore, irrespective of whether a node is a left or right child, its parent can be found by the expression:
+
+
+  
+    
+      
+        
+          parent
+        
+        =
+        
+          â
+          
+            
+              
+                
+                  i
+                  â
+                  1
+                
+                2
+              
+            
+          
+          â
+        
+      
+    
+    {\displaystyle {\text{parent}}=\left\lfloor {\dfrac {i-1}{2}}\right\rfloor }
+  
+
+Related structures[edit]
+Since the ordering of siblings in a heap is not specified by the heap property, a single node's two children can be freely interchanged unless doing so violates the shape property (compare with treap). Note, however, that in the common array-based heap, simply swapping the children might also necessitate moving the children's sub-tree nodes to retain the heap property.
+The binary heap is a special case of the d-ary heap in which d = 2.
+
+Summary of running times[edit]
+Here are time complexities[17] of various heap data structures. Function names assume a min-heap.  For the meaning of "O(f)" and "Î(f)" see Big O notation.
+
+
+
+
+Operation
+
+find-min
+
+delete-min
+
+insert
+
+decrease-key
+
+meld
+
+
+Binary[17]
+
+Î(1)
+
+Î(logÂ n)
+
+O(logÂ n)
+
+O(logÂ n)
+
+Î(n)
+
+
+Leftist
+
+Î(1)
+
+Î(log n)
+
+Î(log n)
+
+O(log n)
+
+Î(log n)
+
+
+Binomial[17][18]
+
+Î(1)
+
+Î(log n)
+
+Î(1)[c]
+
+Î(log n)
+
+O(logÂ n)[d]
+
+
+Fibonacci[17][19]
+
+Î(1)
+
+O(logÂ n)[c]
+
+Î(1)
+
+Î(1)[c]
+
+Î(1)
+
+
+Pairing[20]
+
+Î(1)
+
+O(log n)[c]
+
+Î(1)
+
+o(logÂ n)[c][e]
+
+Î(1)
+
+
+Brodal[23][f]
+
+Î(1)
+
+O(logÂ n)
+
+Î(1)
+
+Î(1)
+
+Î(1)
+
+
+Rank-pairing[25]
+
+Î(1)
+
+O(log n)[c]
+
+Î(1)
+
+Î(1)[c]
+
+Î(1)
+
+
+Strict Fibonacci[26]
+
+Î(1)
+
+O(log n)
+
+Î(1)
+
+Î(1)
+
+Î(1)
+
+
+2â3 heap[27]
+
+O(log n)
+
+O(log n)[c]
+
+O(log n)[c]
+
+Î(1)
+
+?
+
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ In fact, this procedure can be shown to take Î(n log n) time in the worst case, meaning that n log n is also an asymptotic lower bound on the complexity.[1]:â167â In the average case (averaging over all permutations of n inputs), though, the method takes linear time.[8]
+
+^ This does not mean that sorting can be done in linear time since building a heap is only the first step of the heapsort algorithm.
+
+^ Jump up to: a b c d e f g h i Amortized time.
+
+^ n is the size of the larger heap.
+
+^ Lower bound of 
+  
+    
+      
+        Î©
+        (
+        log
+        â¡
+        log
+        â¡
+        n
+        )
+        ,
+      
+    
+    {\displaystyle \Omega (\log \log n),}
+  
+[21] upper bound of 
+  
+    
+      
+        O
+        (
+        
+          2
+          
+            2
+            
+              
+                log
+                â¡
+                log
+                â¡
+                n
+              
+            
+          
+        
+        )
+        .
+      
+    
+    {\displaystyle O(2^{2{\sqrt {\log \log n}}}).}
+  
+[22]
+
+^ Brodal and Okasaki later describe a persistent variant with the same bounds except for decrease-key, which is not supported.
+Heaps with n elements can be constructed bottom-up in O(n).[24]
+
+
+See also[edit]
+Heap
+Heapsort
+References[edit]
+
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2009) [1990]. Introduction to Algorithms (3rdÂ ed.). MIT Press and McGraw-Hill. ISBNÂ 0-262-03384-4.
+
+^ Williams, J. W. J. (1964), "Algorithm 232 - Heapsort", Communications of the ACM, 7 (6): 347â348, doi:10.1145/512274.512284
+
+^ eEL,CSA_Dept,IISc,Bangalore, "Binary Heaps", Data Structures and Algorithms{{citation}}:  CS1 maint: uses authors parameter (link)
+
+^ Porter, Thomas; Simon, Istvan (Sep 1975). "Random insertion into a priority queue structure". IEEE Transactions on Software Engineering. SE-1 (3): 292â298. doi:10.1109/TSE.1975.6312854. ISSNÂ 1939-3520. S2CIDÂ 18907513.
+
+^ Mehlhorn, Kurt; Tsakalidis, A. (Feb 1989). "Data structures": 27. Porter and Simon [171] analyzed the average cost of inserting a random element into a random heap in terms of exchanges. They proved that this average is bounded by the constant 1.61. Their proof docs not generalize to sequences of insertions since random insertions into random heaps do not create random heaps. The repeated insertion problem was solved by Bollobas and Simon [27]; they show that the expected number of exchanges is bounded by 1.7645. The worst-case cost of inserts and deletemins was studied by Gonnet and Munro [84]; they give log log n + O(1) and log n + log n* + O(1) bounds for the number of comparisons respectively. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "python/cpython/heapq.py". GitHub. Retrieved 2020-08-07.
+
+^ "heapq â Heap queue algorithm â Python 3.8.5 documentation". docs.python.org. Retrieved 2020-08-07. heapq.heappushpop(heap, item): Push item on the heap, then pop and return the smallest item from the heap. The combined action runs more efficiently than heappush() followed by a separate call to heappop().
+
+^ Jump up to: a b Hayward, Ryan; McDiarmid, Colin (1991). "Average Case Analysis of Heap Building by Repeated Insertion" (PDF). J. Algorithms. 12: 126â153. CiteSeerXÂ 10.1.1.353.7888. doi:10.1016/0196-6774(91)90027-v. Archived from the original (PDF) on 2016-02-05. Retrieved 2016-01-28.
+
+^ Suchenek, Marek A. (2012), "Elementary Yet Precise Worst-Case Analysis of Floyd's Heap-Construction Program", Fundamenta Informaticae, 120 (1): 75â92, doi:10.3233/FI-2012-751.
+
+^ Doberkat, Ernst E. (May 1984). "An Average Case Analysis of Floyd's Algorithm to Construct Heaps" (PDF). Information and Control. 6 (2): 114â131. doi:10.1016/S0019-9958(84)80053-4.
+
+^ Pasanen, Tomi (November 1996). Elementary Average Case Analysis of Floyd's Algorithm to Construct Heaps (Technical report). Turku Centre for Computer Science. CiteSeerXÂ 10.1.1.15.9526. ISBNÂ 951-650-888-X. TUCS Technical Report No. 64.  Note that this paper uses Floyd's original terminology "siftup" for what is now called sifting down.
+
+^ Kamp, Poul-Henning (June 11, 2010). "You're Doing It Wrong". ACM Queue. Vol.Â 8, no.Â 6.
+
+^ Chris L. Kuszmaul.
+"binary heap" Archived 2008-08-08 at the Wayback Machine.
+Dictionary of Algorithms and Data Structures, Paul E. Black, ed., U.S. National Institute of Standards and Technology. 16 November 2009.
+
+^ J.-R. Sack and T. Strothotte
+"An Algorithm for Merging Heaps",
+Acta Informatica 22, 171-186 (1985).
+
+^ Sack, JÃ¶rg-RÃ¼diger; Strothotte, Thomas (1990). "A characterization of heaps and its applications". Information and Computation. 86: 69â86. doi:10.1016/0890-5401(90)90026-E.
+
+^ Atkinson, M.D.; J.-R. Sack; N. Santoro & T. Strothotte (1 October 1986). "Min-max heaps and generalized priority queues" (PDF). Programming techniques and Data structures. Comm. ACM, 29(10): 996â1000.
+
+^ Jump up to: a b c d Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L. (1990). Introduction to Algorithms (1stÂ ed.). MIT Press and McGraw-Hill. ISBNÂ 0-262-03141-8.
+
+^ "Binomial Heap | Brilliant Math & Science Wiki". brilliant.org. Retrieved 2019-09-30.
+
+^ Fredman, Michael Lawrence; Tarjan, Robert E. (July 1987). "Fibonacci heaps and their uses in improved network optimization algorithms" (PDF). Journal of the Association for Computing Machinery. 34 (3): 596â615. CiteSeerXÂ 10.1.1.309.8927. doi:10.1145/28869.28874.
+
+^ Iacono, John (2000), "Improved upper bounds for pairing heaps", Proc. 7th Scandinavian Workshop on Algorithm Theory (PDF), Lecture Notes in Computer Science, vol.Â 1851, Springer-Verlag, pp.Â 63â77, arXiv:1110.4428, CiteSeerXÂ 10.1.1.748.7812, doi:10.1007/3-540-44985-X_5, ISBNÂ 3-540-67690-2
+
+^ Fredman, Michael Lawrence (July 1999). "On the Efficiency of Pairing Heaps and Related Data Structures" (PDF). Journal of the Association for Computing Machinery. 46 (4): 473â501. doi:10.1145/320211.320214.
+
+^ Pettie, Seth (2005). Towards a Final Analysis of Pairing Heaps (PDF). FOCS '05 Proceedings of the 46th Annual IEEE Symposium on Foundations of Computer Science. pp.Â 174â183. CiteSeerXÂ 10.1.1.549.471. doi:10.1109/SFCS.2005.75. ISBNÂ 0-7695-2468-0.
+
+^ Brodal, Gerth S. (1996), "Worst-Case Efficient Priority Queues" (PDF), Proc. 7th Annual ACM-SIAM Symposium on Discrete Algorithms, pp.Â 52â58
+
+^ Goodrich, Michael T.; Tamassia, Roberto (2004). "7.3.6. Bottom-Up Heap Construction". Data Structures and Algorithms in Java (3rdÂ ed.). pp.Â 338â341. ISBNÂ 0-471-46983-1.
+
+^ Haeupler, Bernhard; Sen, Siddhartha; Tarjan, Robert E. (November 2011). "Rank-pairing heaps" (PDF). SIAM J. Computing. 40 (6): 1463â1485. doi:10.1137/100785351.
+
+^ Brodal, Gerth StÃ¸lting; Lagogiannis, George; Tarjan, Robert E. (2012). Strict Fibonacci heaps (PDF). Proceedings of the 44th symposium on Theory of Computing - STOC '12. pp.Â 1177â1184. CiteSeerXÂ 10.1.1.233.1740. doi:10.1145/2213977.2214082. ISBNÂ 978-1-4503-1245-5.
+
+^ Takaoka, Tadao (1999), Theory of 2â3 Heaps (PDF), p.Â 12
+
+
+External links[edit]
+Open Data Structures - Section 10.1 - BinaryHeap: An Implicit Binary Tree, Pat Morin
+Implementation of binary max heap in C by Robin Thomas
+Implementation of binary min heap in C by Robin Thomas
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Binary_heap&oldid=1064277484"
+		Categories: Heaps (data structures)Binary treesHidden categories: CS1 maint: uses authors parameterCS1 errors: missing periodicalWebarchive template wayback links
+	

@@ -1,0 +1,331 @@
+
+Title:
+Composition over inheritance
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Software design pattern
+This article may be confusing or unclear to readers. Please help clarify the article. There might be a discussion about this on the talk page.  (October 2015) (Learn how and when to remove this template message)
+  This diagram shows how the fly and sound behavior of an animal can be designed in a flexible way by using the composition over inheritance design principle.[1]
+Composition over inheritance (or composite reuse principle) in object-oriented programming (OOP) is the principle that classes should achieve polymorphic behavior and code reuse by their composition (by containing instances of other classes that implement the desired functionality) rather than inheritance from a base or parent class.[2] This is an often-stated principle of OOP, such as in the influential book Design Patterns (1994).[3]
+
+Contents
+
+1 Basics
+2 Example
+
+2.1 Inheritance
+2.2 Composition and interfaces
+
+
+3 Benefits
+4 Drawbacks
+
+4.1 Avoiding drawbacks
+
+
+5 Empirical studies
+6 See also
+7 References
+
+
+
+Basics[edit]
+An implementation of composition over inheritance typically begins with the creation of various interfaces representing the behaviors that the system must exhibit. Interfaces enable polymorphic behavior. Classes implementing the identified interfaces are built and added to business domain classes as needed. Thus, system behaviors are realized without inheritance.
+In fact, business domain classes may all be base classes without any inheritance at all. Alternative implementation of system behaviors is accomplished by providing another class that implements the desired behavior interface. A class that contains a reference to an interface can support implementations of the interfaceâa choice that can be delayed until runtime.
+
+Example[edit]
+Inheritance[edit]
+An example in C++ follows:
+
+class Object
+{
+public:
+    virtual void update() {
+        // no-op
+    }
+
+    virtual void draw() {
+        // no-op
+    }
+
+    virtual void collide(Object objects[]) {
+        // no-op
+    }
+};
+
+class Visible : public Object
+{
+    Model* model;
+
+public:
+    virtual void draw() override {
+        // code to draw a model at the position of this object
+    }
+};
+
+class Solid : public Object
+{
+public:
+    virtual void collide(Object objects[]) override {
+        // code to check for and react to collisions with other objects
+    }
+};
+
+class Movable : public Object
+{
+public:
+    virtual void update() override {
+        // code to update the position of this object
+    }
+};
+
+Then, suppose we also have these concrete classes:
+
+class Player - which is Solid, Movable and Visible
+class Cloud - which is Movable and Visible, but not Solid
+class Building - which is Solid and Visible, but not Movable
+class Trap - which is Solid, but neither Visible nor Movable
+Note that multiple inheritance is dangerous if not implemented carefully, as it can lead to the diamond problem. One solution to avoid this is to create classes such as VisibleAndSolid, VisibleAndMovable, VisibleAndSolidAndMovable, etc. for every needed combination, though this leads to a large amount of repetitive code. C++ solves the diamond problem of multiple inheritance by allowing virtual inheritance.
+
+Composition and interfaces[edit]
+The C++ examples in this section demonstrate the principle of using composition and interfaces to achieve code reuse and polymorphism. Due to the C++ language not having a dedicated keyword to declare interfaces, the following C++ example uses "inheritance from a pure abstract base class". For most purposes, this is functionally equivalent to the interfaces provided in other languages, such as Java and C#.
+Introduce an abstract class named VisibilityDelegate, with the subclasses NotVisible and Visible, which provides a means of drawing an object:
+
+class VisibilityDelegate
+{
+public:
+    virtual void draw() = 0;
+};
+
+class NotVisible : public VisibilityDelegate
+{
+public:
+    virtual void draw() override {
+        // no-op
+    }
+};
+
+class Visible : public VisibilityDelegate
+{
+public:
+    virtual void draw() override {
+        // code to draw a model at the position of this object
+    }
+};
+
+Introduce an abstract class named UpdateDelegate, with the subclasses NotMovable and Movable, which provides a means of moving an object:
+
+class UpdateDelegate
+{
+public:
+    virtual void update() = 0;
+};
+
+class NotMovable : public UpdateDelegate
+{
+public:
+    virtual void update() override {
+        // no-op
+    }
+};
+
+class Movable : public UpdateDelegate
+{
+public:
+    virtual void update() override {
+        // code to update the position of this object
+    }
+};
+
+Introduce an abstract class named CollisionDelegate, with the subclasses NotSolid and Solid, which provides a means of colliding with an object:
+
+class CollisionDelegate
+{
+public:
+    virtual void collide(Object objects[]) = 0;
+};
+
+class NotSolid : public CollisionDelegate
+{
+public:
+    virtual void collide(Object objects[]) override {
+        // no-op
+    }
+};
+
+class Solid : public CollisionDelegate
+{
+public:
+    virtual void collide(Object objects[]) override {
+        // code to check for and react to collisions with other objects
+    }
+};
+
+Finally, introduce a class named Object with members to control its visibility (using a VisibilityDelegate), movability (using an UpdateDelegate), and solidity (using a CollisionDelegate). This class has methods which delegate to its members, e.g. update() simply calls a method on the UpdateDelegate:
+
+class Object
+{
+    VisibilityDelegate* _v;
+    UpdateDelegate* _u;
+    CollisionDelegate* _c;
+
+public:
+    Object(VisibilityDelegate* v, UpdateDelegate* u, CollisionDelegate* c)
+        : _v(v)
+        , _u(u)
+        , _c(c)
+    {}
+
+    void update() {
+        _u->update();
+    }
+
+    void draw() {
+        _v->draw();
+    }
+
+    void collide(Object objects[]) {
+        _c->collide(objects);
+    }
+};
+
+Then, concrete classes would look like:
+
+class Player : public Object
+{
+public:
+    Player()
+        : Object(new Visible(), new Movable(), new Solid())
+    {}
+
+    // ...
+};
+
+class Smoke : public Object
+{
+public:
+    Smoke()
+        : Object(new Visible(), new Movable(), new NotSolid())
+    {}
+
+    // ...
+};
+
+Benefits[edit]
+To favor composition over inheritance is a design principle that gives the design higher flexibility. It is more natural to build business-domain classes out of various components than trying to find commonality between them and creating a family tree. For example, an accelerator pedal and a steering wheel share very few common traits, yet both are vital components in a car. What they can do and how they can be used to benefit the car is easily defined. Composition also provides a more stable business domain in the long term as it is less prone to the quirks of the family members. In other words, it is better to compose what an object can do (HAS-A) than extend what it is (IS-A).[1]
+Initial design is simplified by identifying system object behaviors in separate interfaces instead of creating a hierarchical relationship to distribute behaviors among business-domain classes via inheritance. This approach more easily accommodates future requirements changes that would otherwise require a complete restructuring of business-domain classes in the inheritance model. Additionally, it avoids problems often associated with relatively minor changes to an inheritance-based model that includes several generations of classes.
+Composition relation is more flexible as it may be changed on runtime, while sub-typing relations are static and need recompilation in many languages.
+Some languages, notably Go[4] and Rust[citation needed], use type composition exclusively.
+
+Drawbacks[edit]
+One common drawback of using composition instead of inheritance is that methods being provided by individual components may have to be implemented in the derived type, even if they are only forwarding methods (this is true in most programming languages, but not all; see Avoiding drawbacks.) In contrast, inheritance does not require all of the base class's methods to be re-implemented within the derived class. Rather, the derived class only needs to implement (override) the methods having different behavior than the base class methods. This can require significantly less programming effort if the base class contains many methods providing default behavior and only a few of them need to be overridden within the derived class.
+For example, in the C# code below, the variables and methods of the Employee base class are inherited by the HourlyEmployee and SalariedEmployee derived subclasses. Only the Pay() method needs to be implemented (specialized) by each derived subclass. The other methods are implemented by the base class itself, and are shared by all of its derived subclasses; they do not need to be re-implemented (overridden) or even mentioned in the subclass definitions.
+
+// Base class
+public abstract class Employee
+{
+    // Properties
+    protected string Name { get; set; }
+    protected int ID { get; set; }
+    protected decimal PayRate { get; set; }
+    protected int HoursWorked { get; }
+
+    // Get pay for the current pay period
+    public abstract decimal Pay();
+}
+
+// Derived subclass
+public class HourlyEmployee : Employee
+{
+    // Get pay for the current pay period
+    public override decimal Pay()
+    {
+        // Time worked is in hours
+        return HoursWorked * PayRate;
+    }
+}
+
+// Derived subclass
+public class SalariedEmployee : Employee
+{
+    // Get pay for the current pay period
+    public override decimal Pay()
+    {
+        // Pay rate is annual salary instead of hourly rate
+        return HoursWorked * PayRate / 2087;
+    }
+}
+
+Avoiding drawbacks[edit]
+This drawback can be avoided by using traits, mixins, (type) embedding, or protocol extensions.
+Some languages provide specific means to mitigate this:
+
+C# provides default interface methods since 8.0 version which allows to define body to interface member.[5]
+D provides an explicit "alias this" declaration within a type can forward into it every method and member of another contained type.[6]
+Dart provides mixins with default implementations that can be shared.
+Go type embedding avoids the need for forwarding methods.[7]
+Java provides default interface methods since version 8. Project Lombok[8] supports delegation using the @Delegate annotation on the field, instead of copying and maintaining the names and types of all the methods from the delegated field.[9]
+Julia macros can be used to generate forwarding methods. Several implementations exist such as Lazy.jl and TypedDelegation.jl.
+Kotlin includes the delegation pattern in the language syntax.[10]
+Raku provides a handles keyword to facilitate method forwarding.
+Rust provides traits with default implementations.
+Scala (since version 3) provides an "export" clause to define aliases for selected members of an object.[11]
+Swift extensions can be used to define a default implementation of a protocol on the protocol itself, rather than within an individual type's implementation.[12]
+Empirical studies[edit]
+A 2013 study of 93 open source Java programs (of varying size) found that:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}While there is not huge opportunity to replace inheritance with composition (...), the opportunity is significant (median of 2% of uses [of inheritance] are only internal reuse, and a further 22% are only external or internal reuse).
+Our results suggest there is no need for concern regarding abuse of inheritance (at least in open-source Java software), but they do highlight the question regarding use of composition versus inheritance. If there are significant costs associated with using inheritance when composition could be used, then our results suggest there is some cause for concern.ââTempero et al., "What programmers do with inheritance in Java"[13]
+See also[edit]
+Delegation pattern
+Liskov substitution principle
+Object-oriented design
+Object composition
+Role-oriented programming
+State pattern
+Strategy pattern
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Freeman, Eric; Robson, Elisabeth; Sierra, Kathy; Bates, Bert (2004). Head First Design Patterns. O'Reilly. p.Â 23. ISBNÂ 978-0-596-00712-6.
+
+^ Knoernschild, Kirk (2002). Java Design - Objects, UML, and Process: 1.1.5 Composite Reuse Principle (CRP). Addison-Wesley Inc. ISBNÂ 9780201750447. Retrieved 2012-05-29.
+
+^ Gamma, Erich; Helm, Richard; Johnson, Ralph; Vlissides, John (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison-Wesley. p.Â 20. ISBNÂ 0-201-63361-2. OCLCÂ 31171684.
+
+^ Pike, Rob (2012-06-25). "Less is exponentially more". Retrieved 2016-10-01.
+
+^ "What's new in C# 8.0". Microsoft Docs. Microsoft. Retrieved 2019-02-20.
+
+^ "Alias This". D Language Reference. Retrieved 2019-06-15.
+
+^ "(Type) Embedding". The Go Programming Language Documentation. Retrieved 2019-05-10.
+
+^ https://projectlombok.org
+
+^ "@Delegate". Project Lombok. Retrieved 2018-07-11.
+
+^ "Delegated Properties". Kotlin Reference. JetBrains. Retrieved 2018-07-11.
+
+^ "Export Clauses". Scala Documentation. Retrieved 2021-10-06.
+
+^ "Protocols". The Swift Programming Language. Apple Inc. Retrieved 2018-07-11.
+
+^ Tempero, Ewan; Yang, Hong Yul; Noble, James (2013). What programmers do with inheritance in Java (PDF). ECOOP 2013âObject-Oriented Programming. Lecture Notes in Computer Science. Vol.Â 7920. pp.Â 577â601. doi:10.1007/978-3-642-39038-8_24. ISBNÂ 978-3-642-39038-8.
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Composition_over_inheritance&oldid=1066969871"
+		Categories: Component-based software engineeringSoftware architectureProgramming principlesHidden categories: Articles with short descriptionShort description matches WikidataWikipedia articles needing clarification from October 2015All Wikipedia articles needing clarificationAll articles with unsourced statementsArticles with unsourced statements from December 2021Articles with example C Sharp code
+	

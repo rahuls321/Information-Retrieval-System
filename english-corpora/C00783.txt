@@ -1,0 +1,292 @@
+
+Title:
+Approximate string matching
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		finding strings that approximately match a pattern
+  A fuzzy Mediawiki search for "angry emoticon" has as a suggested result "andrÃ© emotions"
+In computer science, approximate string matching (often colloquially referred to as fuzzy string searching) is the technique of finding  strings that match a pattern approximately (rather than exactly). The problem of approximate string matching is typically divided into two sub-problems: finding approximate substring matches inside a given string and finding dictionary strings that match the pattern approximately.
+
+Contents
+
+1 Overview
+2 Problem formulation and algorithms
+3 On-line versus off-line
+4 Applications
+5 See also
+6 References
+7 External links
+
+
+
+Overview[edit]
+The closeness of a match is measured in terms of the number of primitive operations necessary to convert the string into an exact match. This number is called the edit distance between the string and the pattern. The usual primitive operations are:[1]
+
+insertion: cot â coat
+deletion:  coat â cot
+substitution: coat â cost
+These three operations may be generalized as forms of substitution by adding a NULL character (here symbolized by *) wherever a character has been deleted or inserted:
+
+insertion: co*t â coat
+deletion:  coat â co*t
+substitution:  coat â cost
+Some approximate matchers also treat transposition, in which the positions of two letters in the string are swapped, to be a primitive operation.[2]
+
+transposition:  cost â cots
+Different approximate matchers impose different constraints. Some matchers use a single global unweighted cost, that is, the total number of primitive operations necessary to convert the match to the pattern. For example, if the pattern is coil, foil differs by one substitution, coils by one insertion, oil by one deletion, and foal by two substitutions. If all operations count as a single unit of cost and the limit is set to one, foil, coils, and oil will count as matches while foal will not.
+Other matchers specify the number of operations of each type separately, while still others set a total cost but allow different weights to be assigned to different operations. Some matchers permit separate assignments of limits and weights to individual groups in the pattern.
+
+Problem formulation and algorithms[edit]
+One possible definition of the approximate string matching problem is the following: Given a pattern string 
+  
+    
+      
+        P
+        =
+        
+          p
+          
+            1
+          
+        
+        
+          p
+          
+            2
+          
+        
+        .
+        .
+        .
+        
+          p
+          
+            m
+          
+        
+      
+    
+    {\displaystyle P=p_{1}p_{2}...p_{m}}
+  
+ and a text string 
+  
+    
+      
+        T
+        =
+        
+          t
+          
+            1
+          
+        
+        
+          t
+          
+            2
+          
+        
+        â¦
+        
+          t
+          
+            n
+          
+        
+      
+    
+    {\displaystyle T=t_{1}t_{2}\dots t_{n}}
+  
+, find a substring 
+  
+    
+      
+        
+          T
+          
+            
+              j
+              â²
+            
+            ,
+            j
+          
+        
+        =
+        
+          t
+          
+            
+              j
+              â²
+            
+          
+        
+        â¦
+        
+          t
+          
+            j
+          
+        
+      
+    
+    {\displaystyle T_{j',j}=t_{j'}\dots t_{j}}
+  
+ in T, which, of all substrings of T, has the smallest edit distance to the pattern P.
+A brute-force approach would be to compute the edit distance to P for all substrings of T, and then choose the substring with the minimum distance. However, this algorithm would have the running time O(n3Â m).
+A better solution, which was proposed by Sellers[3], relies on dynamic programming. It uses an alternative formulation of the problem: for each position j in the text T and each position i in the pattern P, compute the minimum edit distance between the i first characters of the pattern, 
+  
+    
+      
+        
+          P
+          
+            i
+          
+        
+      
+    
+    {\displaystyle P_{i}}
+  
+, and any substring 
+  
+    
+      
+        
+          T
+          
+            
+              j
+              â²
+            
+            ,
+            j
+          
+        
+      
+    
+    {\displaystyle T_{j',j}}
+  
+ of T that ends at position j.
+For each position j in the text T, and each position i in the pattern P, go through all substrings of T ending at position j, and determine which one of them has the minimal
+edit distance to the i first characters of the pattern P. Write this minimal distance as E(i,Â j). After computing E(i,Â j) for all i and j, we can easily find a solution to the original problem: it is the substring for which E(m,Â j) is minimal (m being the length of the pattern P.)
+Computing E(m,Â j) is very similar to computing the edit distance between two strings. In fact, we can use the Levenshtein distance computing algorithm for E(m,Â j), the only difference being that we must initialize the first row with zeros, and save the path of computation, that is, whether we used E(iÂ âÂ 1,j), E(i,jÂ âÂ 1) or E(iÂ âÂ 1,jÂ âÂ 1) in computing E(i,Â j).
+In the array containing the E(x,Â y) values, we then choose the minimal value in the last row, let it be E(x2,Â y2), and follow the path of computation backwards, back to the row number 0. If the field we arrived at was E(0,Â y1), then T[y1Â +Â 1]Â ...Â T[y2] is a substring of T with the minimal edit distance to the pattern P.
+Computing the E(x,Â y) array takes O(mn) time with the dynamic programming algorithm, while the backwards-working phase takes O(nÂ +Â m) time.
+Another recent idea is the similarity join. When matching database relates to a large scale of data, the O(mn) time with the dynamic programming algorithm cannot work within a limited time. So, the idea is to reduce the number of candidate pairs, instead of computing the similarity of all pairs of strings. Widely used algorithms are based on filter-verification, hashing, Locality-sensitive hashing (LSH), Tries and other greedy and approximation algorithms. Most of them are designed to fit some framework (such as Map-Reduce) to compute concurrently.
+
+On-line versus off-line[edit]
+Traditionally, approximate string matching algorithms are classified into two categories: on-line and off-line. With on-line algorithms the pattern can be processed before searching but the text cannot.  In other words, on-line techniques do searching without an index. Early algorithms for on-line approximate matching were suggested by Wagner and Fisher[4] and by Sellers[5]. Both algorithms are based on dynamic programming  but solve different problems. Sellers' algorithm searches approximately for a substring in a text while the algorithm of Wagner and Fisher calculates Levenshtein distance, being appropriate for dictionary fuzzy search only.
+On-line searching techniques have been repeatedly improved. Perhaps the most 
+famous improvement is the bitap algorithm (also known as the shift-or and shift-and algorithm), which is very efficient for relatively short pattern strings. The Bitap algorithm is the heart of the Unix searching utility agrep. A review of on-line searching algorithms was done by G. Navarro.[6]
+Although very fast on-line techniques exist, their performance on large data is unacceptable. 
+Text preprocessing or indexing makes searching dramatically faster.
+Today, a variety of indexing algorithms have been presented. Among them are suffix trees[7], metric trees[8] and n-gram methods.[9][10] 
+A detailed survey of indexing techniques that allows one to find an arbitrary substring in a text is given by Navarro et al.[11] A computational survey of dictionary methods (i.e., methods that permit finding all dictionary words that approximately match a search pattern) is given by Boytsov[12].
+
+Applications[edit]
+Common applications of approximate matching include spell checking.[13] With the availability of large amounts of DNA data, matching of nucleotide sequences has become an important application.[14] Approximate matching is also used in spam filtering.[15] Record linkage is a common application where records from two disparate databases are matched.
+String matching cannot be used for most binary data, such as images and music.  They require different algorithms, such as acoustic fingerprinting.
+
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Concept search
+JaroâWinkler distance
+Levenshtein distance
+Locality-sensitive hashing
+Metaphone
+NeedlemanâWunsch algorithm
+Plagiarism detection
+Regular expressions for fuzzy and non-fuzzy matching
+SmithâWaterman algorithm
+Soundex
+String metric
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+.mw-parser-output .citation{word-wrap:break-word}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}^  .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Baeza-Yates, R.; Navarro, G. (June 1996). "A faster algorithm for approximate string matching".  In Dan Hirchsberg; Gene Myers (eds.). Combinatorial Pattern Matching (CPM'96), LNCS 1075. Irvine, CA. pp.Â 1â23. CiteSeerXÂ 10.1.1.42.1593.
+^  Baeza-Yates, R.; Navarro, G. "Fast Approximate String Matching in a Dictionary" (PDF). Proc. SPIRE'98. IEEE CS Press. pp.Â 14â22.
+^  Boytsov, Leonid (2011). "Indexing methods for approximate dictionary searching: Comparative analysis". Journal of Experimental Algorithmics. 16 (1): 1â91. doi:10.1145/1963190.1963191. S2CIDÂ 15635688.
+^ Cormen, Thomas; Leiserson, Rivest (2001). Introduction to Algorithms (2ndÂ ed.). MIT Press. pp.Â 364â7. ISBNÂ 978-0-262-03293-3.
+^ Galil, Zvi; Apostolico, Alberto (1997). Pattern matching algorithms. Oxford [Oxfordshire]: Oxford University Press. ISBNÂ 978-0-19-511367-9.
+^ Gusfield, Dan (1997). Algorithms on strings, trees, and sequences: computer science and computational biology. Cambridge, UK: Cambridge University Press. ISBNÂ 978-0-521-58519-4.
+^  Myers, G. (May 1999). "A fast bit-vector algorithm for approximate string matching based on dynamic programming" (PDF). Journal of the ACM. 46 (3): 395â415. doi:10.1145/316542.316550. S2CIDÂ 1158099.
+^  Navarro, Gonzalo (2001). "A guided tour to approximate string matching". ACM Computing Surveys. 33 (1): 31â88. CiteSeerXÂ 10.1.1.96.7225. doi:10.1145/375360.375365. S2CIDÂ 207551224.
+^  Navarro, Gonzalo; Baeza-Yates, Ricardo; Sutinen, Erkki; Tarhio, Jorma (2001). "Indexing Methods for Approximate String Matching" (PDF). IEEE Data Engineering Bulletin. 24 (4): 19â27.
+^  Sellers, Peter H. (1980). "The Theory and Computation of Evolutionary Distances: Pattern Recognition". Journal of Algorithms. 1 (4): 359â73. doi:10.1016/0196-6774(80)90016-4.
+^ Skiena, Steve (1998). Algorithm Design Manual (1stÂ ed.). Springer. ISBNÂ 978-0-387-94860-7.
+^  Ukkonen, E. (1985). "Algorithms for approximate string matching". Information and Control. 64 (1â3): 100â18. doi:10.1016/S0019-9958(85)80046-2.
+^  Wagner, R.; Fischer, M. (1974). "The string-to-string correction problem". Journal of the ACM. 21: 168â73. doi:10.1145/321796.321811. S2CIDÂ 13381535.
+^  Zobel, Justin; Dart, Philip (1995). "Finding approximate matches in large lexicons". Software: Practice and Experience. 25 (3): 331â345. CiteSeerXÂ 10.1.1.14.3856. doi:10.1002/spe.4380250307. S2CIDÂ 6776819.
+
+External links[edit]
+Flamingo Project
+Efficient Similarity Query Processing Project with recent advances in approximate string matching based on an edit distance threshold.
+StringMetric project a Scala library of string metrics and phonetic algorithms
+Natural project a JavaScript natural language processing library which includes implementations of popular string metrics
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Approximate_string_matching&oldid=1055316486"
+		Categories: String matching algorithmsPattern matchingDynamic programmingHidden categories: Articles with short descriptionPages with lower-case short descriptionShort description is different from Wikidata
+	

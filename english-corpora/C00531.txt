@@ -1,0 +1,980 @@
+
+Title:
+Signed number representations
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Signed number representations"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (April 2013) (Learn how and when to remove this template message)
+In computing, signed number representations are required to encode negative numbers in binary number systems.
+In mathematics, negative numbers in any base are represented by prefixing them with a minus sign ("â"). However, in computer hardware, numbers are represented only as sequences of bits, without extra symbols. The four best-known methods of extending the binary numeral system to represent signed numbers are: sign-and-magnitude, ones' complement, two's complement, and offset binary. Some of the alternative methods use implicit instead of explicit signs, such as negative binary, using the base â2. Corresponding methods can be devised for other bases, whether positive, negative, fractional, or other elaborations on such themes.
+There is no definitive criterion by which any of the representations is universally superior. For integers, the representation used in most current computing devices is two's complement, although the Unisys ClearPath Dorado series mainframes use ones' complement.
+
+Contents
+
+1 History
+2 Signed magnitude representation
+3 Ones' complement
+4 Two's complement
+5 Offset binary
+6 Base â2
+7 Comparison table
+8 Other systems
+9 See also
+10 References
+
+
+
+History[edit]
+The early days of digital computing were marked by competing ideas about both hardware technology and mathematics technology (numbering systems). One of the great debates was the format of negative numbers, with some of the era's top experts expressing very strong and differing opinions.[citation needed] One camp supported two's complement, the system that is dominant today. Another camp supported ones' complement, where a negative value is formed by inverting all of the bits in its positive equivalent. A third group supported sign-and-magnitude (sign-magnitude), where a value is changed from positive to negative simply by toggling the word's highest-order bit.
+There were arguments for and against each of the systems. Sign-and-magnitude allowed for easier tracing of memory dumps (a common process in the 1960s) as small numeric values use fewer 1 bits. These systems did ones' complement math internally, so numbers would have to be converted to ones' complement values when they were transmitted from a register to the math unit and then converted back to sign-magnitude when the result was transmitted back to the register. The electronics required more gates than the other systemsÂ â a key concern when the cost and packaging of discrete transistors were critical. IBM was one of the early supporters of sign-magnitude, with their 704, 709 and 709x series computers being perhaps the best-known systems to use it.
+Ones' complement allowed for somewhat simpler hardware designs, as there was no need to convert values when passed to and from the math unit. But it also shared an undesirable characteristic with sign-magnitude: the ability to represent negative zero (â0). Negative zero behaves exactly like positive zero: when used as an operand in any calculation, the result will be the same whether an operand is positive or negative zero. The disadvantage is that the existence of two forms of the same value necessitates two comparisons when checking for equality with zero. Ones' complement subtraction can also result in an end-around borrow (described below). It can be argued that this makes the addition and subtraction logic more complicated or that it makes it simpler, as a subtraction requires simply inverting the bits of the second operand as it is passed to the adder. The PDP-1, CDC 160 series, CDC 3000 series, CDC 6000 series, UNIVAC 1100 series, and LINC computer use ones' complement representation.
+Two's complement is the easiest to implement in hardware, which may be the ultimate reason for its widespread popularity.[1] Processors on the early mainframes often consisted of thousands of transistors, so eliminating a significant number of transistors was a significant cost savings. Mainframes such as the IBM System/360, the GE-600 series,[2] and the PDP-6 and PDP-10 use two's complement, as did minicomputers such as the PDP-5 and PDP-8 and the PDP-11 and VAX machines. The architects of the early integrated-circuit-based CPUs (Intel 8080, etc.) also chose to use two's complement math. As IC technology advanced, two's complement technology was adopted in virtually all processors, including x86,[3] m68k, Power ISA,[4] MIPS, SPARC, ARM, Itanium, PA-RISC, and DEC Alpha.
+
+Signed magnitude representation[edit]
+This representation is also called "signâmagnitude" or "sign and magnitude" representation. In this approach, a number's sign is represented with a sign bit: setting that bit (often the most significant bit) to 0 for a positive number or positive zero, and setting it to 1 for a negative number or negative zero. The remaining bits in the number indicate the magnitude (or absolute value). For example, in an eight-bit byte, only seven bits represent the magnitude, which can range from 0000000 (0) to 1111111 (127). Thus numbers ranging from â12710 to +12710 can be represented once the sign bit (the eighth bit) is added. For example, â4310 encoded in an eight-bit byte is 10101011 while 4310 is 00101011. Using signed magnitude representation has multiple consequences which makes them more intricate to implement:[5]
+
+There are two ways to represent zero, 00000000 (0) and 10000000 (â0).
+Addition and subtraction require different behavior depending on the sign bit, whereas one's complement can ignore the sign bit and just do an end-around carry, and two's complement can ignore the sign bit and depend on the overflow behavior.
+Comparison also require inspecting the sign bit, whereas in two's complement, one can simply subtract the two numbers, and check if the outcome is positive or negative.
+The minimum negative number is â127 instead of â128 in the case of two's complement.
+This approach is directly comparable to the common way of showing a sign (placing a "+" or "â" next to the number's magnitude). Some early binary computers (e.g., IBM 7090) use this representation, perhaps because of its natural relation to common usage. Signed magnitude is the most common way of representing the significand in floating-point values.
+
+Ones' complement[edit]
+
+Eight-bit ones' complement
+
+
+Binary value
+
+Ones' complement interpretation
+
+Unsigned interpretation
+
+
+00000000
++0
+0
+
+
+00000001
+1
+1
+
+
+â®
+â®
+â®
+
+
+01111101
+125
+125
+
+
+01111110
+126
+126
+
+
+01111111
+127
+127
+
+
+10000000
+â127
+128
+
+
+10000001
+â126
+129
+
+
+10000010
+â125
+130
+
+
+â®
+â®
+â®
+
+
+11111101
+â2
+253
+
+
+11111110
+â1
+254
+
+
+11111111
+â0
+255
+
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Ones' complement
+Alternatively, a system known as ones' complement[6] can be used to represent negative numbers. The ones' complement form of a negative binary number is the bitwise NOT applied to it, i.e. the "complement" of its positive counterpart. Like sign-and-magnitude representation, ones' complement has two representations of 0: 00000000 (+0) and 11111111 (â0).[7]
+As an example, the ones' complement form of 00101011 (4310) becomes 11010100 (â4310). The range of signed numbers using ones' complement is represented by â(2Nâ1 â 1) to (2Nâ1 â 1) and Â±0. A conventional eight-bit byte is â12710 to +12710 with zero being either 00000000 (+0) or 11111111 (â0).
+To add two numbers represented in this system, one does a conventional binary addition, but it is then necessary to do an end-around carry: that is, add any resulting carry back into the resulting sum.[8] To see why this is necessary, consider the following example showing the case of the addition of â1 (11111110) to +2 (00000010):
+
+    binary    decimal
+   11111110     â1
++  00000010     +2
+âââââââââââ     ââ
+ 1 00000000      0   â Not the correct answer
+          1     +1   â Add carry
+âââââââââââ     ââ
+   00000001      1   â Correct answer
+
+In the previous example, the first binary addition gives 00000000, which is incorrect. The correct result (00000001) only appears when the carry is added back in. 
+A remark on terminology: The system is referred to as "ones' complement" because the negation of a positive value x (represented as the bitwise NOT of x) can also be formed by subtracting x from the ones' complement representation of zero that is a long sequence of ones (â0). Two's complement arithmetic, on the other hand, forms the negation of x by subtracting x from a single large power of two that is congruent to +0.[9] Therefore, ones' complement and two's complement representations of the same negative value will differ by one.
+Note that the ones' complement representation of a negative number can be obtained from the sign-magnitude representation merely by bitwise complementing the magnitude (inverting all the bits after the first). For example, the decimal number â125 with its sign-magnitude representation 11111101 can be represented in ones' complement form as 10000010.
+
+Two's complement[edit]
+
+Eight-bit two's complement
+
+
+Binary value
+
+Two's complement interpretation
+
+Unsigned interpretation
+
+
+00000000
+0
+0
+
+
+00000001
+1
+1
+
+
+â®
+â®
+â®
+
+
+01111110
+126
+126
+
+
+01111111
+127
+127
+
+
+10000000
+â128
+128
+
+
+10000001
+â127
+129
+
+
+10000010
+â126
+130
+
+
+â®
+â®
+â®
+
+
+11111110
+â2
+254
+
+
+11111111
+â1
+255
+
+Main article: Two's complement
+The problems of multiple representations of 0 and the need for the end-around carry are circumvented by a system called two's complement. In two's complement, negative numbers are represented by the bit pattern which is one greater (in an unsigned sense) than the ones' complement of the positive value. This can also be thought of as the most significant bit representing the inverse of its value in an unsigned integer; in an 8-bit unsigned byte, the most significant bit represents the 128ths place, where in two's complement that bit would represent -128.
+In two's-complement, there is only one zero, represented as 00000000. Negating a number (whether negative or positive) is done by inverting all the bits and then adding one to that result.[10] This actually reflects the ring structure on all integers modulo 2N: 
+  
+    
+      
+        
+          Z
+        
+        
+          /
+        
+        
+          2
+          
+            N
+          
+        
+        
+          Z
+        
+      
+    
+    {\displaystyle \mathbb {Z} /2^{N}\mathbb {Z} }
+  
+. Addition of a pair of two's-complement integers is the same as addition of a pair of unsigned numbers (except for detection of overflow, if that is done); the same is true for subtraction and even for N lowest significant bits of a product (value of multiplication). For instance, a two's-complement addition of 127 and â128 gives the same binary bit pattern as an unsigned addition of 127 and 128, as can be seen from the 8-bit two's complement table.
+An easier method to get the negation of a number in two's complement is as follows:
+
+
+
+
+
+Example 1
+
+Example 2
+
+
+1. Starting from the right, find the first "1"
+
+00101001
+
+00101100
+
+
+2. Invert all of the bits to the left of that "1"
+
+11010111
+
+11010100
+
+Method two:
+
+Invert all the bits through the number
+Add one
+Example: for +2, which is 00000010 in binary (the ~ character is the C bitwise NOT operator, so ~X means "invert all the bits in X"):
+
+~00000010 â 11111101
+11111101 + 1 â 11111110 (â2 in two's complement)
+
+Offset binary[edit]
+
+Eight-bit excess-128
+
+
+Binary value
+
+Excess-128 interpretation
+
+Unsigned interpretation
+
+
+00000000
+â128
+0
+
+
+00000001
+â127
+1
+
+
+â®
+â®
+â®
+
+
+01111111
+â1
+127
+
+
+10000000
+0
+128
+
+
+10000001
+1
+129
+
+
+â®
+â®
+â®
+
+
+11111111
++127
+255
+
+
+Main article: Offset binary
+In offset binary (also called excess-K or biased representation), a signed number n is represented by the bit pattern corresponding to the unsigned number n+K, with K being the biasing value or offset. Thus 0 is represented by K, and âK is represented by an all-zero bit pattern. This can be seen as a slight modification and generalization of the aforementioned two's-complement, which is virtually the excess-(2Nâ1) representation with negated most significant bit.
+Biased representations are now primarily used for the exponent of floating-point numbers. The IEEE 754 floating-point standard defines the exponent field of a single-precision (32-bit) number as an 8-bit excess-127 field. The double-precision (64-bit) exponent field is an 11-bit excess-1023 field; see exponent bias. It also had use for binary-coded decimal numbers as excess-3.
+
+Base â2[edit]
+See also: Negative base
+In conventional binary number systems, the base, or radix, is 2; thus the rightmost bit represents 20, the next bit represents 21, the next bit 22, and so on. However, a binary number system with base â2 is also possible.
+The rightmost bit represents (â2)0 = +1, the next bit represents (â2)1 = â2, the next bit (â2)2 = +4 and so on, with alternating sign. The numbers that can be represented with four bits are shown in the comparison table below.
+The range of numbers that can be represented is asymmetric. If the word has an even number of bits, the magnitude of the largest negative number that can be represented is twice as large as the largest positive number that can be represented, and vice versa if the word has an odd number of bits.
+
+Comparison table[edit]
+The following table shows the positive and negative integers that can be represented using four bits.
+
+
+Four-bit integer representations
+
+
+Decimal
+
+Unsigned
+
+Sign and magnitude
+
+Ones' complement
+
+Two's complement
+
+Excess-8 (biased)
+
+Base â2
+
+
++16Â Â Â Â 
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++15Â Â Â Â 
+
+1111
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++14Â Â Â Â 
+
+1110
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++13Â Â Â Â 
+
+1101
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++12Â Â Â Â 
+
+1100
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++11Â Â Â Â 
+
+1011
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++10Â Â Â Â 
+
+1010
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++9Â Â Â Â 
+
+1001
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++8Â Â Â Â 
+
+1000
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+
++7Â Â Â Â 
+
+0111
+
+0111
+
+0111
+
+0111
+
+1111
+
+N/A
+
+
++6Â Â Â Â 
+
+0110
+
+0110
+
+0110
+
+0110
+
+1110
+
+N/A
+
+
++5Â Â Â Â 
+
+0101
+
+0101
+
+0101
+
+0101
+
+1101
+
+0101
+
+
++4Â Â Â Â 
+
+0100
+
+0100
+
+0100
+
+0100
+
+1100
+
+0100
+
+
++3Â Â Â Â 
+
+0011
+
+0011
+
+0011
+
+0011
+
+1011
+
+0111
+
+
++2Â Â Â Â 
+
+0010
+
+0010
+
+0010
+
+0010
+
+1010
+
+0110
+
+
++1Â Â Â Â 
+
+0001
+
+0001
+
+0001
+
+0001
+
+1001
+
+0001
+
+
++0Â Â Â Â 
+
+0000
+
+0000
+
+0000
+
+0000
+
+1000
+
+0000
+
+
+â0Â Â Â Â 
+
+1000
+
+1111
+
+
+â1Â Â Â Â 
+
+N/A
+
+1001
+
+1110
+
+1111
+
+0111
+
+0011
+
+
+â2Â Â Â Â 
+
+N/A
+
+1010
+
+1101
+
+1110
+
+0110
+
+0010
+
+
+â3Â Â Â Â 
+
+N/A
+
+1011
+
+1100
+
+1101
+
+0101
+
+1101
+
+
+â4Â Â Â Â 
+
+N/A
+
+1100
+
+1011
+
+1100
+
+0100
+
+1100
+
+
+â5Â Â Â Â 
+
+N/A
+
+1101
+
+1010
+
+1011
+
+0011
+
+1111
+
+
+â6Â Â Â Â 
+
+N/A
+
+1110
+
+1001
+
+1010
+
+0010
+
+1110
+
+
+â7Â Â Â Â 
+
+N/A
+
+1111
+
+1000
+
+1001
+
+0001
+
+1001
+
+
+â8Â Â Â Â 
+
+N/A
+
+N/A
+
+N/A
+
+1000
+
+0000
+
+1000
+
+
+â9Â Â Â Â 
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+1011
+
+
+â10Â Â Â Â 
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+1010
+
+
+â11Â Â Â Â 
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+N/A
+
+Same table, as viewed from "given these binary bits, what is the number as interpreted by the representation system":
+
+
+
+
+Binary
+Unsigned
+Sign and magnitude
+Ones' complement
+Two's complement
+Excess-8
+Base â2
+
+
+0000
+0
+0
+0
+0
+â8
+0
+
+
+0001
+1
+1
+1
+1
+â7
+1
+
+
+0010
+2
+2
+2
+2
+â6
+â2
+
+
+0011
+3
+3
+3
+3
+â5
+â1
+
+
+0100
+4
+4
+4
+4
+â4
+4
+
+
+0101
+5
+5
+5
+5
+â3
+5
+
+
+0110
+6
+6
+6
+6
+â2
+2
+
+
+0111
+7
+7
+7
+7
+â1
+3
+
+
+1000
+8
+â0
+â7
+â8
+0
+â8
+
+
+1001
+9
+â1
+â6
+â7
+1
+â7
+
+
+1010
+10
+â2
+â5
+â6
+2
+â10
+
+
+1011
+11
+â3
+â4
+â5
+3
+â9
+
+
+1100
+12
+â4
+â3
+â4
+4
+â4
+
+
+1101
+13
+â5
+â2
+â3
+5
+â3
+
+
+1110
+14
+â6
+â1
+â2
+6
+â6
+
+
+1111
+15
+â7
+â0
+â1
+7
+â5
+
+Other systems[edit]
+Google's Protocol Buffers "zig-zag encoding" is a system similar to sign-and-magnitude, but uses the least significant bit to represent the sign and has a single representation of zero. This allows a variable-length quantity encoding intended for nonnegative (unsigned) integers to be used efficiently for signed integers.[11]
+A similar method is used in the H.264/MPEG-4 AVC and H.265 High Efficiency Video Coding video compression standards to extend exponential-Golomb coding to negative numbers. In that extension, the least significant bit is almost a sign bit; zero has the same least significant bit (0) as all the negative numbers. This choice results in the largest magnitude representable positive number being one higher than the largest magnitude negative number, unlike in two's complement or the Protocol Buffers zig-zag encoding.
+Another approach is to give each digit a sign, yielding the signed-digit representation. For instance, in 1726, John Colson advocated reducing expressions to "small numbers", numerals 1, 2, 3, 4, and 5. In 1840, Augustin Cauchy also expressed preference for such modified decimal numbers to reduce errors in computation.
+
+See also[edit]
+Balanced ternary
+Binary-coded decimal
+Computer number format
+Method of complements
+Signedness
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Choo, Hunsoo; Muhammad, K.; Roy, K. (February 2003). "Two's complement computation sharing multiplier and its applications to high performance DFE". IEEE Transactions on Signal Processing. 51 (2): 458â469. doi:10.1109/TSP.2002.806984.
+
+^ GE-625 / 635 Programming Reference Manual. General Electric. January 1966. Retrieved August 15, 2013.
+
+^ Intel 64 and IA-32 Architectures Software Developerâs Manual (PDF). Intel. Section 4.2.1. Retrieved August 6, 2013.
+
+^ Power ISA Version 2.07. Power.org. Section 1.4. Retrieved August 6, 2013.,
+
+^ Bacon, Jason W. (2010â2011). "Computer Science 315 Lecture Notes". Retrieved 21 February 2020.
+
+^ .mw-parser-output .citation{word-wrap:break-word}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}US 4484301, "Array multiplier operating in one's complement format", issued 1981-03-10Â 
+
+^ US 6760440, "One's complement cryptographic combiner", issued 1999-12-11Â 
+
+^ Shedletsky, John J. (1977). "Comment on the Sequential and Indeterminate Behavior of an End-Around-Carry Adder". IEEE Transactions on Computers. 26 (3): 271â272. doi:10.1109/TC.1977.1674817.
+
+^ Donald Knuth: The Art of Computer Programming, Volume 2: Seminumerical Algorithms, chapter 4.1
+
+^ Thomas Finley (April 2000). "Two's Complement". Cornell University. Retrieved 15 September 2015.
+
+^ Protocol Buffers: Signed Integers
+
+
+Ivan Flores, The Logic of Computer Arithmetic, Prentice-Hall (1963)
+Israel Koren, Computer Arithmetic Algorithms, A.K. Peters (2002), ISBNÂ 1-56881-160-8
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Signed_number_representations&oldid=1069328883"
+		Categories: Computer arithmeticHidden categories: Articles needing additional references from April 2013All articles needing additional referencesAll articles with unsourced statementsArticles with unsourced statements from May 2012
+	

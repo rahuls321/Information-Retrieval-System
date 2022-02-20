@@ -1,0 +1,339 @@
+
+Title:
+Dynamic array
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  Several values are inserted at the end of a dynamic array using geometric expansion. Grey cells indicate space reserved for expansion. Most insertions are fast (constant time), while some are slow due to the need for reallocation (Î(n) time, labelled with turtles). The logical size and capacity of the final array are shown.
+In computer science, a dynamic array, growable array, resizable array, dynamic table, mutable array, or array list is a random access, variable-size list data structure that allows elements to be added or removed. It is supplied with standard libraries in many modern mainstream programming languages. Dynamic arrays overcome a limit of static arrays, which have a fixed capacity that needs to be specified at allocation.
+A dynamic array is not the same thing as a dynamically allocated array, which is an array whose size is fixed when the array is allocated, although a dynamic array may use such a fixed-size array as a back end.[1]
+
+Contents
+
+1 Bounded-size dynamic arrays and capacity
+2 Geometric expansion and amortized cost
+3 Growth factor
+4 Performance
+5 Variants
+6 Language support
+7 References
+8 External links
+
+
+
+Bounded-size dynamic arrays and capacity[edit]
+A simple dynamic array can be constructed by allocating an array of fixed-size, typically larger than the number of elements immediately required. The elements of the dynamic array are stored contiguously at the start of the underlying array, and the remaining positions towards the end of the underlying array are reserved, or unused. Elements can be added at the end of a dynamic array in constant time by using the reserved space, until this space is completely consumed. When all space is consumed, and an additional element is to be added, then the underlying fixed-size array needs to be increased in size. Typically resizing is expensive because it involves allocating a new underlying array and copying each element from the original array. Elements can be removed from the end of a dynamic array in constant time, as no resizing is required. The number of elements used by the dynamic array contents is its logical size or size, while the size of the underlying array is called the dynamic array's capacity or physical size, which is the maximum possible size without relocating data.[2]  
+A fixed-size array will suffice in applications where the maximum logical size is fixed (e.g. by specification), or can be calculated before the array is allocated. A dynamic array might be preferred if:
+
+the maximum logical size is unknown, or difficult to calculate, before the array is allocated
+it is considered that a maximum logical size given by a specification is likely to change
+the amortized cost of resizing a dynamic array does not significantly affect performance or responsiveness
+Geometric expansion and amortized cost[edit]
+To avoid incurring the cost of resizing many times, dynamic arrays resize by a large amount, such as doubling in size, and use the reserved space for future expansion. The operation of adding an element to the end might work as follows:
+
+function insertEnd(dynarray a, element e)
+    if (a.size == a.capacity)
+        // resize a to twice its current capacity:
+        a.capacity â a.capacity * 2 
+        // (copy the contents to the new memory location here)
+    a[a.size] â e
+    a.size â a.size + 1
+
+As n elements are inserted, the capacities form a geometric progression. Expanding the array by any constant proportion a ensures that inserting n elements takes O(n) time overall, meaning that each insertion takes amortized constant time. Many dynamic arrays also deallocate some of the underlying storage if its size drops below a certain threshold, such as 30% of the capacity. This threshold must be strictly smaller than 1/a in order to provide hysteresis (provide a stable band to avoid repeatedly growing and shrinking) and support mixed sequences of insertions and removals with amortized constant cost.
+Dynamic arrays are a common example when teaching amortized analysis.[3][4]
+
+Growth factor[edit]
+The growth factor for the dynamic array depends on several factors including a space-time trade-off and algorithms used in the memory allocator itself. For growth factor a, the average time per insertion operation is about a/(aâ1), while the number of wasted cells is bounded above by (aâ1)n[citation needed]. If memory allocator uses a first-fit allocation algorithm, then growth factor values such as a=2 can cause dynamic array expansion to run out of memory even though a significant amount of memory may still be available.[5] There have been various discussions on ideal growth factor values, including proposals for the golden ratio as well as the value 1.5.[6] Many textbooks, however, use aÂ =Â 2 for simplicity and analysis purposes.[3][4]
+Below are growth factors used by several popular implementations:
+
+
+
+Implementation
+
+Growth factor (a)
+
+
+Java ArrayList[1]
+
+1.5 (3/2)
+
+
+Python PyListObject[7]
+
+~1.125 (n + n >> 3)
+
+
+Microsoft Visual C++ 2013[8]
+
+1.5 (3/2)
+
+
+G++ 5.2.0[5]
+
+2
+
+
+Clang 3.6[5]
+
+2
+
+
+Facebook folly/FBVector[9]
+
+1.5 (3/2)
+
+
+Rust Vec[10]
+
+2
+
+
+Go slices[11]
+
+between 1.25 and 2
+
+Performance[edit]
+
+Comparison of list data structures
+
+
+
+
+Peak
+
+Mutate (insert or delete) at â¦
+
+Excess space, average
+
+
+Beginning
+
+End
+
+Middle
+
+
+Linked list
+
+Î(n)
+
+Î(1)
+
+Î(1), known end element;Î(n), unknown end element
+
+Peak time + Î(1)[12][13]
+
+Î(n)
+
+
+Array
+
+Î(1)
+
+N/A
+
+N/A
+
+N/A
+
+0
+
+
+Dynamic array
+
+Î(1)
+
+Î(n)
+
+Î(1) amortized
+
+Î(n)
+
+Î(n)[14]
+
+
+Balanced tree
+
+Î(log n)
+
+Î(log n)
+
+Î(log n)
+
+Î(log n)
+
+Î(n)
+
+
+Random-access list
+
+Î(log n)[15]
+
+Î(1)
+
+N/A[15]
+
+N/A[15]
+
+Î(n)
+
+
+Hashed array tree
+
+Î(1)
+
+Î(n)
+
+Î(1) amortized
+
+Î(n)
+
+Î(ân)
+
+The dynamic array has performance similar to an array, with the addition of new operations to add and remove elements:
+
+Getting or setting the value at a particular index (constant time)
+Iterating over the elements in order (linear time, good cache performance)
+Inserting or deleting an element in the middle of the array (linear time)
+Inserting or deleting an element at the end of the array (constant amortized time)
+Dynamic arrays benefit from many of the advantages of arrays, including good locality of reference and data cache utilization, compactness (low memory use), and random access. They usually have only a small fixed additional overhead for storing information about the size and capacity. This makes dynamic arrays an attractive tool for building cache-friendly data structures. However, in languages like Python or Java that enforce reference semantics, the dynamic array generally will not store the actual data, but rather it will store references to the data that resides in other areas of memory. In this case, accessing items in the array sequentially will actually involve accessing multiple non-contiguous areas of memory, so the many advantages of the cache-friendliness of this data structure are lost.
+Compared to linked lists, dynamic arrays have faster indexing (constant time versus linear time) and typically faster iteration due to improved locality of reference; however, dynamic arrays require linear time to insert or delete at an arbitrary location, since all following elements must be moved, while linked lists can do this in constant time. This disadvantage is mitigated by the gap buffer and tiered vector variants discussed under Variants below. Also, in a highly fragmented memory region, it may be expensive or impossible to find contiguous space for a large dynamic array, whereas linked lists do not require the whole data structure to be stored contiguously.
+A balanced tree can store a list while providing all operations of both dynamic arrays and linked lists reasonably efficiently, but both insertion at the end and iteration over the list are slower than for a dynamic array, in theory and in practice, due to non-contiguous storage and tree traversal/manipulation overhead.
+
+Variants[edit]
+Gap buffers are similar to dynamic arrays but allow efficient insertion and deletion operations clustered near the same arbitrary location. Some deque implementations use array deques, which allow amortized constant time insertion/removal at both ends, instead of just one end.
+Goodrich[16] presented a dynamic array algorithm called tiered vectors that provides O(n1/k) performance for insertions and deletions from anywhere in the array, and O(k) get and set, where k â¥ 2 is a constant parameter.
+Hashed array tree (HAT) is a dynamic array algorithm published by Sitarski in 1996.[17] Hashed array tree wastes order n1/2 amount of storage space, where n is the number of elements in the array. The algorithm has O(1) amortized performance when appending a series of objects to the end of a hashed array tree.
+In a 1999 paper,[18] Brodnik et al. describe a tiered dynamic array data structure, which wastes only n1/2 space for n elements at any point in time, and they prove a lower bound showing that any dynamic array must waste this much space if the operations are to remain amortized constant time. Additionally, they present a variant where growing and shrinking the buffer has not only amortized but worst-case constant time.
+Bagwell (2002)[19] presented the VList algorithm, which can be adapted to implement a dynamic array.
+
+Language support[edit]
+C++'s std::vector and Rust's std::vec::Vec are implementations of dynamic arrays, as are the ArrayList[20] classes supplied with the Java API and the .NET Framework.[21] 
+The generic List<> class supplied with version 2.0 of the .NET Framework is also implemented with dynamic arrays. Smalltalk's OrderedCollection is a dynamic array with dynamic start and end-index, making the removal of the first element also O(1). 
+Python's list datatype implementation is a dynamic array the growth pattern of which is:  0, 4, 8, 16, 24, 32, 40, 52, 64, 76, ...[22] 
+Delphi and D implement dynamic arrays at the language's core. 
+Ada's Ada.Containers.Vectors generic package provides dynamic array implementation for a given subtype. 
+Many scripting languages such as Perl and Ruby offer dynamic arrays as a built-in primitive data type. 
+Several cross-platform frameworks provide dynamic array implementations for C, including CFArray and CFMutableArray in Core Foundation, and GArray and GPtrArray in GLib.
+Common Lisp provides a rudimentary support for resizable vectors by allowing to configure the built-in array type as adjustable and the location of insertion by the fill-pointer.
+
+References[edit]
+
+^ Jump up to: a b See, for example, the source code of java.util.ArrayList class from OpenJDK 6.
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Lambert, Kenneth Alfred (2009), "Physical size and logical size", Fundamentals of Python: From First Programs Through Data Structures, Cengage Learning, p.Â 510, ISBNÂ 978-1423902188
+
+^ Jump up to: a b Goodrich, Michael T.; Tamassia, Roberto (2002), "1.5.2 Analyzing an Extendable Array Implementation", Algorithm Design: Foundations, Analysis and Internet Examples, Wiley, pp.Â 39â41.
+
+^ Jump up to: a b Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2001) [1990]. "17.4 Dynamic tables". Introduction to Algorithms (2ndÂ ed.). MIT Press and McGraw-Hill. pp.Â 416â424. ISBNÂ 0-262-03293-7.
+
+^ Jump up to: a b c "C++ STL vector: definition, growth factor, member functions". Archived from the original on 2015-08-06. Retrieved 2015-08-05.
+
+^ "vector growth factor of 1.5". comp.lang.c++.moderated. Google Groups.[dead link]
+
+^ List object implementation from github.com/python/cpython/, retrieved 2020-03-23.
+
+^ Brais, Hadi. "Dissecting the C++ STL Vector: Part 3 - Capacity & Size". Micromysteries. Retrieved 2015-08-05.
+
+^ "facebook/folly". GitHub. Retrieved 2015-08-05.
+
+^ "rust-lang/rust". GitHub. Retrieved 2020-06-09.
+
+^ "golang/go". GitHub. Retrieved 2021-09-14.
+
+^ Day 1 Keynote - Bjarne Stroustrup: C++11 Style at GoingNative 2012 on channel9.msdn.com from minute 45 or foil 44
+
+^ Number crunching: Why you should never, ever, EVER use linked-list in your code again at kjellkod.wordpress.com
+
+^ Brodnik, Andrej; Carlsson, Svante; Sedgewick, Robert; Munro, JI; Demaine, ED (1999), Resizable Arrays in Optimal Time and Space (Technical Report CS-99-09) (PDF), Department of Computer Science, University of Waterloo
+
+^ Jump up to: a b c Chris Okasaki (1995). "Purely Functional Random-Access Lists". Proceedings of the Seventh International Conference on Functional Programming Languages and Computer Architecture: 86â95. doi:10.1145/224164.224187.
+
+^ Goodrich, Michael T.; Kloss II, John G. (1999), "Tiered Vectors: Efficient Dynamic Arrays for Rank-Based Sequences", Workshop on Algorithms and Data Structures, Lecture Notes in Computer Science, 1663: 205â216, doi:10.1007/3-540-48447-7_21, ISBNÂ 978-3-540-66279-2
+
+^ Sitarski, Edward (September 1996), "HATs: Hashed array trees", Algorithm Alley, Dr. Dobb's Journal, 21 (11)
+
+^ Brodnik, Andrej; Carlsson, Svante; Sedgewick, Robert; Munro, JI; Demaine, ED (1999), Resizable Arrays in Optimal Time and Space (PDF) (Technical Report CS-99-09), Department of Computer Science, University of Waterloo
+
+^ Bagwell, Phil (2002), Fast Functional Lists, Hash-Lists, Deques and Variable Length Arrays, EPFL
+
+^ Javadoc on ArrayList
+
+^ ArrayList Class
+
+^ listobject.c (github.com)
+
+
+External links[edit]
+NIST Dictionary of Algorithms and Data Structures: Dynamic array
+VPOOL - C language implementation of dynamic array.
+CollectionSpy â A Java profiler with explicit support for debugging ArrayList- and Vector-related issues.
+Open Data Structures - Chapter 2 - Array-Based Lists, Pat Morin
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Dynamic_array&oldid=1064849083"
+		Categories: ArraysAmortized data structuresHidden categories: All articles with dead external linksArticles with dead external links from August 2021All articles with unsourced statementsArticles with unsourced statements from January 2018Articles with example pseudocode
+	

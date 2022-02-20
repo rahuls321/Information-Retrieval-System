@@ -1,0 +1,1725 @@
+
+Title:
+Monad (functional programming)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Design pattern in functional programming to build generic types
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}For the concept in category theory, see Monad (category theory).
+This article may be too technical for most readers to understand. Please help improve it to make it understandable to non-experts, without removing the technical details.  (May 2019) (Learn how and when to remove this template message)
+In functional programming, a monad is a type that wraps another type and gives some form of quality to the underlying type. In addition to wrapping a type, monads define two functions: one to wrap a value in a monad, and another to compose together functions that output monads (these are known as monadic functions). General-purpose languages use monads to abstract away boilerplate code needed for common operations (such as dealing with undefined values or fallible functions). Functional languages use monads to turn complicated sequences of functions into succinct pipelines that abstract away control flow, and side-effects.[1][2]
+Both the concept of a monad and the term originally come from category theory, where a monad is defined as a functor with additional structure.[a] Research beginning in the late 1980s and early 1990s established that monads could bring seemingly disparate computer-science problems under a unified, functional model. Category theory also provides a few formal requirements, known as the monad laws, which should be satisfied by any monad and can be used to verify monadic code.[3][4]
+Since monads make semantics explicit for a kind of computation, they can also be used to implement convenient language features. Some languages, such as Haskell, even offer pre-built definitions in their core libraries for the general monad structure and common instances.[1][5]
+
+Contents
+
+1 Overview
+
+1.1 An example: Maybe
+1.2 Definition
+1.3 Usage
+
+
+2 Applications
+3 History
+4 Analysis
+
+4.1 Verifying the monad laws
+4.2 Derivation from functors
+4.3 Another example: List
+
+
+5 Techniques
+
+5.1 Syntactic sugar do-notation
+5.2 General interface
+5.3 Operators
+
+
+6 Variations
+
+6.1 Additive monads
+6.2 Free monads
+6.3 Comonads
+
+
+7 More examples
+
+7.1 Identity monad
+7.2 Collections
+7.3 IO monad (Haskell)
+7.4 Writer monad (JavaScript)
+7.5 Environment monad
+7.6 State monads
+7.7 Continuation monad
+7.8 Program logging
+
+
+8 See also
+9 Notes
+10 References
+11 External links
+
+
+
+Overview[edit]
+"For a monad m, a value of type m a represents having access to a value of type a within the context of the monad." âC. A. McCann[6]
+A monad can be created by defining a type constructor M and two operations: return (often also called unit), which receives a value of type a and wraps it into a monadic value of type m a, using the type constructor; and bind (typically represented as >>=), which receives a function f over type a and can transform monadic values m a applying f to the unwrapped value a. (An alternative but equivalent construct using the  join  function instead of the bind operator can be found in the later section Â§Â Derivation from functors.)
+With these elements, the programmer composes a sequence of function calls (a "pipeline") with several bind operators chained together in an expression. Each function call transforms its input plain-type value, and the bind operator handles the returned monadic value, which is fed into the next step in the sequence.
+Between each pair of composed function calls, the bind operator >>= can inject into the monadic value m a some additional information that is not accessible within the function f, and pass it along down the pipeline. It can also exert finer control of the flow of execution, for example by calling the function only under some conditions, or executing the function calls in a particular order.
+
+An example: Maybe[edit]
+One example of a monad is the Maybe type. Undefined null results are one particular pain point that many procedural languages don't provide good tools for dealing with. See anti-pattern. This causes bugs and makes it harder to build robust software that gracefully handles errors. The Maybe type forces the programmer to deal with these potentially undefined results by explicitly defining the two states of a result: Just âresultâ, or Nothing. For example the programmer might be constructing a parser, which is to return an intermediate result, or else signal a condition which the parser has detected, and which programmer must also handle. With just a little extra functional spice on top, this Maybe type transforms into a fully-featured monad.[b]:â12.3 pages 148-151â
+In most languages, the Maybe monad is also known as an option type, which is just a type that marks whether or not it contains a value. Typically they are expressed as some kind of enumerated type. In this Rust example we will call it Maybe<T> and variants of this type can either be a value of generic type T, or the empty variant: Nothing.
+
+// The <T> represents a generic type "T"
+enum Maybe<T> {
+    Just(T)
+    Nothing
+}
+
+Maybe<T> can also be understood as a "wrapping" type, this is where its connection to monads comes in. In languages with some form of the Maybe type, there are functions that aid in their use such as composing monadic functions with each other and testing if a Maybe contains a value.
+
+In the following hard-coded example, a Maybe type is used as a result to functions that may fail, in this case the type returns nothing if there is a divide-by-zero.fn divide(x: Decimal, y: Decimal) -> Maybe<Decimal> {
+    if y == 0 { return Nothing }
+    else { return Just(x / y) }
+}
+// divide(1.0, 4.0) -> returns Just(0.25)
+// divide(3.0, 0.0) -> returns Nothing
+One such way to test whether or not a Maybe contains a value is to use if statements.let m_x = divide(3.14, 0.0); // see divide function above
+// The if statement extracts x from m_x if m_x is the Just variant of Maybe
+if let Just(x) = m_x {
+    print("answer: ", x)
+} else {
+    print("division failed, divide by zero error...")
+}
+Other languages may have pattern matchinglet result = divide(3.0, 2.0);
+match result {
+    Just(x) => print("answer: ", x),
+    Nothing => print("division failed, we'll get em next time."),
+}
+Monads can compose functions that return Maybe together. One concrete example to do this might be to have one function take in Maybes and return a Maybe such as:
+fn chainable_division(maybe_x: Maybe<Decimal>, maybe_y: Maybe<Decimal>) -> Maybe<Decimal> {
+    match (maybe_x, maybe_y) {
+        (Just(x), Just(y)) => { // If both inputs are Just, return division
+            return Just(x / y);
+        },
+        _ => return Nothing // Otherwise return Nothing
+    }
+}
+chainable_division(chainable_division(Just(2.0), Just(0.0)), Just(1.0)); // inside chainable_division fails, outside chainable_division returns Nothing
+
+Having to rewrite functions to take Maybes in this concrete example requires a lot of boilerplate (look at all those Just expressions!). Instead, we can use something called a bind operator. (also known as "map", "flatmap", or "shove"[8]:â2205sâ). This operation takes a monad and a function that returns a monad and runs the function on the inner value of the passed monad, returning the monad from the function.// Rust example using ".map". maybe_x is passed through 2 functions that return Maybe<Decimal> and Maybe<String> respectively.
+// As with normal function composition the inputs and outputs of functions feeding into each other should match wrapped types. (i.e. the add_one function should return a Maybe<Decimal> which then can be unwrapped to a Decimal for the decimal_to_string function)
+let maybe_x: Maybe<Decimal> = Just(1.0)
+let maybe_result = maybe_x.map(|x| add_one(x)).map(|x| decimal_to_string(x))
+In Haskell, there is an operator bind, or (>>=) that allows for this monadic composition in a more elegant form similar to function composition.[c]:â150â151â
+halve :: Int -> Maybe Int
+halve x
+  | even x = Just (x `div` 2)
+  | odd x  = Nothing
+ -- This code halves x twice. it evaluates to Nothing if x is not a multiple of 4
+halve x >>= halve
+
+With >>= available, chainable_division can be expressed much more succinctly with the help of anonymous functions (i.e. lambdas). Notice in the expression below how the two nested lambdas each operate on the wrapped value in the passed Maybe monad using the bind operator.[d]:â93â
+
+ chainable_division(mx,my) = mx >>= Î»x -> (my >>= Î»y -> Just (x / y))
+
+What has been shown so far is basically a monad, but to be more concise, the following is a strict list of qualities necessary for a monad as defined by the following section.
+Monadic Type - A type (Maybe)[b]:â148â151â
+Unit operation - A type converter (Just(x))[d]:â93â
+Bind operation - A combinator for monadic functions ( >>= or .map())[c]:â150â151â
+These three things are the 3 pieces necessary to form a monad. While other monads will embody different logical processes, and some may have extra properties, all of them will have these three similar components.[1][9]
+
+Definition[edit]
+The more common definition for a monad in functional programming, used in the above example, is actually based on a Kleisli triple rather than category theory's standard definition. The two constructs turn out to be mathematically equivalent, however, so either definition will yield a valid monad. Given any well-defined, basic types T, U, a monad consists of three parts:
+
+A type constructor M that builds up a monadic type M T[e]
+A type converter, often called unit or return, that embeds an object x in the monad:.mw-parser-output .block-indent{padding-left:3em;padding-right:0;overflow:hidden}unitÂ : T â M T[f]
+ A combinator, typically called bind (as in binding a variable) and represented with an infix operator >>= or a method called flatMap, that unwraps a monadic variable, then inserts it into a monadic function/expression, resulting in a new monadic value:(>>=)Â : (M T, T â M U) â M U[g] so if mxÂ : M T and fÂ : T â M U, then  (mx >>= f)Â : M U
+
+To fully qualify as a monad though, these three parts must also respect a few laws:
+
+unit is a left-identity for bind:unit(x) >>= f â f(x)
+unit is also a right-identity for bind:ma >>= unit â ma
+bind is essentially associative:[h]ma >>= Î»x â (f(x) >>= g) â (ma >>= f) >>= g[1]
+Algebraically, this means any monad both gives rise to a category (called the Kleisli category) and a monoid in the category of functors (from values to computations), with monadic composition as a binary operator in the monoid[8]:â2450sâ and unit as identity in the monad.
+
+Usage[edit]
+The value of the monad pattern goes beyond merely condensing code and providing a link to mathematical reasoning.
+Whatever language or default programming paradigm a developer uses, following the monad pattern brings many of the benefits of purely functional programming.
+By reifying a specific kind of computation, a monad not only encapsulates the tedious details of that computational pattern, but it does so in a declarative way, improving the code's clarity.
+As monadic values explicitly represent not only computed values, but computed effects, a monadic expression can be replaced with its value in referentially transparent positions, much like pure expressions can be, allowing for many techniques and optimizations based on rewriting.[4]
+Typically, programmers will use bind to chain monadic functions into a sequence, which has led some to describe monads as "programmable semicolons", a reference to how many imperative languages use semicolons to separate statements.[1][5]
+However, it should be stressed that monads do not actually order computations; even in languages that use them as central features, simpler function composition can arrange steps within a program.
+A monad's general utility rather lies in simplifying a program's structure and improving separation of concerns through abstraction.[4][11]
+The monad structure can also be seen as a uniquely mathematical and compile time variation on the decorator pattern.
+Some monads can pass along extra data that is inaccessible to functions, and some even exert finer control over execution, for example only calling a function under certain conditions.
+Because they let application programmers implement domain logic while offloading boilerplate code onto pre-developed modules, monads can even be considered a tool for aspect-oriented programming.[12]
+One other noteworthy use for monads is isolating side-effects, like input/output or mutable state, in otherwise purely functional code.
+Even purely functional languages can still implement these "impure" computations without monads, via an intricate mix of function composition and continuation-passing style (CPS) in particular.[2]
+With monads though, much of this scaffolding can be abstracted away, essentially by taking each recurring pattern in CPS code and bundling it into a distinct monad.[4]
+If a language does not support monads by default, it is still possible to implement the pattern, often without much difficulty.
+When translated from category-theory to programming terms, the monad structure is a generic concept and can be defined directly in any language that supports an equivalent feature for bounded polymorphism.
+A concept's ability to remain agnostic about operational details while working on underlying types is powerful, but the unique features and stringent behavior of monads set them apart from other concepts.[13]
+
+Applications[edit]
+Discussions of specific monads will typically focus on solving a narrow implementation problem since a given monad represents a specific computational form.
+In some situations though, an application can even meet its high-level goals by using appropriate monads within its core logic.
+Here are just a few applications that have monads at the heart of their designs:
+
+The Parsec parser library uses monads to combine simpler parsing rules into more complex ones, and is particularly useful for smaller domain-specific languages.[14]
+xmonad is a tiling window manager centered on the zipper data structure, which itself can be treated monadically as a specific case of delimited continuations.[15]
+LINQ by Microsoft provides a query language for the .NET Framework that is heavily influenced by functional programming concepts, including core operators for composing queries monadically.[16]
+ZipperFS is a simple, experimental file system that also uses the zipper structure primarily to implement its features.[17]
+The Reactive extensions framework essentially provides a (co)monadic interface to data streams that realizes the observer pattern.[18]
+History[edit]
+The term "monad" in programming actually goes all the way back to the APL and J programming languages, which do tend toward being purely functional. However, in those languages, "monad" is only shorthand for a function taking one parameter (a function with two parameters being a "dyad", and so on).[19]
+The mathematician Roger Godement was the first to formulate the concept of a monad (dubbing it a "standard construction") in the late 1950s, though the term "monad" that came to dominate was popularized by category-theorist Saunders Mac Lane.[citation needed] The form defined above using bind, however, was originally described in 1965 by mathematician Heinrich Kleisli in order to prove that any monad could be characterized as an adjunction between two (covariant) functors.[20]
+Starting in the 1980s, a vague notion of the monad pattern began to surface in the computer science community.
+According to programming language researcher Philip Wadler, computer scientist John C. Reynolds anticipated several facets of it in the 1970s and early 1980s, when he discussed the value of continuation-passing style, category theory as a rich source for formal semantics, and the type distinction between values and computations.[4]
+The research language Opal, which was actively designed up until 1990, also effectively based I/O on a monadic type, but the connection was not realized at the time.[21]
+The computer scientist Eugenio Moggi was the first to explicitly link the monad of category theory to functional programming, in a conference paper in 1989,[22] followed by a more refined journal submission in 1991. In earlier work, several computer scientists had advanced using category theory to provide semantics for the lambda calculus. Moggi's key insight was that a real-world program is not just a function from values to other values, but rather a transformation that forms computations on those values. When formalized in category-theoretic terms, this leads to the conclusion that monads are the structure to represent these computations.[3]
+Several others popularized and built on this idea, including Philip Wadler and Simon Peyton Jones, both of whom were involved in the specification of Haskell. In particular, Haskell used a problematic "lazy stream" model up through v1.2 to reconcile I/O with lazy evaluation, until switching over to a more flexible monadic interface.[23] The Haskell community would go on to apply monads to many problems in functional programming, and in the 2010s, researchers working with Haskell eventually recognized that monads are applicative functors;[24][i] and that both monads and arrows are monoids.[26]
+At first, programming with monads was largely confined to Haskell and its derivatives, but as functional programming has influenced other paradigms, many languages have incorporated a monad pattern (in spirit if not in name). Formulations now exist in Scheme, Perl, Python, Racket, Clojure, Scala, F#, and have also been considered for a new ML standard.[citation needed]
+
+Analysis[edit]
+One benefit of the monad pattern is bringing mathematical precision to bear on program logic.
+Not only can the monad laws be used to check an instance's validity, but features from related structures (like functors) can be used through subtyping.
+
+Verifying the monad laws[edit]
+Returning to the Maybe example, its components were declared to make up a monad, but no proof was given that it satisfies the monad laws.
+This can be rectified by plugging the specifics of Maybe into one side of the general laws, then algebraically building a chain of equalities to reach the other side:
+
+Law 1:  eta(a) >>= f(x)  â  (Just a) >>= f(x)  â  f(a)
+
+Law 2:  ma >>= eta(x)           â  ma
+
+        if ma is (Just a) then
+            eta(a)              â Just a
+        else                        or
+            Nothing             â Nothing
+        end if
+
+Law 3:  (ma >>= f(x)) >>= g(y)                       â  ma >>= (f(x) >>= g(y))
+
+        if (ma >>= f(x)) is (Just b) then               if ma is (Just a) then
+            g(ma >>= f(x))                                (f(x) >>= g(y)) a
+        else                                            else
+            Nothing                                         Nothing
+        end if                                          end if
+
+                â  if ma is (Just a) and f(a) is (Just b) then      
+                       (g â f) a
+                   else if ma is (Just a) and f(a) is Nothing then
+                       Nothing
+                   else
+                       Nothing
+                   end if
+
+Derivation from functors [edit]
+Though rarer in computer science, one can use category theory directly, which defines a monad as a functor with two additional natural transformations.
+So to begin, a structure requires a higher-order function (or "functional") named map to qualify as a functor:
+
+map ÏÂ : (a â b) â (ma â mb)
+This is not always a major issue, however, especially when a monad is derived from a pre-existing functor, whereupon the monad inherits map automatically. (For historical reasons, this map is instead called fmap in Haskell.)
+A monad's first transformation is actually the same unit from the Kleisli triple, but following the hierarchy of structures closely, it turns out unit characterizes an applicative functor, an intermediate structure between a monad and a basic functor. In the applicative context, unit is sometimes referred to as pure but is still the same function. What does differ in this construction is the law unit must satisfy; as bind is not defined, the constraint is given in terms of map instead:
+
+(unit â Ï) x â ((map Ï) â unit) x[27]
+The final leap from applicative functor to monad comes with the second transformation, the join function (in category theory this is a natural transformation usually called Î¼), which "flattens" nested applications of the monad:
+
+join(mma)Â : M (M T) â M T
+As the characteristic function, join must also satisfy three variations on the monad laws:[citation needed]
+
+(join â (map join)) mmma â (join â join)    mmma â ma
+(join â (map unit))  ma   â (join â unit)    ma   â ma  
+(join â (map map Ï)) mma  â ((map Ï) â join) mma  â mb
+Regardless of whether a developer defines a direct monad or a Kleisli triple, the underlying structure will be the same, and the forms can be derived from each other easily:
+
+(map Ï) ma  â ma >>= (unit â Ï)
+join(mma)   â mma >>= id
+ma >>= f â (join â (map f)) ma[28]
+Another example: List [edit]
+The List monad naturally demonstrates how deriving a monad from a simpler functor can come in handy.
+In many languages, a list structure comes pre-defined along with some basic features, so a List type constructor and append operator (represented with ++ for infix notation) are assumed as already given here.
+Embedding a plain value in a list is also trivial in most languages:
+
+unit(x)  =  [x]
+
+From here, applying a function iteratively with a list comprehension may seem like an easy choice for bind and converting lists to a full monad.
+The difficulty with this approach is that bind expects monadic functions, which in this case will output lists themselves;
+as more functions are applied, layers of nested lists will accumulate, requiring more than a basic comprehension.
+However, a procedure to apply any simple function over the whole list, in other words map, is straightforward:
+
+(map Ï) xlist  =  [ Ï(x1), Ï(x2), ..., Ï(xn) ]
+
+Now, these two procedures already promote List to an applicative functor.
+To fully qualify as a monad, only a correct notion of join to flatten repeated structure is needed, but for lists, that just means unwrapping an outer list to append the inner ones that contain values:
+
+join(xlistlist)  =  join([xlist1, xlist2, ..., xlistn])
+                 =  xlist1 ++ xlist2 ++ ... ++ xlistn
+
+The resulting monad is not only a list, but one that automatically resizes and condenses itself as functions are applied.
+bind can now also be derived with just a formula, then used to feed List values through a pipeline of monadic functions:
+
+  The List monad can greatly simplify the use of multivalued functions, such as complex roots.[29]
+(xlist >>= f)  =  join â (map f) xlist
+
+One application for this monadic list is representing nondeterministic computation.
+List can hold results for all execution paths in an algorithm, then condense itself at each step to "forget" which paths led to which results (a sometimes important distinction from deterministic, exhaustive algorithms).[citation needed]
+Another benefit is that checks can be embedded in the monad; specific paths can be pruned transparently at their first point of failure, with no need to rewrite functions in the pipeline.[28]
+A second situation where List shines is composing multivalued functions.
+For instance, the nth complex root of a number should yield n distinct complex numbers, but if another mth root is then taken of those results, the final mâ¢n values should be identical to the output of the mâ¢nth root.
+List completely automates this issue away, condensing the results from each step into a flat, mathematically correct list.[29]
+
+Techniques[edit]
+Monads present opportunities for interesting techniques beyond just organizing program logic. Monads can lay the groundwork for useful syntactic features while their high-level and mathematical nature enable significant abstraction.
+
+Syntactic sugar .mw-parser-output .vanchor>:target~.vanchor-text{background-color:#b1d2ff}do-notation[edit]
+Although using bind openly often makes sense, many programmers prefer a syntax that mimics imperative statements
+(called do-notation in Haskell, perform-notation in OCaml, computation expressions in F#,[30] and for comprehension in Scala). This is only syntactic sugar that disguises a monadic pipeline as a code block; the compiler will then quietly translate these expressions into underlying functional code.
+Translating the add function from the Maybe into Haskell can show this feature in action. A non-monadic version of add in Haskell looks like this:
+
+add mx my =
+    case mx of
+        Nothing -> Nothing
+        Just x  -> case my of
+                       Nothing -> Nothing
+                       Just y  -> Just (x + y)
+
+In monadic Haskell, return is the standard name for unit, plus lambda expressions must be handled explicitly, but even with these technicalities, the Maybe monad makes for a cleaner definition:
+
+add mx my =
+    mx >>= (\x ->
+        my >>= (\y ->
+            return (x + y)))
+
+With do-notation though, this can be distilled even further into a very intuitive sequence:
+
+add mx my = do
+    x <- mx
+    y <- my
+    return (x + y)
+
+A second example shows how Maybe can be used in an entirely different language: F#.
+With computation expressions, a "safe division" function that returns None for an undefined operand or division by zero can be written as:
+
+let readNum () =
+  let s = Console.ReadLine()
+  let succ,v = Int32.TryParse(s)
+  if (succ) then Some(v) else None
+
+let secure_div = 
+  maybe { 
+    let! x = readNum()
+    let! y = readNum()
+    if (y = 0) 
+    then None
+    else return (x / y)
+  }
+
+At build-time, the compiler will internally "de-sugar" this function into a denser chain of bind calls:
+
+maybe.Delay(fun () ->
+  maybe.Bind(readNum(), fun x ->
+    maybe.Bind(readNum(), fun y ->
+      if (y=0) then None else maybe.Return(x / y))))
+
+For a last example, even the general monad laws themselves can be expressed in do-notation:
+
+do { x <- return v; f x }            ==  do { f v }
+do { x <- m; return x }              ==  do { m }
+do { y <- do { x <- m; f x }; g y }  ==  do { x <- m; y <- f x; g y }
+
+While convenient, a developer should always remember that this block style is purely syntactic and can be replaced with outwardly monadic (or even non-monadic CPS) expressions.
+Using bind to express the monadic pipeline can still be clearer in many cases, and some functional programming advocates even argue that since block-style allows novices to carry over habits from imperative programming, it should be avoided by default and only used when obviously superior.[31][1]
+
+General interface[edit]
+Every monad needs a specific implementation that meets the monad laws, but other aspects like the relation to other structures or standard idioms within a language are shared by all monads.
+As a result, a language or library may provide a general Monad interface with function prototypes, subtyping relationships, and other general facts.
+Besides providing a head-start to development and guaranteeing a new monad inherits features from a supertype (such as functors), checking a monad's design against the interface adds another layer of quality control.[citation needed]
+
+Operators [edit]
+Monadic code can often be simplified even further through the judicious use of operators.
+The map functional can be especially helpful since it works on more than just ad-hoc monadic functions; so long as a monadic function should work analogously to a predefined operator, map can be used to instantly "lift" the simpler operator into a monadic one.[j]
+With this technique, the definition of add from the Maybe example could be distilled into:
+
+add(mx,my)  =  map (+)
+
+The process could be taken even one step further by defining add not just for Maybe, but for the whole Monad interface.
+By doing this, any new monad that matches the structure interface and implements its own map will immediately inherit a lifted version of add too.
+The only change to the function needed is generalizing the type signature:
+
+addÂ : (Monad Number, Monad Number)  â  Monad Number[32]
+
+Another monadic operator that is also useful for analysis is monadic composition (represented as infix >=> here), which allows chaining monadic functions in a more mathematical style:
+
+(f >=> g) x  =  (f(x) â mb) >>= g(y = b)
+
+With this operator, the monad laws can be written in terms of functions alone, highlighting the correspondence to associativity and existence of an identity:
+
+(unit >=> g)     â  g
+(f >=> unit)     â  f
+(f >=> g) >=> h  â  f >=> (g >=> h)[1]
+
+In turn, the above shows the meaning of the "do" block in Haskell:
+
+do
+ _p <- f(x)
+ _q <- g(_p)
+ h(_q)          â ( f >=> g >=> h )(x)
+
+Variations[edit]
+At a mathematical level, some monads have particularly nice properties and are uniquely fitted to certain problems.
+
+Additive monads [edit]
+An additive monad is a monad endowed with an additional closed, associative, binary operator mplus and an identity element under mplus, called mzero.
+The Maybe monad can be considered additive, with Nothing as mzero and a variation on the OR operator as mplus.
+List is also an additive monad, with the empty list [] acting as mzero and the concatenation operator ++ as mplus.
+Intuitively, mzero represents a monadic wrapper with no value from an underlying type, but is also considered a "zero" (rather than a "one") since it acts as an absorber for bind, returning mzero whenever bound to a monadic function.
+This property is two-sided, and bind will also return mzero when any value is bound to a monadic zero function.
+In category-theoretic terms, an additive monad qualifies once as a monoid over monadic functions with bind (as all monads do), and again over monadic values via mplus.[33][k]
+
+Free monads [edit]
+Sometimes, the general outline of a monad may be useful, but no simple pattern recommends one monad or another.
+This is where a free monad comes in; as a free object in the category of monads, it can represent monadic structure without any specific constraints beyond the monad laws themselves.
+Just as a free monoid concatenates elements without evaluation, a free monad allows chaining computations with markers to satisfy the type system, but otherwise imposes no deeper semantics itself.
+For example, by working entirely through the Just and Nothing markers, the Maybe monad is in fact a free monad.
+The List monad, on the other hand, is not a free monad since it brings extra, specific facts about lists (like append) into its definition.
+One last example is an abstract free monad:
+
+data Free f a
+  = Pure a
+  | Free (f (Free f a))
+
+unit :: a -> Free f a
+unit x = Pure x
+
+bind :: Functor f => Free f a -> (a -> Free f b) -> Free f b
+bind (Pure x) f = f x
+bind (Free x) f = Free (fmap (\y -> bind y f) x)
+
+Free monads, however, are not restricted to a linked-list like in this example, and can be built around other structures like trees.
+Using free monads intentionally may seem impractical at first, but their formal nature is particularly well-suited for syntactic problems.
+A free monad can be used to track syntax and type while leaving semantics for later, and has found use in parsers and interpreters as a result.[34]
+Others have applied them to more dynamic, operational problems too, such as providing iteratees within a language.[35]
+
+Comonads [edit]
+Besides generating monads with extra properties, for any given monad, one can also define a comonad.
+Conceptually, if monads represent computations built up from underlying values, then comonads can be seen as reductions back down to values.
+Monadic code, in a sense, cannot be fully "unpacked"; once a value is wrapped within a monad, it remains quarantined there along with any side-effects (a good thing in purely functional programming).
+Sometimes though, a problem is more about consuming contextual data, which comonads can model explicitly.
+Technically, a comonad is the categorical dual of a monad, which loosely means that it will have the same required components, only with the direction of the type signatures reversed.
+Starting from the bind-centric monad definition, a comonad consists of:
+
+A type constructor W that marks the higher-order type W T
+The dual of unit, called counit here, extracts the underlying value from the comonad:
+counit(wa)Â : W T â T
+
+A reversal of bind (also represented with =>>) that extends a chain of reducing functions:
+(wa =>> f)Â : (W U, W U â T) â W T[l]
+
+extend and counit must also satisfy duals of the monad laws:
+
+counit â ( (wa =>> f) â wb )  â  f(wa) â b
+wa =>> counit  â  wa
+wa ( (=>> f(wx = wa)) â wb (=>> g(wy = wb)) â wc )  â  ( wa (=>> f(wx = wa)) â wb ) (=>> g(wy = wb)) â wc
+
+Analogous to monads, comonads can also be derived from functors using a dual of join:
+
+duplicate takes an already comonadic value and wraps it in another layer of comonadic structure:
+duplicate(wa)Â : W T â W (W T)
+
+While operations like extend are reversed, however, a comonad does not reverse functions it acts on, and consequently, comonads are still functors with map, not cofunctors.
+The alternate definition with duplicate, counit, and map must also respect its own comonad laws:
+
+((map duplicate) â duplicate) wa  â  (duplicate â duplicate) wa  â  wwwa
+((map counit) â duplicate)    wa  â  (counit â duplicate)    wa  â  wa
+((map map Ï) â duplicate)     wa  â  (duplicate â (map Ï))   wa  â  wwb
+
+And as with monads, the two forms can be converted automatically:
+
+(map Ï) wa    â  wa =>> (Ï â counit) wx
+duplicate wa  â  wa =>> wx
+
+wa =>> f(wx)  â  ((map f) â duplicate) wa
+
+A simple example is the Product comonad, which outputs values based on an input value and shared environment data.
+In fact, the Product comonad is just the dual of the Writer monad and effectively the same as the Reader monad (both discussed below).
+Product and Reader differ only in which function signatures they accept, and how they complement those functions by wrapping or unwrapping values.
+A less trivial example is the Stream comonad, which can be used to represent data streams and attach filters to the incoming signals with extend.
+In fact, while not as popular as monads, researchers have found comonads particularly useful for stream processing and modeling dataflow programming.[36][37]
+Due to their strict definitions, however, one cannot simply move objects back and forth between monads and comonads.
+As an even higher abstraction, arrows can subsume both structures, but finding more granular ways to combine monadic and comonadic code is an active area of research.[38][39]
+
+More examples[edit]
+Identity monad[edit]
+The simplest monad is the Identity monad, which just annotates plain values and functions to satisfy the monad laws:
+
+newtype Id T  =  T
+
+unit(x)    =  x
+(x >>= f)  =  f(x)
+
+Identity does actually have valid uses though, such as providing a base case for recursive monad transformers.
+It can also be used to perform basic variable assignment within an imperative-style block.[m][citation needed]
+
+Collections[edit]
+Any collection with a proper append is already a free monoid, but it turns out that List is not the only collection that also has a well-defined join and qualifies as a monad.
+One can even mutate List into these other monadic collections by simply imposing special properties on append:[n][citation needed]
+
+
+
+
+Collection
+
+Monoid properties
+
+
+List
+
+Free
+
+
+Finite multiset
+
+Commutative
+
+
+Finite set
+
+Commutative and idempotent
+
+
+Finite permutations
+
+Non-commutative and idempotent
+
+IO monad (Haskell) [edit]
+As already mentioned, pure code should not have unmanaged side effects, but that does not preclude a program from explicitly describing and managing effects.
+This idea is central to Haskell's IO monad, where an object of type IO a can be seen as containing the current state of the world outside the program, and computing a value of type a. A computation that computes no value â i.e., a procedure â has the type IO (), "computing" the dummy value ().
+When a programmer binds an IO value to a function, the function makes decisions based on that view of the world (input from users, files, etc.), then yields a monadic value reflecting the new world-state (program output).[23]
+For example, Haskell has several functions for acting on the wider file system, including one that checks whether a file exists and another that deletes a file.
+Their two type signatures are:
+
+doesFileExist :: FilePath -> IO Bool
+removeFile :: FilePath -> IO ()
+
+The first is interested in whether a given file really exists, and as a result, outputs a Boolean value within the IO monad.
+The second function, on the other hand, is only concerned with acting on the file system so the IO container it outputs is empty.
+IO is not limited just to file I/O though; it even allows for user I/O, and along with imperative syntax sugar, can mimic a typical "Hello, World!" program:
+
+main :: IO ()
+main = do
+  putStrLn "Hello, world!"
+  putStrLn "What is your name, user?"
+  name <- getLine
+  putStrLn ("Nice to meet you, " ++ name ++ "!")
+
+Desugared, this translates into the following monadic pipeline (>> in Haskell is just a variant of bind for when only monadic effects matter and the underlying result can be discarded):
+
+main :: IO ()
+main =
+  putStrLn "Hello, world!" >>
+  putStrLn "What is your name, user?" >> 
+  getLine >>= (\name ->
+    putStrLn ("Nice to meet you, " ++ name ++ "!"))
+
+Writer monad (JavaScript) [edit]
+Another common situation is keeping a log file or otherwise reporting a program's progress.
+Sometimes, a programmer may want to log even more specific, technical data for later profiling or debugging.
+The Writer monad can handle these tasks by generating auxiliary output that accumulates step-by-step.
+To show how the monad pattern is not restricted to primarily functional languages, this example implements a Writer monad in JavaScript.
+First, an array (with nested tails) allows constructing the Writer type as a linked list.
+The underlying output value will live in position 0 of the array, and position 1 will implicitly hold a chain of auxiliary notes:
+
+const writer = value => [value, []];
+
+Defining unit is also very simple:
+
+const unit = value => [value, []];
+
+Only unit is needed to define simple functions that output Writer objects with debugging notes:
+
+const squared = x => [x * x, [`${x} was squared.`]];
+const halved = x => [x / 2, [`${x} was halved.`]];
+
+A true monad still requires bind, but for Writer, this amounts simply to appending a function's output to the monad's linked list:
+
+const bind = (writer, transform) => {
+    const [value, log] = writer;
+    const [result, updates] = transform(value);
+    return [result, log.concat(updates)];
+};
+
+The sample functions can now be chained together using bind, but defining a version of monadic composition (called pipelog here) allows applying these functions even more succinctly:
+
+const pipelog = (writer, ...transforms) =>
+    transforms.reduce(bind, writer);
+
+The final result is a clean separation of concerns between stepping through computations and logging them to audit later: 
+
+pipelog(unit(4), squared, halved);
+// Resulting writer object = [8, ['4 was squared.', '16 was halved.']]
+
+Environment monad[edit]
+An environment monad (also called a reader monad and a function monad) allows a computation to depend on values from a shared environment. The monad type constructor maps a type T to functions of type E â T, where E is the type of the shared environment. The monad functions are:
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  return
+                
+                :
+              
+              
+                T
+                â
+                E
+                â
+                T
+                =
+                t
+                â¦
+                e
+                â¦
+                t
+              
+            
+            
+              
+                
+                  bind
+                
+                :
+              
+              
+                (
+                E
+                â
+                T
+                )
+                â
+                (
+                T
+                â
+                E
+                â
+                
+                  T
+                  â²
+                
+                )
+                â
+                E
+                â
+                
+                  T
+                  â²
+                
+                =
+                r
+                â¦
+                f
+                â¦
+                e
+                â¦
+                f
+                
+                (
+                r
+                
+                e
+                )
+                
+                e
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{ll}{\text{return}}\colon &T\rightarrow E\rightarrow T=t\mapsto e\mapsto t\\{\text{bind}}\colon &(E\rightarrow T)\rightarrow (T\rightarrow E\rightarrow T')\rightarrow E\rightarrow T'=r\mapsto f\mapsto e\mapsto f\,(r\,e)\,e\end{array}}}
+  
+
+The following monadic operations are useful:
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  ask
+                
+                :
+              
+              
+                E
+                â
+                E
+                =
+                
+                  
+                    id
+                  
+                  
+                    E
+                  
+                
+              
+            
+            
+              
+                
+                  local
+                
+                :
+              
+              
+                (
+                E
+                â
+                E
+                )
+                â
+                (
+                E
+                â
+                T
+                )
+                â
+                E
+                â
+                T
+                =
+                f
+                â¦
+                c
+                â¦
+                e
+                â¦
+                c
+                
+                (
+                f
+                
+                e
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{ll}{\text{ask}}\colon &E\rightarrow E={\text{id}}_{E}\\{\text{local}}\colon &(E\rightarrow E)\rightarrow (E\rightarrow T)\rightarrow E\rightarrow T=f\mapsto c\mapsto e\mapsto c\,(f\,e)\end{array}}}
+  
+
+The ask operation is used to retrieve the current context, while local executes a computation in a modified subcontext. As in a state monad, computations in the environment monad may be invoked by simply providing an environment value and applying it to an instance of the monad.
+Formally, a value in an environment monad is equivalent to a function with an additional, anonymous argument; return and bind are equivalent to the K and S combinators, respectively, in the SKI combinator calculus.
+
+State monads[edit]
+A state monad allows a programmer to attach state information of any type to a calculation. Given any value type, the corresponding type in the state monad is a function which accepts a state, then outputs a new state (of type s) along with a return value (of type t). This is similar to an environment monad, except that it also returns a new state, and thus allows modeling a mutable environment.
+
+type State s t = s -> (t, s)
+
+Note that this monad takes a type parameter, the type of the state information. The monad operations are defined as follows:
+
+-- "return" produces the given value without changing the state.
+return x = \s -> (x, s)
+-- "bind" modifies m so that it applies f to its result.
+m >>= f = \r -> let (x, s) = m r in (f x) s
+
+Useful state operations include:
+
+get = \s -> (s, s) -- Examine the state at this point in the computation.
+put s = \_ -> ((), s) -- Replace the state.
+modify f = \s -> ((), f s) -- Update the state
+
+Another operation applies a state monad to a given initial state:
+
+runState :: State s a -> s -> (a, s)
+runState t s = t s
+
+do-blocks in a state monad are sequences of operations that can examine and update the state data.
+Informally, a state monad of state type S maps the type of return values T into functions of type 
+  
+    
+      
+        S
+        â
+        T
+        Ã
+        S
+      
+    
+    {\displaystyle S\rightarrow T\times S}
+  
+, where S is the underlying state. The return and bind function are:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  return
+                
+                :
+              
+              
+                T
+                â
+                S
+                â
+                T
+                Ã
+                S
+                =
+                t
+                â¦
+                s
+                â¦
+                (
+                t
+                ,
+                s
+                )
+              
+            
+            
+              
+                
+                  bind
+                
+                :
+              
+              
+                (
+                S
+                â
+                T
+                Ã
+                S
+                )
+                â
+                (
+                T
+                â
+                S
+                â
+                
+                  T
+                  â²
+                
+                Ã
+                S
+                )
+                â
+                S
+                â
+                
+                  T
+                  â²
+                
+                Ã
+                S
+                Â 
+                =
+                m
+                â¦
+                k
+                â¦
+                s
+                â¦
+                (
+                k
+                Â 
+                t
+                Â 
+                
+                  s
+                  â²
+                
+                )
+                
+                
+                  where
+                
+                
+                (
+                t
+                ,
+                
+                  s
+                  â²
+                
+                )
+                =
+                m
+                
+                s
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{ll}{\text{return}}\colon &T\rightarrow S\rightarrow T\times S=t\mapsto s\mapsto (t,s)\\{\text{bind}}\colon &(S\rightarrow T\times S)\rightarrow (T\rightarrow S\rightarrow T'\times S)\rightarrow S\rightarrow T'\times S\ =m\mapsto k\mapsto s\mapsto (k\ t\ s')\quad {\text{where}}\;(t,s')=m\,s\end{array}}}
+  
+.
+From the category theory point of view, a state monad is derived from the adjunction between the product functor and the exponential functor, which exists in any cartesian closed category by definition.
+
+Continuation monad[edit]
+A continuation monad with return type R maps type T into functions of type 
+  
+    
+      
+        
+          (
+          
+            T
+            â
+            R
+          
+          )
+        
+        â
+        R
+      
+    
+    {\displaystyle \left(T\rightarrow R\right)\rightarrow R}
+  
+. It is used to model continuation-passing style. The return and bind functions are as follows:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  return
+                
+                :
+              
+              
+                T
+                â
+                
+                  (
+                  
+                    T
+                    â
+                    R
+                  
+                  )
+                
+                â
+                R
+                =
+                t
+                â¦
+                f
+                â¦
+                f
+                
+                t
+              
+            
+            
+              
+                
+                  bind
+                
+                :
+              
+              
+                
+                  (
+                  
+                    
+                      (
+                      
+                        T
+                        â
+                        R
+                      
+                      )
+                    
+                    â
+                    R
+                  
+                  )
+                
+                â
+                
+                  (
+                  
+                    T
+                    â
+                    
+                      (
+                      
+                        
+                          T
+                          â²
+                        
+                        â
+                        R
+                      
+                      )
+                    
+                    â
+                    R
+                  
+                  )
+                
+                â
+                
+                  (
+                  
+                    
+                      T
+                      â²
+                    
+                    â
+                    R
+                  
+                  )
+                
+                â
+                R
+                =
+                c
+                â¦
+                f
+                â¦
+                k
+                â¦
+                c
+                
+                
+                  (
+                  
+                    t
+                    â¦
+                    f
+                    
+                    t
+                    
+                    k
+                  
+                  )
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{ll}{\text{return}}\colon &T\rightarrow \left(T\rightarrow R\right)\rightarrow R=t\mapsto f\mapsto f\,t\\{\text{bind}}\colon &\left(\left(T\rightarrow R\right)\rightarrow R\right)\rightarrow \left(T\rightarrow \left(T'\rightarrow R\right)\rightarrow R\right)\rightarrow \left(T'\rightarrow R\right)\rightarrow R=c\mapsto f\mapsto k\mapsto c\,\left(t\mapsto f\,t\,k\right)\end{array}}}
+  
+
+The call-with-current-continuation function is defined as follows:
+
+
+  
+    
+      
+        
+          call/cc
+        
+        :
+        Â 
+        
+          (
+          
+            
+              (
+              
+                T
+                â
+                
+                  (
+                  
+                    
+                      T
+                      â²
+                    
+                    â
+                    R
+                  
+                  )
+                
+                â
+                R
+              
+              )
+            
+            â
+            
+              (
+              
+                T
+                â
+                R
+              
+              )
+            
+            â
+            R
+          
+          )
+        
+        â
+        
+          (
+          
+            T
+            â
+            R
+          
+          )
+        
+        â
+        R
+        =
+        f
+        â¦
+        k
+        â¦
+        
+          (
+          
+            f
+            
+              (
+              
+                t
+                â¦
+                x
+                â¦
+                k
+                
+                t
+              
+              )
+            
+            
+            k
+          
+          )
+        
+      
+    
+    {\displaystyle {\text{call/cc}}\colon \ \left(\left(T\rightarrow \left(T'\rightarrow R\right)\rightarrow R\right)\rightarrow \left(T\rightarrow R\right)\rightarrow R\right)\rightarrow \left(T\rightarrow R\right)\rightarrow R=f\mapsto k\mapsto \left(f\left(t\mapsto x\mapsto k\,t\right)\,k\right)}
+  
+
+Program logging[edit]
+The following code is pseudocode. Suppose we have two functions foo and bar, with types 
+
+foo : int -> int
+bar : int -> int
+
+That is, both functions take in an integer and return another integer. Then we can apply the functions in succession like so:
+
+foo (bar x)
+
+Where the result is the result of foo applied to the result of bar applied to x.
+But suppose we are debugging our program, and we would like to add logging messages to foo and bar.
+So we change the types as so:
+
+foo : int -> int * string
+bar : int -> int * string
+
+So that both functions return a tuple, with the result of the application as the integer, 
+and a logging message with information about the applied function and all the previously applied functions as the string.
+Unfortunately, this means we can no longer compose foo and bar, as their input type int is not compatible with their output type int * string. And although we can again gain composability by modifying the types of each function to be int * string -> int * string, this would require us to add boilerplate code to each function to extract the integer from the tuple, which would get tedious as the number of such functions increases.
+Instead, let us define a helper function to abstract away this boilerplate for us:
+
+bind : int * string -> (int -> int * string) -> int * string
+
+bind takes in an integer and string tuple, then takes in a function (like foo) that maps from an integer to an integer and string tuple. Its output is an integer and string tuple, which is the result of applying the input function to the integer within the input integer and string tuple. 
+In this way, we only need to write boilerplate code to extract the integer from the tuple once, in bind.
+Now we have regained some composability. For example:
+
+bind (bind (x,s) bar) foo
+
+Where (x,s) is an integer and string tuple.
+To make the benefits even clearer, let us define an infix operator as an alias for bind:
+
+(>>=) : int * string -> (int -> int * string) -> int * string
+
+So that t >>= f is the same as bind t f.
+Then the above example becomes:
+
+((x,s) >>= bar) >>= foo
+
+Finally, it would be nice to not have to write (x, "") every time we wish to create an empty logging message, where "" is the empty string.
+So let us define a new function:
+
+return : int -> int * string
+
+Which wraps x in the tuple described above.
+Now we have a nice pipeline for logging messages:
+
+((return x) >>= bar) >>= foo
+
+That allows us to more easily log the effects of bar and foo on x.
+int * string is analogous to a monadic value. bind and return are analogous to the corresponding functions of the same name.
+In fact, int * string, bind, and return form a monad.
+
+See also[edit]
+Alternatives for modeling computations:
+
+Effect systems are a different way to describe side effects as types
+Uniqueness types are a third approach to handling side-effects in functional languages
+Related design concepts:
+
+Aspect-oriented programming emphasizes separating out ancillary bookkeeping code to improve modularity and simplicity
+Inversion of control is the abstract principle of calling specific functions from an overarching framework
+Type classes are a specific language feature used to implement monads and other structures in Haskell
+The decorator pattern is a more concrete, ad-hoc way to achieve similar benefits in object-oriented programming
+Generalizations of monads:
+
+Applicative functors generalize from monads by keeping only unit and laws relating it to map
+Arrows use additional structure to bring plain functions and monads under a single interface
+Monad transformers act on distinct monads to combine them modularly
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Due to the fact that functions on multiple free variables are common in programming, monads as described in this article are technically what category theorists would call strong monads.[3]
+
+^ Jump up to: a b Specific motivation for Maybe can be found in (Hutton 2016).[7]
+
+^ Jump up to: a b Hutton abstracts a bind which when given a type a that may fail, and a mapping aâb that may fail, produces a result b that may fail. (Hutton, 2016)[7] 
+
+^ Jump up to: a b (Hutton 2016) notes that Just might denote Success, and Nothing might denote Failure.[7]
+
+^ Semantically, M is not trivial and represents an endofunctor over the category of all well-typed values: 
+  
+    
+      
+        M
+        :
+        
+          
+            V
+            a
+            l
+          
+        
+        â
+        
+          
+            V
+            a
+            l
+          
+        
+      
+    
+    {\displaystyle M:{\mathit {Val}}\to {\mathit {Val}}}
+  
+
+
+^ While a (parametrically polymorphic) function in programming terms, unit (often called Î· in category theory) is mathematically a natural transformation, which maps between functors: 
+  
+    
+      
+        
+          Î·
+          
+            A
+          
+        
+        :
+        
+          i
+          d
+        
+        (
+        
+          
+            
+              V
+              a
+              l
+            
+          
+          
+            A
+          
+        
+        )
+        â
+        M
+        (
+        
+          
+            
+              V
+              a
+              l
+            
+          
+          
+            A
+          
+        
+        )
+      
+    
+    {\displaystyle \eta _{A}:\mathrm {id} ({\mathit {Val}}_{A})\to M({\mathit {Val}}_{A})}
+  
+
+
+^ bind, on the other hand, is not a natural transformation in category theory, but rather an extension 
+  
+    
+      
+        
+          â
+          
+            â
+          
+        
+      
+    
+    {\displaystyle -^{*}}
+  
+ that lifts a mapping (from values to computations) into a morphism between computations: 
+  
+    
+      
+        â
+        f
+        :
+        
+          
+            
+              V
+              a
+              l
+            
+          
+          
+            A
+          
+        
+        â
+        M
+        (
+        
+          
+            
+              V
+              a
+              l
+            
+          
+          
+            B
+          
+        
+        )
+        ,
+        
+          f
+          
+            â
+          
+        
+        :
+        M
+        (
+        
+          
+            
+              V
+              a
+              l
+            
+          
+          
+            A
+          
+        
+        )
+        â
+        M
+        (
+        
+          
+            
+              V
+              a
+              l
+            
+          
+          
+            B
+          
+        
+        )
+      
+    
+    {\displaystyle \forall f:{\mathit {Val}}_{A}\to M({\mathit {Val}}_{B}),f^{*}:M({\mathit {Val}}_{A})\to M({\mathit {Val}}_{B})}
+  
+
+
+^ Strictly speaking, bind may not be formally associative in all contexts because it corresponds to application within lambda calculus, not mathematics. In rigorous lambda-calculus, evaluating a bind may require first wrapping the right term (when binding two monadic values) or the bind itself (between two monadic functions) in an anonymous function to still accept input from the left.[10]
+
+^ By GHC version 7.10.1, and going forward, Haskell began enforcing Haskell's 2014 Applicative Monad proposal (AMP) which requires the insertion of 7 lines of code into any existing modules which use monads.[25]
+
+^ Some languages like Haskell even provide a pseudonym for map in other contexts called lift, along with multiple versions for different parameter counts, a detail ignored here.
+
+^ Algebraically, the relationship between the two (non-commutative) monoid aspects resembles that of a near-semiring, and some additive monads do qualify as such. However, not all additive monads meet the distributive laws of even a near-semiring.[33]
+
+^ In Haskell, extend is actually defined with the inputs swapped, but as currying is not used in this article, it is defined here as the exact dual of bind.
+
+^ In category theory, the Identity monad can also be viewed as emerging from adjunction of any functor with its inverse.
+
+^ Category theory views these collection monads as adjunctions between the free functor and different functors from the category of sets to the category of monoids.
+
+
+References[edit]
+
+
+^ Jump up to: a b c d e f g .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}O'Sullivan, Bryan; Goerzen, John; Stewart, Don (2009). "Monads". Real World Haskell. Sebastopol, California: O'Reilly Media. chapter 14. ISBNÂ 978-0596514983.
+
+^ Jump up to: a b Wadler, Philip (June 1990). Comprehending Monads. ACM Conference on LISP and Functional Programming. Nice, France. CiteSeerXÂ 10.1.1.33.5381.
+
+^ Jump up to: a b c Moggi, Eugenio (1991). "Notions of computation and monads" (PDF). Information and Computation. 93 (1): 55â92. CiteSeerXÂ 10.1.1.158.5275. doi:10.1016/0890-5401(91)90052-4.
+
+^ Jump up to: a b c d e Wadler, Philip (January 1992). The essence of functional programming. 19th Annual ACM Symposium on Principles of Programming Languages. Albuquerque, New Mexico. CiteSeerXÂ 10.1.1.38.9516.
+
+^ Jump up to: a b Hudak, Paul; Peterson, John; Fasel, Joseph (1999). "About Monads". A Gentle Introduction to Haskell 98. chapter 9.
+
+^ C. A. McCann's answer (Jul 23 '10 at 23:39) How and why does the Haskell Cont monad work?
+
+^ Jump up to: a b c Graham Hutton (2016) Programming in Haskell 2nd Edition
+
+^ Jump up to: a b Beckerman, Brian (21 November 2012). "Don't fear the Monad". YouTube.{{cite web}}:  CS1 maint: url-status (link)
+
+^ Spivey, Mike (1990). "A functional theory of exceptions" (PDF). Science of Computer Programming. 14 (1): 25â42. doi:10.1016/0167-6423(90)90056-J.
+
+^ "Monad laws". HaskellWiki. haskell.org. Retrieved 14 October 2018.
+
+^ "What a Monad is not". 7 October 2018.
+
+^ De Meuter, Wolfgang (1997). Monads as a theoretical foundation for AOP (PDF). International Workshop on Aspect Oriented Programming at ECOOP. JyvÃ¤skylÃ¤, Finland. CiteSeerXÂ 10.1.1.25.8262.
+
+^ "Monad (sans metaphors)". HaskellWiki. 1 November 2009. Retrieved 24 October 2018.
+
+^ O'Sullivan, Bryan; Goerzen, John; Stewart, Don (2009). "Using Parsec". Real World Haskell. Sebastopol, California: O'Reilly Media. chapter 16. ISBNÂ 978-0596514983.
+
+^ Stewart, Don (17 May 2007). "Roll Your Own Window Manager: Tracking Focus with a Zipper". Control.Monad.Writer. Archived from the original on 20 February 2018. Retrieved 19 November 2018.
+
+^ Benton, Nick (2015). "Categorical Monads and Computer Programming" (PDF). London Mathematical Society Impact150 Stories. 1. Retrieved 19 November 2018.
+
+^ Kiselyov, Olag (2007). "Delimited Continuations in Operating Systems". Modeling and Using Context. Lecture Notes in Computer Science. Springer Berlin Heidelberg. 4635. pages 291--302. doi:10.1007/978-3-540-74255-5_22. ISBNÂ 978-3-540-74255-5.
+
+^ Meijer, Erik (27 March 2012). "Your Mouse is a Database". ACM Queue. 10 (3): 20â33. doi:10.1145/2168796.2169076. Retrieved 19 November 2018.
+
+^ Iverson, Kenneth (September 1987). "A dictionary of APL". APL Quote Quad. 18 (1): 5â40. doi:10.1145/36983.36984. ISSNÂ 1088-6826. S2CIDÂ 18301178. Retrieved 19 November 2018.
+
+^ Kleisli, Heinrich (1965). "Every standard construction is induced by a pair of adjoint functors" (PDF). Proceedings of the American Mathematical Society. 16 (3): 544â546. doi:10.1090/S0002-9939-1965-0177024-4. Retrieved 19 November 2018.
+
+^ Peter Pepper, ed. (November 1997). The Programming Language Opal (Technical report) (5th correctedÂ ed.). Fachbereich Informatik, Technische UniversitÃ¤t Berlin. CiteSeerXÂ 10.1.1.40.2748.
+
+^ Moggi, Eugenio (June 1989). Computational lambda-calculus and monads (PDF). Fourth Annual Symposium on Logic in computer science. Pacific Grove, California. CiteSeerXÂ 10.1.1.26.2787.
+
+^ Jump up to: a b Peyton Jones, Simon L.; Wadler, Philip (January 1993). Imperative functional programming (PDF). 20th Annual ACM Symposium on Principles of Programming Languages. Charleston, South Carolina. CiteSeerXÂ 10.1.1.53.2504.
+
+^  Brent Yorgey Typeclassopedia
+
+^ Stack overflow  (8 Sep 2017) Defining a new monad in haskell raises no instance for Applicative
+
+^  Brent Yorgey Monoids
+
+^ "Applicative functor". HaskellWiki. Haskell.org. 7 May 2018. Archived from the original on 30 October 2018. Retrieved 20 November 2018.
+
+^ Jump up to: a b Gibbard, Cale (30 December 2011). "Monads as containers". HaskellWiki. Haskell.org. Archived from the original on 14 December 2017. Retrieved 20 November 2018.
+
+^ Jump up to: a b Piponi, Dan (7 August 2006). "You Could Have Invented Monads! (And Maybe You Already Have.)". A Neighborhood of Infinity. Archived from the original on 24 October 2018. Retrieved 16 October 2018.
+
+^ "Some Details on F# Computation Expressions". Retrieved 9 October 2018.
+
+^ "Do notation considered harmful". HaskellWiki. Retrieved 12 October 2018.
+
+^ Giles, Brett (12 August 2013). "Lifting". HaskellWiki. Haskell.org. Archived from the original on 29 January 2018. Retrieved 25 November 2018.
+
+^ Jump up to: a b Rivas, Exequiel; Jaskelioff, Mauro; Schrijvers, Tom (July 2015). From monoids to near-semirings: the essence of MonadPlus and Alternative (PDF). 17th International ACM Symposium on Principles and Practice of Declarative Programming. Siena, Italy. CiteSeerXÂ 10.1.1.703.342.
+
+^ Swierstra, Wouter (2008). "Data types Ã  la carte" (PDF). Functional Pearl. Journal of Functional Programming. Cambridge University Press. 18 (4): 423â436. CiteSeerXÂ 10.1.1.101.4131. doi:10.1017/s0956796808006758. ISSNÂ 1469-7653. S2CIDÂ 21038598.
+
+^ Kiselyov, Oleg (May 2012).  Schrijvers, Tom; Thiemann, Peter (eds.). Iteratees (PDF). International Symposium on Functional and Logic Programming. Lecture Notes in Computer Science. Vol.Â 7294. Kobe, Japan: Springer-Verlag. pp.Â 166â181. doi:10.1007/978-3-642-29822-6_15. ISBNÂ 978-3-642-29822-6.
+
+^ Uustalu, Tarmo; Vene, Varmo (July 2005).  HorvÃ¡th, ZoltÃ¡n (ed.). The Essence of Dataflow Programming (PDF). First Summer School, Central European Functional Programming. Lecture Notes in Computer Science. Vol.Â 4164. Budapest, Hungary: Springer-Verlag. pp.Â 135â167. CiteSeerXÂ 10.1.1.62.2047. ISBNÂ 978-3-540-46845-5.
+
+^ Uustalu, Tarmo; Vene, Varmo (June 2008). "Comonadic Notions of Computation". Electronic Notes in Theoretical Computer Science. Elsevier. 203 (5): 263â284. doi:10.1016/j.entcs.2008.05.029. ISSNÂ 1571-0661.
+
+^ Power, John; Watanabe, Hiroshi (May 2002). "Combining a monad and a comonad" (PDF). Theoretical Computer Science. Elsevier. 280 (1â2): 137â162. CiteSeerXÂ 10.1.1.35.4130. doi:10.1016/s0304-3975(01)00024-x. ISSNÂ 0304-3975.
+
+^ Gaboardi, Marco; Katsumata, Shin-ya; Orchard, Dominic; Breuvart, Flavien; Uustalu, Tarmo (September 2016). Combining Effects and Coeffects via Grading (PDF). 21st ACM International Conference on Functional Programming. Nara, Japan: Association for Computing Machinery. pp.Â 476â489. doi:10.1145/2951913.2951939. ISBNÂ 978-1-4503-4219-3.
+
+
+External links[edit]
+
+
+
+The Wikibook Haskell has a page on the topic of: Understanding monads
+
+HaskellWiki references:
+
+"All About Monads" (originally by Jeff Newbern) â A comprehensive discussion of all the common monads and how they work in Haskell; includes the "mechanized assembly line" analogy.
+"Typeclassopedia" (originally by Brent Yorgey) â A detailed exposition of how the leading typeclasses in Haskell, including monads, interrelate.
+Tutorials:
+
+"A Fistful of Monads" (from the online Haskell textbook Learn You a Haskell for Great Good! â A chapter introducing monads from the starting-point of functor and applicative functor typeclasses, including examples.
+"For a Few Monads More" â A second chapter explaining more details and examples, including a Probability monad for Markov chains.
+"Functors, Applicatives, And Monads In Pictures (by Aditya Bhargava) â A quick, humorous, and visual tutorial on monads.
+Interesting cases:
+
+"UNIX pipes as IO monads" (by Oleg Kiselyov) â A short essay explaining how Unix pipes are effectively monadic.
+Pro Scala: Monadic Design Patterns for the Web (by Gregory Meredith) â An unpublished, full-length manuscript on how to improve many facets of web development in Scala with monads.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+showvteFormal semantics (natural language)Central concepts
+Compositionality
+Denotation
+Entailment
+Extension
+Generalized quantifier
+Intension
+Logical form
+Presupposition
+Proposition
+Reference
+Scope
+Speech act
+Syntaxâsemantics interface
+Truth conditions
+TopicsAreas
+Anaphora
+Ambiguity
+Binding
+Conditionals
+Definiteness
+Disjunction
+Evidentiality
+Focus
+Indexicality
+Lexical semantics
+Modality
+Negation
+Propositional attitudes
+Tenseâaspectâmood
+Quantification
+Vagueness
+Phenomena
+Antecedent-contained deletion
+Cataphora
+Coercion
+Conservativity
+Counterfactuals
+Cumulativity
+De dicto and de re
+De se
+Deontic modality
+Discourse relations
+Donkey anaphora
+Epistemic modality
+Faultless disagreement
+Free choice inferences
+Givenness
+Crossover effects
+Hurford disjunction
+Inalienable possession
+Intersective modification
+Logophoricity
+Mirativity
+Modal subordination
+Negative polarity items
+Opaque contexts
+Performatives
+Privative adjectives
+Quantificational variability effect
+Responsive predicate
+Rising declaratives
+Scalar implicature
+Sloppy identity
+Subsective modification
+Subtrigging
+Telicity
+Temperature paradox
+Veridicality
+FormalismFormal systems
+Alternative semantics
+Categorial grammar
+Combinatory categorial grammar
+Discourse representation theory
+Dynamic semantics
+Frame semantics
+Generative grammar
+Glue semantics
+Inquisitive semantics
+Intensional logic
+Lambda calculus
+Mereology
+Montague grammar
+Segmented discourse representation theory
+Situation semantics
+Supervaluationism
+Type theory
+TTR
+Concepts
+Autonomy of syntax
+Context set
+Continuation
+Conversational scoreboard
+Existential closure
+Function application
+Meaning postulate
+Monads
+Possible world
+Quantifier raising
+Quantization
+Question under discussion
+Squiggle operator
+Strict conditional
+Type shifter
+Universal grinder
+See also
+Cognitive semantics
+Computational semantics
+Distributional semantics
+Formal grammar
+Inferentialism
+Linguistics wars
+Philosophy of language
+Pragmatics
+Context
+Deixis
+Semantics of logic
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Monad_(functional_programming)&oldid=1064574840"
+		Categories: 1991 in computingFunctional programmingSoftware design patternsProgramming idiomsHidden categories: CS1 maint: url-statusArticles with short descriptionShort description matches WikidataWikipedia articles that are too technical from May 2019All articles that are too technicalAll articles with unsourced statementsArticles with unsourced statements from October 2018Articles with unsourced statements from March 2021Articles with unsourced statements from November 2018Articles with example Haskell code
+	

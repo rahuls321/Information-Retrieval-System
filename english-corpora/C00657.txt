@@ -1,0 +1,280 @@
+
+Title:
+Curiously recurring template pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+The curiously recurring template pattern (CRTP) is an idiom in C++ in which a class X derives from a class template instantiation using X itself as a template argument.[1] More generally it is known as F-bound polymorphism, and it is a form of F-bounded quantification.
+
+Contents
+
+1 History
+2 General form
+3 Static polymorphism
+4 Object counter
+5 Polymorphic chaining
+6 Polymorphic copy construction
+
+6.1 Pitfalls
+
+
+7 See also
+8 References
+
+
+
+History[edit]
+The technique was formalized in 1989 as "F-bounded quantification."[2] The name "CRTP" was independently coined by Jim Coplien in 1995,[3] who had observed it in some of the earliest C++ template code
+as well as in code examples that Timothy Budd created in his multiparadigm language Leda.[4] It is sometimes called "Upside-Down Inheritance"[5][6] due to the way it allows class hierarchies to be extended by substituting different base classes.
+The Microsoft Implementation of CRTP in Active Template Library (ATL) was independently discovered, also in 1995, by Jan Falkin, who accidentally derived a base class from a derived class. Christian Beaumont first saw Jan's code and initially thought it could not possibly compile in the Microsoft compiler available at the time. Following the revelation that it did indeed work, Christian based the entire ATL and Windows Template Library (WTL) design on this mistake.[citation needed]
+
+General form[edit]
+// The Curiously Recurring Template Pattern (CRTP)
+template <class T>
+class Base
+{
+    // methods within Base can use template to access members of Derived
+};
+class Derived : public Base<Derived>
+{
+    // ...
+};
+
+Some use cases for this pattern are static polymorphism and other metaprogramming techniques such as those described by Andrei Alexandrescu in Modern C++ Design.[7]
+It also figures prominently in the C++ implementation of the Data, Context, and Interaction paradigm.[8]
+
+Static polymorphism[edit]
+Typically, the base class template will take advantage of the fact that member function bodies (definitions) are not instantiated until long after their declarations, and will use members of the derived class within its own member functions, via the use of a cast; e.g.:
+
+template <class T> 
+struct Base
+{
+    void interface()
+    {
+        // ...
+        static_cast<T*>(this)->implementation();
+        // ...
+    }
+
+    static void static_func()
+    {
+        // ...
+        T::static_sub_func();
+        // ...
+    }
+};
+
+struct Derived : Base<Derived>
+{
+    void implementation();
+    static void static_sub_func();
+};
+
+In the above example, note in particular that the function Base<Derived>::implementation(), though declared before the existence of the struct Derived is known by the compiler (i.e., before Derived is declared), is not actually instantiated by the compiler until it is actually called by some later code which occurs after the declaration of Derived (not shown in the above example), so that at the time the function "implementation" is instantiated, the declaration of Derived::implementation() is known.
+This technique achieves a similar effect to the use of virtual functions, without the costs (and some flexibility) of dynamic polymorphism. This particular use of the CRTP has been called "simulated dynamic binding" by some.[9] This pattern is used extensively in the Windows ATL and WTL libraries.
+To elaborate on the above example, consider a base class with no virtual functions. Whenever the base class calls another member function, it will always call its own base class functions. When we derive a class from this base class, we inherit all the member variables and member functions that weren't overridden (no constructors or destructors). If the derived class calls an inherited function which then calls another member function, that function will never call any derived or overridden member functions in the derived class.
+However, if base class member functions use CRTP for all member function calls, the overridden functions in the derived class will be selected at compile time. This effectively emulates the virtual function call system at compile time without the costs in size or function call overhead (VTBL structures, and method lookups, multiple-inheritance VTBL machinery) at the disadvantage of not being able to make this choice at runtime.
+
+Object counter[edit]
+The main purpose of an object counter is retrieving statistics of object creation and destruction for a given class.[10] This can be easily solved using CRTP:
+
+template <typename T>
+struct counter
+{
+    static inline int objects_created = 0;
+    static inline int objects_alive = 0;
+
+    counter()
+    {
+        ++objects_created;
+        ++objects_alive;
+    }
+    
+    counter(const counter&)
+    {
+        ++objects_created;
+        ++objects_alive;
+    }
+protected:
+    ~counter() // objects should never be removed through pointers of this type
+    {
+        --objects_alive;
+    }
+};
+
+class X : counter<X>
+{
+    // ...
+};
+
+class Y : counter<Y>
+{
+    // ...
+};
+
+Each time an object of class X is created, the constructor of counter<X> is called, incrementing both the created and alive count. Each time an object of class X is destroyed, the alive count is decremented. It is important to note that counter<X> and counter<Y> are two separate classes and this is why they will keep separate counts of Xs and Ys. In this example of CRTP, this distinction of classes is the only use of the template parameter (T in counter<T>) and the reason why we cannot use a simple un-templated base class.
+
+Polymorphic chaining[edit]
+Method chaining, also known as named parameter idiom, is a common syntax for invoking multiple method calls in object-oriented programming languages. Each method returns an object, allowing the calls to be chained together in a single statement without requiring variables to store the intermediate results.
+When the named parameter object pattern is applied to an object hierarchy, things can go wrong. Suppose we have such a base class:
+
+class Printer
+{
+public:
+    Printer(ostream& pstream) : m_stream(pstream) {}
+ 
+    template <typename T>
+    Printer& print(T&& t) { m_stream << t; return *this; }
+ 
+    template <typename T>
+    Printer& println(T&& t) { m_stream << t << endl; return *this; }
+private:
+    ostream& m_stream;
+};
+
+Prints can be easily chained:
+
+Printer(myStream).println("hello").println(500);
+
+However, if we define the following derived class:
+
+class CoutPrinter : public Printer
+{
+public:
+    CoutPrinter() : Printer(cout) {}
+
+    CoutPrinter& SetConsoleColor(Color c)
+    {
+        // ...
+        return *this;
+    }
+};
+
+we "lose" the concrete class as soon as we invoke a function of the base:
+
+//                           v----- we have a 'Printer' here, not a 'CoutPrinter'
+CoutPrinter().print("Hello ").SetConsoleColor(Color.red).println("Printer!"); // compile error
+
+This happens because 'print' is a function of the base â 'Printer' â and then it returns a 'Printer' instance.
+The CRTP can be used to avoid such problem and to implement "Polymorphic chaining":[11]
+
+// Base class
+template <typename ConcretePrinter>
+class Printer
+{
+public:
+    Printer(ostream& pstream) : m_stream(pstream) {}
+ 
+    template <typename T>
+    ConcretePrinter& print(T&& t)
+    {
+        m_stream << t;
+        return static_cast<ConcretePrinter&>(*this);
+    }
+ 
+    template <typename T>
+    ConcretePrinter& println(T&& t)
+    {
+        m_stream << t << endl;
+        return static_cast<ConcretePrinter&>(*this);
+    }
+private:
+    ostream& m_stream;
+};
+ 
+// Derived class
+class CoutPrinter : public Printer<CoutPrinter>
+{
+public:
+    CoutPrinter() : Printer(cout) {}
+ 
+    CoutPrinter& SetConsoleColor(Color c)
+    {
+        // ...
+        return *this;
+    }
+};
+ 
+// usage
+CoutPrinter().print("Hello ").SetConsoleColor(Color.red).println("Printer!");
+
+Polymorphic copy construction[edit]
+When using polymorphism, one sometimes needs to create copies of objects by the base class pointer. A commonly used idiom for this is adding a virtual clone function that is defined in every derived class. The CRTP can be used to avoid having to duplicate that function or other similar functions in every derived class.
+
+// Base class has a pure virtual function for cloning
+class AbstractShape {
+public:
+    virtual ~AbstractShape () = default;
+    virtual std::unique_ptr<AbstractShape> clone() const = 0;
+};
+
+// This CRTP class implements clone() for Derived
+template <typename Derived>
+class Shape : public AbstractShape {
+public:
+    std::unique_ptr<AbstractShape> clone() const override {
+        return std::make_unique<Derived>(static_cast<Derived const&>(*this));
+    }
+
+protected:
+   // We make clear Shape class needs to be inherited
+   Shape() = default;
+   Shape(const Shape&) = default;
+   Shape(Shape&&) = default;
+};
+
+// Every derived class inherits from CRTP class instead of abstract class
+
+class Square : public Shape<Square>{};
+
+class Circle : public Shape<Circle>{};
+
+This allows obtaining copies of squares, circles or any other shapes by shapePtr->clone().
+
+Pitfalls[edit]
+One issue with static polymorphism is that without using a general base class like AbstractShape from the above example, derived classes cannot be stored homogeneously â that is, putting different types derived from the same base class in the same container. For example, a container defined as std::vector<Shape*> does not work because Shape is not a class, but a template needing specialization. A container defined as std::vector<Shape<Circle>*> can only store Circles, not Squares. This is because each of the classes derived from the CRTP base class Shape is a unique type. A common solution to this problem is to inherit from a shared base class with a virtual destructor, like the AbstractShape example above, allowing for the creation of a std::vector<AbstractShape*>.
+
+See also[edit]
+BartonâNackman trick
+F-bounded quantification
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Abrahams, David; Gurtovoy, Aleksey (January 2005). C++ Template Metaprogramming: Concepts, Tools, and Techniques from Boost and Beyond. Addison-Wesley. ISBNÂ 0-321-22725-5.
+
+^ William Cook;  etÂ al. (1989). "F-Bounded Polymorphism for Object-Oriented Programming" (PDF).
+
+^ Coplien, James O. (February 1995). "Curiously Recurring Template Patterns" (PDF). C++ Report: 24â27.
+
+^ Budd, Timothy (1994). Multiparadigm programming in Leda. Addison-Wesley. ISBNÂ 0-201-82080-3.
+
+^ "Apostate CafÃ©: ATL and Upside-Down Inheritance". 15 March 2006. Archived from the original on 15 March 2006. Retrieved 9 October 2016.{{cite web}}:  CS1 maint: bot: original URL status unknown (link)
+
+^ "ATL and Upside-Down Inheritance". 4 June 2003. Archived from the original on 4 June 2003. Retrieved 9 October 2016.{{cite web}}:  CS1 maint: bot: original URL status unknown (link)
+
+^ Alexandrescu, Andrei (2001). Modern C++ Design: Generic Programming and Design Patterns Applied. Addison-Wesley. ISBNÂ 0-201-70431-5.
+
+^ Coplien, James; BjÃ¸rnvig, Gertrud (2010). Lean Architecture: for agile software development. Wiley. ISBNÂ 978-0-470-68420-7.
+
+^ "Simulated Dynamic Binding". 7 May 2003. Archived from the original on 9 February 2012. Retrieved 13 January 2012.
+
+^ Meyers, Scott (April 1998). "Counting Objects in C++". C/C++ Users Journal.
+
+^ Arena, Marco (29 April 2012). "Use CRTP for polymorphic chaining". Retrieved 15 March 2017.
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Curiously_recurring_template_pattern&oldid=1061541792"
+		Categories: Software design patternsC++Hidden categories: CS1 maint: bot: original URL status unknownUse dmy dates from December 2021All articles with unsourced statementsArticles with unsourced statements from August 2018Articles with example C++ code
+	

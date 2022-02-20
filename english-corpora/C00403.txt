@@ -1,0 +1,509 @@
+
+Title:
+Exception handling
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Process of responding to anomalous or exceptional conditions requiring special processing in computer programming
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"Error handling" redirects here. Not to be confused with Error detection and correction.
+This article is about computing. For knowledge, see fact checking and problem solving.
+In computing and computer programming, exception handling is the process of responding to the occurrence of exceptions â anomalous or exceptional conditions requiring special processing â during the execution of a program. In general, an exception breaks the normal flow of execution and executes a pre-registered exception handler; the details of how this is done depend on whether it is a hardware or software exception and how the software exception is implemented. Exception handling, if provided, is facilitated by specialized programming language constructs, hardware mechanisms like interrupts, or operating system (OS) inter-process communication (IPC) facilities like signals. Some exceptions, especially hardware ones, may be handled so gracefully that execution can resume where it was interrupted.
+
+Contents
+
+1 Definition
+2 History
+3 Hardware exceptions
+4 IEEE 754 floating point exceptions
+5 Exception support in programming languages
+
+5.1 Syntax
+5.2 Termination and resumption semantics
+5.3 Exception handling implementation
+5.4 Exception handling based on design by contract
+5.5 Uncaught exceptions
+5.6 Checked exceptions
+
+5.6.1 Similar mechanisms
+
+
+5.7 Dynamic checking of exceptions
+5.8 Asynchronous exceptions
+5.9 Condition systems
+
+5.9.1 Continuable exceptions
+5.9.2 Restarts separate mechanism from policy
+
+
+5.10 Criticism
+
+
+6 Exception handling in UI hierarchies
+7 See also
+8 Notes
+9 References
+10 External links
+
+
+
+Definition[edit]
+The definition of an exception is based on the observation that each procedure has a precondition, a set of circumstances for which it will terminate "normally".[1] An exception handling mechanism allows the procedure to raise an exception[2] if this precondition is violated,[1] for example if the procedure has been called on an abnormal set of arguments. The exception handling mechanism then handles the exception.[3]
+The precondition, and the definition of exception, is subjective. The set of "normal" circumstances is defined entirely by the programmer, e.g. the programmer may deem division by zero to be undefined, hence an exception, or devise some behavior such as returning zero or a special "ZERO DIVIDE" value (circumventing the need for exceptions).[4]
+From the point of view of the author of a routine, raising an exception is a useful way to signal that a routine could not execute normally â for example, when an input argument is invalid (e.g. value is outside of the domain of a function) or when a resource it relies on is unavailable (like a missing file, a hard disk error, or out-of-memory errors), or that the routine has detected a normal condition that requires special handling, e.g., attention, end of file. In systems without exceptions, routines would need to return some special error code. However, this is sometimes complicated by the semipredicate problem, in which users of the routine need to write extra code to distinguish normal return values from erroneous ones.
+Taking a broad view, errors can be considered to be a proper subset of exceptions.[5] For example the return code and errno pattern found in C  may be considered to be a form of exception handling.[6] The term "exception" is preferred to "error" because it does not imply that anything is wrong - a condition viewed as an error by one procedure or programmer may not be viewed that way by another.[7] Even the term "exception" may be misleading because its typical connotation of "outlier" indicates that something infrequent or unusual has occurred, when in fact raising the exception may be a normal and usual situation in the program.[7] For example, suppose a lookup function for an associative array throws an exception if the key has no value associated. Depending on context, this "key absent" exception may occur much more often than a successful lookup.[8]
+A major influence on the use of exceptions is social pressure, i.e. "examples of use, typically found in core libraries, and code examples in technical books, magazine articles, and online discussion forums, and in an organizationâs code standards".[9]
+
+History[edit]
+The first hardware exception handling was found in the UNIVAC I from 1951. Arithmetic overflow executed two instructions at address 0, which could transfer control or fix up the result.[10]
+Software exception handling developed in the 1960s and 1970s. LISP 1.5 (1958-1961)[11] allowed exceptions to be raised by the ERROR pseudo-function, similarly to errors raised by the interpreter or compiler. Exceptions were caught by the ERRORSET keyword, which returned NIL in case of an error, instead of terminating the program or entering the debugger.[12]
+PL/I introduced its own form of exception handling circa 1964, allowing interrupts to be handled with ON units.[13]
+MacLisp observed that ERRSET and ERR were used not only for error raising, but for non-local control flow, and thus added two new keywords, CATCH and THROW (June 1972).[14] The cleanup behavior now generally called "finally" was introduced in NIL (New Implementation of LISP) in the mid- to late-1970s as UNWIND-PROTECT.[15] This was then adopted by Common Lisp. Contemporary with this was dynamic-wind in Scheme, which handled exceptions in closures. The first papers on structured exception handling were Goodenough (1975a) and Goodenough (1975b).[16] Exception handling was subsequently widely adopted by many programming languages from the 1980s onward.
+
+Hardware exceptions[edit]
+Main article: Interrupt
+There is no clear consensus as to the exact meaning of an exception with respect to hardware.[17] From the implementation point of view, it is handled identically to an interrupt: the processor halts execution of the current program, looks up the interrupt handler in the interrupt vector table for that exception or interrupt condition, saves state, and switches control.
+
+IEEE 754 floating point exceptions[edit]
+Exception handling in the IEEE 754 floating point standard refers in general to exceptional conditions and defines an exception as "an event that occurs when an operation on some particular operands has no outcome suitable for every reasonable application. That operation might signal one or more exceptions by invoking the default or, if explicitly requested, a language-defined alternate handling."
+By default, an IEEE 754 exception is resumable and is handled by substituting a predefined value for different exceptions, e.g. infinity for a divide by zero exception, and providing status flags for later checking of whether the exception occurred (see C99 programming language for a typical example of handling of IEEE 754 exceptions). An exception-handling style enabled by the use of status flags involves: first computing an expression using a fast, direct implementation; checking whether it failed by testing status flags; and then, if necessary, calling a slower, more numerically robust, implementation.[18]
+The IEEE 754 standard uses the term "trapping" to refer to the calling of a user-supplied exception-handling routine on exceptional conditions, and is an optional feature of the standard. The standard recommends several usage scenarios for this, including the implementation of non-default pre-substitution of a value followed by resumption, to concisely handle removable singularities.[18][19][20]
+The default IEEE 754 exception handling behaviour of resumption following pre-substitution of a default value avoids the risks inherent in changing flow of program control on numerical exceptions. For example, the 1996 Cluster spacecraft launch ended in a catastrophic explosion due in part to the Ada exception handling policy of aborting computation on arithmetic error. William Kahan claims the default IEEE 754 exception handling behavior would have prevented this.[19]
+
+Exception support in programming languages[edit]
+Software exception handling and the support provided by software tools differs somewhat from what is understood by exception handling in hardware, but similar concepts are involved. In programming language mechanisms for exception handling, the term exception is typically used in a specific sense to denote a data structure storing information about an exceptional condition. One mechanism to transfer control, or raise an exception, is known as a throw. The exception is said to be thrown. Execution is transferred to a "catch".
+Many computer languages have built-in support for exceptions and exception handling. This includes ActionScript, Ada, BlitzMax, C++, C#, Clojure, COBOL, D, ECMAScript, Eiffel, Java, ML, Next Generation Shell, Object Pascal (e.g. Delphi, Free Pascal, and the like), PowerBuilder, Objective-C, OCaml, PHP (as of version 5), PL/I, PL/SQL, Prolog, Python, REALbasic, Ruby, Scala, Seed7, Smalltalk, Tcl, Visual Prolog and most .NET languages.  Programming languages differ substantially in their notion of what an exception is. Contemporary languages can roughly be divided into two groups:[9]
+
+Languages where exceptions are designed to be used as flow control structures: Ada, Modula-3, ML, OCaml, PL/I, Python, and Ruby fall in this category. For example Python's support for exception handling is pervasive and consistent. It's difficult to write a robust Python program without using its try and except keywords.[citation needed]
+Languages where exceptions are only used to handle abnormal, unpredictable, erroneous situations: C++,[21] Java,[22] C#, Common Lisp, Eiffel, and Modula-2.
+PL/I used dynamically scoped exceptions, however more recent languages use lexically scoped exceptions. PL/I exception handling included events that are not errors, e.g., attention, end-of-file, modification of listed variables. While some more recent languages support non-error exceptions, their use is not common.[citation needed]
+C does not have try-catch exception handling, but uses return codes for error checking. The  setjmp and longjmp standard library functions can be used to implement try-catch handling via macros.[23]
+Perl has die-eval exception handling and CPAN modules that offer try-catch semantics.[24]
+
+Syntax[edit]
+Further information: Exception handling syntax
+Excluding minor syntactic differences, there are only a couple of exception handling styles in use. In the most popular style, an exception is initiated by a special statement (throw or raise) with an exception object (e.g. with Java or Object Pascal) or a value of a special extendable enumerated type (e.g. with Ada or SML). The scope for exception handlers starts with a marker clause (try or the language's block starter such as begin) and ends in the start of the first handler clause (catch, except, rescue). Several handler clauses can follow, and each can specify which exception types it handles and what name it uses for the exception object. As a minor variation, some languages use a single handler clause, which deals with the class of the exception internally.
+Also common is a related clause (finally or ensure) that is executed whether an exception occurred or not, typically to release resources acquired within the body of the exception-handling block. Notably, C++ does not provide this construct, recommending instead the Resource Acquisition Is Initialization (RAII) technique which frees resources using destructors.[25] According to a 2008 paper by Westley Weimer and George Necula, the syntax of the try...finally blocks in Java is a contributing factor to software defects. When a method needs to handle the acquisition and release of 3â5 resources, programmers are apparently unwilling to nest enough blocks due to readability concerns, even when this would be a correct solution. It is possible to use a single try...finally block even when dealing with multiple resources, but that requires a correct use of sentinel values, which is another common source of bugs for this type of problem.[26]:â8:6â8:7â
+Python and Ruby also permit a clause (else) that is used in case no exception occurred before the end of the handler's scope was reached.
+In its whole, exception handling code might look like this (in Java-like pseudocode):
+
+try {
+    line = console.readLine();
+
+    if (line.length() == 0) {
+        throw new EmptyLineException("The line read from console was empty!");
+    }
+
+    console.printLine("Hello %s!" % line);
+}
+catch (EmptyLineException e) {
+    console.printLine("Hello!");
+}
+catch (Exception e) {
+    console.printLine("Error: " + e.message());
+}
+else {
+    console.printLine("The program ran successfully.");
+}
+finally {
+    console.printLine("The program is now terminating.");
+}
+
+Termination and resumption semantics[edit]
+When an exception is thrown, the program searches back through the stack of function calls until an exception handler is found. Some languages call for unwinding the stack as this search progresses. That is, if function .mw-parser-output .monospaced{font-family:monospace,monospace}f, containing a handler  H for exception E, calls function g, which in turn calls function h, and an exception E occurs in h, then functions h and g may be terminated, and H in f will handle E. This is said to be termination semantics.
+Alternately, the exception handling mechanisms may not unwind the stack, giving the exception handler the option to restart the computation, resume or unwind. This allows the program to continue the computation at exactly the same place where the error occurred (for example when a previously missing file has become available) or to implement notifications, logging, queries and fluid variables on top of the exception handling mechanism (as done in Smalltalk). Allowing the computation to resume where it left off is termed resumption semantics.
+There are theoretical and design arguments in favor of either decision. C++ standardization discussions in 1989â1991 resulted in a definitive decision to use termination semantics in C++.[27] Bjarne Stroustrup cites a presentation by Jim Mitchell as a key data point:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}Jim had used exception handling in half a dozen languages over a period of 20 years and was an early proponent of resumption semantics as one of the main designers and implementers of Xerox's Cedar/Mesa system. His message was
+âtermination is preferred over resumption; this is not a matter of opinion but a matter of years of experience. Resumption is seductive, but not valid.â
+He backed this statement with experience from several operating systems. The key example was Cedar/Mesa: It was written by people who liked and used resumption, but after ten years of use, there was only one use of resumption left in the half million line system â and that was a context inquiry. Because resumption wasn't actually necessary for such a context inquiry, they removed it and found a significant speed increase in that part of the system. In each and every case where resumption had been used it had â over the ten years â become a problem and a more appropriate design had replaced it. Basically, every use of resumption had represented a failure to keep separate levels of abstraction disjoint.[16]
+Exception-handling languages with resumption include Common Lisp with its Condition System, PL/I, Dylan, and Smalltalk. However, the majority of newer programming languages follow C++ and use termination semantics.
+
+Exception handling implementation[edit]
+The implementation of exception handling in programming languages typically involves a fair amount of support from both a code generator and the runtime system accompanying a compiler. (It was the addition of exception handling to C++ that ended the useful lifetime of the original C++ compiler, Cfront.[28])  Two schemes are most common. The first, dynamic registration, generates code that continually updates structures about the program state in terms of exception handling.[29]  Typically, this adds a new element to the stack frame layout that knows what handlers are available for the function or method associated with that frame; if an exception is thrown, a pointer in the layout directs the runtime to the appropriate handler code. This approach is compact in terms of space, but adds execution overhead on frame entry and exit. It was commonly used in many Ada implementations, for example, where complex generation and runtime support was already needed for many other language features. Microsoft's 32-bit Structured Exception Handling (SEH) uses this approach with a separate exception stack.[30] Dynamic registration, being fairly straightforward to define, is amenable to proof of correctness.[31]
+The second scheme, and the one implemented in many production-quality C++ compilers and 64-bit Microsoft SEH, is a table-driven approach. This creates static tables at compile time and link time that relate ranges of the program counter to the program state with respect to exception handling.[32]  Then, if an exception is thrown, the runtime system looks up the current instruction location in the tables and determines what handlers are in play and what needs to be done. This approach minimizes executive overhead for the case where an exception is not thrown. This happens at the cost of some space, but this space can be allocated into read-only, special-purpose data sections that are not loaded or relocated until an exception is actually thrown.[33]  This second approach is also superior in terms of achieving thread safety[citation needed].
+Other definitional and implementation schemes have been proposed as well. For languages that support metaprogramming, approaches that involve no overhead at all (beyond the already present support for reflection) have been advanced.[34]
+
+Exception handling based on design by contract[edit]
+A different view of exceptions is based on the principles of design by contract and is supported in particular by the Eiffel language. The idea is to provide a more rigorous basis for exception handling by defining precisely what is "normal" and "abnormal" behavior. Specifically, the approach is based on two concepts:
+
+Failure: the inability of an operation to fulfill its contract. For example, an addition may produce an arithmetic overflow (it does not fulfill its contract of computing a good approximation to the mathematical sum); or a routine may fail to meet its postcondition.
+Exception: an abnormal event occurring during the execution of a routine (that routine is the "recipient" of the exception) during its execution. Such an abnormal event results from the failure of an operation called by the routine.
+The "Safe Exception Handling principle" as introduced by Bertrand Meyer in Object-Oriented Software Construction then holds that there are only two meaningful ways a routine can react when an exception occurs:
+
+Failure, or "organized panic": The routine fixes the object's state by re-establishing the invariant (this is the "organized" part), and then fails (panics), triggering an exception in its caller (so that the abnormal event is not ignored).
+Retry: The routine tries the algorithm again, usually after changing some values so that the next attempt will have a better chance to succeed.
+In particular, simply ignoring an exception is not permitted; a block must either be retried and successfully complete, or propagate the exception to its caller.
+Here is an example expressed in Eiffel syntax. It assumes that a routine send_fast is normally the better way to send a message, but it may fail, triggering an exception; if so, the algorithm next uses send_slow, which will fail less often. If send_slow fails, the routine send as a whole should fail, causing the caller to get an exception.
+
+send (m: MESSAGE) is
+  -- Send m through fast link, if possible, otherwise through slow link.
+local
+  tried_fast, tried_slow: BOOLEAN
+do
+  if tried_fast then
+     tried_slow := True
+     send_slow (m)
+  else
+     tried_fast := True
+     send_fast (m)
+  end
+rescue
+  if not tried_slow then
+     retry
+  end
+end
+
+The boolean local variables are initialized to False at the start. If  send_fast fails, the body (do clause) will be executed again, causing execution of send_slow. If this execution of send_slow fails, the rescue clause will execute to the end with no retry (no else clause in the final if), causing the routine execution as a whole to fail.
+This approach has the merit of defining clearly what "normal" and "abnormal" cases are: an abnormal case, causing an exception, is one in which the routine is unable to fulfill its contract. It defines a clear distribution of roles: the do clause (normal body) is in charge of achieving, or attempting to achieve, the routine's contract; the rescue clause is in charge of reestablishing the context and restarting the process, if this has a chance of succeeding, but not of performing any actual computation.
+Although exceptions in Eiffel have a fairly clear philosophy, Kiniry (2006) criticizes their implementation because "Exceptions that are part of the language definition are represented by INTEGER values, developer-defined exceptions by STRING values. [...] Additionally, because they are basic values and not objects, they have no inherent semantics beyond that which is expressed in a helper routine which necessarily cannot be foolproof because of the representation overloading in effect (e.g., one cannot
+differentiate two integers of the same value)."[9]
+
+Uncaught exceptions[edit]
+Contemporary applications face many design challenges when considering exception handling strategies. Particularly in modern enterprise level applications, exceptions must often cross process boundaries and machine boundaries. Part of designing a solid exception handling strategy is recognizing when a process has failed to the point where it cannot be economically handled by the software portion of the process.[35]
+If an exception is thrown and not caught (operationally, an exception is thrown when there is no applicable handler specified), the uncaught exception is handled by the runtime; the routine that does this is called the .mw-parser-output .vanchor>:target~.vanchor-text{background-color:#b1d2ff}uncaught exception handler.[36][37] The most common default behavior is to terminate the program and print an error message to the console, usually including debug information such as a string representation of the exception and the stack trace.[36][38][39] This is often avoided by having a top-level (application-level) handler (for example in an event loop) that catches exceptions before they reach the runtime.[36][40]
+Note that even though an uncaught exception may result in the program terminating abnormally (the program may not be correct if an exception is not caught, notably by not rolling back partially completed transactions, or not releasing resources), the process terminates normally (assuming the runtime works correctly), as the runtime (which is controlling execution of the program) can ensure orderly shutdown of the process.
+In a multithreaded program, an uncaught exception in a thread may instead result in termination of just that thread, not the entire process (uncaught exceptions in the thread-level handler are caught by the top-level handler). This is particularly important for servers, where for example a servlet (running in its own thread) can be terminated without the server overall being affected.
+This default uncaught exception handler may be overridden, either globally or per-thread, for example to provide alternative logging or end-user reporting of uncaught exceptions, or to restart threads that terminate due to an uncaught exception. For example, in Java this is done for a single thread via Thread.setUncaughtExceptionHandler and globally via Thread.setDefaultUncaughtExceptionHandler; in Python this is done by modifying sys.excepthook.
+
+Checked exceptions[edit]
+Java introduced the notion of checked exceptions,[41][42] which are special classes of exceptions. The checked exceptions that a method may raise must be part of the method's signature. For instance, if a method might throw an IOException, it must declare this fact explicitly in its method signature. Failure to do so raises a compile-time error. According to Hanspeter MÃ¶ssenbÃ¶ck, checked exceptions are less convenient but more robust.[43] Checked exceptions can, at compile time, reduce the incidence of unhandled exceptions surfacing at runtime in a given application.
+
+Kiniry writes that "As any Java programmer knows, the volume of try catch code in a typical Java application is sometimes larger than the comparable code necessary for explicit formal parameter and return value checking in other languages that do not have checked exceptions. In fact, the general consensus among in-the-trenches Java programmers is that dealing with checked exceptions is nearly as unpleasant a task as writing documentation. Thus, many programmers report that they âresentâ checked exceptions.".[9] Martin Fowler has written "...on the whole I think that exceptions are good, but Java checked exceptions are more trouble than they are worth."[44] As of 2006 no major programming language has followed Java in adding checked exceptions.[44] For example, C# does not require or allow declaration of any exception specifications, with the following posted by Eric Gunnerson:[45][9][44] "Examination of small programs leads to the conclusion that requiring exception specifications could both enhance developer productivity and enhance code quality, but experience with large software projects suggests a different result â decreased productivity and little or no increase in code quality."
+Anders Hejlsberg describes two concerns with checked exceptions:[46]
+
+Versioning: A method may be declared to throw exceptions X and Y. In a later version of the code, one cannot throw exception Z from the method, because it would make the new code incompatible with the earlier uses. Checked exceptions require the method's callers to either add Z to their throws clause or handle the exception. Alternately, Z may be misrepresented as an X or a Y.
+Scalability: In a hierarchical design, each systems may have several subsystems. Each subsystem may throw several exceptions. Each parent system must deal with the exceptions of all subsystems below it, resulting in an exponential number of exceptions to be dealt with. Checked exceptions require all of these exceptions to be dealt with explicitly.
+To work around these, Hejlsberg says programmers resort to circumventing the feature by using a throws Exception declaration. Another circumvention is to use a try { ... } catch (Exception e) {} handler.[46] This is referred to as catch-all exception handling or PokÃ©mon exception handling after the show's catchphrase "Gotta Catch âEm All!".[47] The Java Tutorials discourage catch-all exception handling as it may catch exceptions "for which the handler was not intended".[48] Still another discouraged circumvention is to make all exceptions subclass RuntimeException.[49] An effective solution is to be more specific than Exception by declaring a superclass of all potentially thrown exceptions, or by defining and declaring exception types that are suitable for the level of abstraction of the called method[50] and mapping lower level exceptions to these types, preferably wrapped using exception chaining in order to preserve the root cause.
+
+Similar mechanisms[edit]
+The roots of checked exceptions go back to the CLU programming language's notion of exception specification.[51] A function could raise only exceptions listed in its type, but any leaking exceptions from called functions would automatically be turned into the sole runtime exception, failure, instead of resulting in compile-time error.[7] Later, Modula-3 had a similar feature.[52] These features don't include the compile time checking that is central in the concept of checked exceptions.[51]
+Early versions of the C++ programming language included an optional mechanism similar to checked exceptions, called exception specifications. By default any function could throw any exception, but this could be limited by a throw clause added to the function signature, that specified which exceptions the function may throw. Exception specifications were not enforced at compile-time. Violations resulted in the global function std::unexpected being called.[53]  An empty exception specification could be given, which indicated that the function will throw no exception. This was not made the default when exception handling was added to the language because it would have required too much modification of existing code, would have impeded interaction with code written in other languages, and would have tempted programmers into writing too many handlers at the local level.[53] Explicit use of empty exception specifications could, however, allow C++ compilers to perform significant code and stack layout optimizations that are precluded when exception handling may take place in a function.[33]  Some analysts viewed the proper use of exception specifications in C++ as difficult to achieve.[54] This use of exception specifications was included in C++98 and C++03, deprecated in the 2012 C++ language standard (C++11),[55] and was removed from the language in C++17. A function that will not throw any exceptions can now be denoted by the noexcept keyword.
+An uncaught exceptions analyzer exists for the OCaml programming language.[56] The tool reports the set of raised exceptions as an extended type signature. But, unlike checked exceptions, the tool does not require any syntactic annotations and is external (i.e. it is possible to compile and run a program without having checked the exceptions).
+
+Dynamic checking of exceptions[edit]
+The point of exception handling routines is to ensure that the code can handle error conditions. In order to establish that exception handling routines are sufficiently robust, it is necessary to present the code with a wide spectrum of invalid or unexpected inputs, such as can be created via software fault injection and mutation testing (that is also sometimes referred to as fuzz testing). One of the most difficult types of software for which to write exception handling routines is protocol software, since a robust protocol implementation must be prepared to receive input that does not comply with the relevant specification(s).
+In order to ensure that meaningful regression analysis can be conducted throughout a software development lifecycle process, any exception handling testing should be highly automated, and the test cases must be generated in a scientific, repeatable fashion. Several commercially available systems exist that perform such testing.
+In runtime engine environments such as Java or .NET, there exist tools that attach to the runtime engine and every time that an exception of interest occurs, they record debugging information that existed in memory at the time the exception was thrown (call stack and heap values). These tools are called automated exception handling or error interception tools and provide 'root-cause' information for exceptions.
+
+Asynchronous exceptions[edit]
+Asynchronous exceptions are events raised by a separate thread or external process, such as pressing Ctrl-C to interrupt a program, receiving a signal, or sending a disruptive message such as "stop" or "suspend" from another thread of execution.[57][58] Whereas synchronous exceptions happen at a specific throw statement, asynchronous exceptions can be raised at any time. It follows that asynchronous exception handling can't be optimized out by the compiler, as it cannot prove the absence of asynchronous exceptions. They are also difficult to program with correctly, as asynchronous exceptions must be blocked during cleanup operations to avoid resource leaks.
+Programming languages typically avoid or restrict asynchronous exception handling, for example C++ forbids raising exceptions from signal handlers, and Java has deprecated the use of its ThreadDeath exception that was used to allow one thread to stop another one.[59] Another feature is a semi-asynchronous mechanism that raises an asynchronous exception only during certain operations of the program. For example Java's Thread.interrupt() only affects the thread when the thread calls an operation that throws InterruptedException.[60] The similar POSIX pthread_cancel API has race conditions which make it impossible to use safely.[61]
+
+Condition systems[edit]
+Common Lisp, Dylan and Smalltalk have a condition system[62] (see Common Lisp Condition System) that encompasses the aforementioned exception handling systems. In those languages or environments the advent of a condition (a "generalisation of an error" according to Kent Pitman) implies a function call, and only late in the exception handler the decision to unwind the stack may be taken.
+Conditions are a generalization of exceptions. When a condition arises, an appropriate condition handler is searched for  and selected, in stack order, to handle the condition. Conditions that do not represent errors may safely go unhandled entirely; their only purpose may be to propagate hints or warnings toward the user.[63]
+
+Continuable exceptions[edit]
+This is related to the so-called resumption model of exception handling, in which some exceptions are said to be continuable: it is permitted to return to the expression that signaled an exception, after having taken corrective action in the handler. The condition system is generalized thus: within the handler of a non-serious condition (a.k.a. continuable exception), it is possible to jump to predefined restart points (a.k.a. restarts) that lie between the signaling expression and the condition handler. Restarts are functions closed over some lexical environment, allowing the programmer to repair this environment before exiting the condition handler completely or unwinding the stack even partially.
+An example is the ENDPAGE condition in PL/I; the ON unit might write page trailer lines and header lines for the next page, then fall through to resume execution of the interrupted code.
+
+Restarts separate mechanism from policy[edit]
+Condition handling moreover provides a separation of mechanism from policy. Restarts provide various possible mechanisms for recovering from error, but do not select which mechanism is appropriate in a given situation. That is the province of the condition handler, which (since it is located in higher-level code) has access to a broader view.
+An example: Suppose there is a library function whose purpose is to parse a single syslog file entry. What should this function do if the entry is malformed? There is no one right answer, because the same library could be deployed in programs for many different purposes. In an interactive log-file browser, the right thing to do might be to return the entry unparsed, so the user can see itâbut in an automated log-summarizing program, the right thing to do might be to supply null values for the unreadable fields, but abort with an error, if too many entries have been malformed.
+That is to say, the question can only be answered in terms of the broader goals of the program, which are not known to the general-purpose library function. Nonetheless, exiting with an error message is only rarely the right answer. So instead of simply exiting with an error, the function may establish restarts offering various ways to continueâfor instance, to skip the log entry, to supply default or null values for the unreadable fields, to ask the user for the missing values, or to unwind the stack and abort processing with an error message. The restarts offered constitute the mechanisms available for recovering from error; the selection of restart by the condition handler supplies the policy.
+
+Criticism[edit]
+Exception handling is often not handled correctly in software, especially when there are multiple sources of exceptions; data flow analysis of 5 million lines of Java code found over 1300 exception handling defects.[26]
+Citing multiple prior studies by others (1999â2004) and their own results, Weimer and Necula wrote that a significant problem with exceptions is that they "create hidden control-flow paths that are difficult for programmers to reason about".[26]:â8:27â "While try-catch-finally is conceptually simple, it has the most complicated execution description in the language specification [Gosling et al. 1996] and requires four levels of nested âifâs in its official English description. In short, it contains a large number of corner cases that programmers often overlook."[26]:â8:13â8:14â
+Exceptions, as unstructured flow, increase the risk of resource leaks (such as escaping a section locked by a mutex, or one temporarily holding a file open) or inconsistent state. There are various techniques for resource management in the presence of exceptions, most commonly combining the dispose pattern with some form of unwind protection (like a finally clause), which automatically releases the resource when control exits a section of code.
+Tony Hoare in 1980 described the Ada programming language as having "...a plethora of features and notational conventions, many of them unnecessary and some of them, like exception handling, even dangerous. [...] Do not allow this language in its present state to be used in applications where reliability is critical [...]. The next rocket to go astray as a result of a programming language error may not be an exploratory space rocket on a harmless trip to Venus: It may be a nuclear warhead exploding over one of our own cities."[64]
+Go was initially released with exception handling explicitly omitted, with the developers arguing that it obfuscated control flow.[65] Later, the exception-like panic/recover mechanism was added to the language,[66][67][68] which the Go authors advise using only for internal error handling within a package or (for panic) to stop the program.[69] recover() differs from catch in that it can only be called from within a defer code block in a function, so the handler can only do clean-up and change the function's return values, and cannot return control to an arbitrary point within the function.[70] The defer block itself functions similarly to a finally clause.
+
+Exception handling in UI hierarchies[edit]
+Recent front-end web frameworks, such as React and Vue, have introduced error handling mechanisms where errors propagate up the UI component hierarchy, in a way that is analogous to how errors propagate up the call stack in executing code.[71][72] Here the error boundary mechanism serves as an analogue to the typical try-catch mechanism. Thus a component can ensure that errors from its child components are caught and handled, and not propagated up to parent components.
+
+For example, in Vue, a component would catch errors by implementing errorCapturedVue.component('parent', {
+    template: '<div><slot></slot></div>',
+    errorCaptured: (err, vm, info) => alert('An error occurred');
+})
+Vue.component('child', {
+    template: '<div>{{ cause_error() }}</div>'
+})
+When used like this in markup:<parent>
+    <child></child>
+</parent>
+The error produced by the child component is caught and handled by the parent component.[73]
+See also[edit]
+Automated exception handling
+Exception safety
+Continuation
+Defensive programming
+Triple fault
+Option types and Result types, alternative ways of handling errors in functional programming without exceptions
+Data validation
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+References[edit]
+
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Cristian, Flaviu (1980). "Exception Handling and Software Fault Tolerance". Proc. 10th Int. Symp. on Fault Tolerant Computing (FTCS-25 reprintÂ ed.). CiteSeerXÂ 10.1.1.116.8736. doi:10.1109/TC.1982.1676035. OCLCÂ 1029229019.
+
+^ Goodenough 1975b, pp.Â 683â684.
+
+^ Goodenough 1975b, p.Â 684.
+
+^ Black 1982, pp.Â 13â15.
+
+^ Levin 1977, p.Â 5.
+
+^ Lang, Jun; Stewart, David B. (March 1998). "A study of the applicability of existing exception-handling techniques to component-based real-time software technology". ACM Transactions on Programming Languages and Systems. 20 (2): 276. CiteSeerXÂ 10.1.1.33.3400. doi:10.1145/276393.276395. Perhaps the most common form of exception-handling method used by software programmers is the âreturn-codeâ technique that was popularized as part of C and UNIX.
+
+^ Jump up to: a b c Liskov, B.H.; Snyder, A. (November 1979). "Exception Handling in CLU" (PDF). IEEE Transactions on Software Engineering. SE-5 (6): 546â558. doi:10.1109/TSE.1979.230191. Retrieved 19 December 2021.
+
+^ Levin 1977, p.Â 4.
+
+^ Jump up to: a b c d e Kiniry, J. R. (2006). "Exceptions in Java and Eiffel: Two Extremes in Exception Design and Application". Advanced Topics in Exception Handling Techniques (PDF). Lecture Notes in Computer Science. Vol.Â 4119. pp.Â 288â300. doi:10.1007/11818502_16. ISBNÂ 978-3-540-37443-5.
+
+^ Smotherman, Mark. "Interrupts". Retrieved 4 January 2022.
+
+^ McCarthy, John (12 February 1979). "History of Lisp". www-formal.stanford.edu. Retrieved 13 January 2022.
+
+^ McCarthy, John; Levin, Michael I.; Abrahams, Paul W.; Edwards, Daniel J.; Hart, Timothy P. (14 July 1961). LISP 1.5 programmer's manual (PDF). Retrieved 13 January 2022.
+
+^ "The ON Statement" (PDF). IBM System/360 Operating System, PL/I Language Specifications (PDF). IBM. July 1966. p.Â 120. C28-6571-3.
+
+^ Gabriel & Steele 2008, p.Â 3.
+
+^ White 1979, p.Â 194.
+
+^ Jump up to: a b Stroustrup 1994, p.Â 392.
+
+^ Hyde, Randall. "Art of Assembly: Chapter Seventeen". www.plantation-productions.com. Retrieved 22 December 2021.
+
+^ Jump up to: a b Xiaoye Li; James Demmel (1994). "Faster Numerical Algorithms via Exception Handling, IEEE Transactions on Computers, 43(8)": 983â992. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Jump up to: a b W.Kahan (July 5, 2005). "A Demonstration of Presubstitution for â/â" (PDF). Archived (PDF) from the original on March 10, 2012.
+
+^ Hauser, John R. (March 1996). "Handling floating-point exceptions in numeric programs". ACM Transactions on Programming Languages and Systems. 18 (2): 139â174. doi:10.1145/227699.227701.
+
+^ "Stroustrup: C++ Style and Technique FAQ". www.stroustrup.com. Archived from the original on 2 February 2018. Retrieved 5 May 2018.
+
+^ 
+Bloch, Joshua (2008). "Item 57: Use exceptions only for exceptional situations". Effective Java (SecondÂ ed.). Addison-Wesley. p.Â 241. ISBNÂ 978-0-321-35668-0.
+
+^ Roberts, Eric S. (21 March 1989). "Implementing Exceptions in C" (PDF). DEC Systems Research Center. SRC-RR-40. Retrieved 4 January 2022. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Christiansen, Tom; Torkington, Nathan (2003). "10.12. Handling Exceptions". Perl cookbook (2ndÂ ed.). Beijing: O'Reilly. ISBNÂ 0-596-00313-7.
+
+^ Stroustrup, Bjarne. "C++ Style and Technique FAQ". www.stroustrup.com. Retrieved 12 January 2022.
+
+^ Jump up to: a b c d Weimer, W; Necula, G.C. (2008). "Exceptional Situations and Program Reliability" (PDF). ACM Transactions on Programming Languages and Systems. Vol.Â 30, no.Â 2. Archived (PDF) from the original on 2015-09-23.
+
+^ Stroustrup 1994, 16.6 Exception Handling: Resumption vs. Termination, pp. 390â393.
+
+^ Scott Meyers, The Most Important C++ Software...Ever Archived 2011-04-28 at the Wayback Machine, 2006
+
+^ D. Cameron, P. Faust, D. Lenkov, M. Mehta, "A portable implementation of C++ exception handling", Proceedings of the C++ Conference (August 1992) USENIX.
+
+^ Peter Kleissner (February 14, 2009). "Windows Exception Handling - Peter Kleissner". Archived from the original on October 14, 2013. Retrieved 2009-11-21., Compiler based Structured Exception Handling section
+
+^ Graham Hutton, Joel Wright, "Compiling Exceptions Correctly Archived 2014-09-11 at the Wayback Machine". Proceedings of the 7th International Conference on Mathematics of Program Construction, 2004.
+
+^ Lajoie, JosÃ©e (MarchâApril 1994). "Exception handling â Supporting the runtime mechanism". C++ Report. 6 (3).
+
+^ Jump up to: a b Schilling, Jonathan L. (August 1998). "Optimizing away C++ exception handling". SIGPLAN Notices. 33 (8): 40â47. doi:10.1145/286385.286390. S2CIDÂ 1522664.
+
+^ M. Hof, H. MÃ¶ssenbÃ¶ck, P. Pirkelbauer, "Zero-Overhead Exception Handling Using Metaprogramming Archived 2016-03-03 at the Wayback Machine", Proceedings SOFSEM'97, November 1997, Lecture Notes in Computer Science 1338, pp. 423-431.
+
+^ All Exceptions Are Handled, Jim Wilcox, "All Exceptions Are Handled". Archived from the original on 2015-03-18. Retrieved 2014-12-08.
+
+^ Jump up to: a b c Mac Developer Library, "Uncaught Exceptions Archived 2016-03-04 at the Wayback Machine"
+
+^ MSDN, AppDomain.UnhandledException Event Archived 2016-03-04 at the Wayback Machine
+
+^ The Python Tutorial, "8. Errors and Exceptions Archived 2015-09-01 at the Wayback Machine"
+
+^ "Java Practices -> Provide an uncaught exception handler". www.javapractices.com. Archived from the original on 9 September 2016. Retrieved 5 May 2018.
+
+^ PyMOTW (Python Module Of The Week), "Exception Handling Archived 2015-09-15 at the Wayback Machine"
+
+^ "Google Answers: The origin of checked exceptions". Archived from the original on 2011-08-06. Retrieved 2011-12-15.
+
+^ Java Language Specification, chapter 11.2. http://java.sun.com/docs/books/jls/third_edition/html/exceptions.html#11.2 Archived 2006-12-08 at the Wayback Machine
+
+^ MÃ¶ssenbÃ¶ck, Hanspeter (2002-03-25). "Advanced C#: Variable Number of Parameters" (PDF). Institut fÃ¼r Systemsoftware, Johannes Kepler UniversitÃ¤t Linz, Fachbereich Informatik. p.Â 32. Archived (PDF) from the original on 2011-09-20. Retrieved 2011-08-05.
+
+^ Jump up to: a b c Eckel, Bruce (2006). Thinking in Java (4thÂ ed.). Upper Saddle River, NJ: Prentice Hall. pp.Â 347â348. ISBNÂ 0-13-187248-6.
+
+^ Gunnerson, Eric (9 November 2000). "C# and exception specifications". Archived from the original on 1 January 2006.
+
+^ Jump up to: a b Bill Venners; Bruce Eckel (August 18, 2003). "The Trouble with Checked Exceptions: A Conversation with Anders Hejlsberg, Part II". Retrieved 4 January 2022.
+
+^ Juneau, Josh (31 May 2017). Java 9 Recipes: A Problem-Solution Approach. Apress. p.Â 226. ISBNÂ 978-1-4842-1976-8.
+
+^ "Advantages of Exceptions (The Javaâ¢ TutorialsÂ : Essential ClassesÂ : Exceptions)". Download.oracle.com. Archived from the original on 2011-10-26. Retrieved 2011-12-15.
+
+^ "Unchecked Exceptions â The Controversy (The Javaâ¢ TutorialsÂ : Essential ClassesÂ : Exceptions)". Download.oracle.com. Archived from the original on 2011-11-17. Retrieved 2011-12-15.
+
+^ Bloch 2001:178 Bloch, Joshua (2001). Effective Java Programming Language Guide. Addison-Wesley Professional. ISBNÂ 978-0-201-31005-4.
+
+^ Jump up to: a b "Bruce Eckel's MindView, Inc: Does Java need Checked Exceptions?". Mindview.net. Archived from the original on 2002-04-05. Retrieved 2011-12-15.
+
+^ "Modula-3 - Procedure Types". .cs.columbia.edu. 1995-03-08. Archived from the original on 2008-05-09. Retrieved 2011-12-15.
+
+^ Jump up to: a b Bjarne Stroustrup, The C++ Programming Language Third Edition, Addison Wesley, 1997. ISBNÂ 0-201-88954-4. pp. 375-380.
+
+^ Reeves, J.W. (July 1996). "Ten Guidelines for Exception Specifications". C++ Report. 8 (7).
+
+^ Sutter, Herb (3 March 2010). "Trip Report: March 2010 ISO C++ Standards Meeting". Archived from the original on 23 March 2010. Retrieved 24 March 2010.
+
+^ "OcamlExc - An uncaught exceptions analyzer for Objective Caml". Caml.inria.fr. Archived from the original on 2011-08-06. Retrieved 2011-12-15.
+
+^ "Asynchronous Exceptions in Haskell - Marlow, Jones, Moran (ResearchIndex)". Citeseer.ist.psu.edu. Archived from the original on 2011-02-23. Retrieved 2011-12-15.
+
+^ Freund, Stephen N.; Mitchell, Mark P. "Safe Asynchronous Exceptions For Python" (PDF). Retrieved 4 January 2022. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "Java Thread Primitive Deprecation". Java.sun.com. Archived from the original on 2009-04-26. Retrieved 2011-12-15.
+
+^ "Interrupts (The Javaâ¢ Tutorials > Essential Java Classes > Concurrency)". docs.oracle.com. Retrieved 5 January 2022.
+
+^ Felker, Rich. "Thread cancellation and resource leaks". ewontfix.com. Retrieved 5 January 2022.
+
+^ What Conditions (Exceptions) are Really About (2008-03-24). "What Conditions (Exceptions) are Really About". Danweinreb.org. Archived from the original on February 1, 2013. Retrieved 2014-09-18.
+
+^ "Condition System Concepts". Franz.com. 2009-07-21. Archived from the original on 2007-06-28. Retrieved 2011-12-15.
+
+^ C.A.R. Hoare. "The Emperor's Old Clothes". 1980 Turing Award Lecture
+
+^ "Frequently Asked Questions". Archived from the original on 2017-05-03. Retrieved 2017-04-27. We believe that coupling exceptions to a control structure, as in the try-catch-finally idiom, results in convoluted code. It also tends to encourage programmers to label too many ordinary errors, such as failing to open a file, as exceptional.
+
+^ "Proposal for an exception-like mechanism". golang-nuts. 25 March 2010. Retrieved 25 March 2010.
+
+^ Panic And Recover Archived 2013-10-24 at the Wayback Machine, Go wiki
+
+^ "Weekly Snapshot History". golang.org. Archived from the original on 2017-04-03.
+
+^ "Effective Go". golang.org. Archived from the original on 2015-01-06.
+
+^ Bendersky, Eli (8 August 2018). "On the uses and misuses of panics in Go". Eli Bendersky's website. Retrieved 5 January 2022. The specific limitation is that recover can only be called in a defer code block, which cannot return control to an arbitrary point, but can only do clean-ups and tweak the function's return values.
+
+^ "Error Boundaries". React. Retrieved 2018-12-10.
+
+^ "Vue.js API". Vue.js. Retrieved 2018-12-10.
+
+^ "Error handling with Vue.js". CatchJS. Retrieved 2018-12-10.
+
+
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Black, Andrew P. (January 1982). Exception handling: The case against (PDF) (PhD). University of Oxford. CiteSeerXÂ 10.1.1.94.5554. OCLCÂ 123311492.
+Gabriel, Richard P.; Steele, Guy L. (2008). A Pattern of Language Evolution (PDF). LISP50: Celebrating the 50th Anniversary of Lisp. pp.Â 1â10. doi:10.1145/1529966.1529967. ISBNÂ 978-1-60558-383-9.
+Goodenough, John B. (1975a). Structured exception handling. Proceedings of the 2nd ACM SIGACT-SIGPLAN symposium on Principles of programming languages - POPL '75. pp.Â 204â224. doi:10.1145/512976.512997.
+Goodenough, John B. (1975). "Exception handling: Issues and a proposed notation" (PDF). Communications of the ACM. 18 (12): 683â696. CiteSeerXÂ 10.1.1.122.7791. doi:10.1145/361227.361230. S2CIDÂ 12935051.
+Levin, Roy (June 1977). Program Structures for Exceptional Condition Handling (PDF) (PhD). Carnegie-Mellon University. DTIC ADA043449.
+Stroustrup, Bjarne (1994). The design and evolution of C++ (1stÂ ed.). Reading, Mass.: Addison-Wesley. ISBNÂ 0-201-54330-3.
+White, Jon L (May 1979). NIL - A Perspective (PDF). Proceedings of the 1979 Macsyma User's Conference.
+
+External links[edit]
+A Crash Course on the Depths of Win32 Structured Exception Handling by Matt Pietrek - Microsoft Systems Journal (1997)
+Article "C++ Exception Handling" by Christophe de Dinechin
+Article "Exceptional practices" by Brian Goetz
+Article "Object Oriented Exception Handling in Perl" by Arun Udaya Shankar
+Article "Programming with Exceptions in C++" by Kyle Loudon
+Article "Unchecked Exceptions - The Controversy"
+Conference slides Floating-Point Exception-Handling policies (pdf p. 46)  by William Kahan
+Descriptions from Portland Pattern Repository
+Does Java Need Checked Exceptions?
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Exception_handling&oldid=1067372121"
+		Categories: Control flowSoftware anomaliesHidden categories: CS1 errors: missing periodicalWebarchive template wayback linksArticles with short descriptionArticles with long short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from November 2016Articles with unsourced statements from June 2020Articles with unsourced statements from September 2012Articles with example Java codeAC with 0 elements
+	

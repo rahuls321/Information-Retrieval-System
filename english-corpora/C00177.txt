@@ -1,0 +1,2898 @@
+
+Title:
+Fast inverse square root
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Root-finding algorithm
+  Lighting and reflection calculations (shown here in the first-person shooter OpenArena) use the fast inverse square root code to compute angles of incidence and reflection.
+Fast inverse square root, sometimes referred to as Fast InvSqrt() or by the hexadecimal constant 0x5F3759DF, is an algorithm that estimates 
+  
+    
+      
+        
+          
+            1
+            
+              x
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {1}{\sqrt {x}}}}
+  
+, the reciprocal (or multiplicative inverse) of the square root of a 32-bit floating-point number 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ in IEEE 754 floating-point format. This operation is used in digital signal processing to normalize a vector, i.e., scale it to length 1. For example, computer graphics programs use inverse square roots to compute angles of incidence and reflection for lighting and shading.  The algorithm is best known for its implementation in 1999 in the source code of Quake III Arena, a first-person shooter video game that made heavy use of 3D graphics. The algorithm only started appearing on public forums such as Usenet in 2002 or 2003.[note 1] Computation of square roots usually depends upon many division operations, which for floating point numbers are computationally expensive. The fast inverse square generated a good approximation with only one division step. Other video games predating Quake 3 have been discovered which use a similar algorithm, though the Quake implementation remains the best-known example.
+The algorithm accepts a 32-bit floating-point number as the input and stores a halved value for later use. Then, treating the bits representing the floating-point number as a 32-bit integer, a logical shift right by one bit is performed and the result subtracted from the number 0x5F3759DF (in decimal notation: 1,597,463,007), which is a floating point representation of an approximation of 
+  
+    
+      
+        
+          
+            
+              2
+              
+                127
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\sqrt {2^{127}}}}
+  
+.[2] This results in the first approximation of the inverse square root of the input. Treating the bits again as a floating-point number, it runs one iteration of Newton's method, yielding a more precise approximation.
+The algorithm was originally attributed to John Carmack, but an investigation showed that the code had deeper roots in both the hardware and software side of computer graphics. Adjustments and alterations passed through both Silicon Graphics and 3dfx Interactive, with the original constant being derived in a collaboration between Cleve Moler and Gregory Walsh, while Gregory was working for Ardent Computing in the late 1980s.[3] Walsh and Moler adapted their version from an unpublished paper by William Kahan and K.C. Ng circulated in May of 1986. 
+With subsequent hardware advancements, especially the x86 SSE instruction rsqrtss, this method is not generally applicable to general purpose computing,[4] though it remains an interesting example both historically[5] and for more limited machines, such as low-cost embedded systems. However, more manufacturers of embedded systems are including trigonometric and other math accelerators such as CORDIC, obviating the need for such algorithms.
+
+Contents
+
+1 Motivation
+2 Overview of the code
+
+2.1 Worked example
+2.2 Avoiding undefined behavior
+
+
+3 Algorithm
+
+3.1 Floating-point representation
+3.2 Aliasing to an integer as an approximate logarithm
+3.3 First approximation of the result
+3.4 Newton's method
+3.5 Accuracy
+
+
+4 History
+5 Subsequent improvements
+
+5.1 Magic number
+5.2 Zero finding
+
+
+6 See also
+7 Notes
+8 References
+
+8.1 Bibliography
+
+
+9 Further reading
+10 External links
+
+
+
+Motivation[edit]
+  Surface normals are used extensively in lighting and shading calculations, requiring the calculation of norms for vectors.  A field of vectors normal to a surface is shown here.
+  A two-dimensional example of using the normal 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ to find the angle of reflection from the angle of incidence; in this case, on light reflecting from a curved mirror. The fast inverse square root is used to generalize this calculation to three-dimensional space.
+The inverse square root of a floating point number is used in calculating a normalized vector.[6] Programs can use normalized vectors to determine angles of incidence and reflection. 3D graphics programs must perform millions of these calculations every second to simulate lighting. When the code was developed in the early 1990s, most floating-point processing power lagged behind the speed of integer processing.[7] This was troublesome for 3D graphics programs before the advent of specialized hardware to handle transform and lighting.
+The length of the vector is determined by calculating its Euclidean norm: the square root of the sum of squares of the vector components. When each component of the vector is divided by that length, the new vector will be a unit vector pointing in the same direction. In a 3D graphics program, all vectors are in three-dimensional space, so 
+  
+    
+      
+        
+          v
+        
+      
+    
+    {\displaystyle {\boldsymbol {v}}}
+  
+ would be a vector 
+  
+    
+      
+        (
+        
+          v
+          
+            1
+          
+        
+        ,
+        
+          v
+          
+            2
+          
+        
+        ,
+        
+          v
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle (v_{1},v_{2},v_{3})}
+  
+.
+
+
+  
+    
+      
+        â
+        
+          v
+        
+        â
+        =
+        
+          
+            
+              v
+              
+                1
+              
+              
+                2
+              
+            
+            +
+            
+              v
+              
+                2
+              
+              
+                2
+              
+            
+            +
+            
+              v
+              
+                3
+              
+              
+                2
+              
+            
+          
+        
+      
+    
+    {\displaystyle \|{\boldsymbol {v}}\|={\sqrt {v_{1}^{2}+v_{2}^{2}+v_{3}^{2}}}}
+  
+
+is the Euclidean norm of the vector.
+
+
+  
+    
+      
+        
+          
+            
+              v
+              ^
+            
+          
+        
+        =
+        
+          
+            v
+            
+              â
+              
+                v
+              
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {\hat {v}}}={\frac {\boldsymbol {v}}{\left\|{\boldsymbol {v}}\right\|}}}
+  
+
+is the normalized (unit) vector, using 
+  
+    
+      
+        â
+        
+          v
+        
+        
+          â
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \|{\boldsymbol {v}}\|^{2}}
+  
+ to represent 
+  
+    
+      
+        
+          v
+          
+            1
+          
+          
+            2
+          
+        
+        +
+        
+          v
+          
+            2
+          
+          
+            2
+          
+        
+        +
+        
+          v
+          
+            3
+          
+          
+            2
+          
+        
+      
+    
+    {\displaystyle v_{1}^{2}+v_{2}^{2}+v_{3}^{2}}
+  
+.
+
+
+  
+    
+      
+        
+          
+            
+              v
+              ^
+            
+          
+        
+        =
+        
+          
+            v
+            
+              
+                
+                  â
+                  
+                    v
+                  
+                  â
+                
+                
+                  2
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {\hat {v}}}={\frac {\boldsymbol {v}}{\sqrt {\left\|{\boldsymbol {v}}\right\|^{2}}}}}
+  
+
+which relates the unit vector to the inverse square root of the distance components. The inverse square root can be used to compute 
+  
+    
+      
+        
+          
+            
+              v
+              ^
+            
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {\hat {v}}}}
+  
+ because this equation is equivalent to
+
+
+  
+    
+      
+        
+          
+            
+              v
+              ^
+            
+          
+        
+        =
+        
+          v
+        
+        
+        
+          
+            1
+            
+              
+                
+                  â
+                  
+                    v
+                  
+                  â
+                
+                
+                  2
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {\hat {v}}}={\boldsymbol {v}}\,{\frac {1}{\sqrt {\left\|{\boldsymbol {v}}\right\|^{2}}}}}
+  
+
+where the fraction term is the inverse square root of 
+  
+    
+      
+        â
+        
+          v
+        
+        
+          â
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \|{\boldsymbol {v}}\|^{2}}
+  
+.
+At the time, floating-point division was generally expensive compared to multiplication; the fast inverse square root algorithm bypassed the division step, giving it its performance advantage. Quake III Arena, a first-person shooter video game, used the fast inverse square root algorithm to accelerate graphics computation, but the algorithm has since been implemented in some dedicated hardware vertex shaders using field-programmable gate arrays (FPGA).[8]
+
+Overview of the code[edit]
+The following code is the fast inverse square root implementation from Quake III Arena, stripped of C preprocessor directives, but including the exact original comment text:[9]
+
+float Q_rsqrt( float number )
+{
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return y;
+}
+
+At the time, the general method to compute the inverse square root was to calculate an approximation for 
+  
+    
+      
+        
+          
+            1
+            
+              x
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {1}{\sqrt {x}}}}
+  
+, then revise that approximation via another method until it came within an acceptable error range of the actual result. Common software methods in the early 1990s drew approximations from a lookup table.[10] The key of the fast inverse square root was to directly compute an approximation by utilizing the structure of floating-point numbers, proving faster than table lookups. The algorithm was approximately four times faster than computing the square root with another method and calculating the reciprocal via floating-point division.[11] The algorithm was designed with the IEEE 754-1985 32-bit floating-point specification in mind, but investigation from Chris Lomont showed that it could be implemented in other floating-point specifications.[12]
+The advantages in speed offered by the fast inverse square root trick came from treating the 32-bit floating-point word[note 2] as an integer, then subtracting it from a "magic" constant, .mw-parser-output .monospaced{font-family:monospace,monospace}0x5F3759DF.[7][13][14][15] This integer subtraction and bit shift results in a bit pattern which, when re-defined as a floating-point number, is a rough approximation for the inverse square root of the number.  One iteration of Newton's method is performed to gain some accuracy, and the code is finished.  The algorithm generates reasonably accurate results using a unique first approximation for Newton's method; however, it is much slower and less accurate than using the SSE instruction rsqrtss on x86 processors also released in 1999.[4][16]
+
+Worked example[edit]
+As an example, the number 
+  
+    
+      
+        x
+        =
+        0.15625
+      
+    
+    {\displaystyle x=0.15625}
+  
+ can be used to calculate 
+  
+    
+      
+        
+          
+            1
+            
+              x
+            
+          
+        
+        â
+        2.52982
+      
+    
+    {\displaystyle {\frac {1}{\sqrt {x}}}\approx 2.52982}
+  
+. The first steps of the algorithm are illustrated below:
+
+0011_1110_0010_0000_0000_0000_0000_0000  Bit pattern of both x and i
+0001_1111_0001_0000_0000_0000_0000_0000  Shift right one position: (i >> 1)
+0101_1111_0011_0111_0101_1001_1101_1111  The magic number 0x5F3759DF
+0100_0000_0010_0111_0101_1001_1101_1111  The result of 0x5F3759DF - (i >> 1)
+
+Interpreting as IEEE 32-bit representation:
+
+0_01111100_01000000000000000000000  1.25 Ã 2â3
+0_00111110_00100000000000000000000  1.125 Ã 2â65
+0_10111110_01101110101100111011111  1.432430... Ã 263
+0_10000000_01001110101100111011111  1.307430... Ã 21
+
+Reinterpreting this last bit pattern as a floating point number gives the approximation 
+  
+    
+      
+        y
+        =
+        2.61486
+      
+    
+    {\displaystyle y=2.61486}
+  
+, which has an error of about 3.4%. After one single iteration of Newton's method, the final result is 
+  
+    
+      
+        y
+        =
+        2.52549
+      
+    
+    {\displaystyle y=2.52549}
+  
+, an error of only 0.17%.
+
+Avoiding undefined behavior[edit]
+According to the C standard, reinterpreting a floating point value as an integer by removing the pointer to it is considered to be able to cause unexpected behavior (undefined behavior). Another way would be to place the floating point value in an anonymous union containing an additional 32-bit unsigned integer member, and accesses to that integer provides a bit level view of the contents of the floating point value. However, type punning through a union is also undefined behavior in C++.
+
+	
+#include <stdint.h> // uint32_t
+	
+float Q_rsqrt( float number )
+{
+	const float x2 = number * 0.5F;
+	const float threehalfs = 1.5F;
+	
+	union {
+		float    f;
+		uint32_t i;
+	} conv = { .f = number };
+	conv.i  = 0x5f3759df - ( conv.i >> 1 );
+	conv.f *= threehalfs - ( x2 * conv.f * conv.f );
+	return conv.f;
+}
+
+In modern C++ (C++20 and above) the usual method for implementing this function's casts is through std::bit_cast. This also allows the function to work in constexpr context:
+
+//only works after C++20 standard
+#include <bit>
+#include <limits>
+#include <cstdint>
+
+constexpr float Q_rsqrt(float number) noexcept
+{
+	static_assert(std::numeric_limits<float>::is_iec559); // (enable only on IEEE 754)
+
+	float const y = std::bit_cast<float>(
+        0x5f3759df - (std::bit_cast<std::uint32_t>(number) >> 1));
+	return y * (1.5f - (number * 0.5f * y * y));
+}
+
+Algorithm[edit]
+The algorithm computes 
+  
+    
+      
+        
+          
+            1
+            
+              x
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {1}{\sqrt {x}}}}
+  
+ by performing the following steps:
+
+Alias the argument 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ to an integer as a way to compute an approximation of the binary logarithm 
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+      
+    
+    {\displaystyle \log _{2}(x)}
+  
+
+Use this approximation to compute an approximation of 
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        
+          (
+          
+            
+              1
+              
+                x
+              
+            
+          
+          )
+        
+        =
+        â
+        
+          
+            1
+            2
+          
+        
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+      
+    
+    {\displaystyle \log _{2}\left({\frac {1}{\sqrt {x}}}\right)=-{\frac {1}{2}}\log _{2}(x)}
+  
+
+Alias back to a float, as a way to compute an approximation of the base-2 exponential
+Refine the approximation using a single iteration of Newton's method.
+Floating-point representation[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Single-precision floating-point format
+Since this algorithm relies heavily on the bit-level representation of single-precision floating-point numbers, a short overview of this representation is provided here. In order to encode a non-zero real number 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ as a single precision float, the first step is to write 
+  
+    
+      
+        
+          
+          â³
+        
+        
+          x
+          â³
+        
+      
+    
+    {\displaystyle ''x''}
+  
+ as a normalized binary number:[17]
+
+
+  
+    
+      
+        
+          
+            
+              
+                x
+              
+              
+                
+                =
+                Â±
+                1.
+                
+                  b
+                  
+                    1
+                  
+                
+                
+                  b
+                  
+                    2
+                  
+                
+                
+                  b
+                  
+                    3
+                  
+                
+                â¦
+                Ã
+                
+                  2
+                  
+                    
+                      e
+                      
+                        x
+                      
+                    
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                Â±
+                
+                  2
+                  
+                    
+                      e
+                      
+                        x
+                      
+                    
+                  
+                
+                (
+                1
+                +
+                
+                  m
+                  
+                    x
+                  
+                
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}x&=\pm 1.b_{1}b_{2}b_{3}\ldots \times 2^{e_{x}}\\&=\pm 2^{e_{x}}(1+m_{x})\end{aligned}}}
+  
+
+where the exponent 
+  
+    
+      
+        
+          e
+          
+            x
+          
+        
+      
+    
+    {\displaystyle e_{x}}
+  
+ is an integer, 
+  
+    
+      
+        
+          m
+          
+            x
+          
+        
+        â
+        [
+        0
+        ,
+        1
+        )
+      
+    
+    {\displaystyle m_{x}\in [0,1)}
+  
+, and 
+  
+    
+      
+        1.
+        
+          b
+          
+            1
+          
+        
+        
+          b
+          
+            2
+          
+        
+        
+          b
+          
+            3
+          
+        
+        â¦
+      
+    
+    {\displaystyle 1.b_{1}b_{2}b_{3}\ldots }
+  
+ is the binary representation of the "significand" 
+  
+    
+      
+        (
+        1
+        +
+        
+          m
+          
+            x
+          
+        
+        )
+      
+    
+    {\displaystyle (1+m_{x})}
+  
+. Since the single bit before the point in the significand is always 1, it need not be stored. From this form, three unsigned integers are computed:[18]
+
+
+  
+    
+      
+        
+          S
+          
+            x
+          
+        
+      
+    
+    {\displaystyle S_{x}}
+  
+, the "sign bit", is 
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+ if 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ is positive and 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ negative or zero (1 bit)
+
+  
+    
+      
+        
+          E
+          
+            x
+          
+        
+        =
+        
+          e
+          
+            x
+          
+        
+        +
+        B
+      
+    
+    {\displaystyle E_{x}=e_{x}+B}
+  
+ is the "biased exponent", where 
+  
+    
+      
+        B
+        =
+        127
+      
+    
+    {\displaystyle B=127}
+  
+ is the "exponent bias"[note 3] (8 bits)
+
+  
+    
+      
+        
+          M
+          
+            x
+          
+        
+        =
+        
+          m
+          
+            x
+          
+        
+        Ã
+        L
+      
+    
+    {\displaystyle M_{x}=m_{x}\times L}
+  
+, where 
+  
+    
+      
+        L
+        =
+        
+          2
+          
+            23
+          
+        
+      
+    
+    {\displaystyle L=2^{23}}
+  
+[note 4] (23 bits)
+These fields are then packed, left to right, into a 32-bit container.[19]
+As an example, consider again the number 
+  
+    
+      
+        x
+        =
+        0.15625
+        =
+        
+          0.00101
+          
+            2
+          
+        
+      
+    
+    {\displaystyle x=0.15625=0.00101_{2}}
+  
+. Normalizing 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ yields:
+
+
+  
+    
+      
+        x
+        =
+        +
+        
+          2
+          
+            â
+            3
+          
+        
+        (
+        1
+        +
+        0.25
+        )
+      
+    
+    {\displaystyle x=+2^{-3}(1+0.25)}
+  
+
+and thus, the three unsigned integer fields are:
+
+
+  
+    
+      
+        S
+        =
+        0
+      
+    
+    {\displaystyle S=0}
+  
+
+
+  
+    
+      
+        E
+        =
+        â
+        3
+        +
+        127
+        =
+        124
+        =
+        0111
+        Â 
+        
+          1100
+          
+            2
+          
+        
+      
+    
+    {\displaystyle E=-3+127=124=0111\ 1100_{2}}
+  
+
+
+  
+    
+      
+        M
+        =
+        0.25
+        Ã
+        
+          2
+          
+            23
+          
+        
+        =
+        2
+        Â 
+        097
+        Â 
+        152
+        =
+        0010
+        Â 
+        0000
+        Â 
+        0000
+        Â 
+        0000
+        Â 
+        0000
+        Â 
+        
+          0000
+          
+            2
+          
+        
+      
+    
+    {\displaystyle M=0.25\times 2^{23}=2\ 097\ 152=0010\ 0000\ 0000\ 0000\ 0000\ 0000_{2}}
+  
+
+these fields are packed as shown in the figure below:
+
+
+Aliasing to an integer as an approximate logarithm[edit]
+If 
+  
+    
+      
+        
+          
+            1
+            
+              x
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {1}{\sqrt {x}}}}
+  
+ were to be calculated without a computer or a calculator, a table of logarithms would be useful, together with the identity 
+  
+    
+      
+        
+          log
+          
+            b
+          
+        
+        â¡
+        
+          (
+          
+            
+              1
+              
+                x
+              
+            
+          
+          )
+        
+        =
+        
+          log
+          
+            b
+          
+        
+        â¡
+        
+          (
+          
+            x
+            
+              â
+              
+                
+                  1
+                  2
+                
+              
+            
+          
+          )
+        
+        =
+        â
+        
+          
+            1
+            2
+          
+        
+        
+          log
+          
+            b
+          
+        
+        â¡
+        (
+        x
+        )
+      
+    
+    {\displaystyle \log _{b}\left({\frac {1}{\sqrt {x}}}\right)=\log _{b}\left(x^{-{\frac {1}{2}}}\right)=-{\frac {1}{2}}\log _{b}(x)}
+  
+, which is valid for every base 
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+. The fast inverse square root is based on this identity, and on the fact that aliasing a float32 to an integer gives a rough approximation of its logarithm. Here is how:
+If 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ is a positive normal number:
+
+
+  
+    
+      
+        x
+        =
+        
+          2
+          
+            
+              e
+              
+                x
+              
+            
+          
+        
+        (
+        1
+        +
+        
+          m
+          
+            x
+          
+        
+        )
+      
+    
+    {\displaystyle x=2^{e_{x}}(1+m_{x})}
+  
+
+then
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+        =
+        
+          e
+          
+            x
+          
+        
+        +
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        1
+        +
+        
+          m
+          
+            x
+          
+        
+        )
+      
+    
+    {\displaystyle \log _{2}(x)=e_{x}+\log _{2}(1+m_{x})}
+  
+
+and since 
+  
+    
+      
+        
+          m
+          
+            x
+          
+        
+        â
+        [
+        0
+        ,
+        1
+        )
+      
+    
+    {\displaystyle m_{x}\in [0,1)}
+  
+, the logarithm on the right hand side can be approximated by[20]
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        1
+        +
+        
+          m
+          
+            x
+          
+        
+        )
+        â
+        
+          m
+          
+            x
+          
+        
+        +
+        Ï
+      
+    
+    {\displaystyle \log _{2}(1+m_{x})\approx m_{x}+\sigma }
+  
+
+where 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ is a free parameter used to tune the approximation. For example, 
+  
+    
+      
+        Ï
+        =
+        0
+      
+    
+    {\displaystyle \sigma =0}
+  
+ yields exact results at both ends of the interval, while 
+  
+    
+      
+        Ï
+        =
+        
+          
+            1
+            2
+          
+        
+        â
+        
+          
+            
+              1
+              +
+              ln
+              â¡
+              (
+              ln
+              â¡
+              (
+              2
+              )
+              )
+            
+            
+              2
+              ln
+              â¡
+              (
+              2
+              )
+            
+          
+        
+        â
+        0.0430357
+      
+    
+    {\displaystyle \sigma ={\frac {1}{2}}-{\frac {1+\ln(\ln(2))}{2\ln(2)}}\approx 0.0430357}
+  
+ yields the optimal approximation (the best in the sense of the uniform norm of the error).
+
+  The integer aliased to a floating point number (in blue), compared to a scaled and shifted logarithm (in gray).
+Thus there is the approximation
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+        â
+        
+          e
+          
+            x
+          
+        
+        +
+        
+          m
+          
+            x
+          
+        
+        +
+        Ï
+        .
+      
+    
+    {\displaystyle \log _{2}(x)\approx e_{x}+m_{x}+\sigma .}
+  
+
+Interpreting the floating-point bit-pattern of 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ as an integer 
+  
+    
+      
+        
+          I
+          
+            x
+          
+        
+      
+    
+    {\displaystyle I_{x}}
+  
+ yields[note 5]
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  I
+                  
+                    x
+                  
+                
+              
+              
+                
+                =
+                
+                  E
+                  
+                    x
+                  
+                
+                L
+                +
+                
+                  M
+                  
+                    x
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                L
+                (
+                
+                  e
+                  
+                    x
+                  
+                
+                +
+                B
+                +
+                
+                  m
+                  
+                    x
+                  
+                
+                )
+              
+            
+            
+              
+              
+                
+                =
+                L
+                (
+                
+                  e
+                  
+                    x
+                  
+                
+                +
+                
+                  m
+                  
+                    x
+                  
+                
+                +
+                Ï
+                +
+                B
+                â
+                Ï
+                )
+              
+            
+            
+              
+              
+                
+                â
+                L
+                
+                  log
+                  
+                    2
+                  
+                
+                â¡
+                (
+                x
+                )
+                +
+                L
+                (
+                B
+                â
+                Ï
+                )
+                .
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}I_{x}&=E_{x}L+M_{x}\\&=L(e_{x}+B+m_{x})\\&=L(e_{x}+m_{x}+\sigma +B-\sigma )\\&\approx L\log _{2}(x)+L(B-\sigma ).\end{aligned}}}
+  
+
+It then appears that 
+  
+    
+      
+        
+          I
+          
+            x
+          
+        
+      
+    
+    {\displaystyle I_{x}}
+  
+ is a scaled and shifted piecewise-linear approximation of 
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+      
+    
+    {\displaystyle \log _{2}(x)}
+  
+, as illustrated in the figure on the right. In other words, 
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+      
+    
+    {\displaystyle \log _{2}(x)}
+  
+ is approximated by
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+        â
+        
+          
+            
+              I
+              
+                x
+              
+            
+            L
+          
+        
+        â
+        (
+        B
+        â
+        Ï
+        )
+        .
+      
+    
+    {\displaystyle \log _{2}(x)\approx {\frac {I_{x}}{L}}-(B-\sigma ).}
+  
+
+First approximation of the result[edit]
+The calculation of 
+  
+    
+      
+        y
+        =
+        
+          
+            1
+            
+              x
+            
+          
+        
+      
+    
+    {\displaystyle y={\frac {1}{\sqrt {x}}}}
+  
+ is based on the identity
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        y
+        )
+        =
+        â
+        
+          
+            
+              1
+              2
+            
+          
+        
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        x
+        )
+      
+    
+    {\displaystyle \log _{2}(y)=-{\tfrac {1}{2}}\log _{2}(x)}
+  
+
+Using the approximation of the logarithm above, applied to both 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ and 
+  
+    
+      
+        y
+      
+    
+    {\displaystyle y}
+  
+, the above equation gives:
+
+
+  
+    
+      
+        
+          
+            
+              I
+              
+                y
+              
+            
+            L
+          
+        
+        â
+        (
+        B
+        â
+        Ï
+        )
+        â
+        â
+        
+          
+            1
+            2
+          
+        
+        
+          (
+          
+            
+              
+                
+                  I
+                  
+                    x
+                  
+                
+                L
+              
+            
+            â
+            (
+            B
+            â
+            Ï
+            )
+          
+          )
+        
+      
+    
+    {\displaystyle {\frac {I_{y}}{L}}-(B-\sigma )\approx -{\frac {1}{2}}\left({\frac {I_{x}}{L}}-(B-\sigma )\right)}
+  
+
+Thus, an approximation of 
+  
+    
+      
+        
+          I
+          
+            y
+          
+        
+      
+    
+    {\displaystyle I_{y}}
+  
+ is:
+
+
+  
+    
+      
+        
+          I
+          
+            y
+          
+        
+        â
+        
+          
+            
+              3
+              2
+            
+          
+        
+        L
+        (
+        B
+        â
+        Ï
+        )
+        â
+        
+          
+            
+              1
+              2
+            
+          
+        
+        
+          I
+          
+            x
+          
+        
+      
+    
+    {\displaystyle I_{y}\approx {\tfrac {3}{2}}L(B-\sigma )-{\tfrac {1}{2}}I_{x}}
+  
+
+which is written in the code as
+
+i  = 0x5f3759df - ( i >> 1 );
+
+The first term above is the magic number
+
+
+  
+    
+      
+        
+          
+            
+              3
+              2
+            
+          
+        
+        L
+        (
+        B
+        â
+        Ï
+        )
+        =
+        
+          
+            0
+            x
+            5
+            F
+            3759
+            D
+            F
+          
+        
+      
+    
+    {\displaystyle {\tfrac {3}{2}}L(B-\sigma )={\mathtt {0x5F3759DF}}}
+  
+
+from which it can be inferred that 
+  
+    
+      
+        Ï
+        â
+        0.0450466
+      
+    
+    {\displaystyle \sigma \approx 0.0450466}
+  
+. The second term, 
+  
+    
+      
+        
+          
+            1
+            2
+          
+        
+        
+          I
+          
+            x
+          
+        
+      
+    
+    {\displaystyle {\frac {1}{2}}I_{x}}
+  
+, is calculated by shifting the bits of 
+  
+    
+      
+        
+          I
+          
+            x
+          
+        
+      
+    
+    {\displaystyle I_{x}}
+  
+ one position to the right.[21]
+
+Newton's method[edit]
+Main article: Newton's method
+.mw-parser-output .tmulti .thumbinner{display:flex;flex-direction:column}.mw-parser-output .tmulti .trow{display:flex;flex-direction:row;clear:left;flex-wrap:wrap;width:100%;box-sizing:border-box}.mw-parser-output .tmulti .tsingle{margin:1px;float:left}.mw-parser-output .tmulti .theader{clear:both;font-weight:bold;text-align:center;align-self:center;background-color:transparent;width:100%}.mw-parser-output .tmulti .thumbcaption{background-color:transparent}.mw-parser-output .tmulti .text-align-left{text-align:left}.mw-parser-output .tmulti .text-align-right{text-align:right}.mw-parser-output .tmulti .text-align-center{text-align:center}@media all and (max-width:720px){.mw-parser-output .tmulti .thumbinner{width:100%!important;box-sizing:border-box;max-width:none!important;align-items:center}.mw-parser-output .tmulti .trow{justify-content:center}.mw-parser-output .tmulti .tsingle{float:none!important;max-width:100%!important;box-sizing:border-box;text-align:center}.mw-parser-output .tmulti .tsingle .thumbcaption{text-align:left}.mw-parser-output .tmulti .trow>.thumbcaption{text-align:center}}Relative error between direct calculation and fast inverse square root carrying out 0, 1, 2, 3, and 4 iterations of Newton's root-finding method. Note that double precision is adopted and the smallest representable difference between two double precision numbers is reached after carrying out 4 iterations.
+With 
+  
+    
+      
+        y
+      
+    
+    {\displaystyle y}
+  
+ as the inverse square root, 
+  
+    
+      
+        f
+        (
+        y
+        )
+        =
+        
+          
+            1
+            
+              y
+              
+                2
+              
+            
+          
+        
+        â
+        x
+        =
+        0
+      
+    
+    {\displaystyle f(y)={\frac {1}{y^{2}}}-x=0}
+  
+. The approximation yielded by the earlier steps can be refined by using a root-finding method, a method that finds the zero of a function. The algorithm uses Newton's method: if there is an approximation, 
+  
+    
+      
+        
+          y
+          
+            n
+          
+        
+      
+    
+    {\displaystyle y_{n}}
+  
+ for 
+  
+    
+      
+        y
+      
+    
+    {\displaystyle y}
+  
+, then a better approximation 
+  
+    
+      
+        
+          y
+          
+            n
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle y_{n+1}}
+  
+ can be calculated by taking 
+  
+    
+      
+        
+          y
+          
+            n
+          
+        
+        â
+        
+          
+            
+              f
+              (
+              
+                y
+                
+                  n
+                
+              
+              )
+            
+            
+              
+                f
+                â²
+              
+              (
+              
+                y
+                
+                  n
+                
+              
+              )
+            
+          
+        
+      
+    
+    {\displaystyle y_{n}-{\frac {f(y_{n})}{f'(y_{n})}}}
+  
+, where 
+  
+    
+      
+        
+          f
+          â²
+        
+        (
+        
+          y
+          
+            n
+          
+        
+        )
+      
+    
+    {\displaystyle f'(y_{n})}
+  
+ is the derivative of 
+  
+    
+      
+        f
+        (
+        y
+        )
+      
+    
+    {\displaystyle f(y)}
+  
+ at 
+  
+    
+      
+        
+          y
+          
+            n
+          
+        
+      
+    
+    {\displaystyle y_{n}}
+  
+.[22] For the above 
+  
+    
+      
+        f
+        (
+        y
+        )
+      
+    
+    {\displaystyle f(y)}
+  
+,
+
+
+  
+    
+      
+        
+          y
+          
+            n
+            +
+            1
+          
+        
+        =
+        
+          
+            
+              
+                y
+                
+                  n
+                
+              
+              
+                (
+                
+                  3
+                  â
+                  x
+                  
+                    y
+                    
+                      n
+                    
+                    
+                      2
+                    
+                  
+                
+                )
+              
+            
+            2
+          
+        
+      
+    
+    {\displaystyle y_{n+1}={\frac {y_{n}\left(3-xy_{n}^{2}\right)}{2}}}
+  
+
+where 
+  
+    
+      
+        f
+        (
+        y
+        )
+        =
+        
+          
+            1
+            
+              y
+              
+                2
+              
+            
+          
+        
+        â
+        x
+      
+    
+    {\displaystyle f(y)={\frac {1}{y^{2}}}-x}
+  
+ and 
+  
+    
+      
+        
+          f
+          â²
+        
+        (
+        y
+        )
+        =
+        â
+        
+          
+            2
+            
+              y
+              
+                3
+              
+            
+          
+        
+      
+    
+    {\displaystyle f'(y)=-{\frac {2}{y^{3}}}}
+  
+.
+Treating 
+  
+    
+      
+        y
+      
+    
+    {\displaystyle y}
+  
+ as a floating-point number, y = y*(threehalfs - x/2*y*y); is equivalent to
+
+
+  
+    
+      
+        
+          y
+          
+            n
+            +
+            1
+          
+        
+        =
+        
+          y
+          
+            n
+          
+        
+        
+          (
+          
+            
+              
+                3
+                2
+              
+            
+            â
+            
+              
+                x
+                2
+              
+            
+            
+              y
+              
+                n
+              
+              
+                2
+              
+            
+          
+          )
+        
+        =
+        
+          
+            
+              
+                y
+                
+                  n
+                
+              
+              
+                (
+                
+                  3
+                  â
+                  x
+                  
+                    y
+                    
+                      n
+                    
+                    
+                      2
+                    
+                  
+                
+                )
+              
+            
+            2
+          
+        
+        .
+      
+    
+    {\displaystyle y_{n+1}=y_{n}\left({\frac {3}{2}}-{\frac {x}{2}}y_{n}^{2}\right)={\frac {y_{n}\left(3-xy_{n}^{2}\right)}{2}}.}
+  
+
+By repeating this step, using the output of the function (
+  
+    
+      
+        
+          y
+          
+            n
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle y_{n+1}}
+  
+) as the input of the next iteration, the algorithm causes 
+  
+    
+      
+        y
+      
+    
+    {\displaystyle y}
+  
+ to converge to the inverse square root.[23] For the purposes of the Quake III engine, only one iteration was used.  A second iteration remained in the code but was commented out.[15]
+
+Accuracy[edit]
+As noted above, the approximation is surprisingly accurate. The single graph on the right plots the error of the function (that is, the error of the approximation after it has been improved by running one iteration of Newton's method), for inputs starting at 0.01, where the standard library gives 10.0 as a result, while InvSqrt() gives 9.982522, making the difference 0.0017478, or 0.175% of the true value, 10. The absolute error only drops from then on, while the relative error stays within the same bounds across all orders of magnitude.
+
+History[edit]
+The source code for Quake III was not released until QuakeCon 2005, but copies of the fast inverse square root code appeared on Usenet and other forums as early as 2002 or 2003.[7] Initial speculation pointed to John Carmack as the probable author of the code, but the original authors proved to be much further back in the history of 3D computer graphics. Rys Sommefeldt concluded that the original algorithm was devised by Greg Walsh at Ardent Computer in consultation with Cleve Moler, the creator of MATLAB.[3] Cleve Moler learned about this trick from code written by William Kahan and K.C. Ng at Berkeley around 1986.[24]
+Jim Blinn also demonstrated a simple approximation of the inverse square root in a 1997 column for IEEE Computer Graphics and Applications.[25][26] Reverse engineering of other contemporary 3d video games uncovered a variation of the algorithm in Activision's 1997 Interstate '76, two years before Quake 3 Arena was published.[27]
+
+Subsequent improvements[edit]
+Magic number[edit]
+It is not known precisely how the exact value for the magic number was determined.  Chris Lomont developed a function to minimize approximation error by choosing the magic number 
+  
+    
+      
+        R
+      
+    
+    {\displaystyle R}
+  
+ over a range. He first computed the optimal constant for the linear approximation step as 0x5F37642F, close to 0x5F3759DF, but this new constant gave slightly less accuracy after one iteration of Newton's method.[28] Lomont then searched for a constant optimal even after one and two Newton iterations and found 0x5F375A86, which is more accurate than the original at every iteration stage.[28] He concluded by asking whether the exact value of the original constant was chosen through derivation or trial and error.[29]  Lomont said that the magic number for 64-bit IEEE754 size type double is 0x5FE6EC85E7DE30DA, but it was later shown by Matthew Robertson to be exactly 0x5FE6EB50C7B537A9.[30]
+Jan Kadlec reduced the relative error by a further factor of 2.7 by adjusting the constants in the single Newtons's method iteration as well,[31] arriving after an exhaustive search at
+
+	conv.i = 0x5F1FFFF9 - ( conv.i >> 1 );
+	conv.f *= 0.703952253f * ( 2.38924456f - x * conv.f * conv.f );
+	return conv.f;
+
+A complete mathematical analysis for determining the magic number is now available for single-precision floating-point numbers.[32][33]
+
+Zero finding[edit]
+Intermediate to the use of one vs. two iterations of Newton's method in terms of speed and accuracy is a single iteration of Halley's method.  In this case, Halley's method is equivalent to applying Newton's method with the starting formula 
+  
+    
+      
+        f
+        (
+        y
+        )
+        =
+        
+          
+            1
+            
+              y
+              
+                1
+                
+                  /
+                
+                2
+              
+            
+          
+        
+        â
+        x
+        
+          y
+          
+            3
+            
+              /
+            
+            2
+          
+        
+        =
+        0
+      
+    
+    {\displaystyle f(y)={\frac {1}{y^{1/2}}}-xy^{3/2}=0}
+  
+.  The update step is then
+
+
+  
+    
+      
+        
+          y
+          
+            n
+            +
+            1
+          
+        
+        =
+        
+          y
+          
+            n
+          
+        
+        â
+        
+          
+            
+              f
+              (
+              
+                y
+                
+                  n
+                
+              
+              )
+            
+            
+              
+                f
+                â²
+              
+              (
+              
+                y
+                
+                  n
+                
+              
+              )
+            
+          
+        
+        =
+        
+          y
+          
+            n
+          
+        
+        
+          (
+          
+            
+              
+                3
+                +
+                x
+                
+                  y
+                  
+                    n
+                  
+                  
+                    2
+                  
+                
+              
+              
+                1
+                +
+                3
+                x
+                
+                  y
+                  
+                    n
+                  
+                  
+                    2
+                  
+                
+              
+            
+          
+          )
+        
+        ,
+      
+    
+    {\displaystyle y_{n+1}=y_{n}-{\frac {f(y_{n})}{f'(y_{n})}}=y_{n}\left({\frac {3+xy_{n}^{2}}{1+3xy_{n}^{2}}}\right),}
+  
+
+where the implementation should calculate 
+  
+    
+      
+        x
+        
+          y
+          
+            n
+          
+          
+            2
+          
+        
+      
+    
+    {\displaystyle xy_{n}^{2}}
+  
+ only once, via a temporary variable.
+
+See also[edit]
+Methods of computing square roots Â§Â Approximations that depend on the floating point representation
+Magic number
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ There was a discussion on the Chinese developer forum CSDN back in 2000.[1]
+
+^ Use of the type long reduces the portability of this code on modern systems. For the code to execute properly, sizeof(long) must be 4 bytes, otherwise negative outputs may result. Under many modern 64-bit systems, sizeof(long) is 8 bytes. The more portable replacement is int32_t.
+
+^ 
+  
+    
+      
+        
+          E
+          
+            x
+          
+        
+      
+    
+    {\displaystyle E_{x}}
+  
+ should be in the range 
+  
+    
+      
+        [
+        1
+        ,
+        254
+        ]
+      
+    
+    {\displaystyle [1,254]}
+  
+ for 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ to be representable as a normal number.
+
+^ The only real numbers that can be represented exactly as floating point are those for which 
+  
+    
+      
+        
+          M
+          
+            x
+          
+        
+      
+    
+    {\displaystyle M_{x}}
+  
+ is an integer. Other numbers can only be represented approximately by rounding them to the nearest exactly representable number.
+
+^ Since 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ is positive, 
+  
+    
+      
+        
+          S
+          
+            x
+          
+        
+        =
+        0
+      
+    
+    {\displaystyle S_{x}=0}
+  
+.
+
+
+References[edit]
+
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Discussion on CSDN". Archived from the original on 2015-07-02.
+
+^ Munafo, Robert. "Notable Properties of Specific Numbers". mrob.com. Archived from the original on 16 November 2018.
+
+^ Jump up to: a b Sommefeldt, Rys (2006-12-19). "Origin of Quake3's Fast InvSqrt() - Part Two". Beyond3D. Retrieved 2008-04-19.
+
+^ Jump up to: a b Ruskin, Elan (2009-10-16). "Timing square root". Some Assembly Required. Archived from the original on 2021-02-08. Retrieved 2015-05-07.
+
+^ feilipu. "z88dk is a collection of software development tools that targets the 8080 and z80 computers".
+
+^ Blinn 2003, p.Â 130.
+
+^ Jump up to: a b c Sommefeldt, Rys (2006-11-29). "Origin of Quake3's Fast InvSqrt()". Beyond3D. Retrieved 2009-02-12.
+
+^ Middendorf 2007, pp.Â 155â164.
+
+^ "quake3-1.32b/code/game/q_math.c". Quake III Arena. id Software. Archived from the original on 2020-08-02. Retrieved 2017-01-21.
+
+^ Eberly 2001, p.Â 504.
+
+^ Lomont 2003, p.Â 1.
+
+^ Lomont 2003.
+
+^ Lomont 2003, p.Â 3.
+
+^ McEniry 2007, p.Â 2, 16.
+
+^ Jump up to: a b Eberly 2001, p.Â 2.
+
+^ Fog, Agner. "Lists of instruction latencies, throughputs and micro-operation breakdowns for Intel, AMD and VIA CPUs" (PDF). Retrieved 2017-09-08.
+
+^ Goldberg 1991, p.Â 7.
+
+^ Goldberg 1991, pp.Â 15â20.
+
+^ Goldberg 1991, p.Â 16.
+
+^ McEniry 2007, p.Â 3.
+
+^ Hennessey & Patterson 1998, p.Â 305.
+
+^ Hardy 1908, p.Â 323.
+
+^ McEniry 2007, p.Â 6.
+
+^ Moler, Cleve. "Symplectic Spacewar". MATLAB Central - Cleve's Corner. MATLAB. Retrieved 2014-07-21.
+
+^ Blinn 1997, pp.Â 80â84.
+
+^ "sqrt implementation in fdlibm".
+
+^ Peelar, Shane (1 June 2021). "Fast reciprocal square root... in 1997?!".
+
+^ Jump up to: a b Lomont 2003, p.Â 10.
+
+^ Lomont 2003, pp.Â 10â11.
+
+^ Matthew Robertson (2012-04-24). "A Brief History of InvSqrt" (PDF). UNBSJ.
+
+^ Kadlec, Jan (2010). "ÅrÅlog::Improving the fast inverse square root" (personal blog). Retrieved 2020-12-14.
+
+^ Moroz et al. 2018.
+
+^ Muller, Jean-Michel (December 2020). "Elementary Functions and Approximate Computing". Proceedings of the IEEE. 108 (12): 2146. doi:10.1109/JPROC.2020.2991885. ISSNÂ 0018-9219.
+
+
+Bibliography[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Blinn, Jim (July 1997). "Floating Point Tricks". IEEE Computer Graphics & Applications. 17 (4): 80. doi:10.1109/38.595279.
+Blinn, Jim (2003). Jim Blinn's Corner: Notation, notation notation. Morgan Kaufmann. ISBNÂ 1-55860-860-5.
+Eberly, David (2001). 3D Game Engine Design. Morgan Kaufmann. ISBNÂ 978-1-55860-593-0.
+Goldberg, David (1991). "What every computer scientist should know about floating-point arithmetic". ACM Computing Surveys. 23 (1): 5â48. doi:10.1145/103162.103163. S2CIDÂ 222008826.
+Hardy, Godfrey (1908). A Course of Pure Mathematics. Cambridge, UK: Cambridge University Press. ISBNÂ 0-521-72055-9.
+Hennessey, John; Patterson, David A. (1998). Computer Organization and Design (2ndÂ ed.). San Francisco, CA: Morgan Kaufmann Publishers. ISBNÂ 978-1-55860-491-9.
+Lomont, Chris (February 2003). "Fast Inverse Square Root" (PDF). Retrieved 2009-02-13.
+McEniry, Charles (August 2007). "The Mathematics Behind the Fast Inverse Square Root Function Code" (PDF). Archived from the original (PDF) on 2015-05-11.
+Middendorf, Lars; MÃ¼hlbauer, Felix; Umlauf, George; Bodba, Christophe (June 1, 2007). "Embedded Vertex Shader in FPGA" (PDF).  In Rettberg, Achin (ed.). Embedded System Design: Topics, Techniques and Trends. IFIP TC10 Working Conference:International Embedded Systems Symposium (IESS). et al. Irvine, California: Springer. doi:10.1007/978-0-387-72258-0_14. ISBNÂ 978-0-387-72257-3. Archived (PDF) from the original on 2019-05-01. 
+Striegel, Jason (2008-12-04). "Quake's fast inverse square root". Hackszine. O'Reilly Media. Archived from the original on 2009-02-15. Retrieved 2013-01-07.
+IEEE Computer Society (1985), 754-1985 - IEEE Standard for Binary Floating-Point Arithmetic, Institute of Electrical and Electronics Engineers
+Moroz, Leonid V.; Walczyk, Cezary J.; Hrynchyshyn, Andriy; Holimath, Vijay; Cieslinski, Jan L. (January 2018). "Fast calculation of inverse square root with the use of magic constant analytical approach". Applied Mathematics and Computation. Elsevier Science Inc. 316 (C): 245â255. arXiv:1603.04483. doi:10.1016/j.amc.2017.08.025. S2CIDÂ 7494112.
+
+Further reading[edit]
+Kushner, David (August 2002). "The wizardry of Id". IEEE Spectrum. 39 (8): 42â47. doi:10.1109/MSPEC.2002.1021943.
+External links[edit]
+0x5f3759df, further investigations into accuracy and generalizability of the algorithm by Christian Plesner Hansen
+Origin of Quake3's Fast InvSqrt()
+Quake III Arena source code (archived in Software Heritage)
+Implementation of InvSqrt in DESMOS
+"Fast Inverse Square Root â A Quake III Algorithm" (YouTube)
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteQuake seriesGames
+Quake
+II
+III Arena
+Live
+4
+Enemy Territory: Quake Wars
+Champions
+People
+American McGee
+Graeme Devine
+John Carmack
+John Romero
+Jennell Jaquays
+Sandy Petersen
+Tim Willits
+Timothee Besset
+Trent Reznor
+Machinima
+Blahbalicious
+Diary of a Camper
+Operation Bayshield
+Quad God
+Quake Done Quick
+The Seal of Nehahra
+ModsQuake
+Malice
+Nexuiz
+X-Men: The Ravages of Apocalypse
+Xonotic
+Rocket Arena
+Quake II
+Action Quake 2
+Quake III
+Challenge ProMode Arena
+DeFRaG
+OpenArena
+Smokin' Guns
+Tremulous
+Urban Terror
+World of Padman
+Professional players
+av3k
+Cypher
+Fatal1ty
+KillCreek
+rapha
+Sujoy
+Thresh
+Vo0
+TechnologyEngines
+id Tech
+Quake engine
+Quake II engine
+id Tech 3
+id Tech 4
+id Tech 5
+id Tech 6
+Other
+Fast inverse square root
+Quake Army Knife
+QuakeC
+QuakeWorld
+Related
+BFG
+QuakeCon
+QuakeNet
+Original soundtrack
+
+ Category:Quake (series)
+
+showvteid Software (games)Main franchises
+Commander Keen
+Doom
+Quake
+Wolfenstein
+Other games
+Shadow Knights
+Hovertank 3D
+Dangerous Dave
+Rescue Rover
+Tiles of the Dragon
+Catacomb 3-D
+Orcs & Elves
+Rage
+Rage 2
+Games published
+Heretic
+Hexen: Beyond Heretic
+Hexen II
+PeopleCurrent
+Kevin Cloud
+Marty Stratton
+Robert Duffy
+Former
+John Carmack
+John Romero
+Adrian Carmack
+Tom Hall
+Mark Rein
+Sandy Petersen
+Dave Taylor
+American McGee
+Tim Willits
+Mike Wilson
+Michael Abrash
+Jennell Jaquays
+Paul Steed
+Graeme Devine
+Todd Hollenshead
+Timothee Besset
+Katherine Anna Kang
+Matthew Costello
+Publishers
+Softdisk
+Apogee Software
+FormGen
+GT Interactive
+Activision
+ZeniMax Media
+Technology
+Adaptive tile refresh
+id Tech
+Doom engine
+Quake engine
+Quake II engine
+id Tech 3
+id Tech 4
+id Tech 5
+id Tech 6
+id Tech 7
+Related
+QuakeCon
+Masters of Doom
+
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Fast_inverse_square_root&oldid=1067953401"
+		Categories: Quake (series)Source codeRoot-finding algorithmsHidden categories: Articles with short descriptionShort description matches WikidataGood articlesArticles with example C code
+	

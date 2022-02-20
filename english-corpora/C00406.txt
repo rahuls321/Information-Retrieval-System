@@ -1,0 +1,236 @@
+
+Title:
+Shell script
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Script written for the shell, or command line interpreter, of an operating system
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about scripting in Unix-like systems. For batch programming in DOS, OS/2 and Windows, see Batch file. For batch programming in Windows PowerShell shell, see Windows PowerShell Â§Â Scripting. For programming in the shells (cmd.exe) in operating systems of the Windows NT/2000 series, see cmd.exe. For shell programming, by means of files called Command Scripts or Procedures on Vax/VMS machines, see DIGITAL Command Language.
+This article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Shell script"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (February 2014) (Learn how and when to remove this template message)
+This article's lead section may be too long for the length of the article. Please help by moving some material from it into the body of the article. Please read the layout guide and lead section guidelines to ensure the section will still be inclusive of all essential details. Please discuss this issue on the article's talk page.  (September 2015)
+    
+ (Learn how and when to remove this template message)
+  Editing a FreeBSD shell script for configuring ipfirewall
+A shell script is a computer program designed to be run by the Unix shell, a command-line interpreter.[1] The various dialects of shell scripts are considered to be scripting languages. Typical operations performed by shell scripts include file manipulation, program execution, and printing text. A script which sets up the environment, runs the program, and does any necessary cleanup or logging, is called a wrapper.
+The term is also used more generally to mean the automated mode of running an operating system shell;  each operating system uses a particular name for these functions including batch files (MSDos-Win95 stream, OS/2), command procedures (VMS), and shell scripts (Windows NT stream and third-party derivatives like 4NTâarticle is at cmd.exe), and mainframe operating systems are associated with a number of terms.
+The typical Unix/Linux/POSIX-compliant operating system installation includes the KornShell (ksh) in several possible versions such as ksh88, Korn Shell '93 and others. The oldest shell still in common use is the Bourne shell (sh); Unix systems may also include the C shell (csh), Bash (bash), a Remote Shell (rsh), a Secure Shell (ssh) for SSL telnet connections, and a shell which is a main component of the Tcl/Tk installation usually called tclsh; wish is a GUI-based Tcl/Tk shell. The C and Tcl shells have syntax quite similar to that of said programming languages, and the Korn shells and Bash are developments of the Bourne shell, which is based on the ALGOL language with elements of a number of others added as well.[2] On the other hand, the various shells plus tools like awk, sed, grep, and BASIC, Lisp, C and so forth contributed to the Perl programming language.[3]
+Other shells available on a machine or available for download and/or purchase include Almquist shell (ash), PowerShell (msh), Z shell (zsh, a particularly common enhanced KornShell), the Tenex C Shell (tcsh), and a Perl-like shell (psh). Related programs such as shells based on Python, Ruby, C, Java, Perl, Pascal, Rexx etc. in various forms are also widely available. Another somewhat common shell is Old shell (osh), whose manual page states it "is an enhanced, backward-compatible port of the standard command interpreter from Sixth Edition UNIX."[4]
+
+Contents
+
+1 Capabilities
+
+1.1 Comments
+1.2 Configurable choice of scripting language
+1.3 Shortcuts
+1.4 Batch jobs
+1.5 Generalization
+1.6 Programming
+
+
+2 Other scripting languages
+3 Life cycle
+4 Advantages and disadvantages
+5 Shell scripting on other operating systems
+6 See also
+7 References
+8 External links
+
+
+
+Capabilities[edit]
+Comments[edit]
+Comments are ignored by the shell. They typically begin with the hash symbol (#), and continue until the end of the line.[5]
+
+Configurable choice of scripting language[edit]
+The shebang, or hash-bang, is a special kind of comment which the system uses to determine what interpreter to use to execute the file. The shebang must be the first line of the file, and start with "#!".[5] In Unix-like operating systems, the characters following the "#!" prefix are interpreted as a path to an executable program that will interpret the script.[6]
+
+Shortcuts[edit]
+A shell script can provide a convenient variation of a system command where special environment settings, command options, or post-processing apply automatically, but in a way that allows the new script to still act as a fully normal Unix command.
+One example would be to create a version of ls, the command to list files, giving it a shorter command name of l, which would be normally saved in a user's bin directory as /home/username/bin/l, and a default set of command options pre-supplied.
+
+#!/bin/sh
+LC_COLLATE=C ls -FCas "$@"
+
+Here, the first line uses a shebang to indicate which interpreter should execute the rest of the script, and the second line makes a listing with options for file format indicators, columns, all files (none omitted), and a size in blocks. The LC_COLLATE=C sets the default collation order to not fold upper and lower case together, not intermix dotfiles with normal filenames as a side effect of ignoring punctuation in the names (dotfiles are usually only shown if an option like -a is used), and the "$@" causes any parameters given to l to pass through as parameters to ls, so that all of the normal options and other syntax known to ls can still be used.
+The user could then simply use l for the most commonly used short listing.
+Another example of a shell script that could be used as a shortcut would be to print a list of all the files and directories within a given directory.
+
+#!/bin/sh
+
+clear
+ls -al
+
+In this case, the shell script would start with its normal starting line of #!/bin/sh. Following this, the script executes the command clear which clears the terminal of all text before going to the next line. The following line provides the main function of the script. The ls -al command lists the files and directories that are in the directory from which the script is being run. The ls command attributes could be changed to reflect the needs of the user.
+Note: If an implementation does not have the clear command, try using the clr command instead.
+
+Batch jobs[edit]
+Shell scripts allow several commands that would be entered manually at a command-line interface to be executed automatically, and without having to wait for a user to trigger each stage of the sequence. For example, in a directory with three C source code files, rather than manually running the four commands required to build the final program from them, one could instead create a script for POSIX-compliant shells, here named build and kept in the directory with them, which would compile them automatically:
+
+#!/bin/sh
+printf 'compiling...\n'
+cc -c foo.c
+cc -c bar.c
+cc -c qux.c
+cc -o myprog foo.o bar.o qux.o
+printf 'done.\n'
+
+The script would allow a user to save the file being edited, pause the editor, and then just run ./build to create the updated program, test it, and then return to the editor. Since the 1980s or so, however, scripts of this type have been replaced with utilities like make which are specialized for building programs.
+
+Generalization[edit]
+Simple batch jobs are not unusual for isolated tasks, but using shell loops, tests, and variables provides much more flexibility to users. A POSIX sh script to convert JPEG images to PNG images, where the image names are provided on the command-lineâpossibly via wildcardsâinstead of each being listed within the script, can be created with this file, typically saved in a file like /home/username/bin/jpg2png
+
+#!/bin/sh
+for jpg; do                                  # use $jpg in place of each filename given, in turn
+    png=${jpg%.jpg}.png                      # construct the PNG version of the filename by replacing .jpg with .png
+    printf 'converting "%s" ...\n' "$jpg"    # output status info to the user running the script
+    if convert "$jpg" jpg.to.png; then       # use convert (provided by ImageMagick) to create the PNG in a temp file
+        mv jpg.to.png "$png"                 # if it worked, rename the temporary PNG image to the correct name
+    else                                     # ...otherwise complain and exit from the script
+        printf >&2 'jpg2png: error: failed output saved in "jpg.to.png".\n'
+        exit 1
+    fi                                       # the end of the "if" test construct
+done                                         # the end of the "for" loop
+printf 'all conversions successful\n'        # tell the user the good news
+
+The jpg2png command can then be run on an entire directory full of JPEG images with just /home/username/bin/jpg2png *.jpg
+
+Programming[edit]
+Many modern shells also supply various features usually found only in more sophisticated general-purpose programming languages, such as control-flow constructs, variables, comments, arrays, subroutines and so on. With these sorts of features available, it is possible to write reasonably sophisticated applications as shell scripts. However, they are still limited by the fact that most shell languages have little or no support for data typing systems, classes, threading, complex math, and other common full language features, and are also generally much slower than compiled code or interpreted languages written with speed as a performance goal.
+The standard Unix tools sed and awk provide extra capabilities for shell programming; Perl can also be embedded in shell scripts as can other scripting languages like Tcl. Perl and Tcl come with graphics toolkits as well.
+
+Other scripting languages[edit]
+Main article: Scripting language
+Many powerful scripting languages have been introduced for tasks that are too large or complex to be comfortably handled with ordinary shell scripts, but for which the advantages of a script are desirable and the development overhead of a full-blown, compiled programming language would be disadvantageous. The specifics of what separates scripting languages from high-level programming languages is a frequent source of debate, but, generally speaking, a scripting language is one which requires an interpreter.
+
+Life cycle[edit]
+Shell scripts often serve as an initial stage in software development, and are often subject to conversion later to a different underlying implementation, most commonly being converted to Perl, Python, or C. The interpreter directive allows the implementation detail to be fully hidden inside the script, rather than being exposed as a filename extension, and provides for seamless reimplementation in different languages with no impact on end users.
+While files with the ".sh" file extension are usually a shell script of some kind, most shell scripts do not have any filename extension.[7][8][9][10]
+
+Advantages and disadvantages[edit]
+Perhaps the biggest advantage of writing a shell script is that the commands and syntax are exactly the same as those directly entered at the command-line. The programmer does not have to switch to a totally different syntax, as they would if the script were written in a different language, or if a compiled language were used.
+Often, writing a shell script is much quicker than writing the equivalent code in other programming languages. The many advantages include easy program or file selection, quick start, and interactive debugging. A shell script can be used to provide a sequencing and decision-making linkage around existing programs, and for moderately sized scripts the absence of a compilation step is an advantage. Interpretive running makes it easy to write debugging code into a script and re-run it to detect and fix bugs. Non-expert users can use scripting to tailor the behavior of programs, and shell scripting provides some limited scope for multiprocessing.
+On the other hand, shell scripting is prone to costly errors. Inadvertent typing errors such as rm -rf * / (instead of the intended rm -rf */) are folklore in the Unix community; a single extra space converts the command from one that deletes all subdirectories contained in the current directory, to one which deletes everything from the file system's root directory. Similar problems can transform cp and mv into dangerous weapons, and misuse of the > redirect can delete the contents of a file. This is made more problematic by the fact that many UNIX commands differ in name by only one letter: cp, cd, dd, df, etc.
+Another significant disadvantage is the slow execution speed and the need to launch a new process for almost every shell command executed. When a script's job can be accomplished by setting up a pipeline in which efficient filter commands perform most of the work, the slowdown is mitigated, but a complex script is typically several orders of magnitude slower than a conventional compiled program that performs an equivalent task.
+There are also compatibility problems between different platforms. Larry Wall, creator of Perl, famously wrote that "It is easier to port a shell than a shell script."[This quote needs a citation]
+Similarly, more complex scripts can run into the limitations of the shell scripting language itself; the limits make it difficult to write quality code, and extensions by various shells to ameliorate problems with the original shell language can make problems worse.[11]
+Many disadvantages of using some script languages are caused by design flaws within the language syntax or implementation, and are not necessarily imposed by the use of a text-based command-line; there are a number of shells which use other shell programming languages or even full-fledged languages like Scsh (which uses Scheme).
+
+Shell scripting on other operating systems[edit]
+Interoperability software such as Cygwin, the MKS Toolkit, Interix (which is available in the Microsoft Windows Services for UNIX), Hamilton C shell, UWIN (AT&T Unix for Windows) and others allow Unix shell programs to be run on machines running Windows NT and its successors, with some loss of functionality on the MS-DOS-Windows 95 branch, as well as earlier MKS Toolkit versions for OS/2. At least three DCL implementations for Windows type operating systemsâin addition to XLNT, a multiple-use scripting language package which is used with the command shell, Windows Script Host and CGI programmingâare available for these systems as well. Mac OS X and subsequent are Unix-like as well.[12]
+In addition to the aforementioned tools, some POSIX and OS/2 functionality can be used with the corresponding environmental subsystems of the Windows NT operating system series up to Windows 2000 as well. A third, 16-bit subsystem often called the MS-DOS subsystem uses the Command.com provided with these operating systems to run the aforementioned MS-DOS batch files.[13]
+The console alternatives 4DOS, 4OS2, FreeDOS, Peter Norton's NDOS and 4NT / Take Command which add functionality to the Windows NT-style cmd.exe, MS-DOS/Windows 95 batch files (run by Command.com), OS/2's cmd.exe, and 4NT respectively are similar to the shells that they enhance and are more integrated with the Windows Script Host, which comes with three pre-installed engines, VBScript, JScript, and VBA and to which numerous third-party engines can be added, with Rexx, Perl, Python, Ruby, and Tcl having pre-defined functions in 4NT and related programs. PC DOS is quite similar to MS-DOS, whilst DR DOS is more different. Earlier versions of Windows NT are able to run contemporary versions of 4OS2 by the OS/2 subsystem.
+Scripting languages are, by definition, able to be extended; for example, a MS-DOS/Windows 95/98 and Windows NT type systems allows for shell/batch programs to call tools like KiXtart, QBasic, various BASIC, Rexx, Perl, and Python implementations, the Windows Script Host and its installed engines. On Unix and other POSIX-compliant systems, awk and sed are used to extend the string and numeric processing ability of shell scripts. Tcl, Perl, Rexx, and Python have graphics toolkits and can be used to code functions and procedures for shell scripts which pose a speed bottleneck (C, Fortran, assembly language &c are much faster still) and to add functionality not available in the shell language such as sockets and other connectivity functions, heavy-duty text processing, working with numbers if the calling script does not have those abilities, self-writing and self-modifying code, techniques like recursion, direct memory access, various types of sorting and more, which are difficult or impossible in the main script, and so on. Visual Basic for Applications and VBScript can be used to control and communicate with such things as spreadsheets, databases, scriptable programs of all types, telecommunications software, development tools, graphics tools and other software which can be accessed through the Component Object Model.
+
+See also[edit]
+Glue code
+Interpreter directive
+Shebang symbol (#!)
+Unix shells
+PowerShell
+Windows Script Host
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Kernighan, Brian W.; Pike, Rob (1984), "3. Using the Shell", The UNIX Programming Environment, Prentice Hall, Inc., p.Â 94, ISBNÂ 0-13-937699-2, The shell is actually a programming language: it has variables, loops, decision-making, and so on.
+
+^ Unix Shells By Example, pp 7-10,
+
+^ Programming Perl, 5th Edition, preface
+
+^ "osh - manned.org". manned.org. Retrieved 2019-01-16.
+
+^ a b Johnson, Chris (2009).
+[1]  Pro Bash Programming: Scripting the Linux Shell,  Apress,  Retrieved on September 27, 2019. ISBNÂ 9781430219989
+
+^ "exec(3p) â POSIX Programmer's Manual". Retrieved 2020-07-24.
+
+^ Robbins, Arnold; Hannah, Elbert; Lamb, Linda (2008). Learning the vi and Vim Editors. p.Â 205. ISBNÂ 9781449313258.
+
+^ Easttom, Chuck (2012). Essential Linux Administration:: A Comprehensive Guide for Beginners. p.Â 228. ISBNÂ 978-1435459571.
+
+^ Kumari, Sinny (November 23, 2015). Linux Shell Scripting Essentials. Packt Publishing Ltd. ISBNÂ 9781783552375. Retrieved May 7, 2017. Rather than using a file extension for shell scripts, it's preferred to keep a filename without extension and let an interpreter identify the type by looking into shebang(#!).
+
+^ Taylor, Dave; Perry, Brandon (December 16, 2016). Wicked Cool Shell Scripts, 2nd Edition: 101 Scripts for Linux, OS X and UNIX Systems. No Starch Press. ISBNÂ 9781593276027. Retrieved May 7, 2017. Shell scripts don't need a special file extension, so leave the extension blank (or you can add the extension .sh if you prefer, but this isn't required.
+
+^ Christiansen, Tom. "Csh Programming Considered Harmful".
+
+^ MSDN[not specific enough to verify]
+
+^ Windows NT 4 Workstation Resource Kit
+
+
+External links[edit]
+
+
+
+Wikibooks has a book on the topic of: Shell Programming
+
+An Introduction To Shell Programming by Greg Goebel
+UNIX / Linux shell scripting tutorial by Steve Parker
+Shell Scripting Primer (Apple)
+What to watch out for when writing portable shell scripts by Peter Seebach
+Free Unix Shell scripting books
+Beginners/BashScripting, Ubuntu Linux
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteProgramming languages
+Comparison
+Timeline
+History
+
+Ada
+ALGOL
+APL
+Assembly
+BASIC
+C
+C++
+C#
+COBOL
+Erlang
+Forth
+Fortran
+Go
+Haskell
+Java
+JavaScript
+Kotlin
+Lisp
+Lua
+ML
+Pascal
+Perl
+PHP
+Prolog
+Python
+R
+Ruby
+Rust
+SQL
+Shell
+Simula
+Smalltalk
+Swift
+more...
+
+ Category
+ Lists: Alphabetical
+Categorical
+Generational
+Non-English-based
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Shell_script&oldid=1062234495"
+		Categories: Scripting languagesHidden categories: Wikipedia articles needing factual verification from May 2017Articles with short descriptionShort description matches WikidataArticles needing additional references from February 2014All articles needing additional referencesWikipedia introduction cleanup from September 2015All pages needing cleanupArticles covered by WikiProject Wikify from September 2015All articles covered by WikiProject WikifyArticles with multiple maintenance issuesArticles with unsourced quotes
+	

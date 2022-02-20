@@ -1,0 +1,147 @@
+
+Title:
+JSONP
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		JSONP, or JSON-P (JSON with Padding), is a historical JavaScript technique for requesting data by loading a <script> element,[1] which is an element intended to load ordinary JavaScript. It was proposed by Bob Ippolito in 2005.[2] JSONP enables sharing of data bypassing same-origin policy, which disallows running JavaScript code to read media DOM elements or XMLHttpRequest data fetched from outside the page's originating site. The originating site is indicated by a combination of URI scheme, host name, and port number.
+JSONP is vulnerable to the data source replacing the innocuous function call with malicious code, which is why it has been superseded by cross-origin resource sharing (available since 2009[3]) in modern applications.
+
+Contents
+
+1 Functionality
+2 Script element injection
+3 Security concerns
+
+3.1 Untrusted third-party code
+3.2 Whitespace differences
+3.3 Callback name manipulation and reflected file download attack
+3.4 Cross-site request forgery
+3.5 Rosetta Flash
+
+
+4 History
+5 See also
+6 References
+7 External links
+
+
+
+Functionality[edit]
+The HTML <script> element is generally allowed to execute JavaScript code retrieved from foreign origins. Services replying with pure JSON data, however, were not able to share data from foreign origins before the adoption of CORS (Cross-origin resource sharing).  
+For example, a request to a foreign service http://server.example.com/Users/1234 may return a record for a person named Alice in the JSON format. JSON syntax is consistent with JavaScript's object syntax. 
+
+{
+    "Name": "Alice",
+    "Id": 1234,
+    "Rank": 7
+}
+
+Without support for CORS, an attempt to use the data across domains results in a JavaScript error.
+
+<script type="application/javascript"
+        src="http://server.example.com/Users/1234">
+</script>
+
+The browser will download the <script> file, evaluate its contents, misinterpret the raw JSON data as a block, and throw a syntax error. Even if the data were interpreted as a JavaScript object literal, it could not be accessed by JavaScript running in the browser, since without a variable assignment, object literals are inaccessible.
+In the JSONP usage pattern, the URL request pointed to by the src attribute in the <script> element returns JSON data, with JavaScript code (usually a function call) wrapped around it. This "wrapped payload" is then interpreted by the browser. In this way, a function that is already defined in the JavaScript environment can manipulate the JSON data. A typical JSONP request and response are shown below.
+The function call to parseResponse() is the "P" of JSONPâthe "padding" or "prefix" around the pure JSON.[4] For JSONP to work, a server must reply with a response that includes the JSONP function. JSONP does not work with JSON-formatted results. The JSONP function invocation that gets sent back, and the payload that the function receives, must be agreed upon by the client and server. By convention, the server providing the JSON data offers the requesting website to name the JSONP function, typically using the name jsonp or callback  as the named query-string parameter, in its request to the server:  <script src="http://server.example.com/Users/1234?callback=parseResponse"></script>.
+In this example, the received payload would be:
+
+parseResponse({"Name": "Alice", "Id": 1234, "Rank": 7});
+
+Script element injection[edit]
+JSONP makes sense only when used with a script element.  For each new JSONP request, the browser must add a new <script> element, or reuse an existing one.  The former optionâadding a new script elementâis done via dynamic DOM manipulation, and is known as script element injection.  The <script> element is injected into the HTML DOM, with the URL of the desired JSONP endpoint set as the "src" attribute. This dynamic script element injection is usually done by a JavaScript helper library. jQuery and other frameworks have JSONP helper functions; there are also standalone options.
+An example of using jQuery to dynamically inject script element for a JSONP call looks like this:
+
+$.getScript("http://server.example.com/Users/192.168.73.96?callback=parseResponse");
+
+After the element is injected, the browser evaluates the element, and performs an HTTP GET on the src URL, retrieving the content. Then the browser evaluates the return payload as JavaScript. This is typically a function invocation. In that way, the use of JSONP can allow browser pages to work around the same-origin policy via script element injection.[5]
+The script runs within the scope of the including page and, as such, is still subject to cross-domain restrictions relative to the domain of the including page. This means that a web page cannot, for example, load a library hosted on another site via JSONP and then make XMLHttpRequest requests to that site (unless cross-origin resource sharing (CORS) is supported), although one could use such a library to make XMLHttpRequests to one's own site.
+
+Security concerns[edit]
+Untrusted third-party code[edit]
+Including script elements from remote servers allows the remote servers to inject any content into a website. If the remote servers have vulnerabilities that allow JavaScript injection, the page served from the original server is exposed to an increased risk.  If an attacker can inject any JavaScript into the original web page, then that code can retrieve additional JavaScript from any domain, bypassing the same-origin policy.[6]  The Content Security Policy HTTP Header lets web sites tell web browsers which domain scripts may be included from.
+An effort was undertaken around 2011 to define a safer strict subset definition for JSONP[1] that browsers would be able to enforce on script requests with a specific MIME type such as "application/json-p". If the response did not parse as strict JSONP, the browser could throw an error or just ignore the entire response. However, this approach was abandoned in favor of CORS, and the correct MIME type for JSONP remains application/javascript.[7]
+
+Whitespace differences[edit]
+JSONP carries the same problems as resolving JSON with eval(): both interpret the JSON text as JavaScript, which means differences in handling U+2028 (Line Separator) and U+2029 (Paragraph Separator) from JSON proper. This makes some JSON strings non-legal in JSONP; servers serving JSONP must escape these characters prior to transmission.[8]
+
+Callback name manipulation and reflected file download attack[edit]
+Unsanitized callback names may be used to pass malicious data to clients, bypassing the restrictions associated with application/json content type, as demonstrated in reflected file download (RFD) attack from 2014.[9]
+Insecure JSONP endpoints can be also injected with malicious data.[10]
+
+Cross-site request forgery[edit]
+Naive deployments of JSONP are subject to cross-site request forgery (CSRF or XSRF) attacks.[11]  Because the HTML <script> element does not respect the same-origin policy in web browser implementations, a malicious page can request and obtain JSON data belonging to another site.  This will allow the JSON-encoded data to be evaluated in the context of the malicious page, possibly divulging passwords or other sensitive data if the user is currently logged into the other site.
+
+Rosetta Flash[edit]
+Rosetta Flash is an exploitation technique that allows an attacker to exploit servers with a vulnerable JSONP endpoint by causing Adobe Flash Player to believe that an attacker-specified Flash applet originated on the vulnerable server. Flash Player implements same-origin policy allowing one to make requests (with cookies) and receive responses from the hosting site. The applet can then send the retrieved data back to the attacker. This is a cross-origin exploit with an impact similar to embedding an arbitrary Flash applet in the vulnerable domain. The exploit uses an ActionScript payload compiled to an SWF file composed entirely of alphanumeric characters by crafting a zlib stream with a particular header and DEFLATE blocks with ad-hoc Huffman coding. The resulting alphanumeric-only SWF file is then used as the callback parameter of a JSONP call. High-profile sites such as Google, YouTube, Twitter, Yahoo!, Yandex, LinkedIn, eBay, Instagram and Tumblr were all vulnerable until July 2014.[12] This vulnerability was discovered and published by Google security engineer Michele Spagnuolo[13] and has CVE-.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}2014-4671[14] and CVE-2014-5333.[15] Adobe Flash Player release version 14.0.0.145, released on July 8, 2014, introduced stronger validation of Flash files,[16] and in version 14.0.0.176, released on August 12, 2014, finalized the fix,[17] preventing this exploit from working.
+
+History[edit]
+In July 2005, George Jempty suggested an optional variable assignment be prepended to JSON.[18][19]  The original proposal for JSONP, where the padding is a callback function, appears to have been made by Bob Ippolito in December 2005[20] and is now used by many Web 2.0 applications such as Dojo Toolkit, Google Web Toolkit and Web services.
+
+See also[edit]
+Cross-origin resource sharing (CORS)
+Cross-document messaging
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b "Safer cross-domain Ajax with JSON-P/JSONP". JSON-P.org. Archived from the original on March 4, 2016. Retrieved 2011-10-30.
+
+^ Ippolito, Bob (December 5, 2005). "Remote JSON - JSONP". Bob Ippolito on Haskell, Python, Erlang, JavaScript, etc. Archived from the original on 2012-06-08. Retrieved 2017-02-10.
+
+^ "Cross-Origin Resource Sharing". Can I use... Retrieved 4 May 2020.
+
+^ "Experimental RDF result set to JSON translator". Archived from the original on November 15, 2014. Retrieved February 20, 2012.
+
+^ "So how does JSONP really work? Some simple examples". Jason Schock. 2013-02-05. Retrieved 2021-12-26.
+
+^ Ben Hayak (2014-10-17). "Same Origin Method Execution" (PDF). Retrieved 2014-10-22.
+
+^ Grey, Eli (2010-06-27). "Is this safe for providing JSONP?". stackoverflow.com. Retrieved 2012-09-07.
+
+^ "JSON: The JavaScript subset that isn't". Magnus Holm. Retrieved 16 May 2011.
+
+^ Oren Hafif (2014). "Reflected File Download - A New Web Attack Vector". TrustWave. Retrieved 2015-03-25.
+
+^ "Practical JSONP injection".
+
+^ Grossman, Jeremiah (January 27, 2006). "Advanced Web Attack Techniques using GMail". Retrieved July 3, 2009.
+
+^ Michele, Spagnuolo. "Abusing JSONP with Rosetta Flash". Archived from the original on July 21, 2014. Retrieved July 20, 2014.
+
+^ "Google - list of software vulnerabilities discovered or fixed by Googlers". Retrieved July 29, 2014.
+
+^ "MITRE: CVE-2014-4671". Retrieved July 29, 2014.
+
+^ "MITRE: CVE-2014-5333". Retrieved August 21, 2014.
+
+^ "Adobe Security Bulletin APSB14-17". Retrieved July 29, 2014.
+
+^ "Adobe Security Bulletin APSB14-18". Retrieved August 21, 2014.
+
+^ "eval'ing JSON". July 19, 2005. Archived from the original on February 12, 2006.
+
+^ "json: Message: Re: Comments". August 17, 2005.
+
+^ "Remote JSON - JSONP". from __future__ import *. Bob.pythonmac.org. December 5, 2005. Archived from the original on December 4, 2009. Retrieved September 8, 2008.
+
+
+External links[edit]
+server side filter wraps any response into a jsonp callbackÂ â done with jsonp-java source code
+Potential security issues related to JSON
+JSONP data source for remote domains
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=JSONP&oldid=1062080645"
+		Categories: Ajax (programming)JSON
+	

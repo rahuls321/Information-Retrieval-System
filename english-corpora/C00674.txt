@@ -1,0 +1,274 @@
+
+Title:
+MurmurHash
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+MurmurHash is a non-cryptographic hash function suitable for general hash-based lookup.[1][2][3]
+It was created by Austin Appleby in 2008[4] and is currently hosted on GitHub along with its test suite named 'SMHasher'. It also exists in a number of variants,[5] all of which have been released into the public domain. The name comes from two basic operations, multiply (MU) and rotate (R), used in its inner loop.
+Unlike cryptographic hash functions, it is not specifically designed to be difficult to reverse by an adversary, making it unsuitable for cryptographic purposes.
+
+Contents
+
+1 Variants
+
+1.1 MurmurHash3
+1.2 MurmurHash2
+1.3 MurmurHash1
+
+
+2 Implementations
+3 Vulnerabilities
+4 Algorithm
+5 See also
+6 References
+7 External links
+
+
+
+Variants[edit]
+MurmurHash3[edit]
+The current version is MurmurHash3,[6][7] which yields a 32-bit or 128-bit hash value.  When using 128-bits, the x86 and x64 versions do not produce the same values, as the algorithms are optimized for their respective platforms. MurmurHash3 was released alongside SMHasherâa hash function test suite.
+
+MurmurHash2[edit]
+MurmurHash2[8] yields a 32-bit or 64-bit value. It came in multiple variants, including some that allowed incremental hashing and aligned or neutral versions.
+
+MurmurHash2 (32-bit, x86) - The original version; contains a flaw that weakens collision in some cases.[9]
+MurmurHash2A (32-bit, x86) - A fixed variant using MerkleâDamgÃ¥rd construction. Slightly slower.
+CMurmurHash2A (32-bit, x86) - MurmurHash2A but works incrementally.
+MurmurHashNeutral2 (32-bit, x86) - Slower, but endian and alignment neutral.
+MurmurHashAligned2 (32-bit, x86) - Slower, but does aligned reads (safer on some platforms).
+MurmurHash64A (64-bit, x64) - The original 64-bit version. Optimized for 64-bit arithmetic.
+MurmurHash64B (64-bit, x86) - A 64-bit version optimized for 32-bit platforms. It is not a true 64-bit hash due to insufficient mixing of the stripes.[10]
+The person who originally found the flaw[clarification needed] in MurmurHash2 created an unofficial 160-bit version of MurmurHash2 called MurmurHash2_160.[11]
+
+MurmurHash1[edit]
+The original MurmurHash was created as an attempt to make a faster function than Lookup3.[12] Although successful, it hadn't been tested thoroughly and wasn't capable of providing 64-bit hashes as in Lookup3. It had a rather elegant design, that would be later built upon in MurmurHash2, combining a multiplicative hash (similar to FowlerâNollâVo hash function) with a Xorshift.
+
+Implementations[edit]
+The canonical implementation is in C++, but there are efficient ports for a variety of popular languages, including Python,[13] C,[14] Go,[15] C#,[7][16] D,[17] Lua, Perl,[18] Ruby,[19] Rust,[20] PHP,[21][22] Common Lisp,[23] Haskell,[24] Elm,[25] Clojure,[26] Scala,[27] Java,[28][29] Erlang,[30] Swift,[31] Object Pascal,[32] Kotlin,[33] and JavaScript,[34][35] together with an online version.[36]
+It has been adopted into a number of open-source projects, most notably libstdc++ (ver 4.6), nginx (ver 1.0.1),[37] Rubinius,[38] libmemcached (the C driver for Memcached),[39] npm (nodejs package manager),[40] maatkit,[41] Hadoop,[1] Kyoto Cabinet,[42] Cassandra,[43][44] Solr,[45] vowpal wabbit,[46] Elasticsearch,[47] Guava,[48] Kafka[49] and RedHat Virtual Data Optimizer (VDO).[50]
+
+Vulnerabilities[edit]
+Hash functions can be vulnerable to attack if a user can choose input data in such as way to intentionally cause hash collisions. Jean-Philippe Aumasson and Daniel J. Bernstein were able to show that even implementations of MurmurHash using a randomized seed are vulnerable to so-called HashDoS attacks.[51] With the use of differential cryptanalysis they were able to generate inputs that would lead to a hash collision. The authors of the attack recommend to use their own SipHash instead.
+
+Algorithm[edit]
+algorithm Murmur3_32 is
+    // Note: In this version, all arithmetic is performed with unsigned 32-bit integers.
+    //       In the case of overflow, the result is reduced modulo 232.
+    input: key, len, seed
+
+    c1 â 0xcc9e2d51
+    c2 â 0x1b873593
+    r1 â 15
+    r2 â 13
+    m â 5
+    n â 0xe6546b64
+
+    hash â seed
+
+    for each fourByteChunk of key do
+        k â fourByteChunk
+
+        k â k Ã c1
+        k â k ROL r1
+        k â k Ã c2
+
+        hash â hash XOR k
+        hash â hash ROL r2
+        hash â (hash Ã m) + n
+
+    with any remainingBytesInKey do
+        remainingBytes â SwapToLittleEndian(remainingBytesInKey)
+        // Note: Endian swapping is only necessary on big-endian machines.
+        //       The purpose is to place the meaningful digits towards the low end of the value,
+        //       so that these digits have the greatest potential to affect the low range digits
+        //       in the subsequent multiplication.  Consider that locating the meaningful digits
+        //       in the high range would produce a greater effect upon the high digits of the
+        //       multiplication, and notably, that such high digits are likely to be discarded
+        //       by the modulo arithmetic under overflow.  We don't want that.
+
+        remainingBytes â remainingBytes Ã c1
+        remainingBytes â remainingBytes ROL r1
+        remainingBytes â remainingBytes Ã c2
+
+        hash â hash XOR remainingBytes
+
+    hash â hash XOR len
+
+    hash â hash XOR (hash >> 16)
+    hash â hash Ã 0x85ebca6b
+    hash â hash XOR (hash >> 13)
+    hash â hash Ã 0xc2b2ae35
+    hash â hash XOR (hash >> 16)
+
+A sample C implementation follows (for little-endian CPUs):
+
+static inline uint32_t murmur_32_scramble(uint32_t k) {
+    k *= 0xcc9e2d51;
+    k = (k << 15) | (k >> 17);
+    k *= 0x1b873593;
+    return k;
+}
+uint32_t murmur3_32(const uint8_t* key, size_t len, uint32_t seed)
+{
+	uint32_t h = seed;
+    uint32_t k;
+    /* Read in groups of 4. */
+    for (size_t i = len >> 2; i; i--) {
+        // Here is a source of differing results across endiannesses.
+        // A swap here has no effects on hash properties though.
+        memcpy(&k, key, sizeof(uint32_t));
+        key += sizeof(uint32_t);
+        h ^= murmur_32_scramble(k);
+        h = (h << 13) | (h >> 19);
+        h = h * 5 + 0xe6546b64;
+    }
+    /* Read the rest. */
+    k = 0;
+    for (size_t i = len & 3; i; i--) {
+        k <<= 8;
+        k |= key[i - 1];
+    }
+    // A swap is *not* necessary here because the preceding loop already
+    // places the low bytes in the low places according to whatever endianness
+    // we use. Swaps only apply when the memory is copied in a chunk.
+    h ^= murmur_32_scramble(k);
+    /* Finalize. */
+	h ^= len;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	return h;
+}
+
+See also[edit]
+Non-cryptographic hash functions
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Hadoop in Java". Hbase.apache.org. 24 July 2011. Archived from the original on 12 January 2012. Retrieved 13 January 2012.
+
+^ 
+Chouza et al.
+
+^ 
+"Couceiro et al" (PDF) (in Portuguese). p.Â 14. Retrieved 13 January 2012.
+
+^ Tanjent (tanjent) wrote,3 March 2008 13:31:00. "MurmurHash first announcement". Tanjent.livejournal.com. Retrieved 13 January 2012.
+
+^ "MurmurHash2-160". Simonhf.wordpress.com. 25 September 2010. Retrieved 13 January 2012.
+
+^ "MurmurHash3 on Github".
+
+^ Jump up to: a b Horvath, Adam (10 August 2012). "MurMurHash3, an ultra fast hash algorithm for C# / .NET".
+
+^ "MurmurHash2 on Github".
+
+^ "MurmurHash2Flaw". Retrieved 15 January 2019.
+
+^ "MurmurHash3 (see note on MurmurHash2_x86_64)". Retrieved 15 January 2019.
+
+^ "MurmurHash2_160". Retrieved 12 January 2019.
+
+^ "MurmurHash1". Retrieved 12 January 2019.
+
+^ "pyfasthash in Python". Retrieved 13 January 2012.
+
+^ "C implementation in qLibc by Seungyoung Kim".
+
+^ "murmur3 in Go".
+
+^ Landman, Davy. "Davy Landman in C#". Landman-code.blogspot.com. Retrieved 13 January 2012.
+
+^ "std.digest.murmurhash - D Programming Language". dlang.org. Retrieved 5 November 2016.
+
+^ "Toru Maesaka in Perl". metacpan.org. Retrieved 13 January 2012.
+
+^ Yuki Kurihara (16 October 2014). "Digest::MurmurHash". GitHub.com. Retrieved 18 March 2015.
+
+^ "stusmall/murmur3". GitHub. Retrieved 29 November 2015.
+
+^ "PHP userland implementation of MurmurHash3". github.com. Retrieved 18 December 2017.
+
+^ "PHP 8.1 with MurmurHash3 support".
+
+^ "tarballs_are_good / murmurhash3". Retrieved 7 February 2015.
+
+^ "Haskell". Hackage.haskell.org. Retrieved 13 January 2012.
+
+^ "Elm". package.elm-lang.org. Retrieved 12 June 2019.
+
+^ "Murmur3.java in Clojure source code on Github". clojure.org. Retrieved 11 March 2014.
+
+^ "Scala standard library implementation". 26 September 2014.
+
+^ Murmur3, part of Guava
+
+^ "Murmur3A and Murmur3F Java classes on Github". greenrobot. Retrieved 5 November 2014.
+
+^ "bipthelin/murmerl3". GitHub. Retrieved 21 October 2015.
+
+^ Daisuke T (7 February 2019). "MurmurHash-Swift". GitHub.com. Retrieved 10 February 2019.
+
+^ GitHub - Xor-el/HashLib4Pascal: Hashing for Modern Object Pascal
+
+^ "goncalossilva/kotlinx-murmurhash". GitHub.com. 10 December 2021. Retrieved 14 December 2021.
+
+^ raycmorgan (owner). "Javascript implementation by Ray Morgan". Gist.github.com. Retrieved 13 January 2012.
+
+^ garycourt. "MurmurHash.js on Github". Github.com. Retrieved 13 January 2012.
+
+^ "Online version of MurmurHash". shorelabs.com. Retrieved 12 August 2014.
+
+^ "nginx". Retrieved 13 January 2012.
+
+^ "Rubinius". Retrieved 29 February 2012.
+
+^ "libMemcached". libmemcached.org. Retrieved 21 October 2015.
+
+^ "switch from MD5 to murmur".
+
+^ "maatkit". 24 March 2009. Retrieved 13 January 2012.
+
+^ "Kyoto Cabinet specification". Fallabs.com. 4 March 2011. Retrieved 13 January 2012.
+
+^ "Partitioners". apache.org. 15 November 2013. Retrieved 19 December 2013.
+
+^ "Introduction to Apache Cassandraâ¢ + What's New in 4.0 by Patrick McFadin. DataStax Presents". YouTube. 10 April 2019.
+
+^ "Solr MurmurHash2 Javadoc".
+
+^ "hash.cc in vowpalwabbit source code".
+
+^ "Elasticsearch 2.0 - CRUD and routing changes".
+
+^ "Guava Hashing.java".
+
+^ "Kafka DefaultPartitioner.java".
+
+^ Virtual Data Optimizer source code
+
+^ "Breaking Murmur: Hash-flooding DoS Reloaded".
+
+
+External links[edit]
+Official SMHasher site
+PMurHash, portable implementation of MurmurHash3
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=MurmurHash&oldid=1068554002"
+		Categories: Hash function (non-cryptographic)Hidden categories: CS1 Portuguese-language sources (pt)Use dmy dates from January 2021Wikipedia articles needing clarification from July 2021Articles with example pseudocodeArticles with example C code
+	

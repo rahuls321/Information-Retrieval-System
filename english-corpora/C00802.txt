@@ -1,0 +1,693 @@
+
+Title:
+Bridge pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		The bridge pattern is a design pattern used in software engineering that is meant to "decouple an abstraction from its implementation so that the two can vary independently", introduced by the Gang of Four.[1] The bridge uses encapsulation, aggregation, and can use inheritance to separate responsibilities into different classes.
+When a class varies often, the features of object-oriented programming become very useful because changes to a program's code can be made easily with minimal prior knowledge about the program. The bridge pattern is useful when both the class and what it does vary often. The class itself can be thought of as the abstraction and what the class can do as the implementation. The bridge pattern can also be thought of as two layers of abstraction.
+When there is only one fixed implementation, this pattern is known as the Pimpl idiom in the C++ world.
+The bridge pattern is often confused with the adapter pattern, and is often implemented using the object adapter pattern; e.g., in the Java code below.
+Variant: The implementation can be decoupled even more by deferring the presence of the implementation to the point where the abstraction is utilized.
+
+Contents
+
+1 Overview
+2 Structure
+
+2.1 UML class and sequence diagram
+2.2 Class diagram
+
+
+3 Example
+
+3.1 C#
+3.2 Crystal
+3.3 C++
+3.4 Java
+3.5 PHP
+3.6 Scala
+3.7 Python
+
+
+4 See also
+5 References
+6 External links
+
+
+
+Overview[edit]
+The Bridge  
+[2]
+design pattern is one of the twenty-three well-known 
+GoF design patterns 
+that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+What problems can the Bridge design pattern solve?
+[3]
+
+An abstraction and its implementation should be defined and extended independently from each other.
+A compile-time binding between an abstraction and its implementation should be avoided so that an implementation can be selected at run-time.
+When using subclassing, different subclasses implement an abstract class in different ways. But an implementation is bound to the abstraction at compile-time and cannot be changed at run-time.
+What solution does the Bridge design pattern describe?
+
+Separate an abstraction (Abstraction) from its implementation (Implementor) by putting them in separate class hierarchies.
+Implement the Abstraction in terms of (by delegating to) an Implementor object.
+This enables to configure an Abstraction with an Implementor object at run-time.
+
+See also the Unified Modeling Language class and sequence diagram below.
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Bridge design pattern. [4]
+In the above Unified Modeling Language class diagram, an abstraction (Abstraction) is not implemented as usual in a single inheritance hierarchy.
+Instead, there is one hierarchy for
+an abstraction (Abstraction) and a separate hierarchy for its implementation (Implementor), which makes the two independent from each other.
+The Abstraction interface (operation()) is implemented in terms of (by delegating to)
+the Implementor interface (imp.operationImp()).
+
+The UML sequence diagram
+shows the run-time interactions: The Abstraction1 object delegates implementation to the Implementor1 object (by calling operationImp() on Implementor1),
+which performs the operation and returns to Abstraction1.
+
+Class diagram[edit]
+
+
+Abstraction (abstract class)
+defines the abstract interface
+maintains the Implementor reference.
+RefinedAbstraction (normal class)
+extends the interface defined by Abstraction
+Implementor (interface)
+defines the interface for implementation classes
+ConcreteImplementor (normal class)
+implements the Implementor interface
+  Bridge in LePUS3 (legend)
+Example[edit]
+C#[edit]
+Bridge pattern compose objects in tree structure. It decouples abstraction from implementation. Here abstraction represents the client from which the objects will be called. An example implemented in C# is given below
+
+// Helps in providing truly decoupled architecture
+public interface IBridge
+{
+    void Function1();
+    void Function2();
+}
+
+public class Bridge1 : IBridge
+{
+    public void Function1()
+    {
+        Console.WriteLine("Bridge1.Function1");
+    }
+
+    public void Function2()
+    {
+        Console.WriteLine("Bridge1.Function2");
+    }
+}
+
+public class Bridge2 : IBridge
+{
+    public void Function1()
+    {
+        Console.WriteLine("Bridge2.Function1");
+    }
+
+    public void Function2()
+    {
+        Console.WriteLine("Bridge2.Function2");
+    }
+}
+
+public interface IAbstractBridge
+{
+    void CallMethod1();
+    void CallMethod2();
+}
+
+public class AbstractBridge : IAbstractBridge
+{
+    public IBridge bridge;
+
+    public AbstractBridge(IBridge bridge)
+    {
+        this.bridge = bridge;
+    }
+
+    public void CallMethod1()
+    {
+        this.bridge.Function1();
+    }
+
+    public void CallMethod2()
+    {
+        this.bridge.Function2();
+    }
+}
+
+The Bridge classes are the Implementation that uses the same interface-oriented architecture to create objects. On the other hand, the abstraction takes an instance of the implementation class and runs its method. Thus, they are completely decoupled from one another.
+
+Crystal[edit]
+abstract class DrawingAPI
+  abstract def draw_circle(x : Float64, y : Float64, radius : Float64)
+end
+
+class DrawingAPI1 < DrawingAPI
+  def draw_circle(x : Float, y : Float, radius : Float)
+    "API1.circle at #{x}:#{y} - radius: #{radius}"
+  end
+end
+
+class DrawingAPI2 < DrawingAPI
+  def draw_circle(x : Float64, y : Float64, radius : Float64)
+    "API2.circle at #{x}:#{y} - radius: #{radius}"
+  end
+end
+
+abstract class Shape
+  protected getter drawing_api : DrawingAPI
+
+  def initialize(@drawing_api)
+  end
+
+  abstract def draw
+  abstract def resize_by_percentage(percent : Float64)
+end
+
+class CircleShape < Shape
+  getter x : Float64
+  getter y : Float64
+  getter radius : Float64
+
+  def initialize(@x, @y, @radius, drawing_api : DrawingAPI)
+    super(drawing_api)
+  end
+
+  def draw
+    @drawing_api.draw_circle(@x, @y, @radius)
+  end
+
+  def resize_by_percentage(percent : Float64)
+    @radius *= (1 + percent/100)
+  end
+end
+
+class BridgePattern
+  def self.test
+    shapes = [] of Shape
+    shapes << CircleShape.new(1.0, 2.0, 3.0, DrawingAPI1.new)
+    shapes << CircleShape.new(5.0, 7.0, 11.0, DrawingAPI2.new)
+
+    shapes.each do |shape|
+      shape.resize_by_percentage(2.5)
+      puts shape.draw
+    end
+  end
+end
+
+BridgePattern.test
+
+Output
+
+API1.circle at 1.0:2.0 - radius: 3.075
+API2.circle at 5.0:7.0 - radius: 11.275
+
+C++[edit]
+#include <iostream>
+#include <string>
+#include <vector>
+
+
+class DrawingAPI {
+  public:
+    virtual ~DrawingAPI() = default;
+    virtual std::string DrawCircle(float x, float y, float radius) const = 0;
+};
+
+class DrawingAPI01 : public DrawingAPI {
+  public:
+    std::string DrawCircle(float x, float y, float radius) const override {
+      return "API01.circle at " + std::to_string(x) + ":" + std::to_string(y) +
+        " - radius: " + std::to_string(radius); 
+    }
+};
+
+class DrawingAPI02 : public DrawingAPI {
+  public:
+    std::string DrawCircle(float x, float y, float radius) const override {
+      return "API02.circle at " + std::to_string(x) + ":" + std::to_string(y) +
+        " - radius: " + std::to_string(radius); 
+    }
+};
+
+class Shape {
+  public:
+    Shape(const DrawingAPI& drawing_api) : drawing_api_(drawing_api) {}
+    virtual ~Shape() = default;
+
+    virtual std::string Draw() const = 0;
+    virtual float ResizeByPercentage(const float percent) = 0;
+
+  protected:
+    const DrawingAPI& drawing_api_;
+};
+
+class CircleShape: public Shape {
+  public:    
+    CircleShape(float x, float y, float radius, const DrawingAPI& drawing_api)
+      : Shape(drawing_api), x_(x), y_(y), radius_(radius) {}
+
+    std::string Draw() const override {
+        return drawing_api_.DrawCircle(x_, y_, radius_);
+    }
+
+    float ResizeByPercentage(const float percent) override {
+      return radius_ *= (1.0f + percent/100.0f);
+    }
+  
+  private:
+    float x_, y_, radius_;
+};
+
+int main(int argc, char** argv) {
+  std::vector<CircleShape> shapes {
+    CircleShape{1.0f, 2.0f, 3.0f, DrawingAPI01{}},
+    CircleShape{5.0f, 7.0f, 11.0f, DrawingAPI02{}}
+  }; 
+
+  for (auto& shape: shapes) {
+    shape.ResizeByPercentage(2.5);
+    std::cout << shape.Draw() << std::endl;
+  }
+
+  return 0;
+}
+
+Output:
+
+API01.circle at 1.000000:2.000000 - radius: 3.075000
+API02.circle at 5.000000:7.000000 - radius: 11.275000
+
+Java[edit]
+The following Java program defines a bank account that separates the account operations from the logging of these operations. 
+
+// Logger has two implementations: info and warning
+@FunctionalInterface
+interface Logger {
+    void log(String message);
+    
+    static Logger info() {
+        return message -> System.out.println("info: " + message);
+    }
+    static Logger warning() {
+        return message -> System.out.println("warning: " + message);
+    }
+}
+
+abstract class AbstractAccount {
+    private Logger logger = Logger.info();
+    
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
+    
+    // the logging part is delegated to the Logger implementation
+    protected void operate(String message, boolean result) {
+        logger.log(message + " result " + result);
+    }
+}
+
+class SimpleAccount extends AbstractAccount {
+    private int balance;
+    
+    public SimpleAccount(int balance) {
+        this.balance = balance;
+    }
+    
+    public boolean isBalanceLow() {
+        return balance < 50;
+    }
+    
+    public void withdraw(int amount) {
+        boolean shouldPerform = balance >= amount;
+        if (shouldPerform) {
+            balance -= amount;
+        }
+        operate("withdraw " + amount, shouldPerform);
+    }
+}
+
+public class BridgeDemo {
+    public static void main(String[] args) {
+        SimpleAccount account = new SimpleAccount(100);
+        account.withdraw(75);
+        
+        if (account.isBalanceLow()) {
+            // you can also change the Logger implementation at runtime
+            account.setLogger(Logger.warning());
+        }
+        
+        account.withdraw(10);
+        account.withdraw(100);
+    }
+}
+
+It will output:
+
+info: withdraw 75 result true
+warning: withdraw 10 result true
+warning: withdraw 100 result false
+
+PHP[edit]
+interface DrawingAPI
+{
+    function drawCircle($x, $y, $radius);
+}
+
+class DrawingAPI1 implements DrawingAPI
+{
+    public function drawCircle($x, $y, $radius)
+    {
+        echo "API1.circle at $x:$y radius $radius.\n";
+    }
+}
+
+class DrawingAPI2 implements DrawingAPI
+{
+    public function drawCircle($x, $y, $radius)
+    {
+        echo "API2.circle at $x:$y radius $radius.\n";
+    }
+}
+
+abstract class Shape
+{
+    protected $drawingAPI;
+
+    public abstract function draw();
+    public abstract function resizeByPercentage($pct);
+
+    protected function __construct(DrawingAPI $drawingAPI)
+    {
+        $this->drawingAPI = $drawingAPI;
+    }
+}
+
+class CircleShape extends Shape
+{
+    private $x;
+    private $y;
+    private $radius;
+
+    public function __construct($x, $y, $radius, DrawingAPI $drawingAPI)
+    {
+        parent::__construct($drawingAPI);
+        $this->x = $x;
+        $this->y = $y;
+        $this->radius = $radius;
+    }
+
+    public function draw()
+    {
+        $this->drawingAPI->drawCircle($this->x, $this->y, $this->radius);
+    }
+
+    public function resizeByPercentage($pct)
+    {
+        $this->radius *= $pct;
+    }
+}
+
+class Tester
+{
+    public static function main()
+    {
+        $shapes = array(
+            new CircleShape(1, 3, 7,  new DrawingAPI1()),
+            new CircleShape(5, 7, 11, new DrawingAPI2()),
+        );
+
+        foreach ($shapes as $shape) {
+            $shape->resizeByPercentage(2.5);
+            $shape->draw();
+        }
+    }
+}
+
+Tester::main();
+
+Output:
+
+API1.circle at 1:3 radius 17.5
+API2.circle at 5:7 radius 27.5
+
+Scala[edit]
+trait DrawingAPI {
+  def drawCircle(x: Double, y: Double, radius: Double)
+}
+
+class DrawingAPI1 extends DrawingAPI {
+  def drawCircle(x: Double, y: Double, radius: Double) = println(s"API #1 $x $y $radius")
+}
+
+class DrawingAPI2 extends DrawingAPI {
+  def drawCircle(x: Double, y: Double, radius: Double) = println(s"API #2 $x $y $radius")
+}
+
+abstract class Shape(drawingAPI: DrawingAPI) {
+  def draw()
+  def resizePercentage(pct: Double)
+}
+
+class CircleShape(x: Double, y: Double, var radius: Double, drawingAPI: DrawingAPI)
+    extends Shape(drawingAPI: DrawingAPI) {
+
+  def draw() = drawingAPI.drawCircle(x, y, radius)
+
+  def resizePercentage(pct: Double) { radius *= pct }
+}
+
+object BridgePattern {
+  def main(args: Array[String]) {
+    Seq (
+	new CircleShape(1, 3, 5, new DrawingAPI1),
+	new CircleShape(4, 5, 6, new DrawingAPI2)
+    ) foreach { x =>
+        x.resizePercentage(3)
+        x.draw()			
+      }	
+  }
+}
+
+Python[edit]
+"""
+Bridge pattern example.
+"""
+from abc import ABCMeta, abstractmethod
+
+
+NOT_IMPLEMENTED = "You should implement this."
+
+
+class DrawingAPI:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def draw_circle(self, x, y, radius):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+
+class DrawingAPI1(DrawingAPI):
+    def draw_circle(self, x, y, radius):
+        return f"API1.circle at {x}:{y} - radius: {radius}"
+
+
+class DrawingAPI2(DrawingAPI):
+    def draw_circle(self, x, y, radius):
+        return f"API2.circle at {x}:{y} - radius: {radius}"
+
+
+class DrawingAPI3(DrawingAPI):
+    def draw_circle(self, x, y, radius):
+        return f"API3.circle at {x}:{y} - radius: {radius}"
+
+
+class Shape:
+    __metaclass__ = ABCMeta
+
+    drawing_api = None
+    def __init__(self, drawing_api):
+        self.drawing_api = drawing_api
+
+    @abstractmethod
+    def draw(self):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def resize_by_percentage(self, percent):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+
+class CircleShape(Shape):
+    def __init__(self, x, y, radius, drawing_api):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        super(CircleShape, self).__init__(drawing_api)
+
+
+    def draw(self):
+        return self.drawing_api.draw_circle(self.x, self.y, self.radius)
+
+    def resize_by_percentage(self, percent):
+        self.radius *= 1 + percent / 100
+
+
+class BridgePattern:
+    @staticmethod
+    def test():
+        shapes = [
+            CircleShape(1.0, 2.0, 3.0, DrawingAPI1()),
+            CircleShape(5.0, 7.0, 11.0, DrawingAPI2()),
+            CircleShape(5.0, 4.0, 12.0, DrawingAPI3()),
+        ]
+
+        for shape in shapes:
+            shape.resize_by_percentage(2.5)
+            print(shape.draw())
+
+
+BridgePattern.test()
+
+See also[edit]
+Adapter pattern
+Strategy pattern
+Template method pattern
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Gamma, E, Helm, R, Johnson, R, Vlissides, J: Design Patterns, page 151. Addison-Wesley, 1995
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 151ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Bridge design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "The Bridge design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+
+External links[edit]
+
+
+
+The Wikibook Computer Science/Design Patterns has a page on the topic of: Bridge pattern implementations in various languages
+
+Bridge in UML and in LePUS3 (a formal modelling language)
+C# Design Patterns: The Bridge Pattern. Sample Chapter. 2002-12-20. From: James W. Cooper (2003). C# Design Patterns: A Tutorial. Addison-Wesley. ISBNÂ 0-201-84453-2.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Bridge_pattern&oldid=996454605"
+		Categories: Software design patternsHidden categories: CS1 maint: multiple names: authors listArticles with example C Sharp codeArticles with example C++ codeArticles with example Java code
+	

@@ -1,0 +1,464 @@
+
+Title:
+Factory method pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In class-based programming, the factory method pattern is a  creational pattern that uses factory methods to deal with the problem of creating objects without having to specify the exact class of the object that will be created. This is done by creating objects by calling a factory methodâeither specified in an interface and implemented by child classes, or implemented in a base class and optionally overridden by derived classesârather than by calling a constructor.
+
+Contents
+
+1 Overview
+2 Definition
+3 Structure
+
+3.1 UML class diagram
+
+
+4 Example
+
+4.1 Structure
+4.2 Example implementations
+
+4.2.1 C#
+4.2.2 Java
+4.2.3 PHP
+4.2.4 Python
+
+
+
+
+5 Uses
+6 See also
+7 References
+8 External links
+
+
+
+Overview[edit]
+The Factory Method
+[1]
+design pattern is one of the twenty-three well-known "Gang of Four" design patterns that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+The Factory Method design pattern solves problems like:
+[2]
+
+How can an object be created so that subclasses can redefine which class to instantiate?
+How can a class defer instantiation to subclasses?
+The Factory Method design pattern describes how to solve such problems:
+
+Define a separate operation (factory method) for creating an object.
+Create an object by calling a factory method.
+This enables writing of subclasses to change the way an object is created (to redefine which class to instantiate).
+See also the UML class diagram below.
+
+Definition[edit]
+"Define an interface for creating an object, but let subclasses decide which class to instantiate. The Factory method lets a class defer instantiation it uses to subclasses." (Gang Of Four)
+Creating an object often requires complex processes not appropriate to include within a composing object. The object's creation may lead to a significant duplication of code, may require information not accessible to the composing object, may not provide a sufficient level of abstraction, or may otherwise not be part of the composing object's concerns. The factory method design pattern handles these problems by defining a separate method for creating the objects, which subclasses can then override to specify the derived type of product that will be created.
+The factory method pattern relies on inheritance, as object creation is delegated to subclasses that implement the factory method to create objects.[3]
+
+Structure[edit]
+UML class diagram[edit]
+  A sample UML class diagram for the Factory Method design pattern. [4]
+In the above UML class diagram, 
+the Creator class that requires a Product object doesn't instantiate the Product1 class directly.
+Instead, the Creator refers to a separate factoryMethod() to create a product object,
+which makes the Creator independent of which concrete class is instantiated.
+Subclasses of Creator can redefine which class to instantiate. In this example, the Creator1 subclass implements the abstract factoryMethod() by instantiating the Product1 class.
+
+Example[edit]
+A maze game may be played in two modes, one with regular rooms that are only connected with adjacent rooms, and one with magic rooms that allow players to be transported at random. 
+
+Structure[edit]
+
+Room is the base class for a final product (MagicRoom or OrdinaryRoom). MazeGame declares the abstract factory method to produce such a base product. MagicRoom and OrdinaryRoom are subclasses of the base product implementing the final product. MagicMazeGame and OrdinaryMazeGame are subclasses of MazeGame implementing the factory method producing the final products. Thus factory methods decouple callers (MazeGame) from the implementation of the concrete classes. This makes the "new" Operator redundant, allows adherence to the Open/closed principle and makes the final product more flexible in the event of change.
+
+Example implementations[edit]
+C#[edit]
+// Empty vocabulary of actual object
+public interface IPerson
+{
+    string GetName();
+}
+
+public class Villager : IPerson
+{
+    public string GetName()
+    {
+        return "Village Person";
+    }
+}
+
+public class CityPerson : IPerson
+{
+    public string GetName()
+    {
+        return "City Person";
+    }
+}
+
+public enum PersonType
+{
+    Rural,
+    Urban
+}
+
+/// <summary>
+/// Implementation of Factory - Used to create objects.
+/// </summary>
+public class Factory
+{
+    public IPerson GetPerson(PersonType type)
+    {
+        switch (type)
+        {
+            case PersonType.Rural:
+                return new Villager();
+            case PersonType.Urban:
+                return new CityPerson();
+            default:
+                throw new NotSupportedException();
+        }
+    }
+}
+
+In the above code you can see the creation of one interface called IPerson and two implementations called Villager and CityPerson. Based on the type passed into the Factory object, we are returning the original concrete object as the interface IPerson.
+A factory method is just an addition to Factory class. It creates the object of the class through interfaces but on the other hand, it also lets the subclass decide which class is instantiated.
+
+public interface IProduct
+{
+    string GetName();
+    bool SetPrice(double price);
+}
+
+public class Phone : IProduct
+{
+    private double _price;
+
+    public string GetName()
+    {
+        return "Apple TouchPad";
+    }
+
+    public bool SetPrice(double price)
+    {
+        _price = price;
+        return true;
+    }
+}
+
+/* Almost same as Factory, just an additional exposure to do something with the created method */
+public abstract class ProductAbstractFactory
+{
+    protected abstract IProduct MakeProduct();
+
+    public IProduct GetObject() // Implementation of Factory Method.
+    {
+        return this.MakeProduct();
+    }
+}
+
+public class PhoneConcreteFactory : ProductAbstractFactory
+{
+    protected override IProduct MakeProduct()
+    {
+        IProduct product = new Phone();
+        // Do something with the object after you get the object.
+        product.SetPrice(20.30);
+        return product;
+    }
+}
+
+You can see we have used MakeProduct in concreteFactory. As a result, you can easily call MakeProduct() from it to get the IProduct. You might also write your custom logic after getting the object in the concrete Factory Method. The GetObject is made abstract in the Factory interface.
+
+Java[edit]
+This Java example is similar to one in the book Design Patterns.
+The MazeGame uses Rooms but it puts the responsibility of creating Rooms to its subclasses which create the concrete classes. The regular game mode could use this template method:
+
+public abstract class Room {
+    abstract void connect(Room room);
+}
+
+public class MagicRoom extends Room {
+    public void connect(Room room) {}
+}
+
+public class OrdinaryRoom extends Room {
+    public void connect(Room room) {}
+}
+
+public abstract class MazeGame {
+     private final List<Room> rooms = new ArrayList<>();
+
+     public MazeGame() {
+          Room room1 = makeRoom();
+          Room room2 = makeRoom();
+          room1.connect(room2);
+          rooms.add(room1);
+          rooms.add(room2);
+     }
+
+     abstract protected Room makeRoom();
+}
+
+In the above snippet, the MazeGame constructor is a template method that makes some common logic. It refers to the makeRoom factory method that encapsulates the creation of rooms such that other rooms can be used in a subclass. To implement the other game mode that has magic rooms, it suffices to override the makeRoom method:
+
+public class MagicMazeGame extends MazeGame {
+    @Override
+    protected Room makeRoom() {
+        return new MagicRoom();
+    }
+}
+
+public class OrdinaryMazeGame extends MazeGame {
+    @Override
+    protected Room makeRoom() {
+        return new OrdinaryRoom();
+    }
+}
+
+MazeGame ordinaryGame = new OrdinaryMazeGame();
+MazeGame magicGame = new MagicMazeGame();
+
+PHP[edit]
+Another example in PHP follows, this time using interface implementations as opposed to subclassing (however, the same can be achieved through subclassing). It is important to note that the factory method can also be defined as public and called directly by the client code (in contrast with the Java example above).
+
+/* Factory and car interfaces */
+
+interface CarFactory
+{
+    public function makeCar(): Car;
+}
+
+interface Car
+{
+    public function getType(): string;
+}
+
+/* Concrete implementations of the factory and car */
+
+class SedanFactory implements CarFactory
+{
+    public function makeCar(): Car
+    {
+        return new Sedan();
+    }
+}
+
+class Sedan implements Car
+{
+    public function getType(): string
+    {
+        return 'Sedan';
+    }
+}
+
+/* Client */
+
+$factory = new SedanFactory();
+$car = $factory->makeCar();
+print $car->getType();
+
+Python[edit]
+Same as Java example.from abc import ABC, abstractmethod
+
+
+class MazeGame(ABC):
+    def __init__(self) -> None:
+        self.rooms = []
+        self._prepare_rooms()
+
+    def _prepare_rooms(self) -> None:
+        room1 = self.make_room()
+        room2 = self.make_room()
+
+        room1.connect(room2)
+        self.rooms.append(room1)
+        self.rooms.append(room2)
+
+    def play(self) -> None:
+        print('Playing using "{}"'.format(self.rooms[0]))
+
+    @abstractmethod
+    def make_room(self):
+        raise NotImplementedError("You should implement this!")
+
+
+class MagicMazeGame(MazeGame):
+    def make_room(self):
+        return MagicRoom()
+
+
+class OrdinaryMazeGame(MazeGame):
+    def make_room(self):
+        return OrdinaryRoom()
+
+
+class Room(ABC):
+    def __init__(self) -> None:
+        self.connected_rooms = []
+
+    def connect(self, room) -> None:
+        self.connected_rooms.append(room)
+
+
+class MagicRoom(Room):
+    def __str__(self):
+        return "Magic room"
+
+
+class OrdinaryRoom(Room):
+    def __str__(self):
+        return "Ordinary room"
+
+
+ordinaryGame = OrdinaryMazeGame()
+ordinaryGame.play()
+
+magicGame = MagicMazeGame()
+magicGame.play()
+
+Uses[edit]
+In ADO.NET, IDbCommand.CreateParameter is an example of the use of factory method to connect parallel class hierarchies.
+In Qt, QMainWindow::createPopupMenu is a factory method declared in a framework that can be overridden in application code.
+In Java, several factories are used in the javax.xml.parsers package. e.g. javax.xml.parsers.DocumentBuilderFactory or javax.xml.parsers.SAXParserFactory.
+In the HTML5 DOM API, the Document interface contains a createElement factory method for creating specific elements of the HTMLElement interface.
+See also[edit]
+Design Patterns, the highly influential book
+Design pattern, overview of design patterns in general
+Abstract factory pattern, a pattern often implemented using factory methods
+Builder pattern, another creational pattern
+Template method pattern, which may call factory methods
+Joshua Bloch's idea of a static factory method, which he says has no direct equivalent in Design Patterns.
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 107ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Factory Method design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-17.
+
+^ Freeman, Eric; Freeman, Elisabeth; Kathy, Sierra; Bert, Bates (2004).  Hendrickson, Mike; Loukides, Mike (eds.). Head First Design Patterns (paperback). Vol.Â 1. O'REILLY. p.Â 162. ISBNÂ 978-0-596-00712-6. Retrieved 2012-09-12.
+
+^ "The Factory Method design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+
+Martin Fowler; Kent Beck; John Brant; William Opdyke; Don Roberts (June 1999). Refactoring: Improving the Design of Existing Code. Addison-Wesley. ISBNÂ 0-201-48567-2.
+Gamma, Erich; Helm, Richard; Johnson, Ralph; Vlissides, John (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison-Wesley. ISBNÂ 0-201-63361-2.
+Cox, Brad J. (1986). Object-oriented programming: an evolutionary approach. Addison-Wesley. ISBNÂ 978-0-201-10393-9.
+Cohen, Tal; Gil, Joseph (2007). "Better Construction with Factories" (PDF). Journal of Object Technology. Bertrand Meyer. 6 (6): 103. doi:10.5381/jot.2007.6.6.a3. Retrieved 2007-03-12.
+External links[edit]
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Factory method examples
+
+Factory Design Pattern Implementation in Java
+Factory method in UML and in LePUS3 (a Design Description Language)
+Consider static factory methods by Joshua Bloch
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Factory_method_pattern&oldid=1036711079"
+		Categories: Software design patternsMethod (computer programming)Hidden categories: CS1 maint: multiple names: authors listArticles with example Java codeArticles with example C Sharp codeArticles with example PHP code
+	

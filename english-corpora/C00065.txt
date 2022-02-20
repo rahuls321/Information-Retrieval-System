@@ -1,0 +1,1370 @@
+
+Title:
+Hash table
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Associative array for storing key-value pairs
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Hash list or Hash tree.
+"Rehash" redirects here. For the South Park episode, see Rehash (South Park). For the IRC command, see List of Internet Relay Chat commands Â§Â REHASH.
+
+
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}Hash tableTypeUnordered associative arrayInvented1953Time complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)[1]
+O(n)Search
+
+O(1)
+O(n)Insert
+
+O(1)
+O(n)Delete
+
+O(1)
+O(n)
+  A small phone book as a hash table
+In computing, a hash table (hash map) is a data structure that implements an associative array abstract data type, a structure that can map keys to values. A hash table uses a hash function to compute an index, also called a hash code, into an array of buckets or slots, from which the desired value can be found. During lookup, the key is hashed and the resulting hash indicates where the corresponding value is stored.
+Ideally, the hash function will assign each key to a unique bucket, but most hash table designs employ an imperfect hash function, which might cause hash collisions where the hash function generates the same index for more than one key. Such collisions are typically accommodated in some way.
+In a well-dimensioned hash table, the average cost (number of instructions) for each lookup is independent of the number of elements stored in the table. Many hash table designs also allow arbitrary insertions and deletions of keyâvalue pairs, at (amortized[2]) constant average cost per operation.[3][4]
+In many situations, hash tables turn out to be on average more efficient than search trees or any other table lookup structure. For this reason, they are widely used in many kinds of computer software, particularly for associative arrays, database indexing, caches, and sets.
+
+Contents
+
+1 History
+2 Hashing
+
+2.1 Choosing a hash function
+2.2 Perfect hash function
+
+2.2.1 Example
+
+
+
+
+3 Key statistics
+4 Collision resolution
+
+4.1 Separate chaining
+
+4.1.1 Separate chaining with other structures
+
+
+4.2 Open addressing
+
+4.2.1 Coalesced hashing
+4.2.2 Cuckoo hashing
+4.2.3 Hopscotch hashing
+4.2.4 Robin Hood hashing
+
+
+
+
+5 Dynamic resizing
+
+5.1 Resizing by moving all entries
+5.2 Alternatives to all-at-once rehashing
+
+5.2.1 Linear hashing
+5.2.2 Hashing for distributed hash tables
+
+
+
+
+6 Performance
+7 Uses
+
+7.1 Associative arrays
+7.2 Database indexing
+7.3 Caches
+7.4 Sets
+7.5 Object representation
+7.6 Unique data representation
+7.7 Transposition table
+
+
+8 Implementations
+
+8.1 In programming languages
+
+
+9 See also
+10 References
+11 Further reading
+12 External links
+
+
+
+History[edit]
+The idea of hashing arose independently in different places. In January 1953, Hans Peter Luhn wrote an internal IBM memorandum that used hashing with chaining.[5] Gene Amdahl, Elaine M. McGraw, Nathaniel Rochester, and Arthur Samuel implemented a program using hashing at about the same time. Open addressing with linear probing (relatively prime stepping) is credited to Amdahl, but Ershov (in Russia) had the same idea.[5]
+
+Hashing[edit]
+Main article: Hash function
+The advantage of using hashing is that the table address of a record can be directly computed from the key. Hashing implies a function 
+  
+    
+      
+        h
+      
+    
+    {\displaystyle h}
+  
+, when applied to a key 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+, produces a hash 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+. However, since 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ could be potentially large, the hash result should be mapped to finite entries in the hash tableâor slotsâseveral methods can be used to map the keys into the size of hash table 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+. The most common method is the division method, in which modular arithmetic is used in computing the slot.[6]:â110â 
+
+
+  
+    
+      
+        h
+        (
+        k
+        )
+        Â 
+        =
+        Â 
+        M
+        Â 
+        mod
+        â¡
+        Â 
+        N
+      
+    
+    {\displaystyle h(k)\ =\ M\ \operatorname {mod} \ N}
+  
+
+This is often done in two steps,
+
+
+  
+    
+      
+        
+          Hash
+        
+        =
+        
+          Hash-Function(Key)
+        
+      
+    
+    {\displaystyle {\text{Hash}}={\text{Hash-Function(Key)}}}
+  
+
+
+  
+    
+      
+        
+          Index
+        
+        =
+        
+          Hash
+        
+        Â 
+        %
+        Â 
+        
+          Hash-Table-Size
+        
+      
+    
+    {\displaystyle {\text{Index}}={\text{Hash}}\ \%\ {\text{Hash-Table-Size}}}
+  
+
+Choosing a hash function[edit]
+A basic requirement is that the function should provide a uniform distribution of hash values. A non-uniform distribution increases the number of collisions and the cost of resolving them. Uniformity is sometimes difficult to ensure by design, but may be evaluated empirically using statistical tests, e.g., a Pearson's chi-squared test for discrete uniform distributions.[7][8]
+The distribution needs to be uniform only for table sizes that occur in the application. In particular, if one uses dynamic resizing with exact doubling and halving of the table size, then the hash function needs to be uniform only when the size is a power of two. Here the index can be computed as some range of bits of the hash function. On the other hand, some hashing algorithms prefer to have the size be a prime number.[9] The modulus operation may provide some additional mixing; this is especially useful with a poor hash function.
+For open addressing schemes, the hash function should also avoid clustering, the mapping of two or more keys to consecutive slots. Such clustering may cause the lookup cost to skyrocket, even if the load factor is low and collisions are infrequent. The popular multiplicative hash[3] is claimed to have particularly poor clustering behavior.[9]
+Cryptographic hash functions are believed to provide good hash functions for any table size, either by modulo reduction or by bit masking. They may also be appropriate if there is a risk of malicious users trying to sabotage a network service by submitting requests designed to generate a large number of collisions in the server's hash tables. However, the risk of sabotage can also be avoided by cheaper methods (such as applying a secret salt to the data). A drawback of cryptographic hashing functions is that they are often slower to compute, which means that in cases where the uniformity for  any size is not necessary, a non-cryptographic hashing function might be preferable.[citation needed]
+K-independent hashing offers a way to prove a certain hash function doesn't have bad keysets for a given type of hashtable.
+A number of such results are known for collision resolution schemes such as linear probing and cuckoo hashing.
+Since K-independence can prove a hash function works, one can then focus on finding the fastest possible such hash function.
+Universal hash function is an approach of choosing a hash function randomly in a way that the hash function is independent of the keys that are to be hashed by the function. The possibility of collision between two distinct keys from a set is no more than 
+  
+    
+      
+        1
+        
+          /
+        
+        m
+      
+    
+    {\displaystyle 1/m}
+  
+ where 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ is cardinality.[10]:â264â
+
+Perfect hash function[edit]
+Main article: Perfect hash function
+If all keys are known ahead of time, a perfect hash function can be used to create a perfect hash table that has no collisions.[11] If minimal perfect hashing is used, every location in the hash table can be used as well.[12]
+Perfect hashing allows for constant time lookups in all cases. This is in contrast to most chaining and open addressing methods, where the time for lookup is low on average, but may be very large, O(n), for instance when all the keys hash to a few values.
+
+Example[edit]
+In the following C code, minimal perfect hashing is used to quickly find the integer exponent x of any 32-bit integer k, where k = 2x:
+
+  static const uint8_t hashTable[32] = {  // map hash code to exponent value
+    0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 
+    31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+  };
+  
+  uint8_t hashFunction(uint32_t k)  // map key to hash code
+  {
+    return ((uint32_t)(k * 0x077CB531U)) >> 27;
+  }
+  
+  uint8_t getExponent(uint32_t k)  // for the given key k=2^x, return x
+  {
+    uint8_t hashCode = hashFunction(k);
+    return hashTable[hashCode];
+  }
+
+The constant 0x077CB531U is one of several possible 32-bit de Bruijn sequences. The hash function multiplies k by the de Bruijn sequence (using arithmetic modulo 232), thus producing a 32-bit product in which â due to the de Bruijn sequence â the sequence of the 5 MSBs is unique for each value of k. The 5 MSBs are shifted into the LSB positions to produce a hash code in range 0 to 31. The associated hash table value (selected by the hash code) is the exponent x.
+
+Key statistics[edit]
+A critical statistic for a hash table is the load factor, defined as
+
+
+  
+    
+      
+        
+          load factor
+        
+        Â 
+        (
+        Î±
+        )
+        =
+        
+          
+            n
+            k
+          
+        
+      
+    
+    {\displaystyle {\text{load factor}}\ (\alpha )={\frac {n}{k}}}
+  
+,
+where
+
+
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ is the number of entries occupied in the hash table.
+
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ is the number of buckets.
+The performance of the hash table worsens in relation to the load factor (
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+) i.e. as 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ approaches 1. Hence, it's essential to resizeâor "rehash"âthe hash table when the load factor exceeds an ideal value. It's also efficient to resize the hash table if the size is smallerâwhich is usually done when load factor drops below 
+  
+    
+      
+        
+          Î±
+          
+            m
+            a
+            x
+          
+        
+        
+          /
+        
+        4
+      
+    
+    {\displaystyle \alpha _{max}/4}
+  
+.[13] Generally, a load factor of 0.6 and 0.75 is an acceptable figure.[14][6]:â110â
+
+Collision resolution[edit]
+See also: 2-choice hashing
+The search algorithm that uses hashing consists of two parts. The first part is computing a hash function which transforms the search key into an array index. The ideal case is such that no two search keys hashes to the same array index, however, this is not always the case, since it's theoretically impossible.[15]:â515â Hence the second part of the algorithm is collision resolution. The two common methods for collision resolution are separate chaining and open addressing.[16]:â458â
+
+Separate chaining[edit]
+  Hash collision resolved by separate chaining
+  Hash collision by separate chaining with head records in the bucket array.
+Hashing is an example of space-time tradeoff. If there exists a condition where the memory is infinite, single memory access using the key as an index in a (potentially huge) array would retrieve the valueâwhich also implies possible key values are huge. On the other hand, if time is infinite, the values can be stored in minimum possible memory and a linear search through the array can be used to retrieve the element.[16]:â458â In separate chaining, the process involves building a linked list with key-value pair for each search array indices. The collided items are chained together through a single linked list, which can be traversed to access the item with a unique search key.[16]:â464â Collision resolution through chaining i.e. with a linked list is a common method of implementation. Let 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+ and 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ be the hash table and the node respectively, the operation involves as follows:[10]:â258â
+
+
+
+
+Chained-Hash-Insert(T, x)
+  insert 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ at the head of linked list 
+  
+    
+      
+        T
+        [
+        h
+        (
+        x
+        .
+        k
+        e
+        y
+        )
+        ]
+      
+    
+    {\displaystyle T[h(x.key)]}
+  
+ 
+Chained-Hash-Search(T, k)
+  search for an element with key 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ in linked list 
+  
+    
+      
+        T
+        [
+        h
+        (
+        k
+        )
+        ]
+      
+    
+    {\displaystyle T[h(k)]}
+  
+ 
+Chained-Hash-Delete(T, x)
+  delete 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ from the linked list 
+  
+    
+      
+        T
+        [
+        h
+        (
+        x
+        .
+        k
+        e
+        y
+        )
+        ]
+      
+    
+    {\displaystyle T[h(x.key)]}
+  
+
+
+
+If the keys of the elements are ordered, it's efficient to insert the item by maintaining the order when the key is comparable either numerically or lexically, thus resulting in faster insertions and unsuccessful searches.[15]:â520-521â However, the standard method of using a linked list is not cache-conscious since there is little spatial localityâlocality of referenceâsince the nodes of the list are scattered across the memory, hence doesn't make efficient use of CPU cache.[17]:â91â
+
+Separate chaining with other structures[edit]
+If the keys are ordered, it could be efficient to use "self-organizing" concepts such as using a self-balancing binary search tree, through which the theoretical worst case could be brought down to 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        
+          n
+        
+        )
+      
+    
+    {\displaystyle O(\log {n})}
+  
+, although it introduces additional complexities.[15]:â521â
+In cache-conscious variants, a dynamic array found to be more cache-friendly is used in the place where a linked list or self-balancing binary search trees is usually deployed for collision resolution through separate chaining, since the contiguous allocation patten of  the array could be exploited by hardware-cache prefetchersâsuch as translation lookaside bufferâresulting in reduced access time and memory consumption.[18][19][20]
+In dynamic perfect hashing, two level hash tables are used to reduce the look-up complexity to be a guaranteed 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+ in the worst case. In this technique, the buckets of 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ entries are organized as perfect hash tables with 
+  
+    
+      
+        
+          k
+          
+            2
+          
+        
+      
+    
+    {\displaystyle k^{2}}
+  
+ slots providing constant worst-case lookup time, and low amortized time for insertion.[21] A study shows array based separate chaining to be 97% more performant when compared to the standard linked list method under heavy load.[17]:â99â
+Techniques such as using fusion tree for each buckets also result in constant time for all operations with high probability.[22]
+
+Open addressing[edit]
+Main article: Open addressing
+  Hash collision resolved by open addressing with linear probing (interval=1). Note that "Ted Baker" has a unique hash, but nevertheless collided with "Sandra Dee", that had previously collided with "John Smith".
+  This graph compares the average number of CPU cache misses required to look up elements in large hash tables (far exceeding size of the cache) with chaining and linear probing. Linear probing performs better due to better locality of reference, though as the table gets full, its performance degrades drastically.
+In another strategy, called open addressing, all entry records are stored in the bucket array itself. When a new entry has to be inserted, the buckets are examined, starting with the hashed-to slot and proceeding in some probe sequence, until an unoccupied slot is found. When searching for an entry, the buckets are scanned in the same sequence,  until either the target record is found, or an unused array slot is found, which indicates that there is no such key in the table.[23] The name "open addressing" refers to the location ("address") of the item is not determined by its hash value. (This method is also called  closed hashing; it should not be confused with "open hashing" or "closed addressing" which usually means separate chaining.)
+Well-known probe sequences include:
+
+Linear probing, in which the interval between probes is fixed (usually 1). Since the slots are located in successive locations, linear probing could lead to better utilization of CPU cache due to locality of references.[24]
+Quadratic probing, in which the interval between probes is increased by adding the successive outputs of a quadratic polynomial to the starting value given by the original hash computation
+Double hashing, in which the interval between probes is computed by a second hash function
+In practice, the performance of open addressing is slower than separate chaining when used in conjunction with an array of buckets for collision resolution,[17]:â93â since a longer sequence of array indices may need to be tried to find a given element when the load factor approaches 1.[13] The load factor must be maintained below 1 since if it reaches 1âthe case of a completely full tableâa search miss would go into an infinite loop through the table.[16]:â471â The average cost of linear probing depends on the chosen hash function's ability to distribute the keys uniformly throughout the table to avoid clustering, since formation of clusters would result in increased search time leading to inefficiency.[16]:â472â
+
+Coalesced hashing[edit]
+Main article: Coalesced hashing
+Coalesced hashing is a hybrid of both separate chaining and open addressing in which the buckets or nodes link within the table.[25]:â6â8â The algorithm is ideally suited for fixed memory allocation.[25]:â4â This method is similar to separate chaining in that it gives a pointer parameter to each bucket that tracks the location of the next collision node, creating a traceable chain of each node that collided at the original index. It also fits under the open addressing umbrella as well since, every element inserted is not particularly located at the index which the hash function initially assigned it to. This is not a trait found in separate chaining. The collision in coalesced hashing is resolved by identifying the largest-indexed empty slot on the hash table, then the colliding value is inserted into that slot. The bucket's pointer is linked to the inserted node's location which contains its colliding hash address.[25]:â8â
+The performance of coalesced hashing is one of the best amongst all the variants.[26] In a comparative study titled "Implementations for Coalesced Hashing", it was found by Jeffrey Scott Vitter that on average, coalesced hashing out performed other methods like linear probing, double hashing, and Separate Chaining especially when the hash table is fuller than 60%. However, the worst case for deletion using coalesced hashing is extremely costly and is it's most notorious con. Besides following a potentially long chain of pointers, once a deletion occurs, the pointers will need to be reassigned to account for the removal of an element from the hash table. This can prove to be an extremely complicated process.
+
+Cuckoo hashing[edit]
+Main article: Cuckoo hashing
+Cuckoo hashing is a form of open addressing collision resolution technique which provides guarantees 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+ worst-case lookup complexity and constant amortized time for insertions. The collision is resolved through maintaining two hash tables, each having its own hashing function, and collided slot gets replaced with the given item, and the preoccupied element of the slot gets displaced into the other hash table. The process continues until every key has its own spot in the empty buckets of the tables; if the procedure enters into infinite loopâwhich is identified through maintaining a threshold loop counterâboth hash tables get rehashed with newer hash functions and the procedure continues.[27]:â124â125â
+
+Hopscotch hashing[edit]
+Main article: Hopscotch hashing
+Hopscotch hashing is an open addressing based algorithm which combines the elements of cuckoo hashing, linear probing and chaining through the notion of a neighbourhood of bucketsâthe subsequent buckets around any given occupied bucket, also called a "virtual" bucket.[28]:â351â352â The algorithm is designed to deliver better performance when the load factor of the hash table grows beyond 90%; it also provides high throughput in concurrent settings, thus well suited for implementing resizable concurrent hash table.[28]:â350â The neighbourhood characteristic of hopscotch hashing guarantees a property that, the cost of finding the desired item from any given buckets within the neighbourhood is very close to the cost of finding it in the bucket itself; the algorithm attempts to be an item into its neighbourhoodâwith a possible cost involved in displacing other items.[28]:â352â
+Each bucket within the hash table includes an additional "hop-information"âan H-bit bit array for indicating the relative distance of the item which was originally hashed into the current virtual bucket within H-1 entries.[28]:â352â Let 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ and 
+  
+    
+      
+        B
+        k
+      
+    
+    {\displaystyle Bk}
+  
+ be the key to be inserted and bucket to which the key is hashed into respectively; several cases are involved in the insertion procedure such that the neighbourhood property of the algorithm is vowed:[28]:â352-353â if 
+  
+    
+      
+        B
+        k
+      
+    
+    {\displaystyle Bk}
+  
+ is empty, the element is inserted, and the leftmost bit of bitmap is set to 1; if not empty, linear probing is used for finding an empty slot in the table, the bitmap of the bucket gets updated followed by the insertion; if the empty slot is not within the range of the neighbourhood, i.e. H-1, subsequent swap and hop-info bit array manipulation of each bucket is performed in accordance with its neighbourhood invariant properties.[28]:â353â
+Hopscotch hashing is non-cyclical, meaning it cannot be caught in an infinite loop like in cuckoo hashing. For this reason it works better than cuckoo hashing when the hash table is fuller, or the load factor is smaller. While with cuckoo hashing the success of a insertion after collision is dependent on the hash function, with hopscotch hashing this is not the case. A simple hash function can attain the same results as complex one without major performance differences.
+
+Robin Hood hashing[edit]
+Robin hood hashing is an open addressing based collision resolution algorithm; the collisions are resolved through favouring the displacement of the element that is farthestâor longest probe sequence length (PSL)âfrom its "home location" i.e. the bucket to which the item was hashed into.[29]:â12â Although robin hood hashing does not change the theoretical search cost, it significantly affects the variance of the distribution of the items on the buckets,[30]:â2â i.e. dealing with cluster formation in the hash table.[31] Each node within the hash table that uses robin hood hashing should be augmented to store an extra PSL value.[32] Let 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ be the key to be inserted, 
+  
+    
+      
+        x
+        .
+        p
+        s
+        l
+      
+    
+    {\displaystyle x.psl}
+  
+ be the (incremental) PSL length of 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+, 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+ be the hash table and 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+ be the index, the insertion procedure is as follows:[29]:â12-13â[33]:â5â
+
+If 
+  
+    
+      
+        x
+        .
+        p
+        s
+        l
+        Â 
+        â¤
+        Â 
+        T
+        [
+        j
+        ]
+        .
+        p
+        s
+        l
+      
+    
+    {\displaystyle x.psl\ \leq \ T[j].psl}
+  
+: the iteration goes into the next bucket without attempting an external probe.
+If 
+  
+    
+      
+        x
+        .
+        p
+        s
+        l
+        Â 
+        >
+        Â 
+        T
+        [
+        j
+        ]
+        .
+        p
+        s
+        l
+      
+    
+    {\displaystyle x.psl\ >\ T[j].psl}
+  
+: insert the item 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ into the bucket 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+; swap 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ with 
+  
+    
+      
+        T
+        [
+        j
+        ]
+      
+    
+    {\displaystyle T[j]}
+  
+âlet it be 
+  
+    
+      
+        
+          x
+          â²
+        
+      
+    
+    {\displaystyle x'}
+  
+; continue the probe from the 
+  
+    
+      
+        j
+        +
+        1
+      
+    
+    {\displaystyle j+1}
+  
+st bucket to insert 
+  
+    
+      
+        
+          x
+          â²
+        
+      
+    
+    {\displaystyle x'}
+  
+; repeat the procedure until every element is inserted.
+Dynamic resizing[edit]
+Repeated insertions cause the number of entries in a hash table to grow, which consequently increases the load factor; to maintain the amortized 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+ performance of the lookup and insertion operations, a hash table is dynamically resized and the items of the tables are rehashed into the buckets of the new hash table,[13] since the items cannot be copied over as varying table sizes results in different hash value due to modulo operation.[34] Resizing may be performed on hash tables with fewer entries compared to its size to avoid excessive memory usage.[35]
+
+Resizing by moving all entries[edit]
+Generally, a new hash table with a size double that of the original hash table gets allocated privately and every item in the original hash table gets moved to the newly allocated one by computing the hash values of the items followed by the insertion operation. Rehashing is computationally expensive despite its simplicity.[36]:â478â479â
+
+Alternatives to all-at-once rehashing[edit]
+Some hash table implementations, notably in real-time systems, cannot pay the price of enlarging the hash table all at once, because it may interrupt time-critical operations. If one cannot avoid dynamic resizing, a solution is to perform the resizing gradually to avoid storage blipâtypically of size 50% of new table's sizeâduring rehashing and to avoid memory fragmentation that triggers heap compaction due to deallocation of large memory blocks caused by the old hash table.[37]:â2â3â In such case, the rehashing operation is done incrementally through extending prior memory block allocated for the old hash table such that the buckets of the hash table remain unaltered. A common approach for amortized rehashing involves maintaining two hash functions 
+  
+    
+      
+        
+          h
+          
+            o
+            l
+            d
+          
+        
+      
+    
+    {\displaystyle h_{old}}
+  
+ and 
+  
+    
+      
+        
+          h
+          
+            n
+            e
+            w
+          
+        
+      
+    
+    {\displaystyle h_{new}}
+  
+. The process of rehashing a bucket's items in accordance with the new hash function is termed as cleaning, which is implemented through command pattern by encapsulating the operations such as 
+  
+    
+      
+        A
+        d
+        d
+        (
+        k
+        e
+        y
+        )
+      
+    
+    {\displaystyle Add(key)}
+  
+, 
+  
+    
+      
+        G
+        e
+        t
+        (
+        k
+        e
+        y
+        )
+      
+    
+    {\displaystyle Get(key)}
+  
+ and 
+  
+    
+      
+        D
+        e
+        l
+        e
+        t
+        e
+        (
+        k
+        e
+        y
+        )
+      
+    
+    {\displaystyle Delete(key)}
+  
+ through a 
+  
+    
+      
+        L
+        o
+        o
+        k
+        u
+        p
+        (
+        k
+        e
+        y
+        ,
+        
+          
+            
+              c
+              o
+              m
+              m
+              a
+              n
+              d
+            
+            )
+          
+        
+      
+    
+    {\displaystyle Lookup(key,{\bf {{command})}}}
+  
+ wrapper such that each element in the bucket gets rehashed and its procedure involve as follows:[37]:â3â
+
+Clean 
+  
+    
+      
+        T
+        a
+        b
+        l
+        e
+        [
+        
+          h
+          
+            o
+            l
+            d
+          
+        
+        (
+        k
+        e
+        y
+        )
+        ]
+      
+    
+    {\displaystyle Table[h_{old}(key)]}
+  
+ bucket.
+Clean 
+  
+    
+      
+        T
+        a
+        b
+        l
+        e
+        [
+        
+          h
+          
+            n
+            e
+            w
+          
+        
+        (
+        k
+        e
+        y
+        )
+        ]
+      
+    
+    {\displaystyle Table[h_{new}(key)]}
+  
+ bucket.
+The command gets executed.
+Linear hashing[edit]
+Main article: Linear hashing
+Linear hashing is an implementation of the hash table which enables dynamic growths or shrinks of the table one bucket at a time.[38]
+
+Hashing for distributed hash tables[edit]
+Main article: distributed hash table
+Another way to decrease the cost of table resizing is to choose a hash function in such a way that the hashes of most values do not change when the table is resized. Such hash functions are prevalent in disk-based and distributed hash tables, where rehashing is prohibitively costly.
+The problem of designing a hash such that most values do not change when the table is resized is known as the distributed hash table problem.
+The four most popular approaches are rendezvous hashing, consistent hashing, the content addressable network algorithm, and Kademlia distance.
+
+Performance[edit]
+The performance of a hash table is dependent on the hash function's ability in generating quasi-random numbers (
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+) for entries in the hash table where 
+  
+    
+      
+        K
+      
+    
+    {\displaystyle K}
+  
+, 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ and 
+  
+    
+      
+        h
+        (
+        x
+        )
+      
+    
+    {\displaystyle h(x)}
+  
+ denotes the key, number of buckets and the hash function such that 
+  
+    
+      
+        Ï
+        Â 
+        =
+        Â 
+        h
+        (
+        K
+        )
+        Â 
+        %
+        Â 
+        n
+      
+    
+    {\displaystyle \sigma \ =\ h(K)\ \%\ n}
+  
+. If the hash function generates same 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ for distinct keys (
+  
+    
+      
+        
+          K
+          
+            1
+          
+        
+        â 
+        
+          K
+          
+            2
+          
+        
+        ,
+        Â 
+        h
+        (
+        
+          K
+          
+            1
+          
+        
+        )
+        Â 
+        =
+        Â 
+        h
+        (
+        
+          K
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle K_{1}\neq K_{2},\ h(K_{1})\ =\ h(K_{2})}
+  
+), this results in collision, which should be dealt with in several ways. The constant time complexity (
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+) of the operation in a hash table is presupposed on the condition that the hash function doesn't generate colliding indices; thus, the performance of the hash table is directly proportional to the chosen hash function ability to disperse the indice.[39]:â1â However, construction of such a hash function is practically unfeasible, that being so, implementations depend on case-specific collision resolution techniques in achieving higher performance.[39]:â2â
+
+Uses[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (July 2013) (Learn how and when to remove this template message)
+Associative arrays[edit]
+Main article: Associative array
+Hash tables are commonly used to implement many types of in-memory tables. They are used to implement associative arrays (arrays whose indices are arbitrary strings or other complicated objects), especially in interpreted programming languages like Ruby, Python, and PHP.
+When storing a new item into a multimap and a hash collision occurs, the multimap unconditionally stores both items.
+When storing a new item into a typical associative array and a hash collision occurs, but the actual keys themselves are different, the associative array likewise stores both items. However, if the key of the new item exactly matches the key of an old item, the associative array typically erases the old item and overwrites it with the new item, so every item in the table has a unique key.
+
+Database indexing[edit]
+Hash tables may also be used as disk-based data structures and database indices (such as in dbm) although B-trees are more popular in these applications. In multi-node database systems, hash tables are commonly used to distribute rows amongst nodes, reducing network traffic for hash joins.
+
+Caches[edit]
+Main article: Cache (computing)
+Hash tables can be used to implement caches, auxiliary data tables that are used to speed up the access to data that is primarily stored in slower media. In this application, hash collisions can be handled by discarding one of the two colliding entriesâusually erasing the old item that is currently stored in the table and overwriting it with the new item, so every item in the table has a unique hash value.
+
+Sets[edit]
+Besides recovering the entry that has a given key, many hash table implementations can also tell whether such an entry exists or not.
+Those structures can therefore be used to implement a set data structure,[40] which merely records whether a given key belongs to a specified set of keys. In this case, the structure can be simplified by eliminating all parts that have to do with the entry values. Hashing can be used to implement both static and dynamic sets.
+
+Object representation[edit]
+Several dynamic languages, such as Perl, Python, JavaScript, Lua, and Ruby, use hash tables to implement objects. In this representation, the keys are the names of the members and methods of the object, and the values are pointers to the corresponding member or method.
+
+Unique data representation[edit]
+Main article: String interning
+Hash tables can be used by some programs to avoid creating multiple character strings with the same contents. For that purpose, all strings in use by the program are stored in a single string pool implemented as a hash table, which is checked whenever a new string has to be created. This technique was introduced in Lisp interpreters under the name hash consing, and can be used with many other kinds of data (expression trees in a symbolic algebra system, records in a database, files in a file system, binary decision diagrams, etc.).
+
+Transposition table[edit]
+Main article: Transposition table
+A transposition table to a complex Hash Table which stores information about each section that has been searched.[41]
+
+Implementations[edit]
+In programming languages[edit]
+Many programming languages provide hash table functionality, either as built-in associative arrays or as standard library modules. In C++11, for example, the unordered_map class provides hash tables for keys and values of arbitrary type.
+The Java programming language (including the variant which is used on Android) includes the HashSet, HashMap, LinkedHashSet, and LinkedHashMap generic collections.[42]
+In PHP 5 and 7, the Zend 2 engine and the Zend 3 engine (respectively) use one of the hash functions from Daniel J. Bernstein to generate the hash values used in managing the mappings of data pointers stored in a hash table. In the PHP source code, it is labelled as DJBX33A (Daniel J. Bernstein, Times 33 with Addition).
+Python's built-in hash table implementation, in the form of the dict type, as well as Perl's hash type (%) are used internally to implement namespaces and therefore need to pay more attention to security, i.e., collision attacks.  Python sets also use hashes internally, for fast lookup (though they store only keys, not values).[43] CPython 3.6+ uses an insertion-ordered variant of the hash table, implemented by splitting out the value storage into an array and having the vanilla hash table only store a set of indices.[44]
+In the .NET Framework, support for hash tables is provided via the non-generic Hashtable and generic Dictionary classes, which store keyâvalue pairs, and the generic HashSet class, which stores only values.
+In Ruby the hash table uses the open addressing model from Ruby 2.4 onwards.[45][46]
+In Rust's standard library, the generic HashMap and HashSet structs use linear probing with Robin Hood bucket stealing.
+ANSI Smalltalk defines the classes Set / IdentitySet and Dictionary / IdentityDictionary. All Smalltalk implementations provide additional (not yet standardized) versions of WeakSet, WeakKeyDictionary and WeakValueDictionary.
+Tcl array variables are hash tables, and Tcl dictionaries are immutable values based on hashes. The functionality is also available as C library functions Tcl_InitHashTable et al. (for generic hash tables) and Tcl_NewDictObj et al. (for dictionary values). The performance has been independently benchmarked as extremely competitive.[47]
+The Wolfram Language supports hash tables since version 10. They are implemented under the name Association.
+Common Lisp provides the hash-table class for efficient mappings. In spite of its naming, the language standard does not mandate the actual adherence to any hashing technique for implementations.[48]
+
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+RabinâKarp string search algorithm
+Stable hashing
+Consistent hashing
+Extendible hashing
+Lazy deletion
+Pearson hashing
+PhotoDNA
+Search data structure
+Concurrent hash table
+Record (computer science)
+Bloom filter
+Distributed hash table
+Hash array mapped trie
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ 
+  .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2009). Introduction to Algorithms (3rdÂ ed.). Massachusetts Institute of Technology. pp.Â 253â280. ISBNÂ 978-0-262-03384-8.
+
+^ Charles E. Leiserson, Amortized Algorithms, Table Doubling, Potential Method Archived August 7, 2009, at the Wayback Machine Lecture 13, course MIT 6.046J/18.410J Introduction to AlgorithmsâFall 2005
+
+^ Jump up to: a b 
+  Knuth, Donald (1998). The Art of Computer Programming. Vol.Â 3: Sorting and Searching (2ndÂ ed.). Addison-Wesley. pp.Â 513â558. ISBNÂ 978-0-201-89685-5.
+
+^ Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2001). "Chapter 11: Hash Tables". Introduction to Algorithms (2ndÂ ed.). MIT Press and McGraw-Hill. pp.Â 221â252. ISBNÂ 978-0-262-53196-2.
+
+^ Jump up to: a b Mehta, Dinesh P.; Sahni, Sartaj (October 28, 2004). Handbook of Datastructures and Applications. p.Â 9-15. ISBNÂ 978-1-58488-435-4.
+
+^ Jump up to: a b Owolabi, Olumide (February 1, 2003). "Empirical studies of some hashing functions". Information and Software Technology. Department of Mathematics and Computer Science, University of Port Harcourt. 45 (2). doi:10.1016/S0950-5849(02)00174-X â via ScienceDirect.
+
+^ 
+  Pearson, Karl (1900). "On the criterion that a given system of deviations from the probable in the case of a correlated system of variables is such that it can be reasonably supposed to have arisen from random sampling". Philosophical Magazine. Series 5. 50 (302): 157â175. doi:10.1080/14786440009463897.
+
+^ 
+  Plackett, Robin (1983). "Karl Pearson and the Chi-Squared Test". International Statistical Review. 51 (1): 59â72. doi:10.2307/1402731. JSTORÂ 1402731.
+
+^ Jump up to: a b Wang, Thomas (March 1997). "Prime Double Hash Table". Archived from the original on September 3, 1999. Retrieved May 10, 2015.
+
+^ Jump up to: a b Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2001). "Chapter 11: Hash Tables". Introduction to Algorithms (2ndÂ ed.). Massachusetts Institute of Technology. ISBNÂ 978-0-262-53196-2.
+
+^ Lu, Yi; Prabhakar, Balaji; Bonomi, Flavio (2006), "Perfect Hashing for Network Applications", 2006 IEEE International Symposium on Information Theory: 2774â2778, doi:10.1109/ISIT.2006.261567
+
+^ Belazzougui, Djamal; Botelho, Fabiano C.; Dietzfelbinger, Martin (2009), "Hash, displace, and compress" (PDF), AlgorithmsâESA 2009: 17th Annual European Symposium, Copenhagen, Denmark, September 7-9, 2009, Proceedings (PDF), Lecture Notes in Computer Science, vol.Â 5757, Berlin: Springer, pp.Â 682â693, CiteSeerXÂ 10.1.1.568.130, doi:10.1007/978-3-642-04128-0_61, MRÂ 2557794.
+
+^ Jump up to: a b c Mayers, Andrew (2008). "CS 312: Hash tables and amortized analysis". Cornell University, Department of Computer Science. Archived from the original on April 26, 2021. Retrieved October 26, 2021 â via cs.cornell.edu.
+
+^ Maurer, W.D.; Lewis, T.G. (March 1, 1975). "Hash Table Methods". ACM Computing Surveys. Journal of the ACM. 1 (1): 14. doi:10.1145/356643.356645.
+
+^ Jump up to: a b c Donald E. Knuth (April 24, 1998). The Art of Computer Programming: Volume 3: Sorting and Searching. Addison-Wesley Professional. ISBNÂ 978-0-201-89685-5.
+
+^ Jump up to: a b c d e Sedgewick, Robert; Wayne, Kevin (2011). Algorithms. Vol.Â 1 (4Â ed.). Addison-Wesley Professional â via Princeton University, Department of Computer Science.
+
+^ Jump up to: a b c Askitis, Nikolas; Zobel, Justin (2005). "Cache-Conscious Collision Resolution in String Hash Tables". International Symposium on String Processing and Information Retrieval. Springer Science+Business Media. doi:10.1007/11575832_1. ISBNÂ 978-3-540-29740-6.
+
+^ Askitis, Nikolas; Sinha, Ranjan (2010). "Engineering scalable, cache and space efficient tries for strings". The VLDB Journal. 17 (5): 634. doi:10.1007/s00778-010-0183-9. ISSNÂ 1066-8888. S2CIDÂ 432572.
+
+^ Askitis, Nikolas; Zobel, Justin (October 2005). Cache-conscious Collision Resolution in String Hash Tables. Proceedings of the 12th International Conference, String Processing and Information Retrieval (SPIRE 2005). Vol.Â 3772/2005. pp.Â 91â102. doi:10.1007/11575832_11. ISBNÂ 978-3-540-29740-6.
+
+^ Askitis, Nikolas (2009). Fast and Compact Hash Tables for Integer Keys (PDF). Proceedings of the 32nd Australasian Computer Science Conference (ACSC 2009). Vol.Â 91. pp.Â 113â122. ISBNÂ 978-1-920682-72-9. Archived from the original (PDF) on February 16, 2011. Retrieved June 13, 2010.
+
+^ Erik Demaine, Jeff Lind. 6.897: Advanced Data Structures. MIT Computer Science and Artificial Intelligence Laboratory. Spring 2003. "Archived copy" (PDF). Archived (PDF) from the original on June 15, 2010. Retrieved June 30, 2008.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ Willard, Dan E. (2000). "Examining computational geometry, van Emde Boas trees, and hashing from the perspective of the fusion tree". SIAM Journal on Computing. 29 (3): 1030â1049. doi:10.1137/S0097539797322425. MRÂ 1740562..
+
+^ Tenenbaum, Aaron M.; Langsam, Yedidyah; Augenstein, Moshe J. (1990). Data Structures Using C. Prentice Hall. pp.Â 456â461, p. 472. ISBNÂ 978-0-13-199746-2.
+
+^ Pagh, Rasmus; Rodler, Flemming Friche (2001). "Cuckoo Hashing". Algorithms â ESA 2001. Lecture Notes in Computer Science. Vol.Â 2161. pp.Â 121â133. CiteSeerXÂ 10.1.1.25.4189. doi:10.1007/3-540-44676-1_10. ISBNÂ 978-3-540-42493-2.
+
+^ Jump up to: a b c Vitter, Jeffery S.; Chen, Wen-Chin (1987). The design and analysis of coalesced hashing. New York, United States: Oxford University Press. ISBNÂ 978-0-19-504182-8 â via Archive.org.
+
+^ Vitter, Jeffrey Scott (December 1982). "Implementations for coalesced hashing". Communications of the ACM. 25 (12): 911â926. doi:10.1145/358728.358745. ISSNÂ 0001-0782.
+
+^ Pagh, Rasmus; Rodler, Flemming Friche (2001). "Cuckoo Hashing". Algorithms â ESA 2001. Lecture Notes in Computer Science. Vol.Â 2161. CiteSeerXÂ 10.1.1.25.4189. doi:10.1007/3-540-44676-1_10. ISBNÂ 978-3-540-42493-2.
+
+^ Jump up to: a b c d e f Herlihy, Maurice; Shavit, Nir; Tzafrir, Moran (2008). "Hopscotch Hashing". International Symposium on Distributed Computing. Distributed Computing. Berlin, Heidelberg: Springer Publishing. 5218. doi:10.1007/978-3-540-87779-0_24. ISBNÂ 978-3-540-87778-3 â via Springer Link.
+
+^ Jump up to: a b Celis, Pedro (1986). Robin Hood Hashing (PDF). Ontario, Canada: University of Waterloo, Dept. of Computer Science. ISBNÂ 031529700X. OCLCÂ 14083698. Archived (PDF) from the original on November 1, 2021. Retrieved November 2, 2021.
+
+^ Poblete, P.V.; Viola, A. (August 14, 2018). "Analysis of Robin Hood and Other Hashing Algorithms Under the Random Probing Model, With and Without Deletions". Combinatorics, Probability and Computing. Cambridge University Press. 28 (4). doi:10.1017/S0963548318000408. ISSNÂ 1469-2163. Retrieved November 1, 2021 â via Cambridge Core.
+
+^ Clarkson, Michael (2014). "Lecture 13: Hash tables". Cornell University, Department of Computer Science. Archived from the original on October 7, 2021. Retrieved November 1, 2021 â via cs.cornell.edu.
+
+^ Gries, David (2017). "JavaHyperText and Data Structure: Robin Hood Hashing" (PDF). Cornell University, Department of Computer Science. Archived (PDF) from the original on April 26, 2021. Retrieved November 2, 2021 â via cs.cornell.edu.
+
+^ Celis, Pedro (March 28, 1988). External Robin Hood Hashing (PDF) (Technical report). Bloomington, Indiana: Indiana University, Department of Computer Science. 246. Archived (PDF) from the original on November 2, 2021. Retrieved November 2, 2021.
+
+^ Goddard, Wayne (2021). "Chater C5: Hash Tables" (PDF). Clemson University. pp.Â 15â16. Archived (PDF) from the original on November 9, 2021. Retrieved November 9, 2021 â via people.cs.clemson.edu.
+
+^ Devadas, Srini; Demaine, Erik (February 25, 2011). "Intro to Algorithms: Resizing Hash Tables" (PDF). Massachusetts Institute of Technology, Department of Computer Science. Archived (PDF) from the original on May 7, 2021. Retrieved November 9, 2021 â via MIT OpenCourseWare.
+
+^ Thareja, Reema (October 13, 2018). "Hashing and Collision". Data Structures Using C (2Â ed.). Oxford University Press. ISBNÂ 9780198099307.
+
+^ Jump up to: a b Friedman, Scott; Krishnan, Anand; Leidefrost, Nicholas (March 18, 2003). "Hash Tables for Embedded and Real-time systems" (PDF). All Computer Science and Engineering Research. Washington University in St. Louis. doi:10.7936/K7WD3XXV. Archived (PDF) from the original on June 9, 2021. Retrieved November 9, 2021 â via Northwestern University, Department of Computer Science.
+
+^ Litwin, Witold (1980). "Linear hashing: A new tool for file and table addressing" (PDF). Proc. 6th Conference on Very Large Databases. Carnegie Mellon University. pp.Â 212â223. Archived (PDF) from the original on May 6, 2021. Retrieved November 10, 2021 â via cs.cmu.edu.
+
+^ Jump up to: a b Dijk, Tom Van (2010). "Analysing and Improving Hash Table Performance" (PDF). Netherlands: University of Twente. Archived (PDF) from the original on November 6, 2021. Retrieved December 31, 2021.
+
+^ "Set (Java Platform SE 7 )". docs.oracle.com. Archived from the original on November 12, 2020. Retrieved May 1, 2020.
+
+^ "Transposition Table - Chessprogramming wiki". chessprogramming.org. Archived from the original on February 14, 2021. Retrieved May 1, 2020.
+
+^ "Lesson: Implementations (The Javaâ¢ Tutorials > Collections)". docs.oracle.com. Archived from the original on January 18, 2017. Retrieved April 27, 2018.
+
+^ "Python: List vs Dict for look up table". stackoverflow.com. Archived from the original on December 2, 2017. Retrieved April 27, 2018.
+
+^ Dimitris Fasarakis Hilliard. "Are dictionaries ordered in Python 3.6+?". Stack Overflow.
+
+^ Dmitriy Vasin (June 19, 2018). "Do You Know How Hash Table Works? (Ruby Examples)". anadea.info. Retrieved July 3, 2019.
+
+^ Jonan Scheffler (December 25, 2016). "Ruby 2.4 Released: Faster Hashes, Unified Integers and Better Rounding". heroku.com. Archived from the original on July 3, 2019. Retrieved July 3, 2019.
+
+^ Wing, Eric. "Hash Table Shootout 2: Rise of the Interpreter Machines". LuaHashMap: An easy to use hash table library for C. PlayControl Software. Archived from the original on October 14, 2013. Retrieved October 24, 2019. Did Tcl win? In any case, these benchmarks showed that these interpreter implementations have very good hash implementations and are competitive with our reference benchmark of the STL unordered_map. Particularly in the case of Tcl and Lua, they were extremely competitive and often were within 5%-10% of unordered_map when they weren't beating it. (On 2019-10-24, the original site still has the text, but the figures appear to be broken, whereas they are intact in the archive.)
+
+^ "CLHS:System Class HASH-TABLE". lispworks.com/documentation/HyperSpec/Front/index.htm. Archived from the original on October 22, 2019. Retrieved May 18, 2020.
+
+
+Further reading[edit]
+Tamassia, Roberto; Goodrich, Michael T. (2006). "Chapter Nine: Maps and Dictionaries". Data structures and algorithms in JavaÂ : [updated for Java 5.0] (4thÂ ed.). Hoboken, NJ: Wiley. pp.Â 369â418. ISBNÂ 978-0-471-73884-8.
+McKenzie, B. J.; Harries, R.; Bell, T. (February 1990). "Selecting a hashing algorithm". Software: Practice and Experience. 20 (2): 209â224. doi:10.1002/spe.4380200207. hdl:10092/9691. S2CIDÂ 12854386.
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Hash tables.
+
+
+
+
+Wikibooks has a book on the topic of: Data Structures/Hash Tables
+
+A Hash Function for Hash Table Lookup by Bob Jenkins.
+Hash functions by Paul Hsieh
+Design of Compact and Efficient Hash Tables for Java
+NIST entry on hash tables
+Lecture on Hash Tables from Stanford's CS106A
+Open Data Structures â Chapter 5 â Hash Tables, Pat Morin
+MIT's Introduction to Algorithms: Hashing 1 MIT OCW lecture Video
+MIT's Introduction to Algorithms: Hashing 2 MIT OCW lecture Video
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+Authority control 
+Integrated Authority File (Germany)
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Hash_table&oldid=1069312697"
+		Categories: HashingSearch algorithmsArrays1953 in computingHidden categories: Webarchive template wayback linksCS1: long volume valueCS1 maint: archived copy as titleArticles with short descriptionShort description is different from WikidataUse mdy dates from January 2013All articles with unsourced statementsArticles with unsourced statements from October 2021Articles needing additional references from July 2013All articles needing additional referencesCommons category link is locally definedArticles with GND identifiersArticles with example C codePages that use a deprecated format of the math tags
+	

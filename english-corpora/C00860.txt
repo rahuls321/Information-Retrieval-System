@@ -1,0 +1,443 @@
+
+Title:
+Flyweight pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Software design pattern for objects
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (May 2008) (Learn how and when to remove this template message)
+  Text editors, such as LibreOffice Writer, often use the flyweight pattern.
+In computer programming, the flyweight software design pattern refers to an object that minimizes memory usage by sharing some of its data with other similar objects. The flyweight pattern is one of twenty-three well-known GoF design patterns.[1] These patterns promote flexible object-oriented software design, which is easier to implement, change, test, and reuse.
+In other contexts, the idea of sharing data structures is called hash consing.
+The term was first coined, and the idea extensively explored, by Paul Calder and Mark Linton in 1990[2] to efficiently handle glyph information in a WYSIWYG document editor.[3] Similar techniques were already used in other systems, however, as early as 1988.[4]
+
+Contents
+
+1 Overview
+
+1.1 Structure
+
+
+2 Implementation details
+
+2.1 Retrieval
+2.2 Caching
+2.3 Concurrency
+
+
+3 Example in C#
+4 Example in Python
+5 Example in C++
+6 Example in PHP
+7 See also
+8 References
+
+
+
+Overview[edit]
+The flyweight pattern is useful when dealing with large numbers of objects with simple repeated elements that would use a large amount of memory if individually stored. It is common to hold shared data in external data structures and pass it to the objects temporarily when they are used.
+A classic example are the data structures used representing characters in a word processor. Naively, each character in a document might have a glyph object containing its font outline, font metrics, and other formatting data. However, this would use hundreds or thousands of bytes of memory for each character. Instead, each character can have a reference to a glyph object shared by every instance of the same character in the document. This way, only the position of each character needs to be stored internally.
+As a result, flyweight objects can:[5] 
+
+store intrinsic state that is invariant, context-independent and shareable (for example, the code of character 'A' in a given character set)
+provide an interface for passing in extrinsic state that is variant, context-dependent and can't be shared (for example, the position of character 'A' in a text document)
+Clients can reuse Flyweight objects and pass in extrinsic state as necessary, reducing the number of physically created objects.
+
+Structure[edit]
+  A sample UML class and sequence diagram for the Flyweight design pattern.[6]
+The above UML class diagram shows:
+
+the Client class, which uses the flyweight pattern
+the FlyweightFactory class, which creates and shares Flyweight objects
+the Flyweight interface, which takes in extrinsic state and performs an operation
+the Flyweight1 class, which implements Flyweight and stores intrinsic state
+The sequence diagram shows the following run-time interactions:
+
+The Client object calls getFlyweight(key) on the FlyweightFactory, which returns a Flyweight1 object.
+After calling operation(extrinsicState) on the returned Flyweight1 object, the Client again calls getFlyweight(key) on the FlyweightFactory.
+The FlyweightFactory returns the already-existing Flyweight1 object.
+Implementation details[edit]
+There are multiple ways to implement the flyweight pattern. One example is mutability: whether the objects storing extrinsic flyweight state can change.
+Immutable objects are easily shared, but require creating new extrinsic objects whenever a change in state occurs. In contrast, mutable objects can share state. Mutability allows better object reuse via the caching and re-initialization of old, unused objects. Sharing is usually nonviable when state is highly variable.
+Other primary concerns include retrieval (how the end-client accesses the flyweight), caching and concurrency.
+
+Retrieval[edit]
+The factory interface for creating or reusing flyweight objects is often a facade for a complex underlying system. For example, the factory interface is commonly implemented as a singleton to provide global access for creating flyweights.
+Generally speaking, the retrieval algorithm begins with a request for a new object via the factory interface.
+The request is typically forwarded to an appropriate cache based on what kind of object it is. If the request is fulfilled by an object in the cache, it may be reinitialized and returned. Otherwise, a new object is instantiated. If the object is partitioned into multiple extrinsic sub-components, they will be pieced together before the object is returned.
+
+Caching[edit]
+There are two ways to cache flyweight objects: maintained and unmaintained caches.
+Objects with highly variable state can be cached with a FIFO structure. This structure maintains unused objects in the cache, with no need to search the cache.
+In contrast, unmaintained caches have less upfront overhead: objects for the caches are initialized in bulk at compile time or startup. Once objects populate the cache, the object retrieval algorithm might have more overhead associated than the push/pop operations of a maintained cache.
+When retrieving extrinsic objects with immutable state one must simply search the cache for an object with the state one desires. If no such object is found, one with that state must be initialized. When retrieving extrinsic objects with mutable state, the cache must be searched for an unused object to reinitialize if no used object is found. If there is no unused object available, a new object must be instantiated and added to the cache.
+Separate caches can be used for each unique subclass of extrinsic object. Multiple caches can be optimized separately, associating a unique search algorithm with each cache. This object caching system can be encapsulated with the chain of responsibility pattern, which promotes loose coupling between components.
+
+Concurrency[edit]
+Special consideration must be taken into account where flyweight objects are created on multiple threads. If the list of values is finite and known in advance, the flyweights can be instantiated ahead of time and retrieved from a container on multiple threads with no contention. If flyweights are instantiated on multiple threads, there are two options:
+
+Make flyweight instantiation single-threaded, thus introducing contention and ensuring one instance per value.
+Allow concurrent threads to create multiple flyweight instances, thus eliminating contention and allowing multiple instances per value.
+To enable safe sharing between clients and threads, flyweight objects can be made into immutable value objects, where two instances are considered equal if their values are equal.
+This example from C# 9 uses records[7] to create a value object representing flavours of coffee:
+
+public record CoffeeFlavours(string flavour);
+
+Example in C#[edit]
+In this example, the FlyweightPointer creates a static member used for every instance of the MyObject class.
+
+// Defines Flyweight object that repeats itself.
+public class Flyweight
+{
+    public string CompanyName { get; set; }
+    public string CompanyLocation { get; set; }
+    public string CompanyWebsite { get; set; }
+    // Bulky data
+    public byte[] CompanyLogo { get; set; }
+}
+
+public static class FlyweightPointer
+{
+    public static readonly Flyweight Company = new Flyweight
+    {
+        CompanyName = "Abc",
+        CompanyLocation = "XYZ",
+        CompanyWebsite = "www.example.com"
+        // Load CompanyLogo here
+    };
+}
+
+public class MyObject
+{
+    public string Name { get; set; }
+    public string Company => FlyweightPointer.Company.CompanyName;
+}
+
+Example in Python[edit]
+Attributes can be defined at the class-level instead of only for instances in Python because classes are first-class objects in the languageâmeaning there are no restrictions on their use as they are the same as any other object. New-style class instances store instance data in a special attribute dictionary instance.__dict__. By default, accessed attributes are first looked up in this __dict__, and then fall back to the instance's class attributes next.[8] In this way, a class can effectively be a kind of Flyweight container for its instances.
+Although Python classes are mutable by default, immutability can be emulated by overriding the class's __setattr__ method so that it disallows changes to any Flyweight attributes.
+
+# Instances of CheeseBrand will be the Flyweights
+class CheeseBrand:
+    def __init__(self, brand: str, cost: float) -> None:
+        self.brand = brand
+        self.cost = cost
+        self._immutable = True  # Disables future attributions
+
+    def __setattr__(self, name, value):
+        if getattr(self, "_immutable", False):  # Allow initial attribution
+            raise RuntimeError("This object is immutable")
+        else:
+            super().__setattr__(name, value)
+
+class CheeseShop:
+    menu = {}  # Shared container to access the Flyweights
+
+    def __init__(self) -> None:
+        self.orders = {}  # per-instance container with private attributes
+
+    def stock_cheese(self, brand: str, cost: float) -> None:
+        cheese = CheeseBrand(brand, cost)
+        self.menu[brand] = cheese  # Shared Flyweight
+
+    def sell_cheese(self, brand: str, units: int) -> None:
+        self.orders.setdefault(brand, 0)
+        self.orders[brand] += units  # Instance attribute
+
+    def total_units_sold(self):
+        return sum(self.orders.values())
+
+    def total_income(self):
+        income = 0
+        for brand, units in self.orders.items():
+            income += self.menu[brand].cost * units
+        return income
+
+shop1 = CheeseShop()
+shop2 = CheeseShop()
+
+shop1.stock_cheese("white", 1.25)
+shop1.stock_cheese("blue", 3.75)
+# Now every CheeseShop have 'white' and 'blue' on the inventory
+# The SAME 'white' and 'blue' CheeseBrand
+
+shop1.sell_cheese("blue", 3)  # Both can sell
+shop2.sell_cheese("blue", 8)  # But the units sold are stored per-instance
+
+assert shop1.total_units_sold() == 3
+assert shop1.total_income() == 3.75 * 3
+
+assert shop2.total_units_sold() == 8
+assert shop2.total_income() == 3.75 * 8
+
+Example in C++[edit]
+The C++ Standard Template Library provides several containers that allow unique objects to be mapped to a key. The use of containers helps further reduce memory usage by removing the need for temporary objects to be created.
+
+#include <iostream>
+#include <map>
+#include <string>
+
+// Instances of Tenant will be the Flyweights
+class Tenant {
+public:
+    Tenant(const std::string& name = "") : m_name(name) {}
+
+    std::string name() const {
+        return m_name;
+    }
+private:
+    std::string m_name;
+};
+
+// Registry acts as a factory and cache for Tenant flyweight objects
+class Registry {
+public:
+    Registry() : tenants() {}
+
+    Tenant& findByName(const std::string& name) {
+        if (!tenants.contains(name)) {
+            tenants[name] = Tenant{name};
+        }
+        return tenants[name];
+    }
+private:
+    std::map<std::string, Tenant> tenants;
+};
+
+// Apartment maps a unique tenant to their room number.
+class Apartment {
+public:
+    Apartment() : m_occupants(), m_registry() {}
+
+    void addOccupant(const std::string& name, int room) {
+        m_occupants[room] = &m_registry.findByName(name);
+    }
+
+    void tenants() {
+        for (const auto &i : m_occupants) {
+            const int& room = i.first;
+            const auto& tenant = i.second;
+            std::cout << tenant->name() << " occupies room " << room << std::endl;
+        }
+    }
+private:
+    std::map<int, Tenant*> m_occupants;
+    Registry m_registry;
+};
+
+int main() {
+    Apartment apartment;
+    apartment.addOccupant("David", 1);
+    apartment.addOccupant("Sarah", 3);
+    apartment.addOccupant("George", 2);
+    apartment.addOccupant("Lisa", 12);
+    apartment.addOccupant("Michael", 10);
+    apartment.tenants();
+
+    return 0;
+}
+
+Example in PHP[edit]
+<?php
+
+class CoffeeFlavour {
+
+    private static array $CACHE = [];
+
+    private function __construct(private string $name) {}
+
+    public static function intern(string $name): self {
+        self::$CACHE[$name] ??= new self($name);
+        return self::$CACHE[$name];
+    }
+
+    public static function flavoursInCache(): int {
+        return count(self::$CACHE);
+    }
+
+    public function __toString(): string {
+        return $this->name;
+    }
+
+}
+
+class Order {
+
+    private function __construct(
+        private CoffeeFlavour $flavour,
+        private int $tableNumber
+    ) {}
+
+    public static function create(string $flavourName, int $tableNumber): self {
+        $flavour = CoffeeFlavour::intern($flavourName);
+        return new self($flavour, $tableNumber);
+    }
+
+    public function __toString(): string {
+        return "Serving {$this->flavour} to table {$this->tableNumber}";
+    }
+}
+
+class CoffeeShop {
+
+    private array $orders = [];
+
+    public function takeOrder(string $flavour, int $tableNumber) {
+        $this->orders[] = Order::create($flavour, $tableNumber);
+    }
+
+    public function service() {
+        print(implode(PHP_EOL, $this->orders).PHP_EOL);
+    }
+}
+
+$shop = new CoffeeShop();
+$shop->takeOrder("Cappuccino", 2);
+$shop->takeOrder("Frappe", 1);
+$shop->takeOrder("Espresso", 1);
+$shop->takeOrder("Frappe", 897);
+$shop->takeOrder("Cappuccino", 97);
+$shop->takeOrder("Frappe", 3);
+$shop->takeOrder("Espresso", 3);
+$shop->takeOrder("Cappuccino", 3);
+$shop->takeOrder("Espresso", 96);
+$shop->takeOrder("Frappe", 552);
+$shop->takeOrder("Cappuccino", 121);
+$shop->takeOrder("Espresso", 121);
+$shop->service();
+print("CoffeeFlavor objects in cache: ".CoffeeFlavour::flavoursInCache().PHP_EOL);
+
+See also[edit]
+Copy-on-write
+Memoization
+Multiton
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 195ff. ISBNÂ 978-0-201-63361-0.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ Gamma, Erich; Richard Helm; Ralph Johnson; John Vlissides (1995). Design Patterns: Elements of Reusable Object-Oriented Software. Addison-Wesley. pp.Â 205â206. ISBNÂ 978-0-201-63361-0.
+
+^ 
+Calder, Paul R.; Linton, Mark A. (October 1990). Glyphs: Flyweight Objects for User Interfaces. The 3rd Annual ACM SIGGRAPH Symposium on User Interface Software and Technology. Snowbird, Utah, United States. pp.Â 92â101. doi:10.1145/97924.97935. ISBNÂ 0-89791-410-4.
+
+^ 
+Weinand, Andre; Gamma, Erich; Marty, Rudolf (1988). ET++âan object oriented application framework in C++. OOPSLA (Object-Oriented Programming Systems, Languages and Applications). San Diego, California, United States. pp.Â 46â57. CiteSeerXÂ 10.1.1.471.8796. doi:10.1145/62083.62089. ISBNÂ 0-89791-284-5.
+
+^ "Implementing Flyweight Patterns in Java". Developer.com. 2019-01-28. Retrieved 2021-06-12.
+
+^ "The Flyweight design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ BillWagner. "Records - C# reference". docs.microsoft.com. Retrieved 2021-06-12.
+
+^ "Data Model Â§". The (online) Python Language Reference. Python Software Foundation. Retrieved 7 March 2017.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Flyweight_pattern&oldid=1053225319"
+		Categories: Software design patternsSoftware optimizationHidden categories: CS1 maint: multiple names: authors listArticles with short descriptionShort description matches WikidataArticles lacking in-text citations from May 2008All articles lacking in-text citationsArticles with example Java code
+	

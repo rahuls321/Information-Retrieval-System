@@ -1,0 +1,844 @@
+
+Title:
+Proxy pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In computer programming, the proxy pattern is a software design pattern. A proxy, in its most general form, is a class functioning as an interface to something else. The proxy could interface to anything: a network connection, a large object in memory, a file, or some other resource that is expensive or impossible to duplicate. In short, a proxy is a wrapper or agent object that is being called by the client to access the real serving object behind the scenes. Use of the proxy can simply be forwarding to the real object, or can provide additional logic. In the proxy, extra functionality can be provided, for example caching when operations on the real object are resource intensive, or checking preconditions before operations on the real object are invoked. For the client, usage of a proxy object is similar to using the real object, because both implement the same interface.
+
+Contents
+
+1 Overview
+
+1.1 What problems can the Proxy design pattern solve? [2]
+1.2 What solution does the Proxy design pattern describe?
+
+
+2 Structure
+
+2.1 UML class and sequence diagram
+2.2 Class diagram
+
+
+3 Possible usage scenarios
+
+3.1 Remote proxy
+3.2 Virtual proxy
+3.3 Protection proxy
+
+
+4 Example
+
+4.1 C#
+4.2 C++
+4.3 Crystal
+4.4 Delphi / Object Pascal
+4.5 Java
+4.6 JavaScript
+4.7 PHP
+4.8 Python
+4.9 Rust
+
+
+5 See also
+6 References
+7 External links
+
+
+
+Overview[edit]
+The Proxy 
+[1]
+design pattern is one of the twenty-three well-known 
+GoF design patterns 
+that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+
+What problems can the Proxy design pattern solve? [2][edit]
+The access to an object should be controlled.
+Additional functionality should be provided when accessing an object.
+When accessing sensitive objects, for example, it should be possible to check that clients have the needed access rights.
+
+What solution does the Proxy design pattern describe?[edit]
+Define a separate Proxy object that 
+
+can be used as substitute for another object (Subject) and
+implements additional functionality to control the access to this subject.
+This makes it possible to work through a Proxy object to perform additional functionality when accessing a subject. For example, to check the access rights of clients accessing a sensitive object.
+To act as substitute for a subject, a proxy must implement the Subject interface.
+Clients can't tell whether they work with a subject or its proxy.
+See also the UML class and sequence diagram below.
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Proxy design pattern.  [3]
+In the above UML class diagram, 
+the Proxy class implements the Subject interface so that it can act as substitute for Subject objects. It maintains a reference (realSubject) 
+to the substituted object (RealSubject) so that it can forward requests to it
+(realSubject.operation()). 
+The sequence diagram 
+shows the run-time interactions: The Client object 
+works through a Proxy object that
+controls the access to a RealSubject object.
+In this example, the Proxy forwards the request to the RealSubject, which performs the request.
+
+Class diagram[edit]
+  Proxy in UML
+  Proxy in LePUS3 (legend)
+Possible usage scenarios[edit]
+Remote proxy[edit]
+In distributed object communication, a local object represents a remote object (one that belongs to a different address space). The local object is a proxy for the remote object, and method invocation on the local object results in remote method invocation on the remote object. An example would be an ATM implementation, where the ATM might hold proxy objects for bank information that exists in the remote server.
+
+Virtual proxy[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Further information: Lazy loading
+In place of a complex or heavy object, a skeleton representation may be advantageous in some cases. When an underlying image is huge in size, it may be represented using a virtual proxy object, loading the real object on demand.
+
+Protection proxy[edit]
+A protection proxy might be used to control access to a resource based on access rights.
+
+Example[edit]
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Proxy implementations in various languages
+
+C#[edit]
+interface ICar
+{
+    void DriveCar() ;
+}
+
+// Real Object
+public class Car : ICar
+{
+    public void DriveCar()
+    {
+        Console.WriteLine("Car has been driven!");
+    }
+}
+
+// Proxy Object
+public class ProxyCar : ICar
+{
+    private Driver driver;
+    private ICar realCar;
+
+    public ProxyCar(Driver driver)
+    {
+        this.driver = driver;
+        this.realCar = new Car();
+    }
+
+    public void DriveCar()
+    {
+        if (driver.Age < 16)
+            Console.WriteLine("Sorry, the driver is too young to drive.");
+        else
+            this.realCar.DriveCar();
+     }
+}
+
+public class Driver
+{
+    public int Age { get; set; }
+
+    public Driver(int age)
+    {
+        this.Age = age;
+    }
+}
+
+// How to use above Proxy class?
+private void btnProxy_Click(object sender, EventArgs e)
+{
+    ICar car = new ProxyCar(new Driver(15));
+    car.DriveCar();
+
+    car = new ProxyCar(new Driver(25));
+    car.DriveCar();
+}
+
+Output
+
+Sorry, the driver is too young to drive.
+Car has been driven!
+
+Notes:
+
+A proxy may hide information about the real object to the client.
+A proxy may perform optimization like on demand loading.
+A proxy may do additional house-keeping job like audit tasks.
+Proxy design pattern is also known as surrogate design pattern.
+C++[edit]
+#include <iostream>
+#include <memory>
+
+class ICar {
+ public:
+  virtual ~ICar() { std::cout << "ICar destructor!" << std::endl; }
+
+  virtual void DriveCar() = 0;
+};
+
+class Car : public ICar {
+ public:
+  void DriveCar() override { std::cout << "Car has been driven!" << std::endl; }
+};
+
+class ProxyCar : public ICar {
+ public:
+  ProxyCar(int driver_age) : driver_age_(driver_age) {}
+
+  void DriveCar() override {
+    if (driver_age_ > 16) {
+      real_car_->DriveCar();
+    } else {
+      std::cout << "Sorry, the driver is too young to drive." << std::endl;
+    }
+  }
+
+ private:
+  std::unique_ptr<ICar> real_car_ = std::make_unique<Car>();
+  int driver_age_;
+};
+
+int main() {
+  std::unique_ptr<ICar> car = std::make_unique<ProxyCar>(16);
+  car->DriveCar();
+
+  car = std::make_unique<ProxyCar>(25);
+  car->DriveCar();
+}
+
+Crystal[edit]
+abstract class AbstractCar
+  abstract def drive
+end
+
+class Car < AbstractCar
+  def drive
+    puts "Car has been driven!"
+  end
+end
+
+class Driver
+  getter age : Int32
+
+  def initialize(@age)
+  end
+end
+
+class ProxyCar < AbstractCar
+  private getter driver : Driver
+  private getter real_car : AbstractCar
+
+  def initialize(@driver)
+    @real_car = Car.new
+  end
+
+  def drive
+    if driver.age <= 16
+      puts "Sorry, the driver is too young to drive."
+    else
+      @real_car.drive
+    end
+  end
+end
+
+# Program
+driver = Driver.new(16)
+car = ProxyCar.new(driver)
+car.drive
+
+driver = Driver.new(25)
+car = ProxyCar.new(driver)
+car.drive
+
+Output
+
+Sorry, the driver is too young to drive.
+Car has been driven!
+
+Delphi / Object Pascal[edit]
+// Proxy Design pattern
+unit DesignPattern.Proxy;
+
+interface
+
+type
+    // Car Interface
+    ICar = interface
+      procedure DriveCar;
+    end;
+
+    // TCar class, implementing ICar
+    TCar = Class(TInterfacedObject, ICar)
+      class function New: ICar;
+      procedure DriveCar;
+    End;
+
+    // Driver Interface
+    IDriver = interface
+      function Age: Integer;
+    end;
+
+    // TDriver Class, implementing IDriver
+    TDriver = Class(TInterfacedObject, IDriver)
+    private
+      FAge: Integer;
+    public
+      constructor Create(Age: Integer); Overload;
+      class function New(Age: Integer): IDriver;
+      function Age: Integer;
+    End;
+
+    // Proxy Object
+    TProxyCar = Class(TInterfacedObject, ICar)
+    private
+      FDriver: IDriver;
+      FRealCar: ICar;
+    public
+      constructor Create(Driver: IDriver); Overload;
+      class function New(Driver: IDriver): ICar;
+      procedure DriveCar;
+    End;
+
+implementation
+
+{ TCar Implementation }
+
+class function TCar.New: ICar;
+begin
+     Result := Create;
+end;
+
+procedure TCar.DriveCar;
+begin
+     WriteLn('Car has been driven!');
+end;
+
+{ TDriver Implementation }
+
+constructor TDriver.Create(Age: Integer);
+begin
+     inherited Create;
+     FAge := Age;
+end;
+
+class function TDriver.New(Age: Integer): IDriver;
+begin
+     Result := Create(Age);
+end;
+
+function TDriver.Age: Integer;
+begin
+     Result := FAge;
+end;
+
+{ TProxyCar Implementation }
+
+constructor TProxyCar.Create(Driver: IDriver);
+begin
+     inherited Create;
+     Self.FDriver  := Driver;
+     Self.FRealCar := TCar.Create AS ICar;
+end;
+
+class function TProxyCar.New(Driver: IDriver): ICar;
+begin
+     Result := Create(Driver);
+end;
+
+procedure TProxyCar.DriveCar;
+begin
+     if (FDriver.Age <= 16)
+        then WriteLn('Sorry, the driver is too young to drive.')
+        else FRealCar.DriveCar();
+end;
+
+end.
+
+Usage
+
+program Project1;
+{$APPTYPE Console}
+uses
+    DesignPattern.Proxy in 'DesignPattern.Proxy.pas';
+begin
+     TProxyCar.New(TDriver.New(16)).DriveCar;
+     TProxyCar.New(TDriver.New(25)).DriveCar;
+end.
+
+Output
+
+Sorry, the driver is too young to drive.
+Car has been driven!
+
+Java[edit]
+The following Java example illustrates the "virtual proxy" pattern. The ProxyImage class is used to access a remote method.
+The example creates first an interface against which the pattern creates the classes. This interface contains only one method to display the image, called displayImage(), that has to be coded by all classes implementing it.
+The proxy class ProxyImage is running on another system than the real image class itself and can represent the real image RealImage over there. The image information is accessed from the disk. Using the proxy pattern, the code of the ProxyImage avoids multiple loading of the image, accessing it from the other system in a memory-saving manner. The lazy loading demonstrated in this example is not part of the proxy pattern, but is merely an advantage made possible by the use of the proxy.
+
+interface Image {
+    public void displayImage();
+}
+
+// On System A
+class RealImage implements Image {
+    private final String filename;
+
+    /**
+     * Constructor
+     * @param filename
+     */
+    public RealImage(String filename) {
+        this.filename = filename;
+        loadImageFromDisk();
+    }
+
+    /**
+     * Loads the image from the disk
+     */
+    private void loadImageFromDisk() {
+        System.out.println("Loading   " + filename);
+    }
+
+    /**
+     * Displays the image
+     */
+    public void displayImage() {
+        System.out.println("Displaying " + filename);
+    }
+}
+
+// On System B
+class ProxyImage implements Image {
+    private final String filename;
+    private RealImage image;
+    
+    /**
+     * Constructor
+     * @param filename
+     */
+    public ProxyImage(String filename) {
+        this.filename = filename;
+    }
+
+    /**
+     * Displays the image
+     */
+    public void displayImage() {
+        if (image == null) {
+           image = new RealImage(filename);
+        }
+        image.displayImage();
+    }
+}
+
+class ProxyExample {
+   /**
+    * Test method
+    */
+   public static void main(final String[] arguments) {
+        Image image1 = new ProxyImage("HiRes_10MB_Photo1");
+        Image image2 = new ProxyImage("HiRes_10MB_Photo2");
+
+        image1.displayImage(); // loading necessary
+        image1.displayImage(); // loading unnecessary
+        image2.displayImage(); // loading necessary
+        image2.displayImage(); // loading unnecessary
+        image1.displayImage(); // loading unnecessary
+    }
+}
+
+Output
+
+Loading   HiRes_10MB_Photo1
+Displaying HiRes_10MB_Photo1
+Displaying HiRes_10MB_Photo1
+Loading   HiRes_10MB_Photo2
+Displaying HiRes_10MB_Photo2
+Displaying HiRes_10MB_Photo2
+Displaying HiRes_10MB_Photo1
+
+JavaScript[edit]
+// Driver class
+class Driver {
+  constructor (age) {
+    this.age = age
+  }
+}
+
+// Car class
+class Car {
+  drive () {
+    console.log('Car has been driven!')
+  }
+}
+
+// Proxy car class
+class ProxyCar {
+  constructor (driver) {
+    this.car = new Car()
+    this.driver = driver
+  }
+
+  drive () {
+    if (this.driver.age <= 16) {
+      console.log('Sorry, the driver is too young to drive.')
+    } else {
+      this.car.drive()
+    }
+  }
+}
+
+// Run program
+const driver = new Driver(16)
+const car = new ProxyCar(driver)
+car.drive()
+
+const driver2 = new Driver(25)
+const car2 = new ProxyCar(driver2)
+car2.drive()
+
+Output
+
+Sorry, the driver is too young to drive.
+Car has been driven!
+
+More advanced proxies involve the Proxy object, which can intercept and redefine fundamental operations such as accessing properties. The handler functions in this case are sometimes called traps.[4]
+
+PHP[edit]
+<?php 
+
+interface Image
+{
+    public function displayImage();
+}
+
+// On System A
+class RealImage implements Image
+{
+    private string $filename = null;
+
+    public function __construct(string $filename)
+    {
+        $this->filename = $filename;
+        $this->loadImageFromDisk();
+    }
+
+    /**
+     * Loads the image from the disk
+     */
+    private function loadImageFromDisk()
+    {
+        echo "Loading {$this->filename}" . \PHP_EOL;
+    }
+
+    /**
+     * Displays the image
+     */
+    public function displayImage()
+    {
+    	echo "Displaying {$this->filename}" . \PHP_EOL;
+    }
+}
+
+// On System B
+class ProxyImage implements Image
+{
+    private ?Image $image = null;
+    private string $filename = null;
+
+    public function __construct(string $filename)
+    {
+        $this->filename = $filename;
+    }
+
+    /**
+     * Displays the image
+     */
+    public function displayImage()
+    {
+        if ($this->image === null) {
+           $this->image = new RealImage($this->filename);
+        }
+        $this->image->displayImage();
+    }
+}
+
+
+$image1 = new ProxyImage("HiRes_10MB_Photo1");
+$image2 = new ProxyImage("HiRes_10MB_Photo2");
+
+$image1->displayImage(); // Loading necessary
+$image1->displayImage(); // Loading unnecessary
+$image2->displayImage(); // Loading necessary
+$image2->displayImage(); // Loading unnecessary
+$image1->displayImage(); // Loading unnecessary
+
+Output
+
+Loading HiRes_10MB_Photo1 
+Displaying HiRes_10MB_Photo1 
+Displaying HiRes_10MB_Photo1 
+Loading HiRes_10MB_Photo2 
+Displaying HiRes_10MB_Photo2 
+Displaying HiRes_10MB_Photo2 
+Displaying HiRes_10MB_Photo1
+
+Python[edit]
+"""
+Proxy pattern example.
+"""
+from abc import ABCMeta, abstractmethod
+
+
+NOT_IMPLEMENTED = "You should implement this."
+
+
+class AbstractCar:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def drive(self):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+
+class Car(AbstractCar):
+    def drive(self) -> None:
+        print("Car has been driven!")
+
+
+class Driver:
+    def __init__(self, age: int) -> None:
+        self.age = age
+
+
+class ProxyCar(AbstractCar):
+    def __init__(self, driver) -> None:
+        self.car = Car()
+        self.driver = driver
+
+    def drive(self) -> None:
+        if self.driver.age <= 16:
+            print("Sorry, the driver is too young to drive.")
+        else:
+            self.car.drive()
+
+
+driver = Driver(16)
+car = ProxyCar(driver)
+car.drive()
+
+driver = Driver(25)
+car = ProxyCar(driver)
+car.drive()
+
+Output
+
+Sorry, the driver is too young to drive.
+Car has been driven!
+
+Rust[edit]
+trait ICar {
+    fn drive(&self);
+}
+
+struct Car {}
+
+impl ICar for Car {
+    fn drive(&self) {
+        println!("Car has been driven!");
+    }
+}
+
+impl Car {
+    fn new() -> Car {
+        Car {}
+    }
+}
+
+struct ProxyCar<'a> {
+    real_car: &'a ICar,
+    driver_age: i32,
+}
+
+impl<'a> ICar for ProxyCar<'a> {
+    fn drive(&self) {
+        if self.driver_age > 16 {
+            self.real_car.drive();
+        } else {
+            println!("Sorry, the driver is too young to drive.")
+        }
+    }
+}
+
+impl<'a> ProxyCar<'a> {
+    fn new(driver_age: i32, other_car: &'a ICar) -> ProxyCar {
+        ProxyCar {
+            real_car: other_car,
+            driver_age: driver_age,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_underage() {
+        let car = Car::new();
+        let proxy_car = ProxyCar::new(16, &car);
+        proxy_car.drive();
+    }
+
+    #[test]
+    fn test_can_drive() {
+        let car = Car::new();
+        let proxy_car = ProxyCar::new(17, &car);
+        proxy_car.drive();
+    }
+}
+
+Output
+
+Sorry, the car is to young for you to drive.
+Car has been driven!
+
+See also[edit]
+Composite pattern
+Decorator pattern
+Lazy initialization
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 207ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Proxy design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "The Proxy design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "Proxy - JavaScript | MDN". developer.mozilla.org. Retrieved 21 January 2022.
+
+
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Proxy pattern.
+
+Geary, David (February 22, 2002). "Take control with the Proxy design pattern". JavaWorld. Retrieved 2020-07-20.
+PerfectJPattern Open Source Project, Provides componentized implementation of the Proxy Pattern in Java
+Adapter vs. Proxy vs. Facade Pattern Comparison at the Wayback Machine (archived 2012-03-11)
+Proxy Design Pattern
+Proxy pattern C++ implementation example at the Wayback Machine (archived 2014-10-19)
+Proxy pattern description from the Portland Pattern Repository
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Proxy_pattern&oldid=1066993503"
+		Categories: Software design patternsHidden categories: CS1 maint: multiple names: authors listCommons category link from WikidataWebarchive template wayback linksArticles with example C Sharp codeArticles with example Java code
+	

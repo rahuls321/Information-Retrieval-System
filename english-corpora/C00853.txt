@@ -1,0 +1,291 @@
+
+Title:
+Perfect hash function
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  A perfect hash function for the four names shown
+  A minimal perfect hash function for the four names shown
+In computer science, a perfect hash function h for a set S is a hash function that maps distinct elements in S to a set of m integers, with no collisions. In mathematical terms, it is an injective function.
+Perfect hash functions may be used to implement a lookup table with constant worst-case access time. A perfect hash function can, as any hash function, be used to implement hash tables, with the advantage that no collision resolution has to be implemented. In addition, if the keys are not the data and if it is known that queried keys will be valid, then the keys do not need to be stored in the lookup table, saving space.
+Disadvantages of perfect hash functions are that S needs to be known for the construction of the perfect hash function. Non-dynamic perfect hash functions need to be re-constructed if S changes. For frequently changing S dynamic perfect hash functions may be used at the cost of additional space.[1] The space requirement to store the perfect hash function is in O(n).
+The important performance parameters for perfect hash functions are the evaluation time, which should be constant, the construction time, and the representation size.
+
+Contents
+
+1 Application
+2 Performance of perfect hash functions
+3 Construction
+
+3.1 Pseudocode
+
+
+4 Space lower bounds
+5 Extensions
+
+5.1 Dynamic perfect hashing
+5.2 Minimal perfect hash function
+5.3 k-perfect hashing
+5.4 Order preservation
+
+
+6 Related constructions
+7 References
+8 Further reading
+9 External links
+
+
+
+Application[edit]
+A perfect hash function with values in a limited range can be used for efficient lookup operations, by placing keys from S (or other associated values) in a lookup table indexed by the output of the function. One can then test whether a key is present in S, or look up a value associated with that key, by looking for it at its cell of the table. Each such lookup takes constant time in the worst case.[2] With perfect hashing, the associated data can be read or written with a single access to the table.[3]
+
+Performance of perfect hash functions[edit]
+The important performance parameters for perfect hashing are the representation size, the evaluation time, the construction time, and additionally the range requirement 
+  
+    
+      
+        
+          
+            m
+            n
+          
+        
+      
+    
+    {\displaystyle {\frac {m}{n}}}
+  
+.[4] The evaluation time can be as fast as O(1), which is optimal.[2][4] The construction time needs to be at least O(n), because each element in S needs to be considered, and S contains n elements. This lower bound can be achieved in practice.[4]
+The lower bound for the representation size depends on m and n. Let m = (1+Îµ) n and h a perfect hash function. A good approximation for the lower bound is 
+  
+    
+      
+        log
+        â¡
+        e
+        â
+        Îµ
+        log
+        â¡
+        
+          
+            
+              1
+              +
+              Îµ
+            
+            Îµ
+          
+        
+      
+    
+    {\displaystyle \log e-\varepsilon \log {\frac {1+\varepsilon }{\varepsilon }}}
+  
+ Bits per element. For minimal perfect hashing, Îµ = 0, the lower bound is log e â 1.44 bits per element.[4]
+
+Construction[edit]
+A perfect hash function for a specific set S that can be evaluated in constant time, and with values in a small range, can be found by a randomized algorithm in a number of operations that is proportional to the size of S.
+The original construction of Fredman, KomlÃ³s & SzemerÃ©di (1984) uses a two-level scheme to map a set S of n elements to a range of O(n) indices, and then map each index to a range of hash values. The first level of their construction chooses a large prime p (larger than the size of the universe from which S is drawn), and a parameter k, and maps each element x of S to the index
+
+
+  
+    
+      
+        g
+        (
+        x
+        )
+        =
+        (
+        k
+        x
+        
+          mod
+          
+            p
+          
+        
+        )
+        
+          mod
+          
+            n
+          
+        
+        .
+      
+    
+    {\displaystyle g(x)=(kx{\bmod {p}}){\bmod {n}}.}
+  
+
+If k is chosen randomly, this step is likely to have collisions, but the number of elements ni that are simultaneously mapped to the same index i is likely to be small.
+The second level of their construction assigns disjoint ranges of O(ni2) integers to each index i. It uses a second set of linear modular functions, one for each index i, to map each member x of S into the range associated with g(x).[2]
+As Fredman, KomlÃ³s & SzemerÃ©di (1984) show, there exists a choice of the parameter k such that the sum of the lengths of the ranges for the n different values of g(x) is O(n). Additionally, for each value of g(x), there exists a linear modular function that maps the corresponding subset of S into the range associated with that value. Both k, and the second-level functions for each value of g(x), can be found in polynomial time by choosing values randomly until finding one that works.[2]
+The hash function itself requires storage space O(n) to store k, p, and all of the second-level linear modular functions. Computing the hash value of a given key x may be performed in constant time by computing g(x), looking up the second-level function associated with g(x), and applying this function to x.
+A modified version of this two-level scheme with a larger number of values at the top level can be used to construct a perfect hash function that maps S into a smaller range of length n + o(n).[2]
+A more recent method for constructing a perfect hash function is described by Belazzougui, Botelho & Dietzfelbinger (2009) as "hash, displace, and compress". Here a first-level hash function g is also used to map elements onto a range of r integers. An element x â S is stored in the Bucket Bg(x).[4]
+Then, in descending order of size, each bucket's elements are hashed by a hash function of a sequence of independent fully random hash functions (Î¦1, Î¦2, Î¦3, ...), starting with Î¦1. If the hash function does not produce any collisions for the bucket, and the resulting values are not yet occupied by other elements from other buckets, the function is chosen for that bucket. If not, the next hash function in the sequence is tested.[4]
+To evaluate the perfect hash function h(x) one only has to save the mapping Ï of the bucket index g(x) onto the correct hash function in the sequence, resulting in h(x) = Î¦Ï(g(x)).[4]
+Finally, to reduce the representation size, the (Ï(i))0 â¤ i < r are compressed into a form that still allows the evaluation in O(1).[4]
+This approach needs linear time in n for construction, and constant evaluation time. The representation size is in O(n), and depends on the achieved range. For example, with m = 1.23n Belazzougui, Botelho & Dietzfelbinger (2009) achieved a representation size between 3.03 bits/key and 1.40 bits/key for their given example set of 10 million entries, with lower values needing a higher computation time. The space lower bound in this scenario is 0.88 bits/key.[4]
+
+Pseudocode[edit]
+algorithm hash, displace, and compress is
+(1) Split S into buckets BiÂ := gâ1({i})â©S,0 â¤ i < r
+(2) Sort buckets Bi in falling order according to size |Bi|
+(3) Initialize array T[0...m-1] with 0's
+(4) for all iââ[r], in the order from (2), do
+(5)     for lâââ1,2,...
+(6)         repeat forming Kiâââ{Î¦l(x)|xâââBi}
+(6)         until |Ki|=|Bi| and Kiâ©{j|T[j]=1}=ââ
+(7)     let Ï(i):= the successful l
+(8)     for all jâââKi let T[j]:=â1
+(9) Transform (Ïi)0â¤i<r into compressed form, retaining O(1) access.
+
+Space lower bounds[edit]
+The use of O(n) words of information to store the function of Fredman, KomlÃ³s & SzemerÃ©di (1984) is near-optimal: any perfect hash function that can be calculated in constant time
+requires at least a number of bits that is proportional to the size of S.[5]
+For minimal perfect hash functions the information theoretic space lower bound is
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        e
+        â
+        1.44
+      
+    
+    {\displaystyle \log _{2}e\approx 1.44}
+  
+
+bits/key.[4]
+For perfect hash functions, it is first assumed that the range of h is bounded by n as m = (1+Îµ) n. With the formula given by Belazzougui, Botelho & Dietzfelbinger (2009) and for a universe 
+  
+    
+      
+        U
+        â
+        S
+      
+    
+    {\displaystyle U\supseteq S}
+  
+ whose size |U| = u tends towards infinity, the space lower bounds is
+
+
+  
+    
+      
+        
+          log
+          
+            2
+          
+        
+        â¡
+        e
+        â
+        Îµ
+        log
+        â¡
+        
+          
+            
+              1
+              +
+              Îµ
+            
+            Îµ
+          
+        
+      
+    
+    {\displaystyle \log _{2}e-\varepsilon \log {\frac {1+\varepsilon }{\varepsilon }}}
+  
+
+bits/key, minus log(n) bits overall.[4]
+
+Extensions[edit]
+Dynamic perfect hashing[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Dynamic perfect hashing
+Using a perfect hash function is best in situations where there is a frequently queried large set, S, which is seldom updated. This is because any modification of the set S may cause the hash function to no longer be perfect for the modified set. Solutions which update the hash function any time the set is modified are known as dynamic perfect hashing,[1] but these methods are relatively complicated to implement.
+
+Minimal perfect hash function[edit]
+A minimal perfect hash function is a perfect hash function that maps n keys to n consecutive integers â usually the numbers from 0 to n â 1 or from 1 to n.  A more formal way of expressing this is:  Let j and k be elements of some finite set S.  Then h is a minimal perfect hash function if and only if h(j) = h(k) implies j = k (injectivity) and there exists an integer a such that the range of h is a..a + |S| â 1. It has been proven that a general purpose minimal perfect hash scheme requires at least 1.44 bits/key.[4] The best currently known minimal perfect hashing schemes can be represented using less than 1.56 bits/key if given enough time.[6]
+
+k-perfect hashing[edit]
+A hash function is k-perfect if at most k elements from S are mapped onto the same value in the range. The "hash, displace, and compress" algorithm can be used to construct k-perfect hash functions by allowing up to k collisions. The changes necessary to accomplish this are minimal, and are underlined in the adapted pseudocode below:
+
+(4) for all iââ[r], in the order from (2), do
+(5)     for lâââ1,2,...
+(6)         repeat forming Kiâââ{Î¦l(x)|xâââBi}
+(6)         until |Ki|=|Bi| and Kiâ©{j|T[j]=k}=ââ
+(7)     let Ï(i):= the successful l
+(8)     for all jâââKi set T[j]âT[j]+1
+
+Order preservation[edit]
+A minimal perfect hash function F is order preserving if keys are given in some order a1, a2, ..., an and for any keys aj and ak, j < k implies F(aj) < F(ak).[7] In this case, the function value is just the position of each key in the sorted ordering of all of the keys. A simple implementation of order-preserving minimal perfect hash functions with constant access time is to use an (ordinary) perfect hash function or cuckoo hashing to store a lookup table of the positions of each key. If the keys to be hashed are themselves stored in a sorted array, it is possible to store a small number of additional bits per key in a data structure that can be used to compute hash values quickly.[8] Order-preserving minimal perfect hash functions require necessarily Î©(n log n) bits to be represented.[9]
+
+Related constructions[edit]
+A simple alternative to perfect hashing, which also allows dynamic updates, is cuckoo hashing. This scheme maps keys to two or more locations within a range (unlike perfect hashing which maps each key to a single location) but does so in such a way that the keys can be assigned one-to-one to locations to which they have been mapped. Lookups with this scheme are slower, because multiple locations must be checked, but nevertheless take constant worst-case time.[10]
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Dietzfelbinger, Martin; Karlin, Anna; Mehlhorn, Kurt; Meyer auf der Heide, Friedhelm; Rohnert, Hans; Tarjan, Robert E. (1994), "Dynamic perfect hashing: upper and lower bounds", SIAM Journal on Computing, 23 (4): 738â761, doi:10.1137/S0097539791194094, MRÂ 1283572.
+
+^ a b c d e Fredman, Michael L.; KomlÃ³s, JÃ¡nos; SzemerÃ©di, Endre (1984), "Storing a Sparse Table with O(1) Worst Case Access Time", Journal of the ACM, 31 (3): 538, doi:10.1145/828.1884, MRÂ 0819156
+
+^ Lu, Yi; Prabhakar, Balaji; Bonomi, Flavio (2006), "Perfect Hashing for Network Applications", 2006 IEEE International Symposium on Information Theory: 2774â2778, doi:10.1109/ISIT.2006.261567
+
+^ a b c d e f g h i j k l Belazzougui, Djamal; Botelho, Fabiano C.; Dietzfelbinger, Martin (2009), "Hash, displace, and compress" (PDF), AlgorithmsâESA 2009: 17th Annual European Symposium, Copenhagen, Denmark, September 7-9, 2009, Proceedings (PDF), Lecture Notes in Computer Science, vol.Â 5757, Berlin: Springer, pp.Â 682â693, CiteSeerXÂ 10.1.1.568.130, doi:10.1007/978-3-642-04128-0_61, MRÂ 2557794.
+
+^ Fredman, Michael L.; KomlÃ³s, JÃ¡nos (1984), "On the size of separating systems and families of perfect hash functions", SIAM Journal on Algebraic and Discrete Methods, 5 (1): 61â68, doi:10.1137/0605009, MRÂ 0731857.
+
+^ Esposito, Emmanuel; Mueller Graf, Thomas; Vigna, Sebastiano (2020), "RecSplit: Minimal Perfect Hashing via Recursive Splitting", 2020 Proceedings of the Symposium on Algorithm Engineering and Experiments (ALENEX), Proceedings, pp.Â 175â185, arXiv:1910.06416, doi:10.1137/1.9781611976007.14.
+
+^ Jenkins, Bob (14 April 2009), "order-preserving minimal perfect hashing",  in Black, Paul E. (ed.), Dictionary of Algorithms and Data Structures, U.S. National Institute of Standards and Technology, retrieved 2013-03-05
+
+^ Belazzougui, Djamal; Boldi, Paolo; Pagh, Rasmus; Vigna, Sebastiano (November 2008), "Theory and practice of monotone minimal perfect hashing", Journal of Experimental Algorithmics, 16, Art. no. 3.2, 26pp, doi:10.1145/1963190.2025378.
+
+^ Fox, Edward A.; Chen, Qi Fan; Daoud, Amjad M.; Heath, Lenwood S. (July 1991), "Order-preserving minimal perfect hash functions and information retrieval" (PDF), ACM Transactions on Information Systems, New York, NY, USA: ACM, 9 (3): 281â308, doi:10.1145/125187.125200.
+
+^ Pagh, Rasmus; Rodler, Flemming Friche (2004), "Cuckoo hashing", Journal of Algorithms, 51 (2): 122â144, doi:10.1016/j.jalgor.2003.12.002, MRÂ 2050140.
+
+
+Further reading[edit]
+Richard J. Cichelli. Minimal Perfect Hash Functions Made Simple, Communications of the ACM, Vol. 23, Number 1, January 1980.
+Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein. Introduction to Algorithms, Third Edition. MIT Press, 2009. ISBNÂ 978-0262033848. Section 11.5: Perfect hashing, pp.Â 267,Â 277â282.
+Fabiano C. Botelho, Rasmus Pagh and Nivio Ziviani. "Perfect Hashing for Data Management Applications".
+Fabiano C. Botelho and Nivio Ziviani. "External perfect hashing for very large key sets". 16th ACM Conference on Information and Knowledge Management (CIKM07), Lisbon, Portugal, November 2007.
+Djamal Belazzougui, Paolo Boldi, Rasmus Pagh, and Sebastiano Vigna. "Monotone minimal perfect hashing: Searching a sorted table with O(1) accesses". In Proceedings of the 20th Annual ACM-SIAM Symposium On Discrete Mathematics (SODA), New York, 2009. ACM Press.
+Douglas C. Schmidt, GPERF: A Perfect Hash Function Generator, C++ Report, SIGS, Vol. 10, No. 10, November/December, 1998.
+External links[edit]
+gperf is an Open Source C and C++ perfect hash generator (very fast, but only works for small sets)
+Minimal Perfect Hashing (bob algorithm) by Bob Jenkins
+cmph: C Minimal Perfect Hashing Library, open source implementations for many (minimal) perfect hashes (works for big sets)
+Sux4J: open source monotone minimal perfect hashing in Java
+MPHSharp: perfect hashing methods in C#
+BBHash: minimal perfect hash function in header-only C++
+Perfect::Hash, perfect hash generator in Perl that makes C code. Has a "prior art" section worth looking at.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Perfect_hash_function&oldid=1057530330"
+		Categories: HashingHash functionsSearch algorithms
+	

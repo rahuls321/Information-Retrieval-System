@@ -1,0 +1,4269 @@
+
+Title:
+Strassen algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Recursive algorithm for matrix multiplication
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with the SchÃ¶nhageâStrassen algorithm for multiplication of polynomials.
+In linear algebra, the Strassen algorithm, named after Volker Strassen, is an algorithm for matrix multiplication. It is faster than the standard matrix multiplication algorithm for large matrices, with a better asymptotic complexity, although the naive algorithm is often better for smaller matrices. The Strassen algorithm is slower than the fastest known algorithms for extremely large matrices, but such algorithms are not useful in practice, as they are much slower for matrices of practical size. 
+Strassen's algorithm works for any ring, such as plus/multiply, but not all semirings, such as min-plus or boolean algebra, where the naive algorithm still works, and so called combinatorial matrix multiplication.
+
+Contents
+
+1 History
+2 Algorithm
+3 Asymptotic complexity
+
+3.1 Rank or bilinear complexity
+3.2 Cache behavior
+
+
+4 Implementation considerations
+5 See also
+6 References
+7 External links
+
+
+
+History[edit]
+Volker Strassen first published this algorithm in 1969 and proved that the 
+  
+    
+      
+        
+          n
+          
+            3
+          
+        
+      
+    
+    {\displaystyle n^{3}}
+  
+ general matrix multiplication algorithm wasn't optimal.[1] The Strassen algorithm is only slightly better than that, but its publication resulted in much more research about matrix multiplication that led to faster approaches, such as the CoppersmithâWinograd algorithm.
+
+Algorithm[edit]
+  The left column represents 2x2 matrix multiplication. NaÃ¯ve matrix multiplication requires one multiplication for each "1" of the left column. Each of the other columns represents a single one of the 7 multiplications in the algorithm, and the sum of the columns gives the full matrix multiplication on the left.
+Let 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+, 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ be two square matrices over a ring 
+  
+    
+      
+        
+          
+            R
+          
+        
+      
+    
+    {\displaystyle {\mathcal {R}}}
+  
+, for example matrices whose entries are integers or the real numbers. We want to calculate the matrix product 
+  
+    
+      
+        C
+        =
+        A
+        B
+      
+    
+    {\displaystyle C=AB}
+  
+. In the following exposition of the algorithm, we will assume that all of these matrices have sizes that are powers of two (i.e., 
+  
+    
+      
+        A
+        ,
+        
+        B
+        ,
+        
+        C
+        â
+        
+          Matr
+          
+            
+              2
+              
+                n
+              
+            
+            Ã
+            
+              2
+              
+                n
+              
+            
+          
+        
+        â¡
+        (
+        
+          
+            R
+          
+        
+        )
+      
+    
+    {\displaystyle A,\,B,\,C\in \operatorname {Matr} _{2^{n}\times 2^{n}}({\mathcal {R}})}
+  
+), but this is only conceptually necessary -- if the matrices 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+, 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ are not of type 
+  
+    
+      
+        
+          2
+          
+            n
+          
+        
+        Ã
+        
+          2
+          
+            n
+          
+        
+      
+    
+    {\displaystyle 2^{n}\times 2^{n}}
+  
+ we can think conceptually about filling the "missing" rows and columns with zeros to obtain matrices with sizes of powers of two -- though real implementations of the algorithm will of course not actually do this in practice.
+We then partition 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+, 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ and 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ into equally sized block matrices
+
+
+  
+    
+      
+        A
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    A
+                    
+                      11
+                    
+                  
+                
+                
+                  
+                    A
+                    
+                      12
+                    
+                  
+                
+              
+              
+                
+                  
+                    A
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    A
+                    
+                      22
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        ,
+        
+        B
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    B
+                    
+                      11
+                    
+                  
+                
+                
+                  
+                    B
+                    
+                      12
+                    
+                  
+                
+              
+              
+                
+                  
+                    B
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    B
+                    
+                      22
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        ,
+        
+        C
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    C
+                    
+                      11
+                    
+                  
+                
+                
+                  
+                    C
+                    
+                      12
+                    
+                  
+                
+              
+              
+                
+                  
+                    C
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    C
+                    
+                      22
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        ,
+        
+      
+    
+    {\displaystyle A={\begin{bmatrix}A_{11}&A_{12}\\A_{21}&A_{22}\end{bmatrix}},\quad B={\begin{bmatrix}B_{11}&B_{12}\\B_{21}&B_{22}\end{bmatrix}},\quad C={\begin{bmatrix}C_{11}&C_{12}\\C_{21}&C_{22}\end{bmatrix}},\quad }
+  
+
+with 
+  
+    
+      
+        
+          A
+          
+            i
+            j
+          
+        
+        ,
+        
+          B
+          
+            i
+            j
+          
+        
+        ,
+        
+          C
+          
+            i
+            j
+          
+        
+        â
+        
+          Mat
+          
+            
+              2
+              
+                n
+                â
+                1
+              
+            
+            Ã
+            
+              2
+              
+                n
+                â
+                1
+              
+            
+          
+        
+        â¡
+        (
+        
+          
+            R
+          
+        
+        )
+      
+    
+    {\displaystyle A_{ij},B_{ij},C_{ij}\in \operatorname {Mat} _{2^{n-1}\times 2^{n-1}}({\mathcal {R}})}
+  
+. The naive algorithm would be:
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  
+                    C
+                    
+                      11
+                    
+                  
+                
+                
+                  
+                    C
+                    
+                      12
+                    
+                  
+                
+              
+              
+                
+                  
+                    C
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    C
+                    
+                      22
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    A
+                    
+                      11
+                    
+                  
+                  
+                    B
+                    
+                      11
+                    
+                  
+                  +
+                  
+                    A
+                    
+                      12
+                    
+                  
+                  
+                    B
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    A
+                    
+                      11
+                    
+                  
+                  
+                    B
+                    
+                      12
+                    
+                  
+                  +
+                  
+                    A
+                    
+                      12
+                    
+                  
+                  
+                    B
+                    
+                      22
+                    
+                  
+                
+              
+              
+                
+                  
+                    A
+                    
+                      21
+                    
+                  
+                  
+                    B
+                    
+                      11
+                    
+                  
+                  +
+                  
+                    A
+                    
+                      22
+                    
+                  
+                  
+                    B
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    A
+                    
+                      21
+                    
+                  
+                  
+                    B
+                    
+                      12
+                    
+                  
+                  +
+                  
+                    A
+                    
+                      22
+                    
+                  
+                  
+                    B
+                    
+                      22
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        .
+      
+    
+    {\displaystyle {\begin{bmatrix}C_{11}&C_{12}\\C_{21}&C_{22}\end{bmatrix}}={\begin{bmatrix}A_{11}B_{11}+A_{12}B_{21}&A_{11}B_{12}+A_{12}B_{22}\\A_{21}B_{11}+A_{22}B_{21}&A_{21}B_{12}+A_{22}B_{22}\end{bmatrix}}.}
+  
+
+With this construction we have not reduced the number of multiplications. We still need 8 multiplications of matrix blocks to calculate the 
+  
+    
+      
+        
+          C
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle C_{ij}}
+  
+ matrices, the same number of multiplications we need when using standard matrix multiplication.
+The Strassen algorithm defines instead new matrices:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  M
+                  
+                    1
+                  
+                
+              
+              
+                
+                =
+                (
+                
+                  A
+                  
+                    11
+                  
+                
+                +
+                
+                  A
+                  
+                    22
+                  
+                
+                )
+                (
+                
+                  B
+                  
+                    11
+                  
+                
+                +
+                
+                  B
+                  
+                    22
+                  
+                
+                )
+                ;
+              
+            
+            
+              
+                
+                  M
+                  
+                    2
+                  
+                
+              
+              
+                
+                =
+                (
+                
+                  A
+                  
+                    21
+                  
+                
+                +
+                
+                  A
+                  
+                    22
+                  
+                
+                )
+                
+                  B
+                  
+                    11
+                  
+                
+                ;
+              
+            
+            
+              
+                
+                  M
+                  
+                    3
+                  
+                
+              
+              
+                
+                =
+                
+                  A
+                  
+                    11
+                  
+                
+                (
+                
+                  B
+                  
+                    12
+                  
+                
+                â
+                
+                  B
+                  
+                    22
+                  
+                
+                )
+                ;
+              
+            
+            
+              
+                
+                  M
+                  
+                    4
+                  
+                
+              
+              
+                
+                =
+                
+                  A
+                  
+                    22
+                  
+                
+                (
+                
+                  B
+                  
+                    21
+                  
+                
+                â
+                
+                  B
+                  
+                    11
+                  
+                
+                )
+                ;
+              
+            
+            
+              
+                
+                  M
+                  
+                    5
+                  
+                
+              
+              
+                
+                =
+                (
+                
+                  A
+                  
+                    11
+                  
+                
+                +
+                
+                  A
+                  
+                    12
+                  
+                
+                )
+                
+                  B
+                  
+                    22
+                  
+                
+                ;
+              
+            
+            
+              
+                
+                  M
+                  
+                    6
+                  
+                
+              
+              
+                
+                =
+                (
+                
+                  A
+                  
+                    21
+                  
+                
+                â
+                
+                  A
+                  
+                    11
+                  
+                
+                )
+                (
+                
+                  B
+                  
+                    11
+                  
+                
+                +
+                
+                  B
+                  
+                    12
+                  
+                
+                )
+                ;
+              
+            
+            
+              
+                
+                  M
+                  
+                    7
+                  
+                
+              
+              
+                
+                =
+                (
+                
+                  A
+                  
+                    12
+                  
+                
+                â
+                
+                  A
+                  
+                    22
+                  
+                
+                )
+                (
+                
+                  B
+                  
+                    21
+                  
+                
+                +
+                
+                  B
+                  
+                    22
+                  
+                
+                )
+                ,
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}M_{1}&=(A_{11}+A_{22})(B_{11}+B_{22});\\M_{2}&=(A_{21}+A_{22})B_{11};\\M_{3}&=A_{11}(B_{12}-B_{22});\\M_{4}&=A_{22}(B_{21}-B_{11});\\M_{5}&=(A_{11}+A_{12})B_{22};\\M_{6}&=(A_{21}-A_{11})(B_{11}+B_{12});\\M_{7}&=(A_{12}-A_{22})(B_{21}+B_{22}),\\\end{aligned}}}
+  
+
+only using 7 multiplications (one for each 
+  
+    
+      
+        
+          M
+          
+            k
+          
+        
+      
+    
+    {\displaystyle M_{k}}
+  
+) instead of 8. We may now express the 
+  
+    
+      
+        
+          C
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle C_{ij}}
+  
+ in terms of 
+  
+    
+      
+        
+          M
+          
+            k
+          
+        
+      
+    
+    {\displaystyle M_{k}}
+  
+:
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  
+                    C
+                    
+                      11
+                    
+                  
+                
+                
+                  
+                    C
+                    
+                      12
+                    
+                  
+                
+              
+              
+                
+                  
+                    C
+                    
+                      21
+                    
+                  
+                
+                
+                  
+                    C
+                    
+                      22
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    M
+                    
+                      1
+                    
+                  
+                  +
+                  
+                    M
+                    
+                      4
+                    
+                  
+                  â
+                  
+                    M
+                    
+                      5
+                    
+                  
+                  +
+                  
+                    M
+                    
+                      7
+                    
+                  
+                
+                
+                  
+                    M
+                    
+                      3
+                    
+                  
+                  +
+                  
+                    M
+                    
+                      5
+                    
+                  
+                
+              
+              
+                
+                  
+                    M
+                    
+                      2
+                    
+                  
+                  +
+                  
+                    M
+                    
+                      4
+                    
+                  
+                
+                
+                  
+                    M
+                    
+                      1
+                    
+                  
+                  â
+                  
+                    M
+                    
+                      2
+                    
+                  
+                  +
+                  
+                    M
+                    
+                      3
+                    
+                  
+                  +
+                  
+                    M
+                    
+                      6
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        .
+      
+    
+    {\displaystyle {\begin{bmatrix}C_{11}&C_{12}\\C_{21}&C_{22}\end{bmatrix}}={\begin{bmatrix}M_{1}+M_{4}-M_{5}+M_{7}&M_{3}+M_{5}\\M_{2}+M_{4}&M_{1}-M_{2}+M_{3}+M_{6}\end{bmatrix}}.}
+  
+
+We recursively iterate this division process until the submatrices degenerate into numbers (elements of the ring 
+  
+    
+      
+        
+          
+            R
+          
+        
+      
+    
+    {\displaystyle {\mathcal {R}}}
+  
+). If, as mentioned above, the original matrix had a size that was not a power of 2, then the resulting product will have zero rows and columns just like 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ and 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+, and these will then be stripped at this point to obtain the (smaller) matrix 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ we really wanted.
+Practical implementations of Strassen's algorithm switch to standard methods of matrix multiplication for small enough submatrices, for which those algorithms are more efficient. The particular crossover point for which Strassen's algorithm is more efficient depends on the specific implementation and hardware. Earlier authors had estimated that Strassen's algorithm is faster for matrices with widths from 32 to 128 for optimized implementations.[2] However, it has been observed that this crossover point has been increasing in recent years, and a 2010 study found that even a single step of Strassen's algorithm is often not beneficial on current architectures, compared to a highly optimized traditional multiplication, until matrix sizes exceed 1000 or more, and even for matrix sizes of several thousand the benefit is typically marginal at best (around 10% or less).[3]  A more recent study (2016) observed benefits for matrices as small as 512 and a benefit around 20%.[4]
+
+Asymptotic complexity[edit]
+The outline of the algorithm above showed that one can get away with just 7, instead of the traditional 8, matrix-matrix multiplications for the sub-blocks of the matrix. On the other hand, one has to do additions and subtractions of blocks, though this is of no concern for the overall complexity: Adding matrices of size 
+  
+    
+      
+        N
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle N/2}
+  
+ requires only 
+  
+    
+      
+        (
+        N
+        
+          /
+        
+        2
+        
+          )
+          
+            2
+          
+        
+      
+    
+    {\displaystyle (N/2)^{2}}
+  
+ operations whereas multiplication is substantially more expensive (traditionally 
+  
+    
+      
+        2
+        (
+        N
+        
+          /
+        
+        2
+        
+          )
+          
+            3
+          
+        
+      
+    
+    {\displaystyle 2(N/2)^{3}}
+  
+ addition or multiplication operations).
+The question then is how many operations exactly one needs for Strassen's algorithms, and how this compares with the standard matrix multiplication that takes approximately 
+  
+    
+      
+        2
+        
+          N
+          
+            3
+          
+        
+      
+    
+    {\displaystyle 2N^{3}}
+  
+ (where 
+  
+    
+      
+        N
+        =
+        
+          2
+          
+            n
+          
+        
+      
+    
+    {\displaystyle N=2^{n}}
+  
+) arithmetic operations, i.e. an asymptotic complexity 
+  
+    
+      
+        Î
+        (
+        
+          N
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle \Theta (N^{3})}
+  
+.
+The number of additions and multiplications required in the Strassen algorithm can be calculated as follows: let 
+  
+    
+      
+        f
+        (
+        n
+        )
+      
+    
+    {\displaystyle f(n)}
+  
+ be the number of operations for a 
+  
+    
+      
+        
+          2
+          
+            n
+          
+        
+        Ã
+        
+          2
+          
+            n
+          
+        
+      
+    
+    {\displaystyle 2^{n}\times 2^{n}}
+  
+ matrix. Then by recursive application of the Strassen algorithm, we see that 
+  
+    
+      
+        f
+        (
+        n
+        )
+        =
+        7
+        f
+        (
+        n
+        â
+        1
+        )
+        +
+        l
+        
+          4
+          
+            n
+          
+        
+      
+    
+    {\displaystyle f(n)=7f(n-1)+l4^{n}}
+  
+, for some constant 
+  
+    
+      
+        l
+      
+    
+    {\displaystyle l}
+  
+ that depends on the number of additions performed at each application of the algorithm. Hence 
+  
+    
+      
+        f
+        (
+        n
+        )
+        =
+        (
+        7
+        +
+        o
+        (
+        1
+        )
+        
+          )
+          
+            n
+          
+        
+      
+    
+    {\displaystyle f(n)=(7+o(1))^{n}}
+  
+, i.e., the asymptotic complexity for multiplying matrices of size 
+  
+    
+      
+        N
+        =
+        
+          2
+          
+            n
+          
+        
+      
+    
+    {\displaystyle N=2^{n}}
+  
+ using the Strassen algorithm is  
+  
+    
+      
+        O
+        (
+        [
+        7
+        +
+        o
+        (
+        1
+        )
+        
+          ]
+          
+            n
+          
+        
+        )
+        =
+        O
+        (
+        
+          N
+          
+            
+              log
+              
+                2
+              
+            
+            â¡
+            7
+            +
+            o
+            (
+            1
+            )
+          
+        
+        )
+        â
+        O
+        (
+        
+          N
+          
+            2.8074
+          
+        
+        )
+      
+    
+    {\displaystyle O([7+o(1)]^{n})=O(N^{\log _{2}7+o(1)})\approx O(N^{2.8074})}
+  
+. The reduction in the number of arithmetic operations however comes at the price of a somewhat reduced numerical stability,[5] and the algorithm also requires significantly more memory compared to the naive algorithm. Both initial matrices must have their dimensions expanded to the next power of 2, which results in storing up to four times as many elements, and the seven auxiliary matrices each contain a quarter of the elements in the expanded ones.
+Strassen's algorithm needs to be compared to the "naive" way of doing the matrix multiplication that would require 8 instead of 7 multiplications of sub-blocks. This would then give rise to the complexity one expects from the standard approach: 
+  
+    
+      
+        O
+        (
+        
+          8
+          
+            
+              log
+              
+                2
+              
+            
+            â¡
+            n
+          
+        
+        )
+        =
+        O
+        (
+        
+          N
+          
+            
+              log
+              
+                2
+              
+            
+            â¡
+            8
+          
+        
+        )
+        =
+        O
+        (
+        
+          N
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(8^{\log _{2}n})=O(N^{\log _{2}8})=O(N^{3})}
+  
+. The comparison of these two algorithms shows that asymptotically, Strassen's algorithm is faster: There exists a size 
+  
+    
+      
+        
+          N
+          
+            threshold
+          
+        
+      
+    
+    {\displaystyle N_{\text{threshold}}}
+  
+ so that matrices that are larger are more efficiently multiplied with Strassen's algorithm than the "traditional" way. However, the asymptotic statement does not imply that Strassen's algorithm is always faster even for small matrices, and in practice this is in fact not the case: For small matrices, the cost of the additional additions of matrix blocks outweighs the savings in the number of multiplications. There are also other factors not captured by the analysis above, such as the difference in cost on today's hardware between loading data from memory onto processors vs. the cost of actually doing operations on this data. As a consequence of these sorts of considerations, Strassen's algorithm is typically only used on "large" matrices. This kind of effect is even more pronounced with alternative algorithms such as the one by Coppersmith and Winograd: While asymptotically even faster, the cross-over point 
+  
+    
+      
+        
+          N
+          
+            threshold
+          
+        
+      
+    
+    {\displaystyle N_{\text{threshold}}}
+  
+ is so large that the algorithm is not generally used on matrices one encounters in practice.
+
+Rank or bilinear complexity[edit]
+The bilinear complexity or rank of a bilinear map is an important concept in the asymptotic complexity of matrix multiplication.  The rank of a bilinear map 
+  
+    
+      
+        Ï
+        :
+        
+          A
+        
+        Ã
+        
+          B
+        
+        â
+        
+          C
+        
+      
+    
+    {\displaystyle \phi :\mathbf {A} \times \mathbf {B} \rightarrow \mathbf {C} }
+  
+ over a field F is defined as (somewhat of an abuse of notation)
+
+
+  
+    
+      
+        R
+        (
+        Ï
+        
+          /
+        
+        
+          F
+        
+        )
+        =
+        min
+        
+          {
+          
+            r
+            
+              |
+              
+                â
+                
+                  f
+                  
+                    i
+                  
+                
+                â
+                
+                  
+                    A
+                  
+                  
+                    â
+                  
+                
+                ,
+                
+                  g
+                  
+                    i
+                  
+                
+                â
+                
+                  
+                    B
+                  
+                  
+                    â
+                  
+                
+                ,
+                
+                  w
+                  
+                    i
+                  
+                
+                â
+                
+                  C
+                
+                ,
+                â
+                
+                  a
+                
+                â
+                
+                  A
+                
+                ,
+                
+                  b
+                
+                â
+                
+                  B
+                
+                ,
+                Ï
+                (
+                
+                  a
+                
+                ,
+                
+                  b
+                
+                )
+                =
+                
+                  â
+                  
+                    i
+                    =
+                    1
+                  
+                  
+                    r
+                  
+                
+                
+                  f
+                  
+                    i
+                  
+                
+                (
+                
+                  a
+                
+                )
+                
+                  g
+                  
+                    i
+                  
+                
+                (
+                
+                  b
+                
+                )
+                
+                  w
+                  
+                    i
+                  
+                
+              
+              
+            
+          
+          }
+        
+      
+    
+    {\displaystyle R(\phi /\mathbf {F} )=\min \left\{r\left|\exists f_{i}\in \mathbf {A} ^{*},g_{i}\in \mathbf {B} ^{*},w_{i}\in \mathbf {C} ,\forall \mathbf {a} \in \mathbf {A} ,\mathbf {b} \in \mathbf {B} ,\phi (\mathbf {a} ,\mathbf {b} )=\sum _{i=1}^{r}f_{i}(\mathbf {a} )g_{i}(\mathbf {b} )w_{i}\right.\right\}}
+  
+
+In other words, the rank of a bilinear map is the length of its shortest bilinear computation.[6]  The existence of Strassen's algorithm shows that the rank of 
+  
+    
+      
+        2
+        Ã
+        2
+      
+    
+    {\displaystyle 2\times 2}
+  
+ matrix multiplication is no more than seven.  To see this, let us express this algorithm (alongside the standard algorithm) as such a bilinear computation.  In the case of matrices, the dual spaces A* and B* consist of maps into the field F induced by a scalar double-dot product, (i.e. in this case the sum of all the entries of a Hadamard product.)
+
+
+
+
+Standard algorithm
+
+Strassen algorithm
+
+
+
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+
+
+  
+    
+      
+        
+          f
+          
+            i
+          
+        
+        (
+        
+          a
+        
+        )
+      
+    
+    {\displaystyle f_{i}(\mathbf {a} )}
+  
+
+
+  
+    
+      
+        
+          g
+          
+            i
+          
+        
+        (
+        
+          b
+        
+        )
+      
+    
+    {\displaystyle g_{i}(\mathbf {b} )}
+  
+
+
+  
+    
+      
+        
+          w
+          
+            i
+          
+        
+      
+    
+    {\displaystyle w_{i}}
+  
+
+
+
+  
+    
+      
+        
+          f
+          
+            i
+          
+        
+        (
+        
+          a
+        
+        )
+      
+    
+    {\displaystyle f_{i}(\mathbf {a} )}
+  
+
+
+  
+    
+      
+        
+          g
+          
+            i
+          
+        
+        (
+        
+          b
+        
+        )
+      
+    
+    {\displaystyle g_{i}(\mathbf {b} )}
+  
+
+
+  
+    
+      
+        
+          w
+          
+            i
+          
+        
+      
+    
+    {\displaystyle w_{i}}
+  
+
+
+
+1
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&1\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&1\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&1\end{bmatrix}}}
+  
+
+
+
+2
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&1\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  â
+                  1
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&-1\end{bmatrix}}}
+  
+
+
+
+3
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&0\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  â
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&-1\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&1\end{bmatrix}}}
+  
+
+
+
+4
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&0\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}-1&0\\1&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\1&0\end{bmatrix}}}
+  
+
+
+
+5
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&0\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&1\\0&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}-1&1\\0&0\end{bmatrix}}}
+  
+
+
+
+6
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&0\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}-1&0\\1&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&1\\0&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}}
+  
+
+
+
+7
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&0\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&0\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  â
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&1\\0&-1\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\1&1\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}1&0\\0&0\end{bmatrix}}}
+  
+
+
+
+8
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          a
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}:\mathbf {a} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        :
+        
+          b
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}:\mathbf {b} }
+  
+
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}0&0\\0&1\end{bmatrix}}}
+  
+
+
+
+
+
+
+
+
+
+
+  
+    
+      
+        
+          a
+        
+        
+          b
+        
+        =
+        
+          â
+          
+            i
+            =
+            1
+          
+          
+            8
+          
+        
+        
+          f
+          
+            i
+          
+        
+        (
+        
+          a
+        
+        )
+        
+          g
+          
+            i
+          
+        
+        (
+        
+          b
+        
+        )
+        
+          w
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \mathbf {a} \mathbf {b} =\sum _{i=1}^{8}f_{i}(\mathbf {a} )g_{i}(\mathbf {b} )w_{i}}
+  
+
+
+
+
+
+  
+    
+      
+        
+          a
+        
+        
+          b
+        
+        =
+        
+          â
+          
+            i
+            =
+            1
+          
+          
+            7
+          
+        
+        
+          f
+          
+            i
+          
+        
+        (
+        
+          a
+        
+        )
+        
+          g
+          
+            i
+          
+        
+        (
+        
+          b
+        
+        )
+        
+          w
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \mathbf {a} \mathbf {b} =\sum _{i=1}^{7}f_{i}(\mathbf {a} )g_{i}(\mathbf {b} )w_{i}}
+  
+
+
+It can be shown that the total number of elementary multiplications 
+  
+    
+      
+        L
+      
+    
+    {\displaystyle L}
+  
+ required for matrix multiplication is tightly asymptotically bound to the rank 
+  
+    
+      
+        R
+      
+    
+    {\displaystyle R}
+  
+, i.e. 
+  
+    
+      
+        L
+        =
+        Î
+        (
+        R
+        )
+      
+    
+    {\displaystyle L=\Theta (R)}
+  
+, or more specifically, since the constants are known, 
+  
+    
+      
+        R
+        
+          /
+        
+        2
+        â¤
+        L
+        â¤
+        R
+      
+    
+    {\displaystyle R/2\leq L\leq R}
+  
+. One useful property of the rank is that it is submultiplicative for tensor products, and this enables one to show that 
+  
+    
+      
+        
+          2
+          
+            n
+          
+        
+        Ã
+        
+          2
+          
+            n
+          
+        
+        Ã
+        
+          2
+          
+            n
+          
+        
+      
+    
+    {\displaystyle 2^{n}\times 2^{n}\times 2^{n}}
+  
+ matrix multiplication can be accomplished with no more than 
+  
+    
+      
+        7
+        n
+      
+    
+    {\displaystyle 7n}
+  
+ elementary multiplications for any 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+.  (This 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+-fold tensor product of the 
+  
+    
+      
+        2
+        Ã
+        2
+        Ã
+        2
+      
+    
+    {\displaystyle 2\times 2\times 2}
+  
+ matrix multiplication map with itself â an 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+-th tensor powerâis realized by the recursive step in the algorithm shown.)
+
+Cache behavior[edit]
+Strassen's algorithm is cache oblivious. Analysis of its cache behavior algorithm has shown it to incur
+
+
+  
+    
+      
+        Î
+        
+          (
+          
+            1
+            +
+            
+              
+                
+                  n
+                  
+                    2
+                  
+                
+                b
+              
+            
+            +
+            
+              
+                
+                  n
+                  
+                    
+                      log
+                      
+                        2
+                      
+                    
+                    â¡
+                    7
+                  
+                
+                
+                  b
+                  
+                    
+                      M
+                    
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Theta \left(1+{\frac {n^{2}}{b}}+{\frac {n^{\log _{2}7}}{b{\sqrt {M}}}}\right)}
+  
+
+cache misses during its execution, assuming an idealized cache of size 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ (i.e. with 
+  
+    
+      
+        M
+        
+          /
+        
+        b
+      
+    
+    {\displaystyle M/b}
+  
+ lines of length 
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+).[7]:â13â
+
+Implementation considerations[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (January 2015) (Learn how and when to remove this template message)
+The description above states that the matrices are square, and the size is a power of two, and that padding should be used if needed. This restriction allows the matrices to be split in half, recursively, until limit of scalar multiplication is reached. The restriction simplifies the explanation, and analysis of complexity, but is not actually necessary;[8]
+and in fact, padding the matrix as described will increase the computation time and can easily eliminate the fairly narrow time savings obtained by using the method in the first place.
+A good implementation will observe the following:
+
+It is not necessary or desirable to use the Strassen algorithm down to the limit of scalars. Compared to conventional matrix multiplication, the algorithm adds a considerable 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+ workload in addition/subtractions; so below a certain size, it will be better to use conventional multiplication. Thus, for instance, a 
+  
+    
+      
+        1600
+        Ã
+        1600
+      
+    
+    {\displaystyle 1600\times 1600}
+  
+ does not need to be padded to 
+  
+    
+      
+        2048
+        Ã
+        2048
+      
+    
+    {\displaystyle 2048\times 2048}
+  
+, since it could be subdivided down to 
+  
+    
+      
+        25
+        Ã
+        25
+      
+    
+    {\displaystyle 25\times 25}
+  
+ matrices and conventional multiplication can then be used at that level.
+The method can indeed be applied to square matrices of any dimension.[3] If the dimension is even, they are split in half as described. If the dimension is odd, zero padding by one row and one column is applied first.  Such padding can be applied on-the-fly and lazily, and the extra rows and columns discarded as the result is formed. For instance, suppose the matrices are 
+  
+    
+      
+        199
+        Ã
+        199
+      
+    
+    {\displaystyle 199\times 199}
+  
+. They can be split so that the upper-left portion is 
+  
+    
+      
+        100
+        Ã
+        100
+      
+    
+    {\displaystyle 100\times 100}
+  
+ and the lower-right is 
+  
+    
+      
+        99
+        Ã
+        99
+      
+    
+    {\displaystyle 99\times 99}
+  
+. Wherever the operations require it, dimensions of 
+  
+    
+      
+        99
+      
+    
+    {\displaystyle 99}
+  
+ are zero padded to 
+  
+    
+      
+        100
+      
+    
+    {\displaystyle 100}
+  
+ first. Note, for instance, that the product 
+  
+    
+      
+        
+          M
+          
+            2
+          
+        
+      
+    
+    {\displaystyle M_{2}}
+  
+ is only used in the lower row of the output, so is only required to be 
+  
+    
+      
+        99
+      
+    
+    {\displaystyle 99}
+  
+ rows high; and thus the left factor 
+  
+    
+      
+        
+          A
+          
+            21
+          
+        
+        +
+        
+          A
+          
+            22
+          
+        
+      
+    
+    {\displaystyle A_{21}+A_{22}}
+  
+ used to generate it need only be 
+  
+    
+      
+        99
+      
+    
+    {\displaystyle 99}
+  
+ rows high; accordingly, there is no need to pad that sum to 
+  
+    
+      
+        100
+      
+    
+    {\displaystyle 100}
+  
+ rows; it is only necessary to pad 
+  
+    
+      
+        
+          A
+          
+            22
+          
+        
+      
+    
+    {\displaystyle A_{22}}
+  
+ to 
+  
+    
+      
+        100
+      
+    
+    {\displaystyle 100}
+  
+ columns to match 
+  
+    
+      
+        
+          A
+          
+            21
+          
+        
+      
+    
+    {\displaystyle A_{21}}
+  
+.
+Furthermore, there is no need for the matrices to be square. Non-square matrices can be split in half using the same methods, yielding smaller non-square matrices. If the matrices are sufficiently non-square it will be worthwhile reducing the initial operation to more square products, using simple methods which are essentially  
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+,  for instance:
+
+A product of size 
+  
+    
+      
+        [
+        2
+        N
+        Ã
+        N
+        ]
+        â
+        [
+        N
+        Ã
+        10
+        N
+        ]
+      
+    
+    {\displaystyle [2N\times N]\ast [N\times 10N]}
+  
+ can be done as 20 separate 
+  
+    
+      
+        [
+        N
+        Ã
+        N
+        ]
+        â
+        [
+        N
+        Ã
+        N
+        ]
+      
+    
+    {\displaystyle [N\times N]\ast [N\times N]}
+  
+ operations, arranged to form the result;
+A product of size 
+  
+    
+      
+        [
+        N
+        Ã
+        10
+        N
+        ]
+        â
+        [
+        10
+        N
+        Ã
+        N
+        ]
+      
+    
+    {\displaystyle [N\times 10N]\ast [10N\times N]}
+  
+ can be done as 10 separate 
+  
+    
+      
+        [
+        N
+        Ã
+        N
+        ]
+        â
+        [
+        N
+        Ã
+        N
+        ]
+      
+    
+    {\displaystyle [N\times N]\ast [N\times N]}
+  
+ operations, summed to form the result.
+These techniques will make the implementation more complicated, compared to simply padding to a power-of-two square; however, it is a reasonable assumption that anyone undertaking an implementation of Strassen, rather than conventional, multiplication, will place a higher priority on computational efficiency than on simplicity of the implementation.
+In practice, Strassen's algorithm can be implemented to attain better performance than conventional multiplication even for small matrices, for matrices that are not at all square, and without requiring workspace beyond buffers that are already needed for a high-performance conventional multiplication.[4]
+
+See also[edit]
+Computational complexity of mathematical operations
+GaussâJordan elimination
+CoppersmithâWinograd algorithm
+Z-order matrix representation
+Karatsuba algorithm, for multiplying n-digit integers in 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            
+              log
+              
+                2
+              
+            
+            â¡
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{\log _{2}3})}
+  
+ instead of in 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+ time
+Toom-Cook algorithm, a faster generalization of the Karatsuba algorithm that permits recursive divide-and-conquer decomposition into more than 2 blocks at a time
+Gauss's complex multiplication algorithm multiplies two complex numbers using 3 real multiplications instead of 4
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Strassen, Volker (1969). "Gaussian Elimination is not Optimal". Numer. Math. 13 (4): 354â356. doi:10.1007/BF02165411. S2CIDÂ 121656251.
+
+^ Skiena, Steven S. (1998), "Â§8.2.3 Matrix multiplication", The Algorithm Design Manual, Berlin, New York: Springer-Verlag, ISBNÂ 978-0-387-94860-7.
+
+^ Jump up to: a b D'Alberto, Paolo; Nicolau, Alexandru (2005). Using Recursion to Boost ATLAS's Performance (PDF). Sixth Int'l Symp. on High Performance Computing.
+
+^ Jump up to: a b Huang, Jianyu; Smith, Tyler; Henry, Greg; van de Geijn, Robert (2016). Strassen's Algorithm Reloaded. International Conference for High Performance Computing, Networking, Storage and Analysis (SC'16).
+
+^ Webb, Miller (1975). "Computational complexity and numerical stability". SIAM J. Comput. 4 (2): 97â107. doi:10.1137/0204009.
+
+^ Burgisser; Clausen; Shokrollahi (1997). Algebraic Complexity Theory. Springer-Verlag. ISBNÂ 3-540-60582-7.
+
+^ Frigo, M.; Leiserson, C. E.; Prokop, H.; Ramachandran, S. (1999). Cache-oblivious algorithms (PDF). Proc. IEEE Symp. on Foundations of Computer Science (FOCS). pp.Â 285â297.
+
+^ Higham, Nicholas J. (1990). "Exploiting fast matrix multiplication within the level 3 BLAS" (PDF). ACM Transactions on Mathematical Software. 16 (4): 352â368. doi:10.1145/98267.98290. hdl:1813/6900. S2CIDÂ 5715053.
+
+
+Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein. Introduction to Algorithms, Second Edition. MIT Press and McGraw-Hill, 2001. ISBNÂ 0-262-03293-7. Chapter 28: Section 28.2: Strassen's algorithm for matrix multiplication, pp.Â 735â741.
+External links[edit]
+Weisstein, Eric W. "Strassen's Formulas". MathWorld. (also includes formulas for fast matrix inversion)
+Tyler J. Earnest, Strassen's Algorithm on the Cell Broadband Engine
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteNumerical linear algebraKey concepts
+Floating point
+Numerical stability
+Problems
+System of linear equations
+Matrix decompositions
+Matrix multiplication (algorithms)
+Matrix splitting
+Sparse problems
+Hardware
+CPU cache
+TLB
+Cache-oblivious algorithm
+SIMD
+Multiprocessing
+Software
+MATLAB
+Basic Linear Algebra Subprograms (BLAS)
+LAPACK
+Specialized libraries
+General purpose software
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Strassen_algorithm&oldid=1049348598"
+		Categories: Matrix multiplication algorithmsHidden categories: Articles with short descriptionShort description is different from WikidataArticles needing additional references from January 2015All articles needing additional references
+	

@@ -1,0 +1,3236 @@
+
+Title:
+Maximum flow problem
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  Flow network for the problem: Each human (ri) is willing to adopt a cat (wi1) and/or a dog (wi2). However each pet (pi) has a preference for only a subset of the humans. Find any matching of pets to humans such that the maximum number of pets are adopted by one of its preferred humans.
+In optimization theory, maximum flow problems involve finding a feasible flow through a flow network that obtains the maximum possible flow rate.
+The maximum flow problem can be seen as a special case of more complex network flow problems, such as the circulation problem. The maximum value of an s-t flow (i.e., flow from source s to sink t) is equal to the minimum capacity of an s-t cut (i.e., cut severing s from t) in the network, as stated in the max-flow min-cut theorem.
+
+Contents
+
+1 History
+2 Definition
+3 Algorithms
+4 Integral flow theorem
+5 Application
+
+5.1 Multi-source multi-sink maximum flow problem
+5.2 Maximum cardinality bipartite matching
+5.3 Minimum path cover in directed acyclic graph
+5.4 Maximum flow with vertex capacities
+5.5 Maximum number of paths from s to t
+5.6 Closure problem
+
+
+6 Real world applications
+
+6.1 Baseball elimination
+6.2 Airline scheduling
+6.3 Circulationâdemand problem
+6.4 Image segmentation
+
+
+7 Extensions
+8 References
+9 Further reading
+
+
+
+History[edit]
+The maximum flow problem was first formulated in 1954 by T. E. Harris and F. S. Ross as a simplified model of Soviet railway traffic flow.[1][2][3]
+
+In 1955, Lester R. Ford, Jr. and Delbert R. Fulkerson created the first known algorithm, the FordâFulkerson algorithm.[4][5] In their 1955 paper,[4] Ford and Fulkerson wrote that the problem of Harris and Ross is formulated as follows (see[1] p. 5):Consider a rail network connecting two cities by way of a number of intermediate cities, where each link of the network has a number assigned to it representing its capacity. Assuming a steady state condition, find a maximal flow from one given city to the other.In their book Flows in Network,[5] in 1962, Ford and Fulkerson wrote:It was posed to the authors in the spring of 1955 by T. E. Harris, who, in conjunction with General F. S. Ross (Ret.), had formulated a simplified model of railway traffic flow, and pinpointed this particular problem as the central one suggested by the model [11].where [11] refers to the 1955 secret report Fundamentals of a Method for Evaluating Rail net Capacities by Harris and Ross[3] (see[1] p. 5).
+Over the years, various improved solutions to the maximum flow problem were discovered, notably the shortest augmenting path algorithm of Edmonds and Karp and independently Dinitz; the blocking flow algorithm of Dinitz; the push-relabel algorithm of Goldberg and Tarjan; and the binary blocking flow algorithm of Goldberg and Rao. The algorithms of Sherman[6] and Kelner, Lee, Orecchia and Sidford,[7][8] respectively, find an approximately optimal maximum flow but only work in undirected graphs.
+In 2013 James B. Orlin published a paper describing an 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          |
+        
+        
+          |
+        
+        E
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle O(|V||E|)}
+  
+ algorithm.[9]
+
+Definition[edit]
+  A flow network, with source s and sink t. The numbers next to the edge are the capacities.
+First we establish some notation:
+
+Let 
+  
+    
+      
+        N
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle N=(V,E)}
+  
+ be a network with 
+  
+    
+      
+        s
+        ,
+        t
+        â
+        V
+      
+    
+    {\displaystyle s,t\in V}
+  
+ being the source and the sink of 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ respectively.
+If 
+  
+    
+      
+        g
+      
+    
+    {\displaystyle g}
+  
+ is function on the edges of 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ then its value on 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+      
+    
+    {\displaystyle (u,v)\in E}
+  
+ is denoted by 
+  
+    
+      
+        
+          g
+          
+            u
+            v
+          
+        
+      
+    
+    {\displaystyle g_{uv}}
+  
+ or 
+  
+    
+      
+        g
+        (
+        u
+        ,
+        v
+        )
+        .
+      
+    
+    {\displaystyle g(u,v).}
+  
+
+Definition. The capacity of an edge is the maximum amount of flow that can pass through an edge. Formally it is a map 
+  
+    
+      
+        c
+        :
+        E
+        â
+        
+          
+            R
+          
+          
+            +
+          
+        
+        .
+      
+    
+    {\displaystyle c:E\to \mathbb {R} ^{+}.}
+  
+
+Definition. A flow is a map 
+  
+    
+      
+        f
+        :
+        E
+        â
+        
+          R
+        
+      
+    
+    {\displaystyle f:E\to \mathbb {R} }
+  
+ that satisfies the following:
+
+Capacity constraint. The flow of an edge cannot exceed its capacity, in other words: 
+  
+    
+      
+        
+          f
+          
+            u
+            v
+          
+        
+        â¤
+        
+          c
+          
+            u
+            v
+          
+        
+      
+    
+    {\displaystyle f_{uv}\leq c_{uv}}
+  
+ for all 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+        .
+      
+    
+    {\displaystyle (u,v)\in E.}
+  
+
+Conservation of flows. The sum of the flows entering a node must equal the sum of the flows exiting that node, except for the source and the sink. Or:
+
+  
+    
+      
+        â
+        v
+        â
+        V
+        â
+        {
+        s
+        ,
+        t
+        }
+        :
+        
+        
+          â
+          
+            u
+            :
+            (
+            u
+            ,
+            v
+            )
+            â
+            E
+          
+        
+        
+          f
+          
+            u
+            v
+          
+        
+        =
+        
+          â
+          
+            u
+            :
+            (
+            v
+            ,
+            u
+            )
+            â
+            E
+          
+        
+        
+          f
+          
+            v
+            u
+          
+        
+        .
+      
+    
+    {\displaystyle \forall v\in V\setminus \{s,t\}:\quad \sum _{u:(u,v)\in E}f_{uv}=\sum _{u:(v,u)\in E}f_{vu}.}
+  
+
+Remark. Flows are skew symmetric: 
+  
+    
+      
+        
+          f
+          
+            u
+            v
+          
+        
+        =
+        â
+        
+          f
+          
+            v
+            u
+          
+        
+      
+    
+    {\displaystyle f_{uv}=-f_{vu}}
+  
+ for all 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+        .
+      
+    
+    {\displaystyle (u,v)\in E.}
+  
+
+Definition. The value of flow is the amount of flow passing from the source to the sink. Formally for a flow 
+  
+    
+      
+        f
+        :
+        E
+        â
+        
+          
+            R
+          
+          
+            +
+          
+        
+      
+    
+    {\displaystyle f:E\to \mathbb {R} ^{+}}
+  
+ it is given by:
+
+
+  
+    
+      
+        
+          |
+        
+        f
+        
+          |
+        
+        =
+        
+          â
+          
+            v
+            :
+            (
+            s
+            ,
+            v
+            )
+            â
+            E
+          
+        
+        
+          f
+          
+            s
+            v
+          
+        
+        .
+      
+    
+    {\displaystyle |f|=\sum _{v:(s,v)\in E}f_{sv}.}
+  
+
+Definition. The maximum flow problem is to route as much flow as possible from the source to the sink, in other words find the flow 
+  
+    
+      
+        
+          f
+          
+            
+              max
+            
+          
+        
+      
+    
+    {\displaystyle f_{\textrm {max}}}
+  
+ with maximum value.
+Note that several maximum flows may exist, and if arbitrary real (or even arbitrary rational) values of flow are permitted (instead of just integers), there is either exactly one maximum flow, or infinitely many, since there are infinitely many linear combinations of the base maximum flows. In other words, if we send 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ units of flow on edge 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ in one maximum flow, and 
+  
+    
+      
+        y
+        >
+        x
+      
+    
+    {\displaystyle y>x}
+  
+ units of flow on 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ in another maximum flow, then for each 
+  
+    
+      
+        Î
+        â
+        [
+        0
+        ,
+        y
+        â
+        x
+        ]
+      
+    
+    {\displaystyle \Delta \in [0,y-x]}
+  
+ we can send 
+  
+    
+      
+        x
+        +
+        Î
+      
+    
+    {\displaystyle x+\Delta }
+  
+ units on 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ and route the flow on remaining edges accordingly, to obtain another maximum flow. If flow values can be any real or rational numbers, then there are infinitely many such 
+  
+    
+      
+        Î
+      
+    
+    {\displaystyle \Delta }
+  
+ values for each pair 
+  
+    
+      
+        x
+        ,
+        y
+      
+    
+    {\displaystyle x,y}
+  
+.
+
+Algorithms[edit]
+The following table lists algorithms for solving the maximum flow problem.
+
+
+
+Method
+
+Complexity
+
+Description
+
+
+Linear programming
+
+
+
+Constraints given by the definition of a legal flow. See the linear program here.
+
+
+FordâFulkerson algorithm
+
+
+  
+    
+      
+        O
+        (
+        E
+        |
+        
+          f
+          
+            m
+            a
+            x
+          
+        
+        |
+        )
+      
+    
+    {\displaystyle O(E\vert f_{max}\vert )}
+  
+
+
+As long as there is an open path through the residual graph, send the minimum of the residual capacities on the path.
+The algorithm is only guaranteed to terminate if all weights are rational, in which case the amount added to the flow in each step is at least the greatest common divisor of the weights. Otherwise it is possible that the algorithm will not converge to the maximum value. However, if the algorithm terminates, it is guaranteed to find the maximum value.
+
+
+
+EdmondsâKarp algorithm
+
+
+  
+    
+      
+        O
+        (
+        V
+        
+          E
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(VE^{2})}
+  
+
+
+A specialization of FordâFulkerson, finding augmenting paths with breadth-first search.
+
+
+Dinic's algorithm
+
+
+  
+    
+      
+        O
+        (
+        
+          V
+          
+            2
+          
+        
+        E
+        )
+      
+    
+    {\displaystyle O(V^{2}E)}
+  
+
+
+In each phase the algorithms builds a layered graph with breadth-first search on the residual graph. The maximum flow in a layered graph can be calculated in 
+  
+    
+      
+        O
+        (
+        V
+        E
+        )
+      
+    
+    {\displaystyle O(VE)}
+  
+ time, and the maximum number of phases is 
+  
+    
+      
+        V
+        â
+        1
+      
+    
+    {\displaystyle V-1}
+  
+. In networks with unit capacities, Dinic's algorithm terminates in 
+  
+    
+      
+        O
+        (
+        min
+        {
+        
+          V
+          
+            2
+            
+              /
+            
+            3
+          
+        
+        ,
+        
+          E
+          
+            1
+            
+              /
+            
+            2
+          
+        
+        }
+        E
+        )
+      
+    
+    {\displaystyle O(\min\{V^{2/3},E^{1/2}\}E)}
+  
+ time.[citation needed]
+
+
+MKM (Malhotra, Kumar, Maheshwari) algorithm[10]
+
+
+  
+    
+      
+        O
+        (
+        
+          V
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(V^{3})}
+  
+
+
+A modification of Dinic's algorithm with a different approach to constructing blocking flows. Refer to the original paper.
+
+
+Dinic's algorithm with dynamic trees
+
+
+  
+    
+      
+        O
+        (
+        V
+        E
+        log
+        â¡
+        V
+        )
+      
+    
+    {\displaystyle O(VE\log V)}
+  
+
+
+The dynamic trees data structure speeds up the maximum flow computation in the layered graph to 
+  
+    
+      
+        O
+        (
+        V
+        E
+        log
+        â¡
+        V
+        )
+      
+    
+    {\displaystyle O(VE\log V)}
+  
+.
+
+
+General pushârelabel algorithm[11]
+
+
+  
+    
+      
+        O
+        (
+        
+          V
+          
+            2
+          
+        
+        E
+        )
+      
+    
+    {\displaystyle O(V^{2}E)}
+  
+
+
+The push relabel algorithm maintains a preflow, i.e. a flow function with the possibility of excess in the vertices. The algorithm runs while there is a vertex with positive excess, i.e. an active vertex in the graph. The push operation increases the flow on a residual edge, and a height function on the vertices controls through which residual edges can flow be pushed. The height function is changed by the relabel operation. The proper definitions of these operations guarantee that the resulting flow function is a maximum flow.
+
+
+Pushârelabel algorithm with FIFO vertex selection rule[11]
+
+
+  
+    
+      
+        O
+        (
+        
+          V
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(V^{3})}
+  
+
+
+Push-relabel algorithm variant which always selects the most recently active vertex, and performs push operations while the excess is positive and there are admissible residual edges from this vertex.
+
+
+
+Pushârelabel algorithm with maximum distance vertex selection rule[12]
+
+
+  
+    
+      
+        O
+        (
+        
+          V
+          
+            2
+          
+        
+        
+          
+            E
+          
+        
+        )
+      
+    
+    {\displaystyle O(V^{2}{\sqrt {E}})}
+  
+
+
+Push-relabel algorithm variant which always selects the most distant vertex from 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ or 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ (i.e. the highest label vertex) but otherwise proceeds as the FIFO algorithm.
+
+
+Push-relabel algorithm with dynamic trees[11]
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            V
+            E
+            log
+            â¡
+            
+              
+                
+                  V
+                  
+                    2
+                  
+                
+                E
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(VE\log {\frac {V^{2}}{E}}\right)}
+  
+
+
+The algorithm builds limited size trees on the residual graph regarding to the height function. These trees provide multilevel push operations, i.e. pushing along an entire saturating path instead of a single edge.
+
+
+KRT (King, Rao, Tarjan)'s algorithm[13]
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            V
+            E
+            
+              log
+              
+                
+                  E
+                  
+                    V
+                    log
+                    â¡
+                    V
+                  
+                
+              
+            
+            â¡
+            V
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(VE\log _{\frac {E}{V\log V}}V\right)}
+  
+
+
+
+
+
+Binary blocking flow algorithm[14]
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            E
+            â
+            min
+            {
+            
+              V
+              
+                2
+                
+                  /
+                
+                3
+              
+            
+            ,
+            
+              E
+              
+                1
+                
+                  /
+                
+                2
+              
+            
+            }
+            â
+            log
+            â¡
+            
+              
+                
+                  V
+                  
+                    2
+                  
+                
+                E
+              
+            
+            â
+            log
+            â¡
+            U
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(E\cdot \min\{V^{2/3},E^{1/2}\}\cdot \log {\frac {V^{2}}{E}}\cdot \log U\right)}
+  
+
+
+The value U corresponds to the maximum capacity of the network.
+
+
+James B Orlin's + KRT (King, Rao, Tarjan)'s algorithm[9]
+
+
+  
+    
+      
+        O
+        (
+        V
+        E
+        )
+      
+    
+    {\displaystyle O(VE)}
+  
+
+
+Orlin's algorithm solves max-flow in 
+  
+    
+      
+        O
+        (
+        V
+        E
+        )
+      
+    
+    {\displaystyle O(VE)}
+  
+ time for 
+  
+    
+      
+        E
+        â¤
+        O
+        (
+        
+          V
+          
+            
+              
+                16
+                15
+              
+            
+            â
+            Ïµ
+          
+        
+        )
+      
+    
+    {\displaystyle E\leq O(V^{{\frac {16}{15}}-\epsilon })}
+  
+ while KRT solves it in 
+  
+    
+      
+        O
+        (
+        V
+        E
+        )
+      
+    
+    {\displaystyle O(VE)}
+  
+ for 
+  
+    
+      
+        E
+        >
+        
+          V
+          
+            1
+            +
+            Ïµ
+          
+        
+      
+    
+    {\displaystyle E>V^{1+\epsilon }}
+  
+.
+
+
+Kathuria-Liu-Sidford algorithm [15]
+
+
+  
+    
+      
+        
+          E
+          
+            4
+            
+              /
+            
+            3
+            +
+            o
+            (
+            1
+            )
+          
+        
+        
+          U
+          
+            1
+            
+              /
+            
+            3
+          
+        
+      
+    
+    {\displaystyle E^{4/3+o(1)}U^{1/3}}
+  
+
+
+Interior point methods and edge boosting using 
+  
+    
+      
+        
+          â
+          
+            p
+          
+        
+      
+    
+    {\displaystyle \ell _{p}}
+  
+-norm flows. Builds on earlier algorithm of Madry, which achieved runtime 
+  
+    
+      
+        
+          
+            
+              O
+              ~
+            
+          
+        
+        (
+        
+          E
+          
+            10
+            
+              /
+            
+            7
+          
+        
+        
+          U
+          
+            1
+            
+              /
+            
+            7
+          
+        
+        )
+      
+    
+    {\displaystyle {\tilde {O}}(E^{10/7}U^{1/7})}
+  
+.[16]
+
+
+BLNPSSSW / BLLSSSW algorithm [17]
+[18]
+
+
+
+  
+    
+      
+        
+          
+            
+              O
+              ~
+            
+          
+        
+        (
+        (
+        E
+        +
+        
+          V
+          
+            3
+            
+              /
+            
+            2
+          
+        
+        )
+        log
+        â¡
+        U
+        )
+      
+    
+    {\displaystyle {\tilde {O}}((E+V^{3/2})\log U)}
+  
+
+
+Interior point methods and dynamic maintenance of electric flows with expander decompositions.
+
+
+Gao-Liu-Peng algorithm [19]
+
+
+  
+    
+      
+        
+          
+            
+              O
+              ~
+            
+          
+        
+        (
+        
+          E
+          
+            
+              
+                3
+                2
+              
+            
+            â
+            
+              
+                1
+                328
+              
+            
+          
+        
+        log
+        â¡
+        U
+        )
+      
+    
+    {\displaystyle {\tilde {O}}(E^{{\frac {3}{2}}-{\frac {1}{328}}}\log U)}
+  
+
+
+Gao, Liu, and Peng's algorithm revolves around dynamically maintaining the augmenting electrical flows at the core of the interior point method based algorithm from [MÄdry JACM â16]. This entails designing data structures that, in limited settings, return edges with large electric energy in a graph undergoing resistance updates.
+
+For additional algorithms, see Goldberg & Tarjan (1988).
+
+Integral flow theorem[edit]
+The integral flow theorem states that
+
+If each edge in a flow network has integral capacity, then there exists an integral maximal flow.
+The claim is not only that the value of the flow is an integer, which follows directly from the max-flow min-cut theorem, but that the flow on every edge is integral. This is crucial for many combinatorial applications (see below), where the flow across an edge may encode whether the item corresponding to that edge is to be included in the set sought or not.
+
+Application[edit]
+Multi-source multi-sink maximum flow problem[edit]
+  Fig. 4.1.1. Transformation of a multi-source multi-sink maximum flow problem into a single-source single-sink maximum flow problem
+Given a network 
+  
+    
+      
+        N
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle N=(V,E)}
+  
+ with a set of sources 
+  
+    
+      
+        S
+        =
+        {
+        
+          s
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          s
+          
+            n
+          
+        
+        }
+      
+    
+    {\displaystyle S=\{s_{1},\ldots ,s_{n}\}}
+  
+ and a set of sinks 
+  
+    
+      
+        T
+        =
+        {
+        
+          t
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          t
+          
+            m
+          
+        
+        }
+      
+    
+    {\displaystyle T=\{t_{1},\ldots ,t_{m}\}}
+  
+ instead of only one source and one sink, we are to find the maximum flow across 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+. We can transform the multi-source multi-sink problem into a maximum flow problem by adding a consolidated source connecting to each vertex in 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ and a consolidated sink connected by each vertex in 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+ (also known as supersource and supersink) with infinite capacity on each edge (See Fig. 4.1.1.).
+
+Maximum cardinality bipartite matching[edit]
+  Fig. 4.3.1. Transformation of a maximum bipartite matching problem into a maximum flow problem
+Given a bipartite graph 
+  
+    
+      
+        G
+        =
+        (
+        X
+        âª
+        Y
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G=(X\cup Y,E)}
+  
+, we are to find a maximum cardinality matching in 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+, that is a matching that contains the largest possible number of edges. This problem can be transformed into a maximum flow problem by constructing a network 
+  
+    
+      
+        N
+        =
+        (
+        X
+        âª
+        Y
+        âª
+        {
+        s
+        ,
+        t
+        }
+        ,
+        
+          E
+          â²
+        
+        )
+      
+    
+    {\displaystyle N=(X\cup Y\cup \{s,t\},E')}
+  
+, where
+
+
+  
+    
+      
+        
+          E
+          â²
+        
+      
+    
+    {\displaystyle E'}
+  
+ contains the edges in 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ directed from 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ to 
+  
+    
+      
+        Y
+      
+    
+    {\displaystyle Y}
+  
+.
+
+  
+    
+      
+        (
+        s
+        ,
+        x
+        )
+        â
+        
+          E
+          â²
+        
+      
+    
+    {\displaystyle (s,x)\in E'}
+  
+ for each 
+  
+    
+      
+        x
+        â
+        X
+      
+    
+    {\displaystyle x\in X}
+  
+ and 
+  
+    
+      
+        (
+        y
+        ,
+        t
+        )
+        â
+        
+          E
+          â²
+        
+      
+    
+    {\displaystyle (y,t)\in E'}
+  
+ for each 
+  
+    
+      
+        y
+        â
+        Y
+      
+    
+    {\displaystyle y\in Y}
+  
+.
+
+  
+    
+      
+        c
+        (
+        e
+        )
+        =
+        1
+      
+    
+    {\displaystyle c(e)=1}
+  
+ for each 
+  
+    
+      
+        e
+        â
+        
+          E
+          â²
+        
+      
+    
+    {\displaystyle e\in E'}
+  
+ (See Fig. 4.3.1).
+Then the value of the maximum flow in 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ is equal to the size of the maximum matching in 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+, and a maximum cardinality matching can be found by taking those edges that have flow 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ in an integral max-flow.
+
+Minimum path cover in directed acyclic graph[edit]
+Given a directed acyclic graph 
+  
+    
+      
+        G
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G=(V,E)}
+  
+, we are to find the minimum number of vertex-disjoint paths to cover each vertex in 
+  
+    
+      
+        V
+      
+    
+    {\displaystyle V}
+  
+. We can construct a bipartite graph 
+  
+    
+      
+        
+          G
+          â²
+        
+        =
+        (
+        
+          V
+          
+            
+              out
+            
+          
+        
+        âª
+        
+          V
+          
+            
+              in
+            
+          
+        
+        ,
+        
+          E
+          â²
+        
+        )
+      
+    
+    {\displaystyle G'=(V_{\textrm {out}}\cup V_{\textrm {in}},E')}
+  
+ from 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+, where
+
+
+  
+    
+      
+        
+          V
+          
+            
+              out
+            
+          
+        
+        =
+        {
+        
+          v
+          
+            
+              out
+            
+          
+        
+        â£
+        v
+        â
+        V
+        â§
+        v
+        
+          Â has outgoing edge(s)
+        
+        }
+      
+    
+    {\displaystyle V_{\textrm {out}}=\{v_{\textrm {out}}\mid v\in V\land v{\text{ has outgoing edge(s)}}\}}
+  
+
+
+  
+    
+      
+        
+          V
+          
+            
+              in
+            
+          
+        
+        =
+        {
+        
+          v
+          
+            
+              in
+            
+          
+        
+        â£
+        v
+        â
+        V
+        â§
+        v
+        
+          Â has incoming edge(s)
+        
+        }
+      
+    
+    {\displaystyle V_{\textrm {in}}=\{v_{\textrm {in}}\mid v\in V\land v{\text{ has incoming edge(s)}}\}}
+  
+
+
+  
+    
+      
+        
+          E
+          â²
+        
+        =
+        {
+        (
+        
+          u
+          
+            
+              out
+            
+          
+        
+        ,
+        
+          v
+          
+            
+              in
+            
+          
+        
+        )
+        â
+        
+          V
+          
+            o
+            u
+            t
+          
+        
+        Ã
+        
+          V
+          
+            i
+            n
+          
+        
+        â£
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+        }
+      
+    
+    {\displaystyle E'=\{(u_{\textrm {out}},v_{\textrm {in}})\in V_{out}\times V_{in}\mid (u,v)\in E\}}
+  
+.
+Then it can be shown that 
+  
+    
+      
+        
+          G
+          â²
+        
+      
+    
+    {\displaystyle G'}
+  
+ has a matching 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ of size 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ if and only if 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ has a vertex-disjoint path cover 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ of containing 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ edges and 
+  
+    
+      
+        n
+        â
+        m
+      
+    
+    {\displaystyle n-m}
+  
+ paths, where 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ is the number of vertices in 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+. Therefore, the problem can be solved by finding the maximum cardinality matching in 
+  
+    
+      
+        
+          G
+          â²
+        
+      
+    
+    {\displaystyle G'}
+  
+ instead.
+Intuitively, if two vertices 
+  
+    
+      
+        
+          u
+          
+            
+              o
+              u
+              t
+            
+          
+        
+        ,
+        
+          v
+          
+            
+              i
+              n
+            
+          
+        
+      
+    
+    {\displaystyle u_{\mathrm {out} },v_{\mathrm {in} }}
+  
+ are matched in 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+, then the edge 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle (u,v)}
+  
+ is contained in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+. Clearly the number of edges in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ is 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+. To see that 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ is vertex-disjoint, consider the following:
+
+Each vertex 
+  
+    
+      
+        
+          v
+          
+            
+              out
+            
+          
+        
+      
+    
+    {\displaystyle v_{\textrm {out}}}
+  
+ in 
+  
+    
+      
+        
+          G
+          â²
+        
+      
+    
+    {\displaystyle G'}
+  
+ can either be non-matched in 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+, in which case there are no edges leaving 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+; or it can be matched, in which case there is exactly one edge leaving 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+. In either case, no more than one edge leaves any vertex 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+.
+Similarly for each vertex 
+  
+    
+      
+        
+          v
+          
+            
+              in
+            
+          
+        
+      
+    
+    {\displaystyle v_{\textrm {in}}}
+  
+ in 
+  
+    
+      
+        
+          G
+          â²
+        
+      
+    
+    {\displaystyle G'}
+  
+ â if it is matched, there is a single incoming edge into 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+; otherwise 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ has no incoming edges in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+.
+Thus no vertex has two incoming or two outgoing edges in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+, which means all paths in 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ are vertex-disjoint.
+To show that the cover 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ has size 
+  
+    
+      
+        n
+        â
+        m
+      
+    
+    {\displaystyle n-m}
+  
+, we start with an empty cover and build it incrementally. To add a vertex 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ to the cover, we can either add it to an existing path, or create a new path of length zero starting at that vertex. The former case is applicable whenever either 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+      
+    
+    {\displaystyle (u,v)\in E}
+  
+ and some path in the cover starts at 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+, or 
+  
+    
+      
+        (
+        v
+        ,
+        u
+        )
+        â
+        E
+      
+    
+    {\displaystyle (v,u)\in E}
+  
+ and some path ends at 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+. The latter case is always applicable. In the former case, the total number of edges in the cover is increased by 1 and the number of paths stays the same; in the latter case the number of paths is increased and the number of edges stays the same. It is now clear that after covering all 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ vertices, the sum of the number of paths and edges in the cover is 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+. Therefore, if the number of edges in the cover is 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+, the number of paths is 
+  
+    
+      
+        n
+        â
+        m
+      
+    
+    {\displaystyle n-m}
+  
+.
+
+Maximum flow with vertex capacities[edit]
+  Fig. 4.4.1. Transformation of a maximum flow problem with vertex capacities constraint into the original maximum flow problem by node splitting
+Let 
+  
+    
+      
+        N
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle N=(V,E)}
+  
+ be a network. Suppose there is capacity at each node in addition to edge capacity, that is, a mapping 
+  
+    
+      
+        c
+        :
+        V
+        â
+        
+          
+            R
+          
+          
+            +
+          
+        
+        ,
+      
+    
+    {\displaystyle c:V\to \mathbb {R} ^{+},}
+  
+ such that the flow 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ has to satisfy not only the capacity constraint and the conservation of flows, but also the vertex capacity constraint
+
+
+  
+    
+      
+        
+          â
+          
+            i
+            â
+            V
+          
+        
+        
+          f
+          
+            i
+            v
+          
+        
+        â¤
+        c
+        (
+        v
+        )
+        
+        â
+        v
+        â
+        V
+        â
+        {
+        s
+        ,
+        t
+        }
+        .
+      
+    
+    {\displaystyle \sum _{i\in V}f_{iv}\leq c(v)\qquad \forall v\in V\backslash \{s,t\}.}
+  
+
+In other words, the amount of flow passing through a vertex cannot exceed its capacity. To find the maximum flow across 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+, we can transform the problem into the maximum flow problem in the original sense by expanding 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+. First, each 
+  
+    
+      
+        v
+        â
+        V
+      
+    
+    {\displaystyle v\in V}
+  
+ is replaced by 
+  
+    
+      
+        
+          v
+          
+            in
+          
+        
+      
+    
+    {\displaystyle v_{\text{in}}}
+  
+ and 
+  
+    
+      
+        
+          v
+          
+            out
+          
+        
+      
+    
+    {\displaystyle v_{\text{out}}}
+  
+, where 
+  
+    
+      
+        
+          v
+          
+            in
+          
+        
+      
+    
+    {\displaystyle v_{\text{in}}}
+  
+ is connected by edges going into 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ and 
+  
+    
+      
+        
+          v
+          
+            out
+          
+        
+      
+    
+    {\displaystyle v_{\text{out}}}
+  
+ is connected to edges coming out from 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+, then assign capacity 
+  
+    
+      
+        c
+        (
+        v
+        )
+      
+    
+    {\displaystyle c(v)}
+  
+ to the edge connecting 
+  
+    
+      
+        
+          v
+          
+            in
+          
+        
+      
+    
+    {\displaystyle v_{\text{in}}}
+  
+ and 
+  
+    
+      
+        
+          v
+          
+            out
+          
+        
+      
+    
+    {\displaystyle v_{\text{out}}}
+  
+ (see Fig. 4.4.1). In this expanded network, the vertex capacity constraint is removed and therefore the problem can be treated as the original maximum flow problem.
+
+Maximum number of paths from s to t[edit]
+Given a directed graph 
+  
+    
+      
+        G
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G=(V,E)}
+  
+ and two vertices 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ and 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+, we are to find the maximum number of paths from 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ to 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+. This problem has several variants:
+1. The paths must be edge-disjoint. This problem can be transformed to a maximum flow problem by constructing a network 
+  
+    
+      
+        N
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle N=(V,E)}
+  
+ from 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+, with 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ and 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ being the source and the sink of 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ respectively, and assigning each edge a capacity of 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+. In this network, the maximum flow is 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ iff there are 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ edge-disjoint paths.
+2. The paths must be independent, i.e., vertex-disjoint (except for 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ and 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+). We can construct a network 
+  
+    
+      
+        N
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle N=(V,E)}
+  
+ from 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ with vertex capacities, where the capacities of all vertices and all edges are 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+. Then the value of the maximum flow is equal to the maximum number of independent paths from 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ to 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+.
+3. In addition to the paths being edge-disjoint and/or vertex disjoint, the paths also have a length constraint: we count only paths whose length is exactly 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+, or at most 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+. Most variants of this problem are NP-complete, except for small values of 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+.[20]
+
+Closure problem[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Closure problem
+A closure of a directed graph is a set of vertices C, such that no edges leave C. The closure problem is the task of finding the maximum-weight or minimum-weight closure in a vertex-weighted directed graph. It may be solved in polynomial time using a reduction to the maximum flow problem.
+
+Real world applications[edit]
+Baseball elimination[edit]
+  Construction of network flow for baseball elimination problem
+In the baseball elimination problem there are n teams competing in a league. At a specific stage of the league season, wi is the number of wins and ri is the number of games left to play for team i and rij is the number of games left against team j. A team is eliminated if it has no chance to finish the season in the first place. The task of the baseball elimination problem is to determine which teams are eliminated at each point during the season. Schwartz[21] proposed a method which reduces this problem to maximum network flow. In this method a network is created to determine whether team k is eliminated.
+Let G = (V, E) be a network with s,t â V being the source and the sink respectively. One adds a game nodeij â which represents the number of plays between these two teams. We also add a team node for each team and connect each game node {i, j} with i < j to V, and connects each of them from s by an edge with capacity rij â which represents the number of plays between these two teams. We also add a team node for each team and connect each game node {i, j} with two team nodes i and j to ensure one of them wins. One does not need to restrict the flow value on these edges. Finally, edges are made from team node i to the sink node t and the capacity of wk + rk â wi is set to prevent team i from winning more than wk + rk.
+Let S be the set of all teams participating in the league and let 
+
+
+  
+    
+      
+        r
+        (
+        S
+        â
+        {
+        k
+        }
+        )
+        =
+        
+          â
+          
+            
+              
+                i
+                ,
+                j
+                â
+                {
+                S
+                â
+                {
+                k
+                }
+                }
+              
+              
+                i
+                <
+                j
+              
+            
+          
+        
+        
+          r
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle r(S-\{k\})=\sum _{i,j\in \{S-\{k\}\} \atop i<j}r_{ij}}
+  
+.
+In this method it is claimed team k is not eliminated if and only if a flow value of size r(S â {k}) exists in network G. In the mentioned article it is proved that this flow value is the maximum flow value from s to t.
+
+Airline scheduling[edit]
+In the airline industry a major problem is the scheduling of the flight crews. The airline scheduling problem can be considered as an application of extended maximum network flow. The input of this problem is a set of flights F which contains the information about where and when each flight departs and arrives. In one version of airline scheduling the goal is to produce a feasible schedule with at most k crews.
+In order to solve this problem one uses a variation of the circulation problem called bounded circulation which is the generalization of network flow problems, with the added constraint of a lower bound on edge flows.
+Let G = (V, E) be a network with s,t â V as the source and the sink nodes. For the source and destination of every flight i, one adds two nodes to V, node si as the source and node di as the destination node of flight i. One also adds the following edges to E:
+
+An edge with capacity [0, 1] between s and each si.
+An edge with capacity [0, 1] between each di and t.
+An edge with capacity [1, 1] between each pair of si and di.
+An edge with capacity [0, 1] between each di and sj, if source sj is reachable with a reasonable amount of time and cost from the destination of flight i.
+An edge with capacity [0, â] between s and t.
+In the mentioned method, it is claimed and proved that finding a flow value of k in G between s and t is equal to finding a feasible schedule for flight set F with at most k crews.[22]
+Another version of airline scheduling is finding the minimum needed crews to perform all the flights. In order to find an answer to this problem, a bipartite graph G' = (A âª B, E) is created where each flight has a copy in set A and set B. If the same plane can perform flight j after flight i, iâA is connected to jâB. A matching in G' induces a schedule for F and obviously maximum bipartite matching in this graph produces an airline schedule with minimum number of crews.[22] As it is mentioned in the Application part of this article, the maximum cardinality bipartite matching is an application of maximum flow problem.
+
+Circulationâdemand problem[edit]
+There are some factories that produce goods and some villages where the goods have to be delivered. They are connected by a networks of roads with each road having a capacity c for maximum goods that can flow through it. The problem is to find if there is a circulation that satisfies the demand.
+This problem can be transformed into a maximum-flow problem.
+
+Add a source node s and add edges from it to every factory node fi with capacity pi where pi is the production rate of factory fi.
+Add a sink node t and add edges from all villages vi to t with capacity di where di is the demand rate of village vi.
+Let G = (V, E) be this new network. There exists a circulation that satisfies the demand if and only ifÂ :
+
+Maximum flow value(G) 
+  
+    
+      
+        =
+        
+          â
+          
+            i
+            â
+            v
+          
+        
+        
+          d
+          
+            i
+          
+        
+      
+    
+    {\displaystyle =\sum _{i\in v}d_{i}}
+  
+.
+If there exists a circulation, looking at the max-flow solution would give the answer as to how much goods have to be sent on a particular road for satisfying the demands.
+The problem can be extended by adding a lower bound on the flow on some edges.[23]
+
+
+Image segmentation[edit]
+  Source image of size 8x8.
+  Network built from the bitmap. The source is on the left, the sink on the right. The darker an edge is, the bigger is its capacity. ai is high when the pixel is green, bi when the pixel is not green. The penalty pij are all equal.[24]
+In their book, Kleinberg and Tardos present an algorithm for segmenting an image.[25] They present an algorithm to find the background and the foreground in an image. More precisely, the algorithm takes a bitmap as an input modelled as follows: ai â¥ 0 is the likelihood that pixel i belongs to the foreground, bi â¥ 0 in the likelihood that pixel i belongs to the background, and pij is the penalty if two adjacent pixels i and j are placed one in the foreground and the other in the background. The goal is to find a partition (A, B) of the set of pixels that maximize the following quantity
+
+
+  
+    
+      
+        q
+        (
+        A
+        ,
+        B
+        )
+        =
+        
+          â
+          
+            i
+            â
+            A
+          
+        
+        
+          a
+          
+            i
+          
+        
+        +
+        
+          â
+          
+            i
+            â
+            B
+          
+        
+        
+          b
+          
+            i
+          
+        
+        â
+        
+          â
+          
+            
+              
+                
+                  i
+                  ,
+                  j
+                  
+                    Â adjacent
+                  
+                
+              
+              
+                
+                  
+                    |
+                  
+                  A
+                  â©
+                  {
+                  i
+                  ,
+                  j
+                  }
+                  
+                    |
+                  
+                  =
+                  1
+                
+              
+            
+          
+        
+        
+          p
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle q(A,B)=\sum _{i\in A}a_{i}+\sum _{i\in B}b_{i}-\sum _{\begin{matrix}i,j{\text{ adjacent}}\\|A\cap \{i,j\}|=1\end{matrix}}p_{ij}}
+  
+,
+Indeed, for pixels in A (considered as the foreground), we gain ai; for all pixels in B (considered as the background), we gain bi. On the border, between two adjacent pixels i and j, we loose pij. It is equivalent to minimize the quantity
+
+
+  
+    
+      
+        
+          q
+          â²
+        
+        (
+        A
+        ,
+        B
+        )
+        =
+        
+          â
+          
+            i
+            â
+            A
+          
+        
+        
+          b
+          
+            i
+          
+        
+        +
+        
+          â
+          
+            i
+            â
+            B
+          
+        
+        
+          a
+          
+            i
+          
+        
+        +
+        
+          â
+          
+            
+              
+                
+                  i
+                  ,
+                  j
+                  
+                    Â adjacent
+                  
+                
+              
+              
+                
+                  
+                    |
+                  
+                  A
+                  â©
+                  {
+                  i
+                  ,
+                  j
+                  }
+                  
+                    |
+                  
+                  =
+                  1
+                
+              
+            
+          
+        
+        
+          p
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle q'(A,B)=\sum _{i\in A}b_{i}+\sum _{i\in B}a_{i}+\sum _{\begin{matrix}i,j{\text{ adjacent}}\\|A\cap \{i,j\}|=1\end{matrix}}p_{ij}}
+  
+
+because 
+
+
+  
+    
+      
+        q
+        (
+        A
+        ,
+        B
+        )
+        =
+        
+          â
+          
+            i
+            â
+            A
+            âª
+            B
+          
+        
+        
+          a
+          
+            i
+          
+        
+        +
+        
+          â
+          
+            i
+            â
+            A
+            âª
+            B
+          
+        
+        
+          b
+          
+            i
+          
+        
+        â
+        
+          q
+          â²
+        
+        (
+        A
+        ,
+        B
+        )
+        .
+      
+    
+    {\displaystyle q(A,B)=\sum _{i\in A\cup B}a_{i}+\sum _{i\in A\cup B}b_{i}-q'(A,B).}
+  
+
+  Minimum cut displayed on the network (triangles VS circles).
+We now construct the network whose nodes are the pixel, plus a source and a sink, see Figure on the right. We connect the source to pixel i by an edge of weight ai.  We connect the pixel i to the sink by an edge of weight bi. We connect pixel i to pixel j with weight pij. Now, it remains to compute a minimum cut in that network (or equivalently a maximum flow). The last figure shows a minimum cut.
+
+Extensions[edit]
+1. In the minimum-cost flow problem, each edge (u,v) also has a cost-coefficient auv in addition to its capacity. If the flow through the edge is fuv, then the total cost is auvfuv.  It is required to find a flow of a given size d, with the smallest cost. In most variants, the cost-coefficients may be either positive or negative. There are various polynomial-time algorithms for this problem.
+2. The maximum-flow problem can be augmented by disjunctive constraints: a negative disjunctive constraint says that a certain pair of edges cannot simultaneously have a nonzero flow; a positive disjunctive constraints says that, in a certain pair of edges, at least one must have a nonzero flow. With negative constraints, the problem becomes strongly NP-hard even for simple networks. With positive constraints, the problem is polynomial if fractional flows are allowed, but may be strongly NP-hard when the flows must be integral.[26]
+
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Schrijver, A. (2002). "On the history of the transportation and maximum flow problems". Mathematical Programming. 91 (3): 437â445. CiteSeerXÂ 10.1.1.23.5134. doi:10.1007/s101070100259. S2CIDÂ 10210675.
+
+^ Gass, Saul I.; Assad, Arjang A. (2005). "Mathematical, algorithmic and professional developments of operations research from 1951 to 1956". An Annotated Timeline of Operations Research. International Series in Operations Research & Management Science. Vol.Â 75. pp.Â 79â110. doi:10.1007/0-387-25837-X_5. ISBNÂ 978-1-4020-8116-3.
+
+^ Jump up to: a b Harris, T. E.; Ross, F. S. (1955). "Fundamentals of a Method for Evaluating Rail Net Capacities" (PDF). Research Memorandum.
+
+^ Jump up to: a b Ford, L. R.; Fulkerson, D. R. (1956). "Maximal flow through a network". Canadian Journal of Mathematics. 8: 399â404. doi:10.4153/CJM-1956-045-5.
+
+^ Jump up to: a b Ford, L.R., Jr.; Fulkerson, D.R., Flows in Networks, Princeton University Press (1962).
+
+^ Sherman, Jonah (2013). "Nearly Maximum Flows in Nearly Linear Time". Proceedings of the 54th Annual IEEE Symposium on Foundations of Computer Science. pp.Â 263â269. arXiv:1304.2077. doi:10.1109/FOCS.2013.36. ISBNÂ 978-0-7695-5135-7. S2CIDÂ 14681906.
+
+^ Kelner, J. A.; Lee, Y. T.; Orecchia, L.; Sidford, A. (2014). "An Almost-Linear-Time Algorithm for Approximate Max Flow in Undirected Graphs, and its Multicommodity Generalizations" (PDF). Proceedings of the Twenty-Fifth Annual ACM-SIAM Symposium on Discrete Algorithms. p.Â 217. arXiv:1304.2338. doi:10.1137/1.9781611973402.16. ISBNÂ 978-1-61197-338-9. S2CIDÂ 10733914. Archived from the original (PDF) on 2016-03-03.
+
+^ Knight, Helen (7 January 2014). "New algorithm can dramatically streamline solutions to the 'max flow' problem". MIT News. Retrieved 8 January 2014.
+
+^ Jump up to: a b Orlin, James B. (2013). "Max flows in O(nm) time, or better". Proceedings of the 45th annual ACM symposium on Symposium on theory of computing - STOC '13. STOC '13 Proceedings of the Forty-fifth Annual ACM Symposium on Theory of Computing. pp.Â 765â774. CiteSeerXÂ 10.1.1.259.5759. doi:10.1145/2488608.2488705. ISBNÂ 9781450320290. S2CIDÂ 207205207.
+
+^ Malhotra, V.M.; Kumar, M. Pramodh; Maheshwari, S.N. (1978). "An 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          
+            |
+          
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(|V|^{3})}
+  
+ algorithm for finding maximum flows in networks" (PDF). Information Processing Letters. 7 (6): 277â278. doi:10.1016/0020-0190(78)90016-9.
+
+^ Jump up to: a b c Goldberg, A. V.; Tarjan, R. E. (1988). "A new approach to the maximum-flow problem". Journal of the ACM. 35 (4): 921. doi:10.1145/48014.61051. S2CIDÂ 52152408.
+
+^ Cheriyan, J.; Maheshwari, S. N. (1988). "Analysis of preflow push algorithms for maximum network flow". Foundations of Software Technology and Theoretical Computer Science. Lecture Notes in Computer Science. Vol.Â 338. pp.Â 30â48. doi:10.1007/3-540-50517-2_69. ISBNÂ 978-3-540-50517-4. ISSNÂ 0302-9743.
+
+^ King, V.; Rao, S.; Tarjan, R. (1994). "A Faster Deterministic Maximum Flow Algorithm". Journal of Algorithms. 17 (3): 447â474. doi:10.1006/jagm.1994.1044. S2CIDÂ 15493.
+
+^ Goldberg, A. V.; Rao, S. (1998). "Beyond the flow decomposition barrier". Journal of the ACM. 45 (5): 783. doi:10.1145/290179.290181. S2CIDÂ 96030.
+
+^ Kathuria, T.; Liu, Y.P.; Sidford, A. (November 16â19, 2020). Unit Capacity Maxflow in Almost 
+  
+    
+      
+        O
+        (
+        
+          m
+          
+            4
+            
+              /
+            
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(m^{4/3})}
+  
+ Time. Durham, NC, USA: IEEE. pp.Â 119â130.{{cite book}}:  CS1 maint: date format (link)
+
+^ Madry, Aleksander (9â11 October 2016). Computing Maximum Flow with Augmenting Electrical Flows. New Brunswick, New Jersey: IEEE. pp.Â 593â602.{{cite book}}:  CS1 maint: date format (link)
+
+^ Brand, J. vd; Lee, Y.T.; Nanongkai, D.; Peng, R.; Saranurak, T.; Sidford, A.; Song, Z.; Wang, D. (November 16â19, 2020). Bipartite Matching in Nearly-linear Time on Moderately Dense Graphs. Durham, NC, USA: IEEE. pp.Â 919â930.{{cite book}}:  CS1 maint: date format (link)
+
+^ Brand, J. vd; Lee, Y.T.; Liu, Y.P.; Saranurak, T.; Sidford, A; Song, Z.; Wang, D. (2021). "Minimum Cost Flows, MDPs, and â1-Regression in Nearly Linear Time for Dense Instances". arXiv:2101.05719 [cs.DS].
+
+^ Gao, Y.; Liu, Y.P.; Peng, R. (2021). "Fully Dynamic Electrical Flows: Sparse Maxflow Faster Than Goldberg-Rao". arXiv:2101.07233 [cs.DS].
+
+^ Itai, A.; Perl, Y.; Shiloach, Y. (1982). "The complexity of finding maximum disjoint paths with length constraints". Networks. 12 (3): 277â286. doi:10.1002/net.3230120306. ISSNÂ 1097-0037.
+
+^ Schwartz, B. L. (1966). "Possible Winners in Partially Completed Tournaments". SIAM Review. 8 (3): 302â308. Bibcode:1966SIAMR...8..302S. doi:10.1137/1008062. JSTORÂ 2028206.
+
+^ Jump up to: a b Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein (2001). "26. Maximum Flow". Introduction to Algorithms, Second Edition. MIT Press and McGraw-Hill. pp.Â 643â668. ISBNÂ 978-0-262-03293-3.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ Carl Kingsford. "Max-flow extensions: circulations with demands" (PDF).
+
+^ "Project imagesegmentationwithmaxflow, that contains the source code to produce these illustrations". GitLab. Archived from the original on 2019-12-22. Retrieved 2019-12-22.
+
+^ "Algorithm Design". www.pearson.com. Retrieved 2019-12-21.
+
+^ Schauer, Joachim; Pferschy, Ulrich (2013-07-01). "The maximum flow problem with disjunctive constraints". Journal of Combinatorial Optimization. 26 (1): 109â119. CiteSeerXÂ 10.1.1.414.4496. doi:10.1007/s10878-011-9438-7. ISSNÂ 1382-6905. S2CIDÂ 6598669.
+
+
+Further reading[edit]
+Joseph Cheriyan and Kurt Mehlhorn (1999). "An analysis of the highest-level selection rule in the preflow-push max-flow algorithm". Information Processing Letters. 69 (5): 239â242. CiteSeerXÂ 10.1.1.42.8563. doi:10.1016/S0020-0190(99)00019-8.
+Daniel D. Sleator and Robert E. Tarjan (1983). "A data structure for dynamic trees" (PDF). Journal of Computer and System Sciences. 26 (3): 362â391. doi:10.1016/0022-0000(83)90006-5. ISSNÂ 0022-0000.
+Eugene Lawler (2001). "4. Network Flows". Combinatorial Optimization: Networks and Matroids. Dover. pp.Â 109â177. ISBNÂ 978-0-486-41453-9.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Maximum_flow_problem&oldid=1046460892"
+		Categories: Network flow problemComputational problems in graph theoryHidden categories: CS1 maint: date formatCS1 maint: multiple names: authors listAll articles with unsourced statementsArticles with unsourced statements from December 2020
+	

@@ -1,0 +1,203 @@
+
+Title:
+Amortized analysis
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Method for algorithm analysis in computer science
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"Amortized" redirects here. For other uses, see Amortization.
+In computer science, amortized analysis is a method for analyzing a given algorithm's complexity, or how much of a resource, especially time or memory, it takes to execute.  The motivation for amortized analysis is, that looking at the worst-case run time can be too pessimistic.  Instead, amortized analysis averages the running times of operations in a sequence over that sequence.[1]:â306â
+As a conclusion: âAmortized analysis is a useful tool that complements other techniques such as worst-case and average-case analysis.â[2]:â14â
+For a given operation of an algorithm, certain situations (e.g., input parametrizations or data structure contents) may imply a significant cost in resources, whereas other situations may not be as costly.  The amortized analysis considers both the costly and less costly operations together over the whole sequence of operations.  This may include accounting for different types of input, length of the input, and other factors that affect its performance.[2]
+
+Contents
+
+1 History
+2 Method
+3 Examples
+
+3.1 Dynamic array
+3.2 Queue
+
+
+4 Common use
+5 References
+6 Literature
+
+
+
+History[edit]
+Amortized analysis initially emerged from a method called aggregate analysis, which is now subsumed by amortized analysis. The technique was first formally introduced by Robert Tarjan in his 1985 paper Amortized Computational Complexity,[1] which addressed the need for a more useful form of analysis than the common probabilistic methods used. Amortization was initially used for very specific types of algorithms, particularly those involving binary trees and union operations. However, it is now ubiquitous and comes into play when analyzing many other algorithms as well.[2]
+
+Method[edit]
+Main articles: accounting method and potential method
+Amortized analysis requires knowledge of which series of operations are possible. This is most commonly the case with data structures, which have state that persists between operations. The basic idea is that a worst-case operation can alter the state in such a way that the worst case cannot occur again for a long time, thus "amortizing" its cost.
+There are generally three methods for performing amortized analysis: the aggregate method, the accounting method, and the potential method. All of these give correct answers; the choice of which to use depends on which is most convenient for a particular situation.[3]
+
+Aggregate analysis determines the upper bound T(n) on the total cost of a sequence of n operations, then calculates the amortized cost to be T(n) / n.[3]
+The accounting method is a form of aggregate analysis which assigns to each operation an amortized cost which may differ from its actual cost.  Early operations have an amortized cost higher than their actual cost, which accumulates a saved "credit" that pays for later operations having an amortized cost lower than their actual cost.  Because the credit begins at zero, the actual cost of a sequence of operations equals the amortized cost minus the accumulated credit.  Because the credit is required to be non-negative, the amortized cost is an upper bound on the actual cost.  Usually, many short-running operations accumulate such credit in small increments, while rare long-running operations decrease it drastically.[3]
+The potential method is a form of the accounting method where the saved credit is computed as a function (the "potential") of the state of the data structure.  The amortized cost is the immediate cost plus the change in potential.[3]
+Examples[edit]
+Dynamic array[edit]
+  Amortized analysis of the push operation for a dynamic array
+Consider a dynamic array that grows in size as more elements are added to it, such as ArrayList in Java or std::vector in C++.  If we started out with a dynamic array of size 4, we could push 4 elements onto it, and each operation would take constant time.  Yet pushing a fifth element onto that array would take longer as the array would have to create a new array of double the current size (8), copy the old elements onto the new array, and then add the new element.  The next three push operations would similarly take constant time, and then the subsequent addition would require another slow doubling of the array size.
+In general if we consider an arbitrary number of pushes n + 1 to an array of size n, we notice that push operations take constant time except for the last one which takes 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+ time to perform the size doubling operation.  Since there were n + 1 operations total we can take the average of this and find that pushing elements onto the dynamic array takes: 
+  
+    
+      
+        
+          
+            
+              
+                n
+                Î
+                (
+                1
+                )
+                +
+                Î
+                (
+                n
+                )
+              
+              
+                n
+                +
+                1
+              
+            
+          
+        
+        =
+        Î
+        (
+        1
+        )
+      
+    
+    {\displaystyle {\tfrac {n\Theta (1)+\Theta (n)}{n+1}}=\Theta (1)}
+  
+, constant time.[3]
+
+Queue[edit]
+Shown is a Ruby implementation of a Queue, a FIFO data structure:
+
+class Queue
+  def initialize
+    @input = []
+    @output = []
+  end
+
+  def enqueue(element)
+    @input << element
+  end
+
+  def dequeue
+    if @output.empty?
+      while @input.any?
+        @output << @input.pop
+      end
+    end
+
+    @output.pop
+  end
+end
+
+The enqueue operation just pushes an element onto the input array; this operation does not depend on the lengths of either input or output and therefore runs in constant time.
+However the dequeue operation is more complicated.  If the output array already has some elements in it, then dequeue runs in constant time; otherwise, dequeue takes 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ time to add all the elements onto the output array from the input array, where n is the current length of the input array.  After copying n elements from input, we can perform n dequeue operations, each taking constant time, before the output array is empty again. Thus, we can perform a sequence of n dequeue operations in only 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ time, which implies that the amortized time of each dequeue operation is 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+.[4]
+Alternatively, we can charge the cost of copying any item from the input array to the output array to the earlier enqueue operation for that item.  This charging scheme doubles the amortized time for enqueue but reduces the amortized time for dequeue to 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+.
+
+Common use[edit]
+In common usage, an "amortized algorithm" is one that an amortized analysis has shown to perform well.
+Online algorithms commonly use amortized analysis.
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Tarjan, Robert Endre (April 1985). "Amortized Computational Complexity" (PDF). SIAM Journal on Algebraic and Discrete Methods. 6 (2): 306â318. doi:10.1137/0606031.
+
+^ a b c Rebecca Fiebrink (2007), Amortized Analysis Explained (PDF), archived from the original (PDF) on 20 October 2013, retrieved 3 May 2011
+
+^ a b c d e Kozen, Dexter (Spring 2011). "CS 3110 Lecture 20: Amortized Analysis". Cornell University. Retrieved 14 March 2015.
+
+^ Grossman, Dan. "CSE332: Data Abstractions" (PDF). cs.washington.edu. Retrieved 14 March 2015.
+
+
+Literature[edit]
+"Lecture 7: Amortized Analysis" (PDF). Carnegie Mellon University. Retrieved 14 March 2015.
+Allan Borodin and Ran El-Yaniv (1998). Online Computation and Competitive Analysis. pp.Â 20, 141.
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Amortized_analysis&oldid=1053477461"
+		Categories: Analysis of algorithmsAmortized data structuresHidden categories: Articles with short descriptionShort description matches WikidataUse dmy dates from June 2019Articles with example Ruby code
+	

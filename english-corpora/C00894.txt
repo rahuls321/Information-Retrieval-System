@@ -1,0 +1,366 @@
+
+Title:
+Type conversion
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}For the aviation licensing process, see Type conversion (aviation).
+This article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Type conversion"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (May 2011) (Learn how and when to remove this template message)
+This article possibly contains original research. Please improve it by verifying the claims made and adding inline citations. Statements consisting only of original research should be removed.  (May 2018) (Learn how and when to remove this template message)
+    
+ (Learn how and when to remove this template message)
+
+In computer science, type conversion,[1][2] type casting,[1][3] type coercion,[3] and type juggling[4][5] are different ways of changing an expression from one data type to another. An example would be the conversion of an integer value into a floating point value or its textual representation as a string, and vice versa. Type conversions can take advantage of certain features of type hierarchies or data representations. Two important aspects of a type conversion are whether it happens implicitly (automatically) or explicitly,[1][6] and whether the underlying data representation is converted from one representation into another, or a given representation is merely reinterpreted as the representation of another data type.[6][7] In general, both primitive and compound data types can be converted.
+Each programming language has its own rules on how types can be converted. Languages with strong typing typically do little implicit conversion and discourage the reinterpretation of representations, while languages with weak typing perform many implicit conversions between data types.  Weak typing language often allow forcing the compiler to arbitrarily interpret a data item as having different representationsâthis can be a non-obvious programming error, or a technical method to directly deal with underlying hardware.
+In most languages, the word coercion is used to denote an implicit conversion, either during compilation or during run time. For example, in an expression mixing integer and floating point numbers (like 5 + 0.1), the compiler will automatically convert integer representation into floating point representation so fractions are not lost. Explicit type conversions are either indicated by writing additional code (e.g. adding type identifiers or calling built-in routines) or by coding conversion routines for the compiler to use when it otherwise would halt with a type mismatch.
+In most ALGOL-like languages, such as Pascal, Modula-2, Ada and Delphi, conversion and casting are distinctly different concepts. In these languages, conversion refers to either implicitly or explicitly changing a value from one data type storage format to another, e.g. a 16-bit integer to a 32-bit integer. The storage needs may change as a result of the conversion, including a possible loss of precision or truncation. The word cast, on the other hand, refers to explicitly changing the interpretation of the bit pattern representing a value from one type to another. For example, 32 contiguous bits may be treated as an array of 32 booleans, a 4-byte string, an unsigned 32-bit integer or an IEEE single precision floating point value. Because the stored bits are never changed, the programmer must know low level details such as representation format, byte order, and alignment needs, to meaningfully cast.
+In the C family of languages and ALGOL 68, the word cast typically refers to an explicit type conversion (as opposed to an implicit conversion), causing some ambiguity about whether this is a re-interpretation of a bit-pattern or a real data representation conversion.  More important is the multitude of ways and rules that apply to what data type (or class) is located by a pointer and how a pointer may be adjusted by the compiler in cases like object (class) inheritance.
+
+Contents
+
+1 Language comparison
+
+1.1 C-like languages
+
+1.1.1 Implicit type conversion
+
+1.1.1.1 Type promotion
+
+
+1.1.2 Explicit type conversion
+
+
+1.2 C# and C++
+1.3 Eiffel
+
+1.3.1 Definition of type conversion in Eiffel
+1.3.2 Example
+
+
+1.4 Rust
+
+
+2 Security issues
+3 See also
+4 References
+5 External links
+
+
+
+Language comparison[edit]
+C-like languages[edit]
+Implicit type conversion[edit]
+Implicit type conversion, also known as coercion or type juggling, is an automatic type conversion by the compiler. Some programming languages allow compilers to provide coercion; others require it.
+In a mixed-type expression, data of one or more subtypes can be converted to a supertype as needed at runtime so that the program will run correctly. For example, the following is legal C language code:
+
+double  d;
+long    l;
+int     i;
+
+if (d > i)   d = i;
+if (i > l)   l = i;
+if (d == l)  d *= 2;
+
+Although .mw-parser-output .monospaced{font-family:monospace,monospace}d, l, and i belong to different data types, they will be automatically converted to equal data types each time a comparison or assignment is executed. This behavior should be used with caution, as unintended consequences can arise. Data can be lost when converting representations from floating-point to integer, as the fractional components of the floating-point values will be truncated (rounded toward zero). Conversely, precision can be lost when converting representations from integer to floating-point, since a floating-point type may be unable to exactly represent an integer type. For example, float might be an IEEE 754 single precision type, which cannot represent the integer 16777217 exactly, while a 32-bit integer type can. This can lead to unintuitive behavior, as demonstrated by the following code:
+
+#include <stdio.h>
+
+int main(void)
+{
+    int i_value   = 16777217;
+    float f_value = 16777216.0;
+    printf("The integer is: %d\n", i_value);
+    printf("The float is:   %f\n", f_value);
+    printf("Their equality: %d\n", i_value == f_value);
+}
+
+On compilers that implement floats as IEEE single precision, and ints as at least 32 bits, this code will give this peculiar print-out:
+
+The integer is: 16777217
+The float is: 16777216.000000
+Their equality: 1
+
+Note that 1 represents equality in the last line above. This odd behavior is caused by an implicit conversion of i_value to float when it is compared with f_value. The conversion causes loss of precision, which makes the values equal before the comparison.
+Important takeaways:
+
+float to int causes truncation, i.e., removal of the fractional part.
+double to float causes rounding of digit.
+long to int causes dropping of excess higher order bits.
+Type promotion[edit]
+One special case of implicit type conversion is type promotion, where an object is automatically converted into another data type representing a superset of the original type. Promotions are commonly used with types smaller than the native type of the target platform's arithmetic logic unit (ALU), before arithmetic and logical operations, to make such operations possible, or more efficient if the ALU can work with more than one type. C and C++ perform such promotion for objects of boolean, character, wide character, enumeration, and short integer types which are promoted to int, and for objects of type float, which are promoted to double. Unlike some other type conversions, promotions never lose precision or modify the value stored in the object.
+In Java:
+
+int x = 3;
+double y = 3.5;
+System.out.println(x + y); // The output will be 6.5
+
+Explicit type conversion[edit]
+Explicit type conversion, also called type casting, is a type conversion which is explicitly defined within a program (instead of being done automatically according to the rules of the language for implicit type conversion). It is defined by the user in the program.
+
+double da = 3.3;
+double db = 3.3;
+double dc = 3.4;
+int result = (int)da + (int)db + (int)dc; // result == 9
+// if implicit conversion would be used (as with "result = da + db + dc"), result would be equal to 10
+
+There are several kinds of explicit conversion.
+
+checked
+Before the conversion is performed, a runtime check is done to see if the destination type can hold the source value. If not, an error condition is raised.
+unchecked
+No check is performed. If the destination type cannot hold the source value, the result is undefined.
+bit pattern
+The raw bit representation of the source is copied verbatim, and it is re-interpreted according to the destination type. This can also be achieved via aliasing.
+In object-oriented programming languages, objects can also be downcastÂ : a reference of a base class is cast to one of its derived classes.
+
+C# and C++[edit]
+In C#, type conversion can be made in a safe or unsafe (i.e., C-like) manner, the former called checked type cast.[8]
+
+Animal animal = new Cat();
+
+Bulldog b = (Bulldog) animal;  // if (animal is Bulldog), stat.type(animal) is Bulldog, else an exception
+b = animal as Bulldog;         // if (animal is Bulldog), b = (Bulldog) animal, else b = null
+
+animal = null;
+b = animal as Bulldog;         // b == null
+
+In C++ a similar effect can be achieved using C++-style cast syntax.
+
+Animal* animal = new Cat;
+
+Bulldog* b = static_cast<Bulldog*>(animal); // compiles only if either Animal or Bulldog is derived from the other (or same)
+b = dynamic_cast<Bulldog*>(animal);         // if (animal is Bulldog), b = (Bulldog*) animal, else b = nullptr
+
+Bulldog& br = static_cast<Bulldog&>(*animal); // same as above, but an exception will be thrown if a nullptr was to be returned
+                                              // this is not seen in code where exception handling is avoided
+animal = nullptr;
+b = dynamic_cast<Bulldog*>(animal);         // b == nullptr
+
+delete animal; // always free resources
+
+Eiffel[edit]
+In Eiffel the notion of type conversion is integrated into the rules of the type system. The Assignment Rule says that an assignment, such as:
+
+x := y
+
+is valid if and only if the type of its source expression, y in this case, is compatible with the type of its target entity, x in this case. In this rule, compatible with means that the type of the source expression either conforms to or converts to that of the target. Conformance of types is defined by the familiar rules for polymorphism in object-oriented programming. For example, in the assignment above, the type of y conforms to the type of x if the class upon which y is based is a descendant of that upon which x is based.
+
+Definition of type conversion in Eiffel[edit]
+The actions of type conversion in Eiffel, specifically converts to and converts from are defined as:
+
+
+A type based on a class CU converts to a type T based on a class CT (and T converts from U) if either
+
+CT has a conversion procedure using U as a conversion type, or
+CU has a conversion query listing T as a conversion type
+
+Example[edit]
+Eiffel is a fully compliant language for Microsoft .NET Framework. Before development of .NET, Eiffel already had extensive class libraries. Using the .NET type libraries, particularly with commonly used types such as strings, poses a conversion problem. Existing Eiffel software uses the string classes (such as STRING_8) from the Eiffel libraries, but Eiffel software written for .NET must use the .NET string class (System.String) in many cases, for example when calling .NET methods which expect items of the .NET type to be passed as arguments. So, the conversion of these types back and forth needs to be as seamless as possible.
+
+    my_string: STRING_8                 -- Native Eiffel string
+    my_system_string: SYSTEM_STRING     -- Native .NET string
+
+        ...
+
+            my_string := my_system_string
+
+In the code above, two strings are declared, one of each different type (SYSTEM_STRING is the Eiffel compliant alias for System.String). Because System.String does not conform to STRING_8, then the assignment above is valid only if System.String converts to STRING_8.
+The Eiffel class STRING_8 has a conversion procedure make_from_cil for objects of type System.String. Conversion procedures are also always designated as creation procedures (similar to constructors). The following is an excerpt from the STRING_8 class:
+
+    class STRING_8
+        ...
+    create
+        make_from_cil
+        ...
+    convert
+        make_from_cil ({SYSTEM_STRING})
+        ...
+
+The presence of the conversion procedure makes the assignment:
+
+            my_string := my_system_string
+
+semantically equivalent to:
+
+            create my_string.make_from_cil (my_system_string)
+
+in which my_string is constructed as a new object of type STRING_8 with content equivalent to that of my_system_string.
+To handle an assignment with original source and target reversed:
+
+            my_system_string := my_string
+
+the class STRING_8 also contains a conversion query to_cil which will produce a System.String from an instance of STRING_8.
+
+    class STRING_8
+        ...
+    create
+        make_from_cil
+        ...
+    convert
+        make_from_cil ({SYSTEM_STRING})
+        to_cil: {SYSTEM_STRING}
+        ...
+
+The assignment:
+
+            my_system_string := my_string
+
+then, becomes equivalent to:
+
+            my_system_string := my_string.to_cil
+
+In Eiffel, the setup for type conversion is included in the class code, but then appears to happen as automatically as explicit type conversion in client code. The includes not just assignments but other types of attachments as well, such as argument (parameter) substitution.
+
+Rust[edit]
+Rust provides no implicit type conversion (coercion) between primitive types. But, explicit type conversion (casting) can be performed using the as keyword.[9]
+
+println!("1000 as a u16 is: {}", 1000 as u16);
+
+Security issues[edit]
+In hacking, typecasting is the misuse of type conversion to temporarily change a variable's data type from how it was originally defined.[10] This provides opportunities for hackers since in type conversion after a variable is "typecast" to become a different data type, the compiler will treat that hacked variable as the new data type for that specific operation.[11]
+
+See also[edit]
+Downcasting
+Run-time type information#dynamic cast and Java cast
+Type punning
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Mehrotra, Dheeraj (2008). S. Chand's Computer Science. pp.Â 81â83. ISBNÂ 978-8121929844.
+
+^ Programming Languages - Design and Constructs. 2013. p.Â 35. ISBNÂ 978-9381159415.
+
+^ Jump up to: a b Reilly, Edwin (2004). Concise Encyclopedia of Computer Science. pp.Â 82, 110. ISBNÂ 0470090952.
+
+^ Fenton, Steve (2017). Pro TypeScript: Application-Scale JavaScript Development. pp.Â xxiii. ISBNÂ 978-1484232491.
+
+^ "PHP: Type Juggling - Manual". php.net. Retrieved 27 January 2019.
+
+^ Jump up to: a b Olsson, Mikael (2013). C++ Quick Syntax Reference. pp.Â 87â89. ISBNÂ 978-1430262770.
+
+^ Kruse, Rudolf; Borgelt, Christian; Braune, Christian; Mostaghim, Sanaz; Steinbrecher, Matthias (16 September 2016). Computational Intelligence: A Methodological Introduction. p.Â 269. ISBNÂ 978-1447172963.
+
+^ 
+MÃ¶ssenbÃ¶ck, Hanspeter (25 March 2002). "Advanced C#: Checked Type Casts" (PDF). Institut fÃ¼r Systemsoftware, Johannes Kepler UniversitÃ¤t Linz, Fachbereich Informatik. p.Â 5. Retrieved 4 August 2011. at C# Tutorial
+
+^ "Casting - Rust By Example". doc.rust-lang.org.
+
+^ Jon Erickson Hacking, 2nd Edition: The Art of Exploitation 2008 1593271441 p51   "Typecasting is simply a way to temporarily change a variable's data type, despite how it was originally defined. When a variable is typecast into a different type, the compiler is basically told to treat that variable as if it were the new data type, but only for that operation. The syntax for typecasting is as follows: (typecast_data_type) variable ..."
+
+^ Arpita Gopal Magnifying C 2009 8120338618 p. 59 "From the above, it is clear that the usage of typecasting is to make a variable of one type, act like another type for one single operation. So by using this ability of typecasting it is possible for create ASCII characters by typecasting integer to its ..."
+
+
+External links[edit]
+Casting in Ada
+Casting in C++
+C++ Reference Guide Why I hate C++ Cast Operators, by Danny Kalev
+Casting in Java
+Implicit Conversions in C#
+Implicit Type Casting at Cppreference.com
+Static and Reinterpretation castings in C++
+Upcasting and Downcasting in F#
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Type_conversion&oldid=1066858279"
+		Categories: Data typesOperators (programming)Type theoryUnary operationsHidden categories: Articles needing additional references from May 2011All articles needing additional referencesArticles that may contain original research from May 2018All articles that may contain original researchArticles with multiple maintenance issuesUse dmy dates from August 2021Articles with example C code
+	

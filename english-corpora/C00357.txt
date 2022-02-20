@@ -1,0 +1,279 @@
+
+Title:
+Conflict-free replicated data type
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Type of data structure
+In distributed computing, a conflict-free replicated data type (CRDT) is a data structure which can be replicated across multiple computers in a network, where the replicas can be updated independently and concurrently without coordination between the replicas, and where it is always mathematically possible to resolve inconsistencies that might come up.[1][2][3][4][5][6][7][8]
+The CRDT concept was formally defined in 2011 by Marc Shapiro, Nuno PreguiÃ§a, Carlos Baquero and Marek Zawirski.[9]  Development was initially motivated by collaborative text editing and mobile computing. CRDTs have also been used in online chat systems, online gambling, and in the SoundCloud audio distribution platform. The NoSQL distributed databases Redis, Riak and Cosmos DBÂ have CRDT data types.
+
+Contents
+
+1 Background
+2 Types of CRDTs
+
+2.1 Operation-based CRDTs
+2.2 State-based CRDTs
+2.3 Comparison
+
+
+3 Known CRDTs
+
+3.1 G-Counter (Grow-only Counter)
+3.2 PN-Counter (Positive-Negative Counter)
+3.3 G-Set (Grow-only Set)
+3.4 2P-Set (Two-Phase Set)
+3.5 LWW-Element-Set (Last-Write-Wins-Element-Set)
+3.6 OR-Set (Observed-Remove Set)
+3.7 Sequence CRDTs
+
+
+4 Industry use
+5 References
+6 External links
+
+
+
+Background[edit]
+Concurrent updates to multiple replicas of the same data, without coordination between the computers hosting the replicas, can result in  inconsistencies between the replicas, which in the general case may not be resolvable. Restoring consistency and data integrity when there are conflicts between updates may require some or all of the updates to be entirely or partially dropped.
+Accordingly, much of distributed computing focuses on the problem of how to prevent concurrent updates to replicated data. But another possible approach is optimistic replication, where all concurrent updates are allowed to go through, with inconsistencies possibly created, and the results are merged or "resolved" later. In this approach, consistency between the replicas is eventually re-established via "merges" of differing replicas.  While optimistic replication might not work in the general case, it turns out that there is a significant and practically useful class of data structures, CRDTs, where it does work â where it is mathematically always possible to merge or resolve concurrent updates on different replicas of the data structure without conflicts.  This makes CRDTs ideal for optimistic replication.
+As an example, a one-way Boolean event flag is a trivial CRDT: one bit, with a value of true or false. True means some particular event has occurred at least once.  False means the event has not occurred.  Once set to true, the flag cannot be set back to false. (An event, having occurred, cannot un-occur.)  The resolution method is "true wins": when merging a replica where the flag is true (that replica has observed the event), and another one where the flag is false (that replica hasn't observed the event), the resolved result is true â the event has been observed.
+
+Types of CRDTs[edit]
+There are two approaches to CRDTs, both of which can provide strong eventual consistency: operation-based CRDTs[10][11] and state-based CRDTs.[12][13]
+The two alternatives are theoretically equivalent, as one can emulate the other.[1]
+However, there are practical differences.
+State-based CRDTs are often simpler to design and to implement; their only requirement from the communication substrate is some kind of gossip protocol.
+Their drawback is that the entire state of every CRDT must be transmitted eventually to every other replica, which may be costly.
+In contrast, operation-based CRDTs transmit only the update operations, which are typically small.
+However, operation-based CRDTs require guarantees from the communication middleware; that the operations are not dropped or duplicated when transmitted to the other replicas, and that they are delivered in causal order.[1]
+
+Operation-based CRDTs[edit]
+Operation-based CRDTs are also called commutative replicated data types, or CmRDTs. CmRDT replicas propagate state by transmitting only the update operation. For example, a CmRDT of a single integer might broadcast the operations (+10) or (â20). Replicas receive the updates and apply them locally. The operations are commutative. However, they are not necessarily idempotent. The communications infrastructure must therefore ensure that all operations on a replica are delivered to the other replicas, without duplication, but in any order.
+Pure operation-based CRDTs[11] are a variant of operation-based CRDTs that reduces the metadata size.
+
+State-based CRDTs[edit]
+State-based CRDTs are called convergent replicated data types, or CvRDTs. In contrast to CmRDTs, CvRDTs send their full local state to other replicas, where the states are merged by a function which must be commutative, associative, and idempotent. The merge function provides a join for any pair of replica states, so the set of all states forms a semilattice.  The update function must monotonically increase the internal state, according to the same partial order rules as the semilattice.
+Delta state CRDTs[13][14] (or simply Delta CRDTs) are optimized state-based CRDTs where only recently applied changes to a state are disseminated instead of the entire state.
+
+Comparison[edit]
+While CmRDTs place more requirements on the protocol for transmitting operations between replicas, they use less bandwidth than CvRDTs when the number of transactions is small in comparison to the size of internal state. However, since the CvRDT merge function is associative, merging with the state of some replica yields all previous updates to that replica. Gossip protocols work well for propagating CvRDT state to other replicas while reducing network use and handling topology changes.
+Some lower bounds[15] on the storage complexity of state-based CRDTs are known.
+
+Known CRDTs[edit]
+G-Counter (Grow-only Counter)[edit]
+payload integer[n] P
+    initial [0,0,...,0]
+update increment()
+    let g = myId()
+    P[g]Â := P[g] + 1
+query value()Â : integer v
+    let v = Î£i P[i]
+compare (X, Y)Â : boolean b
+    let b = (âi â [0, n - 1]Â : X.P[i] â¤ Y.P[i])
+merge (X, Y)Â : payload Z
+    let âi â [0, n - 1]Â : Z.P[i] = max(X.P[i], Y.P[i])
+
+This CvRDT implements a counter for a cluster of n nodes. Each node in the cluster is assigned an ID from 0 to n - 1, which is retrieved with a call to myId(). Thus each node is assigned its own slot in the array P, which it increments locally. Updates are propagated in the background, and merged by taking the max() of every element in P. The compare function is included to illustrate a partial order on the states. The merge function is commutative, associative, and idempotent. The update function monotonically increases the internal state according to the compare function. This is thus a correctly-defined CvRDT and will provide strong eventual consistency. The CmRDT equivalent broadcasts increment operations as they are received.[2]
+
+PN-Counter (Positive-Negative Counter)[edit]
+payload integer[n] P, integer[n] N
+    initial [0,0,...,0], [0,0,...,0]
+update increment()
+    let g = myId()
+    P[g]Â := P[g] + 1
+update decrement()
+    let g = myId()
+    N[g]Â := N[g] + 1
+query value()Â : integer v
+    let v = Î£i P[i] - Î£i N[i]
+compare (X, Y)Â : boolean b
+    let b = (âi â [0, n - 1]Â : X.P[i] â¤ Y.P[i] â§ âi â [0, n - 1]Â : X.N[i] â¤ Y.N[i])
+merge (X, Y)Â : payload Z
+    let âi â [0, n - 1]Â : Z.P[i] = max(X.P[i], Y.P[i])
+    let âi â [0, n - 1]Â : Z.N[i] = max(X.N[i], Y.N[i])
+
+A common strategy in CRDT development is to combine multiple CRDTs to make a more complex CRDT. In this case, two G-Counters are combined to create a data type supporting both increment and decrement operations. The "P" G-Counter counts increments; and the "N" G-Counter counts decrements.  The value of the PN-Counter is the value of the P counter minus the value of the N counter.  Merge is handled by letting the merged P counter be the merge of the two P G-Counters, and similarly for N counters.  Note that the CRDT's internal state must increase monotonically, even though its external state as exposed through query can return to previous values.[2]
+
+G-Set (Grow-only Set)[edit]
+payload set A
+    initial â
+update add(element e)
+    AÂ := A âª {e}
+query lookup(element e)Â : boolean b
+    let b = (e â A)
+compare (S, T)Â : boolean b
+    let b = (S.A â T.A)
+merge (S, T)Â : payload U
+    let U.A = S.A âª T.A
+
+The G-Set (grow-only set) is a set which only allows adds. An element, once added, cannot be removed.  The merger of two G-Sets is their union.[2]
+
+2P-Set (Two-Phase Set)[edit]
+payload set A, set R
+    initial â, â
+query lookup(element e)Â : boolean b
+    let b = (e â A â§ e â R)
+update add(element e)
+    AÂ := A âª {e}
+update remove(element e)
+    pre lookup(e)
+    RÂ := R âª {e}
+compare (S, T)Â : boolean b
+    let b = (S.A â T.A â§ S.R â T.R)
+merge (S, T)Â : payload U
+    let U.A = S.A âª T.A
+    let U.R = S.R âª T.R
+
+Two G-Sets (grow-only sets) are combined to create the 2P-set. With the addition of a remove set (called the "tombstone" set), elements can be added and also removed.  Once removed, an element cannot be re-added; that is, once an element e is in the tombstone set, query will never again return True for that element. The 2P-set uses "remove-wins" semantics, so remove(e) takes precedence over add(e).[2]
+
+LWW-Element-Set (Last-Write-Wins-Element-Set)[edit]
+LWW-Element-Set is similar to 2P-Set in that it consists of an "add set" and a "remove set", with a timestamp for each element.   Elements are added to an LWW-Element-Set by inserting the element into the add set, with a timestamp.   Elements are removed from the LWW-Element-Set by being added to the remove set, again with a timestamp.  An element is a member of the LWW-Element-Set if it is in the add set, and either not in the remove set, or in the remove set but with an earlier timestamp than the latest timestamp in the add set.   Merging two replicas of the LWW-Element-Set consists of taking the union of the add sets and the union of the remove sets.   When timestamps are equal, the "bias" of the LWW-Element-Set comes into play.  A LWW-Element-Set can be biased towards adds or removals.  The advantage of LWW-Element-Set over 2P-Set is that, unlike 2P-Set, LWW-Element-Set allows an element to be reinserted after having been removed.[2]
+
+OR-Set (Observed-Remove Set)[edit]
+OR-Set resembles LWW-Element-Set, but using unique tags instead of timestamps. For each element in the set, a list of add-tags and a list of remove-tags are maintained.  An element is inserted into the OR-Set by having a new unique tag generated and added to the add-tag list for the element.   Elements are removed from the OR-Set by having all the tags in the element's add-tag list added to the element's remove-tag (tombstone) list. To merge two OR-Sets, for each element, let its add-tag list be the union of the two add-tag lists, and likewise for the two remove-tag lists. An element is a member of the set if and only if the add-tag list less the remove-tag list is nonempty.[2] An optimization that eliminates the need for maintaining a tombstone set is possible; this avoids the potentially unbounded growth of the tombstone set. The optimization is achieved by maintaining a vector of timestamps for each replica.[16]
+
+Sequence CRDTs[edit]
+A sequence, list, or ordered set CRDT can be used to build a Collaborative real-time editor, as an alternative to Operational transformation (OT).
+Some known Sequence CRDTs are Treedoc,[5] 
+RGA,[17] Woot,[4] 
+Logoot,[18] and LSEQ.[19]
+CRATE[20] is a decentralized real-time editor built on top of LSEQSplit (an extension of LSEQ) and runnable on a network of browsers using WebRTC.
+LogootSplit [21] was proposed as an extension of Logoot in order to reduce the metadata for sequence CRDTs. MUTE [22][23] is an online web-based peer-to-peer real-time collaborative editor relying on LogootSplit algorithm.
+Industrial sequence CRDTs, including open-source ones, are known to out-perform academic implementations due to optimizations and a more realistic testing methodology.[24] The main popular example is Yjs CRDT, a pioneer in using a plain list instead of a tree (ala Kleppmann's automerge).[25]
+
+Industry use[edit]
+Nimbus Note is a collaborative note-taking application that uses the Yjs CRDT for collaborative editing. [26]
+Redis is a distributed, highly available and scalable in-memory database that uses CRDTs for implementing globally distributed databases based on and fully compatible with Redis open source. 
+SoundCloud open-sourced Roshi, a LWW-element-set CRDT for the SoundCloud stream implemented on top of Redis.[27]
+Riak is a distributed NoSQL key-value data store based on CRDTs.[28] League of Legends uses the Riak CRDT implementation for its in-game chat system, which handles 7.5 million concurrent users and 11,000 messages per second.[29] Bet365, stores hundreds of megabytes of data in the Riak implementation of OR-Set.[30]
+TomTom employs CRDTs to synchronize navigation data between the devices of a user.[31]
+Phoenix, a web framework written in Elixir, uses CRDTs to support real time multi-node information sharing in version 1.2.[32]
+Facebook implements CRDTs in their Apollo low-latency "consistency at scale" database.[33]
+Teletype for Atom employs CRDTs to enable developers share their workspace with team members and collaborate on code in real time.[34]
+Haja Networks' OrbitDB uses operation-based CRDTs in its core data structure, IPFS-Log.[35]
+Apple implements CRDTs in the Notes app for syncing offline edits between multiple devices.[36]
+Swim is a platform for running distributed real-time streaming applications that deliver continuous intelligence.  It uses streaming actors that stream pure op-based CRDT state updates to other actors in a DAG that implements a streaming data pipeline.
+
+References[edit]
+
+^ Jump up to: a b c 
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Shapiro, Marc; PreguiÃ§a, Nuno; Baquero, Carlos; Zawirski, Marek (2011). "Conflict-Free Replicated Data Types". Stabilization, Safety, and Security of Distributed Systems (PDF). Lecture Notes in Computer Science. Vol.Â 6976. Grenoble, France: Springer Berlin Heidelberg. pp.Â 386â400. doi:10.1007/978-3-642-24550-3_29. ISBNÂ 978-3-642-24549-7.
+
+^ Jump up to: a b c d e f g 
+Shapiro, Marc; PreguiÃ§a, Nuno; Baquero, Carlos; Zawirski, Marek (13 January 2011). "A Comprehensive Study of Convergent and Commutative Replicated Data Types". Rr-7506.
+
+^ 
+Shapiro, Marc; PreguiÃ§a, Nuno (2007). "Designing a Commutative Replicated Data Type". Computing Research Repository (CoRR). abs/0710.1784. arXiv:0710.1784. Bibcode:2007arXiv0710.1784S.
+
+^ Jump up to: a b Oster, GÃ©rald; Urso, Pascal; Molli, Pascal; Imine, Abdessamad (2006). Proceedings of the 2006 20th anniversary conference on Computer supported cooperative work - CSCW '06. p.Â 259. CiteSeerXÂ 10.1.1.554.3168. doi:10.1145/1180875.1180916. ISBNÂ 978-1595932495. S2CIDÂ 14596943.
+
+^ Jump up to: a b 
+Letia, Mihai; PreguiÃ§a, Nuno; Shapiro, Marc (2009). "CRDTs: Consistency without Concurrency Control". Computing Research Repository (CoRR). abs/0907.0929. arXiv:0907.0929. Bibcode:2009arXiv0907.0929L.
+
+^ 
+PreguiÃ§a, Nuno; Marques, Joan Manuel; Shapiro, Marc; Letia, Mihai (June 2009), "A Commutative Replicated Data Type for Cooperative Editing" (PDF), Proc 29th IEEE International Conference on Distributed Computing Systems, Montreal, Quebec, Canada: IEEE Computer Society, pp.Â 395â403, doi:10.1109/ICDCS.2009.20, ISBNÂ 978-0-7695-3659-0, S2CIDÂ 8956372
+
+^ 
+Baquero, Carlos; Moura, Francisco (1997), Specification of Convergent Abstract Data Types for Autonomous Mobile Computing, Universidade do Minho
+
+^ 
+Schneider, Fred (December 1990). "Implementing Fault-Tolerant Services Using the State Machine Approach: A Tutorial". ACM Computing Surveys. 22 (4): 299â319. doi:10.1145/98163.98167. S2CIDÂ 678818.
+
+^ 
+"Conflict-free Replicated Data Types" (PDF). inria.fr. July 19, 2011.
+
+^ 
+Letia, Mihai; PreguiÃ§a, Nuno; Shapiro, Marc (1 April 2010). "Consistency without Concurrency Control in Large, Dynamic Systems" (PDF). SIGOPS Oper. Syst. Rev. 44 (2): 29â34. doi:10.1145/1773912.1773921. S2CIDÂ 6255174.
+
+^ Jump up to: a b 
+Baquero, Carlos; Almeida, Paulo SÃ©rgio; Shoker, Ali (2014-06-03).  Magoutis, Kostas; Pietzuch, Peter (eds.). Making Operation-Based CRDTs Operation-Based. Lecture Notes in Computer Science. Springer Berlin Heidelberg. pp.Â 126â140. CiteSeerXÂ 10.1.1.492.8742. doi:10.1007/978-3-662-43352-2_11. ISBNÂ 9783662433515.
+
+^ 
+Baquero, Carlos; Moura, Francisco (1 October 1999). "Using Structural Characteristics for Autonomous Operation". SIGOPS Oper. Syst. Rev. 33 (4): 90â96. doi:10.1145/334598.334614. hdl:1822/34984. S2CIDÂ 13882850.
+
+^ Jump up to: a b 
+Almeida, Paulo SÃ©rgio; Shoker, Ali; Baquero, Carlos (2015-05-13).  Bouajjani, Ahmed; Fauconnier, Hugues (eds.). Efficient State-Based CRDTs by Delta-Mutation. Lecture Notes in Computer Science. Springer International Publishing. pp.Â 62â76. arXiv:1410.2803. doi:10.1007/978-3-319-26850-7_5. ISBNÂ 9783319268491. S2CIDÂ 7852769.
+
+^ 
+Almeida, Paulo SÃ©rgio; Shoker, Ali; Baquero, Carlos (2016-03-04). "Delta State Replicated Data Types". Journal of Parallel and Distributed Computing. 111: 162â173. arXiv:1603.01529. Bibcode:2016arXiv160301529S. doi:10.1016/j.jpdc.2017.08.003. S2CIDÂ 7990602.
+
+^ 
+Burckhardt, Sebastian; Gotsman, Alexey; Yang, Hongseok; Zawirski, Marek (23 January 2014). "Replicated Data Types: Specification, Verification, Optimality". Proceedings of the 41st ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (PDF). pp.Â 271â284. doi:10.1145/2535838.2535848. ISBNÂ 9781450325448. S2CIDÂ 15023909.
+
+^ Annette Bieniusa, Marek Zawirski, Nuno PreguiÃ§a, Marc Shapiro, Carlos Baquero, Valter Balegas, SÃ©rgio Duarte, "An Optimized Conflict-free Replicated Set" (2012) arXiv:1210.3368
+
+^ Roh, Huyn-Gul; Jeon, Myeongjae; Kim, Jin-Soo; Lee, Joonwon (2011). "Replicated Abstract Data Types: Building Blocks for Collaborative Applications". Journal of Parallel and Distributed Computing. 71 (2): 354â368. doi:10.1016/j.jpdc.2010.12.006.
+
+^ 
+Weiss, Stephane; Urso, Pascal; Molli, Pascal (2010). "Logoot-Undo: Distributed Collaborative Editing System on P2P Networks". IEEE Transactions on Parallel and Distributed Systems. 21 (8): 1162â1174. doi:10.1109/TPDS.2009.173. ISSNÂ 1045-9219. S2CIDÂ 14172605.
+
+^ 
+NÃ©delec, Brice; Molli, Pascal; Mostefaoui, Achour; Desmontils, Emmanuel (2013). "LSEQ". LSEQ an adaptive structure for sequences in distributed collaborative editing (PDF). p.Â 37. doi:10.1145/2494266.2494278. ISBNÂ 9781450317894. S2CIDÂ 9215663.
+
+^ NÃ©delec, Brice; Molli, Pascal; Mostefaoui, Achour (2016). "CRATE: Writing Stories Together with our Browsers". Proceedings of the 25th International Conference Companion on World Wide Web. p.Â 231. doi:10.1145/2872518.2890539. S2CIDÂ 5096789. Archived from the original on 2020-01-01. Retrieved 2020-01-01.
+
+^ 
+AndrÃ©, Luc; Martin, StÃ©phane; Oster, GÃ©rald; Ignat, Claudia-Lavinia (2013). "Supporting Adaptable Granularity of Changes for Massive-scale Collaborative Editing". Proceedings of the International Conference on Collaborative Computing: Networking, Applications and Worksharing â CollaborateCom 2013. pp.Â 50â59. doi:10.4108/icst.collaboratecom.2013.254123. ISBNÂ 978-1-936968-92-3.
+
+^ 
+"MUTE". Coast Team. March 24, 2016.
+
+^ 
+Nicolas, Matthieu; Elvinger, Victorien; Oster, GÃ©rald; Ignat, Claudia-Lavinia; Charoy, FranÃ§ois (2017). "MUTE: A Peer-to-Peer Web-based Real-time Collaborative Editor". Proceedings of ECSCW Panels, Demos and Posters 2017. doi:10.18420/ecscw2017_p5.
+
+^ Gentle, Seph. "Faster CRDTs: An Adventure in Optimization". josephg.com. Retrieved 1 August 2021.
+
+^ "yjs/yjs: Shared data types for building collaborative software". GitHub.
+
+^ "About CRDTs". Retrieved 2020-06-18.
+
+^ 
+Bourgon, Peter (9 May 2014). "Roshi: a CRDT system for timestamped events". SoundCloud.
+
+^ 
+"Introducing Riak 2.0: Data Types, Strong Consistency, Full-Text Search, and Much More". Basho Technologies, Inc. 29 October 2013.
+
+^ 
+Hoff, Todd (13 October 2014). "How League of Legends Scaled Chat to 70 Million Players - It Takes Lots of Minions". High Scalability.
+
+^ 
+Macklin, Dan. "bet365: Why bet365 chose Riak". Basho.
+
+^ 
+Ivanov, Dmitry. "Practical Demystification of CRDTs".
+
+^ 
+McCord, Chris. "What makes Phoenix Presence Special".
+
+^ 
+Mak, Sander. "Facebook Announces Apollo at QCon NY 2014".
+
+^ 
+"Code together in real time with Teletype for Atom". Atom.io. November 15, 2017.
+
+^ "OrbitDB/ipfs-log on Github". Retrieved 2018-09-07.
+
+^ "IOS Objective-C headers as derived from runtime introspection: NST/IOS-Runtime-Headers". 2019-07-25.
+
+
+External links[edit]
+A collection of resources and papers on CRDTs
+"Strong Eventual Consistency and Conflict-free Replicated Data Types" (A talk on CRDTs) by Marc Shapiro
+Readings in conflict-free replicated data types by Christopher Meiklejohn
+CAP theorem and CRDTs: CAP 12 years later. How the rules have changed  by Eric Brewer
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Conflict-free_replicated_data_type&oldid=1050072410"
+		Categories: Distributed data structuresDistributed algorithmsFault-tolerant computer systemsHidden categories: CS1: long volume valueArticles with short descriptionShort description is different from Wikidata
+	

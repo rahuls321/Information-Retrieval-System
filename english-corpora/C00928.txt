@@ -1,0 +1,215 @@
+
+Title:
+Memory segmentation
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about segmented computer memory. For segments in object code, see Object file.
+Memory segmentation is an operating system memory management technique of division of a computer's primary memory into segments or sections. In a computer system using segmentation, a reference to a memory location includes a value that identifies a segment and an offset (memory location) within that segment. Segments or sections are also used in object files of compiled programs when they are linked together into a program image and when the image is loaded into memory.
+Segments usually correspond to natural divisions of a program such as individual routines or data tables[1] so segmentation is generally more visible to the programmer than paging alone.[2]
+Different segments may be created for different program modules, or for different classes of memory usage such as code and data segments.[3] Certain segments may be shared between programs.[1][2]
+Segmentation was originally invented as a method by which system software could isolate different software processes (tasks) and data they are using. It was intended to increase reliability of the systems running multiple processes simultaneously.[4] In a x86-64 architecture it is considered legacy and most x86-64-based modern system software don't use memory segmentation. Instead they handle programs and their data by utilizing memory-paging which also serves as a way of memory protection. However most x86-64 implementations still support it for backward compatibility reasons.[4] 
+
+Contents
+
+1 Hardware implementation
+
+1.1 Segmentation without paging
+1.2 Segmentation with paging
+
+
+2 History
+3 Examples
+
+3.1 S/370 architecture
+3.2 x86 architecture
+
+
+4 See also
+5 Notes
+6 References
+7 External links
+
+
+
+Hardware implementation[edit]
+In a system using segmentation, computer memory addresses consist of a segment id and an offset within the segment.[3]
+A hardware memory management unit (MMU) is responsible for translating the segment and offset into a physical  address, and for performing checks to make sure the translation can be done and that the reference to that segment and offset is permitted.
+Each segment has a length and set of permissions (for example, read, write, execute) associated with it.[3] A process is only allowed to make a reference into a segment if the type of reference is allowed by the permissions, and if the offset within the segment is within the range specified by the length of the segment. Otherwise, a hardware exception such as a segmentation fault is raised.
+Segments may also be used to implement virtual memory.
+In this case each segment has an associated flag indicating whether it is present in main memory or not. If a segment is accessed that is not present in main memory, an exception is raised, and the operating system will read the segment into memory from secondary storage.
+Segmentation is one method of implementing memory protection.[5]  Paging is another, and they can be combined.  The size of a memory segment is generally not fixed and may be as small as a single byte.[6]
+Segmentation has been implemented in several different ways on different hardware, with or without paging. Intel x86 memory segmentation does not fit either model and is discussed separately below, and also in greater detail in a separate article.
+
+Segmentation without paging[edit]
+Associated with each segment is information that indicates where the segment is located in memoryâ the segment base. When a program references a memory location the offset is added to the segment base to generate a physical memory address.
+An implementation of virtual memory on a system using segmentation without paging requires that entire segments be swapped back and forth between main memory and secondary storage.  When a segment is swapped in, the operating system has to allocate enough contiguous free memory to hold the entire segment.  Often memory fragmentation results if there is not enough contiguous memory even though there may be enough in total.
+
+Segmentation with paging[edit]
+Instead of an actual memory location the segment information includes the address of a page table for the segment.
+When a program references a memory location the offset is translated to a memory address using the page table.  A segment can be extended simply by allocating another memory page and adding it to the segment's page table.
+An implementation of virtual memory on a system using segmentation with paging usually only moves individual pages back and forth between main memory and secondary storage, similar to a paged non-segmented system. Pages of the segment can be located anywhere in main memory and need not be contiguous. This usually results in a reduced amount of input/output between primary and secondary storage and reduced memory fragmentation.
+
+History[edit]
+The Burroughs Corporation B5000 computer was one of the first to implement segmentation, and "perhaps the first commercial computer to provide virtual memory"[7] based on segmentation.  The later B6500 computer also implemented segmentation; a version of its architecture is still in use today on the Unisys ClearPath Libra servers.
+The GE-645 computer, a modification of the GE-635 with segmentation and paging support added, was designed in 1964 to support Multics.
+The Intel iAPX 432,[8] begun in 1975, attempted to implement a true segmented architecture with memory protection on a microprocessor.
+The 960MX version of the Intel i960 processors supported load and store instructions with the source or destination being an "access descriptor" for an object, and an offset into the object, with the access descriptor being in a 32-bit register and with the offset computed from a base offset in the next register and from an additional offset and, optionally, an index register specified in the instruction.  An access descriptor contains permission bits and a 26-bit object index; the object index is an index into a table of object descriptors, giving an object type, an object length, and a physical address for the object's data, a page table for the object, or the top-level page table for a two-level page table for the object, depending on the object type.[9]
+Prime, Stratus, Apollo, IBM System/38, and IBM AS/400 (including IBM i) computers use memory segmentation.
+
+Examples[edit]
+S/370 architecture[edit]
+In the IBM System/370 models[a] with virtual storage[10][11] (DAT) and 24-bit addresses, control register 0 specifies a segment size of either 64 KiB or 1 MiB and a page size of either 2 KiB or 4 KiB; control register 1 contains a Segment Table Designator (STD), which specifies the length and real address of the segment table. Each segment table entry contains a page table location, a page table length and an invalid bit. IBM later expanded the address size to 31 bits and added two bits to the segment table entries:
+
+Segment-Protection Bit
+Segment is read-only
+Common-Segment Bit
+The segment is shared between address spaces; this bit is set to optimize TLB use
+Each of IBM's DAT implementations includes a translation cache, which IBM called a Translation Lookaside Buffer (TLB). While Principles of Operation discusses the TLB in general terms, the details are not part of the architecture and vary from model to model.
+Starting with the 3031, 3032 and 3033 processor complexes, IBM offered a feature called Dual-address Space[11]:â5-13â5-17,âDual-Address-Space Controlâ:â5-17â5-20,âDAS Authorization Mechanismsâ:â5-21â5-24,âPC-Number Translationâ[12] (DAS), which allows a program to switch between the translation tables for two different address spaces, referred to as primary address space (CR1) and secondary address space (CR7), and to move data between the address spaces subject to protection key. DAS supports a translation table to convert a 16-bit address space number (ASN) to an STD, with privileged instructions to load the STD into CR1 (primary) or CR7 (secondary).
+
+x86 architecture[edit]
+Main article: x86 memory segmentation
+The memory segmentation used by early x86 processors, beginning with the Intel 8086, does not provide any protection.  Any program running on these processors can access any segment with no restrictions. A segment is only identified by its starting location; there is no length checking. The segment starting address granularity is 16 bytes and the offset is 16 bits, supporting segment sizes up to 64 KiB, so segments can (and often do) overlap and each physical address can be denoted by 4096 different segmentâoffset pairs (allowing for address offset wrap-around).
+Segmentation in the Intel 80286 and later provides protection: with the introduction of the 80286, Intel retroactively named the sole operating mode of the previous x86 CPU models "real mode" and introduced a new "protected mode" with protection features.  For backward compatibility, all x86 CPUs start in "real mode" with no memory protection, fixed 64Â KiB segments, and only 20-bit (1024Â KiB) addressing. An 80286 or later processor must be switched into another mode by software in order to use its full address space and advanced MMU features.
+The Intel 80386 and later processors also support paging; in those processors, the segment table, rather than pointing to a page table for the segment, contains the segment address in linear memory. Addresses in linear memory are then mapped to physical addresses using a separate page table, if paging is enabled.
+The x86-64 architecture does not use segmentation in long mode (64-bit mode).[13] In a x86-64 architecture it is considered legacy and most x86-64-based modern system software don't use memory segmentation. Instead they handle programs and their data by utilizing memory-paging which also serves as a way of memory protection. Though most x86-64 implementations still support it for backward compatibility reasons.[4]  Four of the segment registers: CS, SS, DS, and ES are forced to 0, and the limit to 264. The segment registers FS and GS can still have a nonzero base address. This allows operating systems to use these segments for special purposes.
+
+See also[edit]
+Memory management (operating systems)
+Virtual address space
+Virtual memory
+Data segment
+BSS Segment
+x86 memory segmentation
+Segmentation fault
+Flat memory model
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Models 115, 125, 135, 138, 145, 148, 155 II, 158, 165 II and 168
+
+
+References[edit]
+
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Holt, A. W. (1961). "Program Organization and Record Keeping for Dynamic Storage Allocation". Communications of the ACM.
+
+^ Jump up to: a b Englander, Irv (2003). The architecture of computer hardware and systems software (3rdÂ ed.). Wiley. ISBNÂ 0-471-07325-3.
+
+^ Jump up to: a b c Glaser, E. L.; Couleur, J. F.; Oliver, G. A. (1965). System Design of a Computer for Time Sharing Applications. 1965 Fall Joint Computer Conference.
+
+^ Jump up to: a b c "1.2 Memory Management". AMD64 Technology AMD64 Architecture Programmerâs Manual Volume 2: System Programming (PDF). Vol.Â 2. Advanced Micro Devices. 2018. p.Â 5.
+
+^ Arpaci-Dusseau, Remzi H.; Arpaci-Dusseau, Andrea C. (2014). "Segmentation" (PDF). Operating Systems: Three Easy Pieces. Arpaci-Dusseau Books.
+
+^ IntelÂ® 64 and IA-32 Architectures Software Developerâs Manual Volume 3 (3A, 3B & 3C): System Programming Guide (PDF). Intel Corporation. 2012. pp.Â 3â13.
+
+^ Mayer, Alastair J.W. "The Architecture of the Burroughs B5000 - 20 Years Later and Still Ahead of the Times?". Retrieved March 15, 2012.
+
+^ Introduction to the IAPX 432 Architecture (PDF). Intel Corporation. 1981. p.Â 78.
+
+^ BiiN CPU Architecture Reference Manual (PDF). BiiN. July 1998.
+
+^ "Dynamic Address Translation" (PDF). IBM System/370 Principles of Operation (PDF). Systems (FourthÂ ed.). IBM. September 1974. pp.Â 57â68. GA22-7000-4.
+ 
+
+^ Jump up to: a b "Dynamic Address Translation". IBM System/370 Principles of Operation (EleventhÂ ed.). IBM. September 1987. pp.Â 3-20â3-38. GA22-7000-10.
+
+^ "Address spaces" (PDF). IBM System/370 Extended Architecture Principles of Operation (PDF) (SecondÂ ed.). IBM. January 1987. pp.Â 3-13â3-14. SA22-7085-1.
+
+^ AMD64 Technology AMD64 Architecture Programmerâs Manual Volume 2: System Programming (PDF). Vol.Â 2. Advanced Micro Devices. 2018.
+
+
+External links[edit]
+IA-32 Intel Architecture Software Developerâs Manual Volume 3A: System Programming Guide. http://www.intel.com/products/processor/manuals/index.htm.
+Operating Systems: Internals and Design Principles by William Stallings. Publisher:  Prentice Hall. ISBNÂ 0-13-147954-7. ISBNÂ 978-0-13-147954-8.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteMemory management
+Memory management as a function of an operating system
+Manual memory management
+Static memory allocation
+C dynamic memory allocation
+new and delete (C++)
+Virtual memory
+Demand paging
+Page table
+Paging
+Virtual memory compression
+Memory allocators
+dlmalloc
+Hoard malloc
+jemalloc
+mimalloc
+ptmalloc
+Hardware
+Memory management unit (MMU)
+Translation lookaside buffer (TLB)
+Inputâoutput memory management unit (IOMMU)
+Garbage collection
+Boehm garbage collector
+Concurrent mark sweep collector
+Finalizer
+Garbage
+Garbage-first collector
+Mark-compact algorithm
+Reference counting
+Tracing garbage collection
+Strong reference
+Weak reference
+Memory segmentation
+Protected mode
+Real mode
+Virtual 8086 mode
+x86 memory segmentation
+Memory safety
+Buffer overflow
+Buffer over-read
+Dangling pointer
+Stack overflow
+Issues
+Fragmentation
+Memory leak
+Unreachable memory
+Other
+Automatic variable
+International Symposium on Memory Management
+Region-based memory management
+
+vteApplication binary interface (ABI)Parts andconventions
+Alignment
+Calling convention
+Call stack
+Library
+static
+Machine code
+Memory segmentation
+Name mangling
+Object code
+Opaque pointer
+Position-independent code
+Relocation
+System call
+Virtual method table
+Related topics
+Binary-code compatibility
+Foreign function interface
+Language binding
+Linker
+dynamic
+Loader
+Year 2038 problem
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Memory_segmentation&oldid=1063248778"
+		Categories: Memory management
+	

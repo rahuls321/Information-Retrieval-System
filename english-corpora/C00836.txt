@@ -1,0 +1,2172 @@
+
+Title:
+Communicating sequential processes
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Constraint satisfaction problem.
+In computer science, communicating sequential processes (CSP) is a formal language for describing patterns of interaction in concurrent systems.[1] It is a member of the family of mathematical theories of concurrency known as process algebras, or process calculi, based on message passing via channels. CSP was highly influential in the design of the occam programming language[1][2] and also influenced the design of programming languages such as Limbo,[3] RaftLib, Erlang,[4] Go,[5][3] Crystal, and Clojure's core.async.[6]
+CSP was first described in a 1978 article by Tony Hoare,[7] but has since evolved substantially.[8] CSP has been practically applied in industry as a tool for specifying and verifying the concurrent aspects of a variety of different systems, such as the T9000 Transputer,[9] as well as a secure ecommerce system.[10] The theory of CSP itself is also still the subject of active research, including work to increase its range of practical applicability (e.g., increasing the scale of the systems that can be tractably analyzed).[11] 
+
+Contents
+
+1 History
+
+1.1 Applications
+
+
+2 Informal description
+
+2.1 Primitives
+2.2 Algebraic operators
+2.3 Examples
+
+
+3 Formal definition
+
+3.1 Syntax
+3.2 Formal semantics
+
+3.2.1 Denotational semantics
+
+
+
+
+4 Tools
+5 Related formalisms
+6 Comparison with the actor model
+7 Award
+8 See also
+9 References
+10 Further reading
+11 External links
+
+
+
+History[edit]
+The version of CSP presented in Hoare's original 1978 article was essentially a concurrent programming language rather than a process calculus. It had a substantially different syntax than later versions of CSP, did not possess mathematically defined semantics,[12] and was unable to represent unbounded nondeterminism.[13] Programs in the original CSP were written as a parallel composition of a fixed number of sequential processes communicating with each other strictly through synchronous message-passing. In contrast to later versions of CSP, each process was assigned an explicit name, and the source or destination of a message was defined by specifying the name of the intended sending or receiving process. For example, the process
+
+COPY = *[c:character; west?c â east!c]
+
+repeatedly receives a character from the process named west and sends that character to process named east. The parallel composition
+
+[west::DISASSEMBLE || X::COPY || east::ASSEMBLE]
+
+assigns the names west to the DISASSEMBLE process, X to the COPY process, and east to the ASSEMBLE process, and executes these three processes concurrently.[7]
+Following the publication of the original version of CSP, Hoare, Stephen Brookes, and A. W. Roscoe developed and refined the theory of CSP into its modern, process algebraic form. The approach taken in developing CSP into a process algebra was influenced by Robin Milner's work on the Calculus of Communicating Systems (CCS) and conversely. The theoretical version of CSP was initially presented in a 1984 article by Brookes, Hoare, and Roscoe,[14] and later in Hoare's book Communicating Sequential Processes,[12] which was published in 1985. In September 2006, that book was still the third-most cited computer science reference of all time according to Citeseer[citation needed] (albeit an unreliable source due to the nature of its sampling). The theory of CSP has undergone a few minor changes since the publication of Hoare's book. Most of these changes were motivated by the advent of automated tools for CSP process analysis and verification. Roscoe's The Theory and Practice of Concurrency[1] describes this newer version of CSP.
+
+Applications[edit]
+An early and important application of CSP was its use for specification and verification of elements of the INMOS T9000 Transputer, a complex superscalar pipelined processor designed to support large-scale multiprocessing. CSP was employed in verifying the correctness of both the processor pipeline and the Virtual Channel Processor, which managed off-chip communications for the processor.[9]
+Industrial application of CSP to software design has usually focused on dependable and safety-critical systems. For example, the Bremen Institute for Safe Systems and Daimler-Benz Aerospace modeled a fault-management system and avionics interface (consisting of about 23,000 lines of code) intended for use on the International Space Station in CSP, and analyzed the model to confirm that their design was free of deadlock and livelock.[15][16] The modeling and analysis process was able to uncover a number of errors that would have been difficult to detect using testing alone. Similarly, Praxis High Integrity Systems applied CSP modeling and analysis during the development of software (approximately 100,000 lines of code) for a secure smart-card certification authority to verify that their design was secure and free of deadlock. Praxis claims that the system has a much lower defect rate than comparable systems.[10]
+Since CSP is well-suited to modeling and analyzing systems that incorporate complex message exchanges, it has also been applied to the verification of communications and security protocols. A prominent example of this sort of application is Loweâs use of CSP and the FDR refinement-checker to discover a previously unknown attack on the NeedhamâSchroeder public-key authentication protocol, and then to develop a corrected protocol able to defeat the attack.[17]
+
+Informal description[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (May 2020) (Learn how and when to remove this template message)
+As its name suggests, CSP allows the description of systems in terms of component processes that operate independently, and interact with each other solely through message-passing communication. However, the "Sequential" part of the CSP name is now something of a misnomer, since modern CSP allows component processes to be defined both as sequential processes, and as the parallel composition of more primitive processes. The relationships between different processes, and the way each process communicates with its environment, are described using various process algebraic operators. Using this algebraic approach, quite complex process descriptions can be easily constructed from a few primitive elements.
+
+Primitives[edit]
+CSP provides two classes of primitives in its process algebra:
+
+Events
+Events represent communications or interactions. They are assumed to be indivisible and instantaneous.  They may be atomic names (e.g. on, off), compound names (e.g. valve.open, valve.close), or input/output events (e.g. mouse?xy, screen!bitmap).
+Primitive processes
+
+Primitive processes represent fundamental behaviors: examples include STOP (the process that communicates nothing, also called deadlock), and SKIP (which represents successful termination).
+Algebraic operators[edit]
+CSP has a wide range of algebraic operators. The principal ones are:
+
+Prefix
+The prefix operator combines an event and a process to produce a new process. For example,
+
+  
+    
+      
+        a
+        â
+        P
+      
+    
+    {\displaystyle a\to P}
+  
+
+is the process that is willing to communicate a with its environment and, after a, behaves like the process P.
+Deterministic choice
+The deterministic (or external) choice operator allows the future evolution of a process to be defined as a choice between two component processes and allows the environment to resolve the choice by communicating an initial event for one of the processes. For example,
+
+  
+    
+      
+        (
+        a
+        â
+        P
+        )
+        â»
+        (
+        b
+        â
+        Q
+        )
+      
+    
+    {\displaystyle (a\to P)\Box (b\to Q)}
+  
+
+is the process that is willing to communicate the initial events a and b and subsequently behaves as either P or Q, depending on which initial event the environment chooses to communicate. If both a and b were communicated simultaneously, the choice would be resolved nondeterministically.
+Nondeterministic choice
+The nondeterministic (or internal) choice operator allows the future evolution of a process to be defined as a choice between two component processes, but does not allow the environment any control over which one of the component processes will be selected. For example,
+
+  
+    
+      
+        (
+        a
+        â
+        P
+        )
+        â
+        (
+        b
+        â
+        Q
+        )
+      
+    
+    {\displaystyle (a\to P)\sqcap (b\to Q)}
+  
+
+can behave like either 
+  
+    
+      
+        (
+        a
+        â
+        P
+        )
+      
+    
+    {\displaystyle (a\to P)}
+  
+ or 
+  
+    
+      
+        (
+        b
+        â
+        Q
+        )
+      
+    
+    {\displaystyle (b\to Q)}
+  
+. It can refuse to accept a or b and is only obliged to communicate if the environment offers both a and b. Nondeterminism can be inadvertently introduced into a nominally deterministic choice if the initial events of both sides of the choice are identical. So, for example,
+
+  
+    
+      
+        (
+        a
+        â
+        a
+        â
+        
+          STOP
+        
+        )
+        â»
+        (
+        a
+        â
+        b
+        â
+        
+          STOP
+        
+        )
+      
+    
+    {\displaystyle (a\to a\to {\text{STOP}})\Box (a\to b\to {\text{STOP}})}
+  
+
+is equivalent to
+
+  
+    
+      
+        a
+        â
+        
+          
+            (
+          
+        
+        (
+        a
+        â
+        
+          STOP
+        
+        )
+        â
+        (
+        b
+        â
+        
+          STOP
+        
+        )
+        
+          
+            )
+          
+        
+      
+    
+    {\displaystyle a\to {\big (}(a\to {\text{STOP}})\sqcap (b\to {\text{STOP}}){\big )}}
+  
+
+Interleaving
+The interleaving operator represents completely independent concurrent activity. The process
+
+  
+    
+      
+        P
+        
+        
+          |
+        
+        
+          |
+        
+        
+          |
+        
+        
+        Q
+      
+    
+    {\displaystyle P\;|||\;Q}
+  
+
+behaves as both P and Q simultaneously. The events from both processes are arbitrarily interleaved in time.
+Interface parallel
+The interface parallel operator represents concurrent activity that requires synchronization between the component processes: any event in the interface set can only occur when all component processes are able to engage in that event. For example, the process
+
+  
+    
+      
+        P
+        
+        
+          |
+        
+        [
+        {
+        a
+        }
+        ]
+        
+          |
+        
+        
+        Q
+      
+    
+    {\displaystyle P\;|[\{a\}]|\;Q}
+  
+
+requires that P and Q must both be able to perform event a before that event can occur. So, for example, the process
+
+  
+    
+      
+        (
+        a
+        â
+        P
+        )
+        
+        
+          |
+        
+        [
+        {
+        a
+        }
+        ]
+        
+          |
+        
+        
+        (
+        a
+        â
+        Q
+        )
+      
+    
+    {\displaystyle (a\to P)\;|[\{a\}]|\;(a\to Q)}
+  
+
+can engage in event a and become the process
+
+  
+    
+      
+        P
+        
+        
+          |
+        
+        [
+        {
+        a
+        }
+        ]
+        
+          |
+        
+        
+        Q
+      
+    
+    {\displaystyle P\;|[\{a\}]|\;Q}
+  
+
+while
+
+  
+    
+      
+        (
+        a
+        â
+        P
+        )
+        
+        
+          |
+        
+        [
+        {
+        a
+        ,
+        b
+        }
+        ]
+        
+          |
+        
+        
+        (
+        b
+        â
+        Q
+        )
+      
+    
+    {\displaystyle (a\to P)\;|[\{a,b\}]|\;(b\to Q)}
+  
+
+will simply deadlock.
+Hiding
+The hiding operator provides a way to abstract processes by making some events unobservable. A trivial example of hiding is
+
+  
+    
+      
+        (
+        a
+        â
+        P
+        )
+        â
+        {
+        a
+        }
+      
+    
+    {\displaystyle (a\to P)\setminus \{a\}}
+  
+
+which, assuming that the event a doesn't appear in P, simply reduces to
+
+  
+    
+      
+        P
+      
+    
+    {\displaystyle P}
+  
+
+Examples[edit]
+One of the archetypal CSP examples is an abstract representation of a chocolate vending machine and its interactions with a person wishing to buy some chocolate. This vending machine might be able to carry out two different events, âcoinâ and âchocâ which represent the insertion of payment and the delivery of a chocolate respectively. A machine which demands payment (only in cash) before offering a chocolate can be written as:
+
+
+  
+    
+      
+        
+          V
+          e
+          n
+          d
+          i
+          n
+          g
+          M
+          a
+          c
+          h
+          i
+          n
+          e
+        
+        =
+        
+          c
+          o
+          i
+          n
+        
+        â
+        
+          c
+          h
+          o
+          c
+        
+        â
+        
+          S
+          T
+          O
+          P
+        
+      
+    
+    {\displaystyle \mathrm {VendingMachine} =\mathrm {coin} \rightarrow \mathrm {choc} \rightarrow \mathrm {STOP} }
+  
+
+A person who might choose to use a coin or card to make payments could be modelled as:
+
+
+  
+    
+      
+        
+          P
+          e
+          r
+          s
+          o
+          n
+        
+        =
+        (
+        
+          c
+          o
+          i
+          n
+        
+        â
+        
+          S
+          T
+          O
+          P
+        
+        )
+        â»
+        (
+        
+          c
+          a
+          r
+          d
+        
+        â
+        
+          S
+          T
+          O
+          P
+        
+        )
+      
+    
+    {\displaystyle \mathrm {Person} =(\mathrm {coin} \rightarrow \mathrm {STOP} )\Box (\mathrm {card} \rightarrow \mathrm {STOP} )}
+  
+
+These two processes can be put in parallel, so that they can interact with each other. The behaviour of the composite process depends on the events that the two component processes must synchronise on. Thus,
+
+
+  
+    
+      
+        
+          V
+          e
+          n
+          d
+          i
+          n
+          g
+          M
+          a
+          c
+          h
+          i
+          n
+          e
+        
+        
+          |
+          
+            [
+            
+              {
+              
+                
+                  c
+                  o
+                  i
+                  n
+                
+                ,
+                
+                  c
+                  a
+                  r
+                  d
+                
+              
+              }
+            
+            ]
+          
+          |
+        
+        
+          P
+          e
+          r
+          s
+          o
+          n
+        
+        â¡
+        
+          c
+          o
+          i
+          n
+        
+        â
+        
+          c
+          h
+          o
+          c
+        
+        â
+        
+          S
+          T
+          O
+          P
+        
+      
+    
+    {\displaystyle \mathrm {VendingMachine} \left\vert \left[\left\{\mathrm {coin} ,\mathrm {card} \right\}\right]\right\vert \mathrm {Person} \equiv \mathrm {coin} \rightarrow \mathrm {choc} \rightarrow \mathrm {STOP} }
+  
+
+whereas if synchronization was only required on âcoinâ, we would obtain
+
+
+  
+    
+      
+        
+          V
+          e
+          n
+          d
+          i
+          n
+          g
+          M
+          a
+          c
+          h
+          i
+          n
+          e
+        
+        
+          |
+          
+            [
+            
+              {
+              
+                c
+                o
+                i
+                n
+              
+              }
+            
+            ]
+          
+          |
+        
+        
+          P
+          e
+          r
+          s
+          o
+          n
+        
+        â¡
+        
+          (
+          
+            
+              c
+              o
+              i
+              n
+            
+            â
+            
+              c
+              h
+              o
+              c
+            
+            â
+            
+              S
+              T
+              O
+              P
+            
+          
+          )
+        
+        â»
+        
+          (
+          
+            
+              c
+              a
+              r
+              d
+            
+            â
+            
+              S
+              T
+              O
+              P
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \mathrm {VendingMachine} \left\vert \left[\left\{\mathrm {coin} \right\}\right]\right\vert \mathrm {Person} \equiv \left(\mathrm {coin} \rightarrow \mathrm {choc} \rightarrow \mathrm {STOP} \right)\Box \left(\mathrm {card} \rightarrow \mathrm {STOP} \right)}
+  
+
+If we abstract this latter composite process by hiding the âcoinâ and âcardâ events, i.e.
+
+
+  
+    
+      
+        
+          (
+          
+            
+              (
+              
+                
+                  c
+                  o
+                  i
+                  n
+                
+                â
+                
+                  c
+                  h
+                  o
+                  c
+                
+                â
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              )
+            
+            â»
+            
+              (
+              
+                
+                  c
+                  a
+                  r
+                  d
+                
+                â
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              )
+            
+          
+          )
+        
+        â
+        
+          {
+          
+            c
+            o
+            i
+            n
+            ,
+            c
+            a
+            r
+            d
+          
+          }
+        
+      
+    
+    {\displaystyle \left(\left(\mathrm {coin} \rightarrow \mathrm {choc} \rightarrow \mathrm {STOP} \right)\Box \left(\mathrm {card} \rightarrow \mathrm {STOP} \right)\right)\setminus \left\{\mathrm {coin,card} \right\}}
+  
+
+we get the nondeterministic process
+
+
+  
+    
+      
+        
+          (
+          
+            
+              c
+              h
+              o
+              c
+            
+            â
+            
+              S
+              T
+              O
+              P
+            
+          
+          )
+        
+        â
+        
+          S
+          T
+          O
+          P
+        
+      
+    
+    {\displaystyle \left(\mathrm {choc} \rightarrow \mathrm {STOP} \right)\sqcap \mathrm {STOP} }
+  
+
+This is a process which either offers a âchocâ event and then stops, or just stops. In other words, if we treat the abstraction as an external view of the system (e.g., someone who does not see the decision reached by the person), nondeterminism has been introduced.
+
+Formal definition[edit]
+Syntax[edit]
+The syntax of CSP defines the âlegalâ ways in which processes and events may be combined. Let e be an event, and X be a set of events. Then the basic syntax of CSP can be defined as:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                ::=
+              
+              
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              
+                
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  S
+                  K
+                  I
+                  P
+                
+              
+              
+                
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                e
+                â
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  prefixing
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                â»
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  external
+                
+                
+                
+                  choice
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                â
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  nondeterministic
+                
+                
+                
+                  choice
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                |
+                |
+                |
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  interleaving
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                
+                  |
+                
+                [
+                {
+                X
+                }
+                ]
+                
+                  |
+                
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  interface
+                
+                
+                
+                  parallel
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                â
+                X
+              
+              
+                (
+                
+                  hiding
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                ;
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  sequential
+                
+                
+                
+                  composition
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  i
+                  f
+                
+                
+                b
+                
+                
+                  t
+                  h
+                  e
+                  n
+                
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                
+                  e
+                  l
+                  s
+                  e
+                
+                
+                P
+                r
+                o
+                c
+              
+              
+                (
+                
+                  boolean
+                
+                
+                
+                  conditional
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                â¹
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  timeout
+                
+                )
+              
+            
+            
+              
+              
+                
+                  |
+                
+              
+              
+                
+                  P
+                  r
+                  o
+                  c
+                
+                
+                â³
+                
+                
+                  P
+                  r
+                  o
+                  c
+                
+              
+              
+                (
+                
+                  interrupt
+                
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{lcll}{Proc}&::=&\mathrm {STOP} &\;\\&|&\mathrm {SKIP} &\;\\&|&e\rightarrow {Proc}&({\text{prefixing}})\\&|&{Proc}\;\Box \;{Proc}&({\text{external}}\;{\text{choice}})\\&|&{Proc}\;\sqcap \;{Proc}&({\text{nondeterministic}}\;{\text{choice}})\\&|&{Proc}\;\vert \vert \vert \;{Proc}&({\text{interleaving}})\\&|&{Proc}\;|[\{X\}]|\;{Proc}&({\text{interface}}\;{\text{parallel}})\\&|&{Proc}\setminus X&({\text{hiding}})\\&|&{Proc};{Proc}&({\text{sequential}}\;{\text{composition}})\\&|&\mathrm {if} \;b\;\mathrm {then} \;{Proc}\;\mathrm {else} \;Proc&({\text{boolean}}\;{\text{conditional}})\\&|&{Proc}\;\triangleright \;{Proc}&({\text{timeout}})\\&|&{Proc}\;\triangle \;{Proc}&({\text{interrupt}})\end{array}}}
+  
+
+Note that, in the interests of brevity, the syntax presented above omits the 
+  
+    
+      
+        
+          d
+          i
+          v
+        
+      
+    
+    {\displaystyle \mathbf {div} }
+  
+ process, which represents divergence, as well as various operators such as alphabetized parallel, piping, and indexed choices.
+
+Formal semantics[edit]
+This section needs expansion. You can help by adding to it.  (June 2008)
+CSP has been imbued with several different formal semantics, which define the meaning of syntactically correct CSP expressions. The theory of CSP includes mutually consistent denotational semantics, algebraic semantics, and operational semantics.
+
+Denotational semantics[edit]
+The three major denotational models of CSP are the traces model, the stable failures model, and the failures/divergences model. Semantic mappings from process expressions to each of these three models provide the denotational semantics for CSP.[1]
+The traces model defines the meaning of a process expression as the set of sequences of events (traces) that the process can be observed to perform. For example,
+
+
+  
+    
+      
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          
+            S
+            T
+            O
+            P
+          
+          )
+        
+        =
+        
+          {
+          
+            â¨
+            â©
+          
+          }
+        
+      
+    
+    {\displaystyle \mathrm {traces} \left(\mathrm {STOP} \right)=\left\{\langle \rangle \right\}}
+  
+ since 
+  
+    
+      
+        
+          S
+          T
+          O
+          P
+        
+      
+    
+    {\displaystyle \mathrm {STOP} }
+  
+ performs no events
+
+  
+    
+      
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          
+            a
+            â
+            b
+            â
+            
+              S
+              T
+              O
+              P
+            
+          
+          )
+        
+        =
+        
+          {
+          
+            â¨
+            â©
+            ,
+            â¨
+            a
+            â©
+            ,
+            â¨
+            a
+            ,
+            b
+            â©
+          
+          }
+        
+      
+    
+    {\displaystyle \mathrm {traces} \left(a\rightarrow b\rightarrow \mathrm {STOP} \right)=\left\{\langle \rangle ,\langle a\rangle ,\langle a,b\rangle \right\}}
+  
+ since the process 
+  
+    
+      
+        (
+        a
+        â
+        b
+        â
+        
+          S
+          T
+          O
+          P
+        
+        )
+      
+    
+    {\displaystyle (a\rightarrow b\rightarrow \mathrm {STOP} )}
+  
+ can be observed to have performed no events, the event a, or the sequence of events a followed by b
+More formally, the meaning of a process P in the traces model is defined as 
+  
+    
+      
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+        â
+        
+          Î£
+          
+            â
+          
+        
+      
+    
+    {\displaystyle \mathrm {traces} \left(P\right)\subseteq \Sigma ^{\ast }}
+  
+ such that:
+
+
+  
+    
+      
+        â¨
+        â©
+        â
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+      
+    
+    {\displaystyle \langle \rangle \in \mathrm {traces} \left(P\right)}
+  
+ (i.e. 
+  
+    
+      
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+      
+    
+    {\displaystyle \mathrm {traces} \left(P\right)}
+  
+ contains the empty sequence)
+
+  
+    
+      
+        
+          s
+          
+            1
+          
+        
+        â¢
+        
+          s
+          
+            2
+          
+        
+        â
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+        
+        â¹
+        
+        
+          s
+          
+            1
+          
+        
+        â
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+      
+    
+    {\displaystyle s_{1}\smallfrown s_{2}\in \mathrm {traces} \left(P\right)\implies s_{1}\in \mathrm {traces} \left(P\right)}
+  
+ (i.e. 
+  
+    
+      
+        
+          t
+          r
+          a
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+      
+    
+    {\displaystyle \mathrm {traces} \left(P\right)}
+  
+ is prefix-closed)
+where 
+  
+    
+      
+        
+          Î£
+          
+            â
+          
+        
+      
+    
+    {\displaystyle \Sigma ^{\ast }}
+  
+ is the set of all possible finite sequences of events.
+The stable failures model extends the traces model with refusal sets, which are sets of events 
+  
+    
+      
+        X
+        â
+        Î£
+      
+    
+    {\displaystyle X\subseteq \Sigma }
+  
+ that a process can refuse to perform. A failure is a pair 
+  
+    
+      
+        
+          (
+          
+            s
+            ,
+            X
+          
+          )
+        
+      
+    
+    {\displaystyle \left(s,X\right)}
+  
+, consisting of a trace s, and a refusal set X which identifies the events that a process may refuse once it has executed the trace s. The observed behavior of a process in the stable failures model is described by the pair 
+  
+    
+      
+        
+          (
+          
+            
+              t
+              r
+              a
+              c
+              e
+              s
+            
+            
+              (
+              P
+              )
+            
+            ,
+            
+              f
+              a
+              i
+              l
+              u
+              r
+              e
+              s
+            
+            
+              (
+              P
+              )
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \left(\mathrm {traces} \left(P\right),\mathrm {failures} \left(P\right)\right)}
+  
+. For example,
+
+
+  
+    
+      
+        
+          f
+          a
+          i
+          l
+          u
+          r
+          e
+          s
+        
+        
+          (
+          
+            
+              (
+              
+                a
+                â
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              )
+            
+            â»
+            
+              (
+              
+                b
+                â
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              )
+            
+          
+          )
+        
+        =
+        
+          {
+          
+            
+              (
+              
+                â¨
+                â©
+                ,
+                â
+              
+              )
+            
+            ,
+            
+              (
+              
+                â¨
+                a
+                â©
+                ,
+                
+                  {
+                  
+                    a
+                    ,
+                    b
+                  
+                  }
+                
+              
+              )
+            
+            ,
+            
+              (
+              
+                â¨
+                b
+                â©
+                ,
+                
+                  {
+                  
+                    a
+                    ,
+                    b
+                  
+                  }
+                
+              
+              )
+            
+          
+          }
+        
+      
+    
+    {\displaystyle \mathrm {failures} \left(\left(a\rightarrow \mathrm {STOP} \right)\Box \left(b\rightarrow \mathrm {STOP} \right)\right)=\left\{\left(\langle \rangle ,\emptyset \right),\left(\langle a\rangle ,\left\{a,b\right\}\right),\left(\langle b\rangle ,\left\{a,b\right\}\right)\right\}}
+  
+
+
+  
+    
+      
+        
+          f
+          a
+          i
+          l
+          u
+          r
+          e
+          s
+        
+        
+          (
+          
+            
+              (
+              
+                a
+                â
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              )
+            
+            â
+            
+              (
+              
+                b
+                â
+                
+                  S
+                  T
+                  O
+                  P
+                
+              
+              )
+            
+          
+          )
+        
+        =
+        
+          {
+          
+            
+              (
+              
+                â¨
+                â©
+                ,
+                
+                  {
+                  a
+                  }
+                
+              
+              )
+            
+            ,
+            
+              (
+              
+                â¨
+                â©
+                ,
+                
+                  {
+                  b
+                  }
+                
+              
+              )
+            
+            ,
+            
+              (
+              
+                â¨
+                a
+                â©
+                ,
+                
+                  {
+                  
+                    a
+                    ,
+                    b
+                  
+                  }
+                
+              
+              )
+            
+            ,
+            
+              (
+              
+                â¨
+                b
+                â©
+                ,
+                
+                  {
+                  
+                    a
+                    ,
+                    b
+                  
+                  }
+                
+              
+              )
+            
+          
+          }
+        
+      
+    
+    {\displaystyle \mathrm {failures} \left(\left(a\rightarrow \mathrm {STOP} \right)\sqcap \left(b\rightarrow \mathrm {STOP} \right)\right)=\left\{\left(\langle \rangle ,\left\{a\right\}\right),\left(\langle \rangle ,\left\{b\right\}\right),\left(\langle a\rangle ,\left\{a,b\right\}\right),\left(\langle b\rangle ,\left\{a,b\right\}\right)\right\}}
+  
+
+The failures/divergence model further extends the failures model to handle divergence. The semantics of a process in the failures/divergences model is a pair 
+  
+    
+      
+        
+          (
+          
+            
+              
+                f
+                a
+                i
+                l
+                u
+                r
+                e
+                s
+              
+              
+                â¥
+              
+            
+            
+              (
+              P
+              )
+            
+            ,
+            
+              d
+              i
+              v
+              e
+              r
+              g
+              e
+              n
+              c
+              e
+              s
+            
+            
+              (
+              P
+              )
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \left(\mathrm {failures} _{\perp }\left(P\right),\mathrm {divergences} \left(P\right)\right)}
+  
+ where 
+  
+    
+      
+        
+          d
+          i
+          v
+          e
+          r
+          g
+          e
+          n
+          c
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+      
+    
+    {\displaystyle \mathrm {divergences} \left(P\right)}
+  
+ is defined as the set of all traces that can lead to divergent behavior and 
+  
+    
+      
+        
+          
+            f
+            a
+            i
+            l
+            u
+            r
+            e
+            s
+          
+          
+            â¥
+          
+        
+        
+          (
+          P
+          )
+        
+        =
+        
+          f
+          a
+          i
+          l
+          u
+          r
+          e
+          s
+        
+        
+          (
+          P
+          )
+        
+        âª
+        
+          {
+          
+            
+              (
+              
+                s
+                ,
+                X
+              
+              )
+            
+            â£
+            s
+            â
+            
+              d
+              i
+              v
+              e
+              r
+              g
+              e
+              n
+              c
+              e
+              s
+            
+            
+              (
+              P
+              )
+            
+          
+          }
+        
+      
+    
+    {\displaystyle \mathrm {failures} _{\perp }\left(P\right)=\mathrm {failures} \left(P\right)\cup \left\{\left(s,X\right)\mid s\in \mathrm {divergences} \left(P\right)\right\}}
+  
+.
+
+Tools[edit]
+Over the years, a number of tools for analyzing and understanding systems described using CSP have been produced. Early tool implementations used a variety of machine-readable syntaxes for CSP, making input files written for different tools incompatible. However, most CSP tools have now standardized on the machine-readable dialect of CSP devised by Bryan Scattergood, sometimes referred to as CSPM.[18] The CSPM dialect of CSP possesses a formally defined operational semantics, which includes an embedded functional programming language.
+The most well-known CSP tool is probably Failures/Divergence Refinement 2 (FDR2), which is a commercial product developed by Formal Systems (Europe) Ltd. FDR2 is often described as a model checker, but is technically a refinement checker, in that it converts two CSP process expressions into Labelled Transition Systems (LTSs), and then determines whether one of the processes is a refinement of the other within some specified semantic model (traces, failures, or failures/divergence).[19] FDR2 applies various state-space compression algorithms to the process LTSs in order to reduce the size of the state-space that must be explored during a refinement check. FDR2 has been succeeded by FDR3, a completely re-written version incorporating amongst other things parallel execution and an integrated type checker. It is released by the University of Oxford, which also released FDR2 in the period 2008-12.[20]
+The Adelaide Refinement Checker (ARC)[21] is a CSP refinement checker developed by the Formal Modelling and Verification Group at The University of Adelaide. ARC differs from FDR2 in that it internally represents CSP processes as Ordered Binary Decision Diagrams (OBDDs), which alleviates the state explosion problem of explicit LTS representations without requiring the use of state-space compression algorithms such as those used in FDR2.
+The ProB project,[22] which is hosted by the Institut fÃ¼r Informatik, Heinrich-Heine-UniversitÃ¤t DÃ¼sseldorf, was originally created to support analysis of specifications constructed in the B method. However, it also includes support for analysis of CSP processes both through refinement checking, and LTL model-checking. ProB can also be used to verify properties of combined CSP and B specifications. A ProBE CSP Animator is integrated in FDR3.
+The Process Analysis Toolkit (PAT)
+[23][24] is a CSP analysis tool developed in the School of Computing at the National University of Singapore. PAT is able to perform refinement checking, LTL model-checking, and simulation of CSP and Timed CSP processes. The PAT process language extends CSP with support for mutable shared variables, asynchronous message passing, and a variety of fairness and quantitative time related process constructs such as deadline and waituntil. The underlying design principle of the PAT process language is to combine a high-level specification language with procedural programs (e.g. an event in PAT may be a sequential program or even an external C# library call) for greater expressiveness. Mutable shared variables and asynchronous channels provide a convenient syntactic sugar for well-known process modelling patterns used in standard CSP. The PAT syntax is similar, but not identical, to CSPM.[25] The principal differences between the PAT syntax and standard CSPM are the use of semicolons to terminate process expressions, the inclusion of syntactic sugar for variables and assignments, and the use of slightly different syntax for internal choice and parallel composition.
+VisualNets[26] produces animated visualisations of CSP systems from specifications, and supports timed CSP.
+CSPsim[27] is a lazy simulator.  It does not model check CSP, but is useful for exploring very large (potentially infinite) systems.
+SyncStitch  is a CSP refinement checker with interactive modeling and analyzing environment. It has a graphical state-transition diagram editor. The user can model the behavior of processes as not only CSP expressions but also state-transition diagrams. The result of checking are also reported graphically as computation-trees and can be analyzed interactively with peripheral inspecting tools. In addition to refinement checks, It can perform deadlock check and livelock check.
+
+Related formalisms[edit]
+Several other specification languages and formalisms have been derived from, or inspired by, the classic untimed CSP, including:
+
+Timed CSP[permanent dead link], which incorporates timing information for reasoning about real-time systems
+Receptive Process Theory, a specialization of CSP that assumes an asynchronous (i.e. nonblocking) send operation
+CSPP
+HCSP
+TCOZ, an integration of Timed CSP and Object Z
+Circus, an integration of CSP and Z based on the Unifying Theories of Programming
+CML (COMPASS Modelling Language), a combination of Circus and VDM developed for the modelling of Systems of Systems (SoS)
+CspCASL, an extension of CASL that integrates CSP
+LOTOS, an international standard[28] that incorporates features of CSP and CCS.
+PALPS, a probabilistic extension with locations for ecological models developed by Anna Philippou and Mauricio toro bermÃºdezÂ [es]
+Comparison with the actor model[edit]
+In as much as it is concerned with concurrent processes that exchange messages, the actor model is broadly similar to CSP. However, the two models make some fundamentally different choices with regard to the primitives they provide:
+
+CSP processes are anonymous, while actors have identities.
+CSP uses explicit channels for message passing, whereas actor systems transmit messages to named destination actors. These approaches may be considered duals of each other, in the sense that processes receiving through a single channel effectively have an identity corresponding to that channel, while the name-based coupling between actors may be broken by constructing actors that behave as channels.
+CSP message-passing fundamentally involves a rendezvous between the processes involved in sending and receiving the message, i.e. the sender cannot transmit a message until the receiver is ready to accept it. In contrast, message-passing in actor systems is fundamentally asynchronous, i.e. message transmission and reception do not have to happen at the same time, and senders may transmit messages before receivers are ready to accept them. These approaches may also be considered duals of each other, in the sense that rendezvous-based systems can be used to construct buffered communications that behave as asynchronous messaging systems, while asynchronous systems can be used to construct rendezvous-style communications by using a message/acknowledgement protocol to synchronize senders and receivers.
+Award[edit]
+In 1990, âA Queenâs Award for Technological Achievement has been conferred ... on [Oxford University] Computing Laboratory. The award recognises a successful collaboration between the laboratory and Inmos Ltd. â¦ Inmosâ flagship product is the âtransputerâ, a microprocessor with many of the parts that would normally be needed in addition built into the same single component.â[29] 
+According to Tony Hoare,[30]
+âThe INMOS Transputer was as embodiment of the ideas â¦ of building microprocessors that could communicate with each other along wires that would stretch between their terminals. The founder had the vision that the CSP ideas were ripe for industrial exploitation, and he made that the basis of the language for programming Transputers, which was called Occam. â¦ The company estimated it enabled them to deliver the hardware one year earlier than would otherwise have happened. They applied for and won a Queenâs award for technological achievement, in conjunction with Oxford University Computing Laboratory.â
+
+See also[edit]
+Trace theory, the general theory of traces.
+Trace monoid and history monoid
+Ease programming language
+XC programming language
+VerilogCSP is a set of macros added to Verilog HDL to support communicating sequential processes channel communications.
+Joyce is a programming language based on the principles of CSP, developed by Brinch Hansen around 1989.
+SuperPascal is a programming language also developed by Brinch Hansen, influenced by CSP and his earlier work with Joyce.
+Ada implements features of CSP such as the rendezvous.
+DirectShow is the video framework inside DirectX, it uses the CSP concepts to implement the audio and video filters.
+OpenComRTOS is a formally developed network-centric distributed RTOS based on a pragmatic superset of CSP.
+Input/output automaton
+Parallel programming model
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Roscoe, A. W. (1997). The Theory and Practice of Concurrency (PDF). Prentice Hall. ISBNÂ 978-0-13-674409-2.
+
+^ Inmos (1995-05-12). occam 2.1 Reference Manual (PDF). SGS-THOMSON Microelectronics Ltd., INMOS document 72 occ 45 03.
+
+^ Jump up to: a b Cox, Russ. "Bell Labs and CSP Threads". Retrieved 2010-04-15.
+
+^ "10 Academic and Historical Questions". Retrieved 2021-11-15.
+
+^ "FAQ: Why build concurrency on the ideas of CSP?". The Go Programming Language. Retrieved 2021-10-15.
+
+^ Hickey, Rich (2013-06-28). "Clojure core.async Channels". Retrieved 2021-10-15.
+
+^ Jump up to: a b Hoare, C. A. R. (1978). "Communicating sequential processes". Communications of the ACM. 21 (8): 666â677. doi:10.1145/359576.359585. S2CIDÂ 849342.
+
+^ Abdallah, Ali E.; Jones, Cliff B.; Sanders, Jeff W. (2005). Communicating Sequential Processes: The First 25 Years. LNCS. Vol.Â 3525. Springer. ISBNÂ 9783540258131.
+
+^ Jump up to: a b Barrett, G. (1995). "Model checking in practice: The T9000 Virtual Channel Processor". IEEE Transactions on Software Engineering. 21 (2): 69â78. doi:10.1109/32.345823.
+
+^ Jump up to: a b Hall, A; Chapman, R. (2002). "Correctness by construction: Developing a commercial secure system" (PDF). IEEE Software. 19 (1): 18â25. CiteSeerXÂ 10.1.1.16.1811. doi:10.1109/52.976937.
+
+^ Creese, S. (2001). Data Independent Induction: CSP Model Checking of Arbitrary Sized Networks (D. Phil.). Oxford University. CiteSeerXÂ 10.1.1.13.7185.
+
+^ Jump up to: a b Hoare, C. A. R. (1985). Communicating Sequential Processes. Prentice Hall. ISBNÂ 978-0-13-153289-2.
+
+^ Clinger, William (June 1981). Foundations of Actor Semantics (Mathematics Doctoral Dissertation). MIT. hdl:1721.1/6935.
+
+^ Brookes, Stephen; Hoare, C. A. R.; Roscoe, A. W. (1984). "A Theory of Communicating Sequential Processes". Journal of the ACM. 31 (3): 560â599. doi:10.1145/828.833. S2CIDÂ 488666.
+
+^ Buth, B.; M. Kouvaras; J. Peleska; H. Shi (December 1997). "Deadlock analysis for a fault-tolerant system". Proceedings of the 6th International Conference on Algebraic Methodology and Software Technology (AMASTâ97). pp.Â 60â75.
+
+^ Buth, B.; J. Peleska; H. Shi (January 1999). "Combining methods for the livelock analysis of a fault-tolerant system". Proceedings of the 7th International Conference on Algebraic Methodology and Software Technology (AMASTâ98). pp.Â 124â139.
+
+^ Lowe, G. (1996). "Breaking and fixing the NeedhamâSchroeder public-key protocol using FDR". Tools and Algorithms for the Construction and Analysis of Systems (TACAS). Springer-Verlag. pp.Â 147â166.
+
+^ Scattergood, J.B. (1998). "The Semantics and Implementation of Machine-Readable CSP". D.Phil. Oxford University Computing Laboratory. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ A.W. Roscoe (1994). "Model-checking CSP". In A Classical Mind: essays in Honour of C.A.R. Hoare. Prentice Hall. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "Introduction â FDR 4.2.4 documentation". www.cs.ox.ac.uk.
+
+^ Parashkevov, Atanas N.; Yantchev, Jay (1996). "ARC â a tool for efficient refinement and equivalence checking for CSP". IEEE Int. Conf. on Algorithms and Architectures for Parallel Processing ICA3PP '96. pp.Â 68â75. CiteSeerXÂ 10.1.1.45.3212.
+
+^ Leuschel, Michael; Fontaine, Marc (2008). "Probing the Depths of CSP-M: A new FDR-compliant Validation Tool" (PDF). ICFEM 2008. Springer-Verlag. Archived from the original (PDF) on 2011-07-19. Retrieved 2008-11-26.
+
+^ Sun, Jun; Liu, Yang; Dong, Jin Song (2009). "PAT: Towards Flexible Verification under Fairness" (PDF). Proceedings of the 20th International Conference on Computer-Aided Verification (CAV 2009). Lecture Notes in Computer Science. Vol.Â 5643. Springer. Archived from the original (PDF) on 2011-06-11. Retrieved 2009-06-16.
+
+^ Sun, Jun; Liu, Yang; Dong, Jin Song (2008). "Model Checking CSP Revisited: Introducing a Process Analysis Toolkit" (PDF). Proceedings of the Third International Symposium on Leveraging Applications of Formal Methods, Verification and Validation (ISoLA 2008). Communications in Computer and Information Science. Vol.Â 17. Springer. pp.Â 307â322. Archived from the original (PDF) on 2009-01-08. Retrieved 2009-01-15.
+
+^ Sun, Jun; Liu, Yang; Dong, Jin Song; Chen, Chunqing (2009). "Integrating Specifications and Programs for System Specification and Verification" (PDF). IEEE Int. Conf. on Theoretical Aspects of Software Engineering TASE '09. Archived from the original (PDF) on 2011-06-11. Retrieved 2009-04-13.
+
+^ Green, Mark; Abdallah, Ali (2002). "Performance Analysis and Behaviour Tuning for Optimisation of Communicating Systems". Communicating Process Architectures 2002.
+
+^ Brooke, Phillip; Paige, Richard (2007). "Lazy Exploration and Checking of CSP Models with CSPsim". Communicating Process Architectures 2007.
+
+^ ISO 8807, Language of Temporal Ordering Specification
+
+^ Geraint Jones (1990). "Sharp as a Razor: A Queen's Award for the Computing Laboratory". The Oxford Magazine (59, Fourth Week, Trinity Term).
+
+^ Len Shustek (March 2009). "An interview with C.A.R. Hoare". Communications of the ACM. 52 (3): 38â41. doi:10.1145/1467247.1467261. S2CIDÂ 1868477.
+
+
+Further reading[edit]
+Hoare, C. A. R. (2004) [1985]. Communicating Sequential Processes. Prentice Hall International. ISBNÂ 978-0-13-153271-7.
+This book has been updated by Jim Davies at the Oxford University Computing Laboratory and the new edition is available for download as a PDF file at the Using CSP website.
+Roscoe, A. W. (1997). The Theory and Practice of Concurrency. Prentice Hall. ISBNÂ 978-0-13-674409-2.
+Some links relating to this book are available here. The full text is available for download as a PS or PDF file from Bill Roscoe's list of academic publications.
+External links[edit]
+A PDF version of Hoare's CSP book â Copyright restriction apply, see the page text before downloading.
+The Annotation of CSP(Chinese Version) Non-profit translation and annotation work based on Prentice-Hall book(1985), Chaochen Zhou's Chinese Version(1988) and Jim Davies's online version(2015).
+WoTUG, a User Group for CSP and occam style systems, contains some information about CSP and useful links.
+CSP Citations from CiteSeer
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteConcurrent computingGeneral
+Concurrency
+Concurrency control
+Process calculi
+CSP
+CCS
+ACP
+LOTOS
+Ï-calculus
+Ambient calculus
+API-Calculus
+PEPA
+Join-calculus
+Classic problems
+ABA problem
+Cigarette smokers problem
+Deadlock
+Dining philosophers problem
+Producerâconsumer problem
+Race condition
+Readersâwriters problem
+Sleeping barber problem
+
+Â Category: Concurrent computing
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Communicating_sequential_processes&oldid=1069107909"
+		Categories: Computer-related introductions in 19781978 in computingProcess calculiConcurrent computingHidden categories: CS1 errors: missing periodicalAll articles with unsourced statementsArticles with unsourced statements from November 2018Articles needing additional references from May 2020All articles needing additional referencesArticles to be expanded from June 2008All articles to be expandedArticles using small message boxesAll articles with dead external linksArticles with dead external links from August 2017Articles with permanently dead external links
+	

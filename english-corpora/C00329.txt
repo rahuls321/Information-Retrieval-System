@@ -1,0 +1,739 @@
+
+Title:
+Maximum subarray problem
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  Visualization of how sub-arrays change based on start and end positions of a sample.  Each possible contiguous sub-array is represented by a point on a colored line.  That point's y-coordinate represents the sum of the sample.  Its x-coordinate represents the end of the sample, and the leftmost point on that colored line represents the start of the sample. In this case, the array from which samples are taken is [2, 3, -1, -20, 5, 10].
+In computer science, the maximum sum subarray problem is the task of finding a contiguous subarray with the largest sum, within a given one-dimensional array A[1...n] of numbers.  Formally, the task is to find indices 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ and 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+ with 
+  
+    
+      
+        1
+        â¤
+        i
+        â¤
+        j
+        â¤
+        n
+      
+    
+    {\displaystyle 1\leq i\leq j\leq n}
+  
+, such that the sum
+
+
+  
+    
+      
+        
+          â
+          
+            x
+            =
+            i
+          
+          
+            j
+          
+        
+        A
+        [
+        x
+        ]
+      
+    
+    {\displaystyle \sum _{x=i}^{j}A[x]}
+  
+
+is as large as possible. (Some formulations of the problem also allow the empty subarray to be considered; by convention, the sum of all values of the empty subarray is zero.)  Each number in the input array A could be positive, negative, or zero.[1]
+For example, for the array of values [â2, 1, â3, 4, â1, 2, 1, â5, 4], the contiguous subarray with the largest sum is [4, â1, 2, 1], with sum 6.
+Some properties of this problem are: 
+
+If the array contains all non-negative numbers, then the problem is trivial; a maximum subarray is the entire array.
+If the array contains all non-positive numbers, then a solution is any subarray of size 1 containing the maximal value of the array (or the empty subarray, if it is permitted).
+Several different sub-arrays may have the same maximum sum.
+This problem can be solved using several different algorithmic techniques, including brute force,[2] divide and conquer,[3] dynamic programming,[4] and reduction to shortest paths.[citation needed]
+
+Contents
+
+1 History
+2 Applications
+3 Kadane's algorithm
+
+3.1 Empty subarrays admitted
+3.2 No empty subarrays admitted
+3.3 Conditionally admitting empty subarrays
+3.4 Computing the best subarray's position
+3.5 Complexity
+
+
+4 Generalizations
+5 See also
+6 Notes
+7 References
+8 External links
+
+
+
+History[edit]
+The maximum subarray problem was proposed by Ulf Grenander in 1977 as a simplified model for maximum likelihood estimation of patterns in digitized images.[5]
+Grenander was looking to find a rectangular subarray with maximum sum, in a two-dimensional array of real numbers.  A brute-force algorithm for the two-dimensional problem runs in O(n6) time; because this was prohibitively slow, Grenander proposed the one-dimensional problem to gain insight into its structure.  Grenander derived an algorithm that solves the one-dimensional problem in O(n2) time,[note 1]
+improving the brute force running time of O(n3). When Michael Shamos heard about the problem, he overnight devised an O(n log n) divide-and-conquer algorithm for it.
+Soon after, Shamos described the one-dimensional problem and its history at a Carnegie Mellon University seminar attended by Jay Kadane, who designed within a minute an O(n)-time algorithm,[5][6][7] which is as fast as possible.[note 2] In 1982, David Gries obtained the same O(n)-time algorithm by applying Dijkstra's "standard strategy";[8] in 1989, Richard Bird derived it by purely algebraic manipulation of the brute-force algorithm using the BirdâMeertens formalism.[9]
+Grenander's two-dimensional generalization can be solved in O(n3) time either by using Kadane's algorithm as a subroutine, or through a divide-and-conquer approach.  Slightly faster algorithms based on distance matrix multiplication have been proposed by Tamaki & Tokuyama (1998) and by Takaoka (2002). There is some evidence that no significantly faster algorithm exists; an algorithm that solves the two-dimensional maximum subarray problem in O(n3âÎµ) time, for any Îµ>0, would imply a similarly fast algorithm for the all-pairs shortest paths problem.[10]
+
+Applications[edit]
+This section needs attention from an expert in Computational biology. The specific problem is: fix inline tags. WikiProject Computational biology may be able to help recruit an expert.  (September 2019)
+Maximum subarray problems arise in many fields, such as genomic sequence analysis and computer vision.
+Genomic sequence analysis employs maximum subarray algorithms to identify important biological segments of protein sequences.[citation needed] These problems include conserved segments, GC-rich regions, tandem repeats, low-complexity filter, DNA binding domains, and regions of high charge.[citation needed]
+In computer vision, maximum-subarray algorithms are used on bitmap images to detect the brightest area in an image.
+
+Kadane's algorithm[edit]
+Empty subarrays admitted[edit]
+
+
+showExample run
+
+
+  Execution of Kadane's algorithm on the above example array. Blue: subarray with largest sum ending at i; green: subarray with largest sum encountered so far; a lower case letter indicates an empty array; variable i is left implicit in Python code.
+
+Kadane's original algorithm solves the problem version when empty subarrays are admitted. It scans the given array 
+  
+    
+      
+        A
+        [
+        1
+        â¦
+        n
+        ]
+      
+    
+    {\displaystyle A[1\ldots n]}
+  
+ from left to right. 
+In the 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+th step, it computes the subarray with the largest sum ending at 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+; this sum is maintained in variable current_sum.[note 3]
+Moreover, it computes the subarray with the largest sum anywhere in 
+  
+    
+      
+        A
+        [
+        1
+        â¦
+        j
+        ]
+      
+    
+    {\displaystyle A[1\ldots j]}
+  
+, maintained in variable best_sum,[note 4]
+and easily obtained as the maximum of all values of current_sum seen so far, cf. line 7 of the algorithm.
+As a loop invariant, in the 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+th step, the old value of current_sum holds the maximum over all 
+  
+    
+      
+        i
+        â
+        {
+        1
+        ,
+        â¦
+        ,
+        j
+        }
+      
+    
+    {\displaystyle i\in \{1,\ldots ,j\}}
+  
+ of the sum 
+  
+    
+      
+        A
+        [
+        i
+        ]
+        +
+        â¯
+        +
+        A
+        [
+        j
+        â
+        1
+        ]
+      
+    
+    {\displaystyle A[i]+\cdots +A[j-1]}
+  
+.[note 5]
+Therefore, current_sum
+  
+    
+      
+        +
+        A
+        [
+        j
+        ]
+      
+    
+    {\displaystyle +A[j]}
+  
+[note 6]
+is the maximum over all 
+  
+    
+      
+        i
+        â
+        {
+        1
+        ,
+        â¦
+        ,
+        j
+        }
+      
+    
+    {\displaystyle i\in \{1,\ldots ,j\}}
+  
+ of the sum 
+  
+    
+      
+        A
+        [
+        i
+        ]
+        +
+        â¯
+        +
+        A
+        [
+        j
+        ]
+      
+    
+    {\displaystyle A[i]+\cdots +A[j]}
+  
+. To extend the latter maximum to cover also the case 
+  
+    
+      
+        i
+        =
+        j
+        +
+        1
+      
+    
+    {\displaystyle i=j+1}
+  
+, it is sufficient to consider also the empty subarray 
+  
+    
+      
+        A
+        [
+        j
+        +
+        1
+        
+        â¦
+        
+        j
+        ]
+      
+    
+    {\displaystyle A[j+1\;\ldots \;j]}
+  
+. This is done in line 6 by assigning 
+  
+    
+      
+        max
+        (
+        0
+        ,
+      
+    
+    {\displaystyle \max(0,}
+  
+current_sum
+  
+    
+      
+        +
+        A
+        [
+        j
+        ]
+        )
+      
+    
+    {\displaystyle +A[j])}
+  
+ as the new value of current_sum, which after that holds the maximum over all 
+  
+    
+      
+        i
+        â
+        {
+        1
+        ,
+        â¦
+        ,
+        j
+        +
+        1
+        }
+      
+    
+    {\displaystyle i\in \{1,\ldots ,j+1\}}
+  
+ of the sum 
+  
+    
+      
+        A
+        [
+        i
+        ]
+        +
+        â¯
+        +
+        A
+        [
+        j
+        ]
+      
+    
+    {\displaystyle A[i]+\cdots +A[j]}
+  
+.
+Thus, the problem can be solved with the following code,[4][7] expressed here in Python:
+
+def max_subarray(numbers):
+    """Find the largest sum of any contiguous subarray."""
+    best_sum = 0
+    current_sum = 0
+    for x in numbers:
+        current_sum = max(0, current_sum + x)
+        best_sum = max(best_sum, current_sum)
+    return best_sum
+
+This version of the algorithm will return 0 if the input contains no positive elements (including when the input is empty).
+
+No empty subarrays admitted[edit]
+For the variant of the problem which disallows empty subarrays, best_sum should be initialized to negative infinity instead[11] and also in the for loop current_sum should be updated as max(x, current_sum + x).[note 7]
+In that case, if the input contains no positive element, the returned value is that of the largest element (i.e., the value closest to 0), or negative infinity if the input was empty. For correctness, an exception should be raised when the input array is empty, since an empty array has no maximum subarray:
+
+def max_subarray(numbers):
+    """Find the largest sum of any contiguous subarray."""
+    if not(numbers):
+        raise ValueError('Empty array has no nonempty subarrays')
+
+    best_sum = float('-inf')
+    current_sum = 0
+    for x in numbers:
+        current_sum = max(x, current_sum + x)
+        best_sum = max(best_sum, current_sum)
+    return best_sum
+
+Conditionally admitting empty subarrays[edit]
+The only case when it matters if empty subarrays are admitted, is if all numbers in the input array are negative. In this case, the maximum subarray will either be empty (when empty subarrays are allowed), or contain the largest number in the input array (when empty subarrays are not allowed).
+An alternative algorithm that admits empty subarrays is easily developed from the algorithm given above which does not admit empty subarrays: The only change that is needed is to return max(best_sum, 0) instead of best_sum. It can be seen that this version is correct:
+
+For an empty input array the previous algorithm will return minus infinity, so this algorithm will return zero, which corresponds to the sum of elements of an empty subarray.
+For an input array with only negative numbers, the previous algorithm will return the largest of the integers, which is negative. So this algorithm will return zero, which corresponds to the sum of elements of an empty subarray.
+For all other cases, there is at least one nonnegative integer in the output, so there is a nonempty subarray for which the sum of the elements is at least 0. Since the sum of the elements is always zero for empty subarrays, it doesn't matter if empty subarrays are admitted or not, so this algorithm correctly returns the same answer as the previous algorithm gives.
+This algorithm can also be converted to a version that conditionally admits empty subarrays, based on a parameter: If empty subarrays are admitted, return max(0, best_sum), otherwise, return best_sum. An exception should be raised the input array is empty but empty subarrays are not admitted:
+
+def max_subarray(numbers, admit_empty_subarrays=True):
+    """Find the largest sum of any contiguous subarray."""
+    if not(admit_empty_subarrays) and not(numbers):
+        raise ValueError('Empty array has no nonempty subarrays')
+
+    best_sum = float('-inf')
+    current_sum = 0
+    for x in numbers:
+        current_sum = max(x, current_sum + x)
+        best_sum = max(best_sum, current_sum)
+
+    if admit_empty_subarrays:
+        best_sum = max(0, best_sum)
+
+    return best_sum
+
+Computing the best subarray's position[edit]
+The algorithm can be modified to keep track of the starting and ending indices of the maximum subarray as well:
+
+def max_subarray(numbers):
+    """Find a contiguous subarray with the largest sum."""
+    best_sum = 0  # or: float('-inf')
+    best_start = best_end = 0  # or: None
+    current_sum = 0
+    for current_end, x in enumerate(numbers):
+        if current_sum <= 0:
+            # Start a new sequence at the current element
+            current_start = current_end
+            current_sum = x
+        else:
+            # Extend the existing sequence with the current element
+            current_sum += x
+
+        if current_sum > best_sum:
+            best_sum = current_sum
+            best_start = current_start
+            best_end = current_end + 1  # the +1 is to make 'best_end' exclusive
+
+    return best_sum, best_start, best_end
+
+In Python, arrays are indexed starting from 0, and the end index is typically excluded, so that the subarray [22, 33] in the array [-11, 22, 33, -44] would start at index 1 and end at index 3.
+
+Complexity[edit]
+Because of the way this algorithm uses optimal substructures (the maximum subarray ending at each position is calculated in a simple way from a related but smaller and overlapping subproblem: the maximum subarray ending at the previous position) this algorithm can be viewed as a simple/trivial example of dynamic programming.
+The runtime complexity of Kadane's algorithm is 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+.[4][7]
+
+Generalizations[edit]
+Similar problems may be posed for higher-dimensional arrays, but their solutions are more complicated; see, e.g., Takaoka (2002). Brodal & JÃ¸rgensen (2007) showed how to find the k largest subarray sums in a one-dimensional array, in the optimal time bound 
+  
+    
+      
+        O
+        (
+        n
+        +
+        k
+        )
+      
+    
+    {\displaystyle O(n+k)}
+  
+.
+The Maximum sum k-disjoint subarrays can also be computed in the optimal time bound 
+  
+    
+      
+        O
+        (
+        n
+        +
+        k
+        )
+      
+    
+    {\displaystyle O(n+k)}
+  
+ 
+.[12]
+
+See also[edit]
+Subset sum problem
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ By using a precomputed table of cumulative sums 
+  
+    
+      
+        S
+        [
+        k
+        ]
+        =
+        
+          â
+          
+            x
+            =
+            1
+          
+          
+            k
+          
+        
+        A
+        [
+        x
+        ]
+      
+    
+    {\displaystyle S[k]=\sum _{x=1}^{k}A[x]}
+  
+ to compute the subarray sum 
+  
+    
+      
+        
+          â
+          
+            x
+            =
+            i
+          
+          
+            j
+          
+        
+        A
+        [
+        x
+        ]
+        =
+        S
+        [
+        j
+        ]
+        â
+        S
+        [
+        i
+        â
+        1
+        ]
+      
+    
+    {\displaystyle \sum _{x=i}^{j}A[x]=S[j]-S[i-1]}
+  
+ in constant time
+
+^ since every algorithm must at least scan the array once which already takes O(n) time
+
+^ named MaxEndingHere in Bentley (1989), and c in Gries (1982)
+
+^ named MaxSoFar in Bentley (1989), and s in Gries (1982)
+
+^ This sum is 
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+ when 
+  
+    
+      
+        i
+        =
+        j
+      
+    
+    {\displaystyle i=j}
+  
+, corresponding to the empty subarray 
+  
+    
+      
+        A
+        [
+        j
+        â¦
+        j
+        â
+        1
+        ]
+      
+    
+    {\displaystyle A[j\ldots j-1]}
+  
+.
+
+^ 
+In the Python code below, 
+  
+    
+      
+        A
+        [
+        j
+        ]
+      
+    
+    {\displaystyle A[j]}
+  
+ is expressed as x, with the index 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+ left implicit.
+
+^ While the latter modification is not mentioned by Bentley (1989), it achieves maintaining the modified loop invariant current_sum
+  
+    
+      
+        =
+        
+          max
+          
+            i
+            â
+            {
+            1
+            ,
+            .
+            .
+            .
+            ,
+            j
+            }
+          
+        
+        A
+        [
+        i
+        ]
+        +
+        .
+        .
+        .
+        +
+        A
+        [
+        j
+        ]
+      
+    
+    {\displaystyle =\max _{i\in \{1,...,j\}}A[i]+...+A[j]}
+  
+ at the beginning of the 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+th step.
+
+
+References[edit]
+
+
+^ Bentley 1989, p.Â 69.
+
+^ Bentley 1989, p.Â 70.
+
+^ Bentley 1989, p.Â 73.
+
+^ Jump up to: a b c Bentley 1989, p.Â 74.
+
+^ Jump up to: a b Bentley 1984, p.Â 868-869.
+
+^ Bentley 1989, p.Â 76-77.
+
+^ Jump up to: a b c Gries 1982, p.Â 211.
+
+^ Gries 1982, p.Â 209-211.
+
+^ Bird 1989, Sect.8, p.126.
+
+^ Backurs, Dikkala & Tzamos 2016.
+
+^ Bentley 1989, p.Â 78,171.
+
+^ Bengtsson & Chen 2007.
+
+
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Backurs, Arturs; Dikkala, Nishanth; Tzamos, Christos (2016), "Tight Hardness Results for Maximum Weight Rectangles", Proc. 43rd International Colloquium on Automata, Languages, and Programming: 81:1â81:13, doi:10.4230/LIPIcs.ICALP.2016.81, S2CIDÂ 12720136
+Bae, Sung Eun (2007), Sequential and Parallel Algorithms for the Generalized Maximum Subarray Problem (PDF) (Ph.D. thesis), University of Canterbury, S2CIDÂ 2681670, archived from the original (PDF) on 2017-10-26.
+Bengtsson, Fredrik; Chen, Jingsen (2007), Computing maximum-scoring segments optimally (PDF) (Research report), LuleÃ¥ University of Technology
+Bentley, Jon (1984), "Programming Pearls: Algorithm Design Techniques", Communications of the ACM, 27 (9): 865â873, doi:10.1145/358234.381162, S2CIDÂ 207565329
+Bentley, Jon (May 1989), Programming Pearls (2nd?Â ed.), Reading, MA: Addison Wesley, ISBNÂ 0-201-10331-1
+Bird, Richard S. (1989), "Algebraic Identities for Program Calculation" (PDF), The Computer Journal, 32 (2): 122â126, doi:10.1093/comjnl/32.2.122[dead link]
+Brodal, Gerth StÃ¸lting; JÃ¸rgensen, Allan GrÃ¸nlund (2007), "A linear time algorithm for the k maximal sums problem", Mathematical Foundations of Computer Science, Lecture Notes in Computer Science, vol.Â 4708, Springer-Verlag, pp.Â 442â453, doi:10.1007/978-3-540-74456-6_40.
+Gries, David (1982), "A Note on the Standard Strategy for Developing Loop Invariants and Loops" (PDF), Science of Computer Programming, 2 (3): 207â241, doi:10.1016/0167-6423(83)90015-1, hdl:1813/6370
+Takaoka, Tadao (2002), "Efficient algorithms for the maximum subarray problem by distance matrix multiplication", Electronic Notes in Theoretical Computer Science, 61: 191â200, doi:10.1016/S1571-0661(04)00313-5.
+Tamaki, Hisao; Tokuyama, Takeshi (1998), "Algorithms for the Maximum Subarray Problem Based on Matrix Multiplication", Proceedings of the 9th Symposium on Discrete Algorithms (SODA): 446â452, retrieved November 17, 2018
+External links[edit]
+TAN, Lirong. "Maximum Contiguous Subarray Sum Problems" (PDF). Archived from the original (PDF) on 2015-10-10. Retrieved 2017-10-26.
+Mu, Shin-Cheng (2010). "The Maximum Segment Sum Problem: Its Origin, and a Derivation".
+"Notes on Maximum Subarray Problem". 2012.
+www.algorithmist.com
+alexeigor.wikidot.com
+greatest subsequential sum problem on Rosetta Code
+geeksforgeeks page on Kadane's Algorithm
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Maximum_subarray_problem&oldid=1068641446"
+		Categories: Optimization algorithms and methodsDynamic programmingHidden categories: All articles with unsourced statementsArticles with unsourced statements from October 2019Articles needing expert attention from September 2019All articles needing expert attentionMiscellaneous articles needing expert attentionArticles with unsourced statements from March 2020Articles with unsourced statements from October 2017All articles with dead external linksArticles with dead external links from May 2021Articles with example Python (programming language) code
+	

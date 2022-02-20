@@ -1,0 +1,803 @@
+
+Title:
+Algorithmic efficiency
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Property of anÂ algorithm
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with optimization, which is discussed in program optimization, optimizing compiler, loop optimization, object code optimizer, etc..
+
+In computer science, algorithmic efficiency is a property of an algorithm which relates to the amount of computational resources used by the algorithm. An algorithm must be analyzed to determine its resource usage, and the efficiency of an algorithm can be measured based on the usage of different resources. Algorithmic efficiency can be thought of as analogous to engineering productivity for a repeating or continuous process.
+For maximum efficiency we wish to minimize resource usage. However, different resources such as time and space complexity cannot be compared directly, so which of two algorithms is considered to be more efficient often depends on which measure of efficiency is considered most important.
+For example, bubble sort and timsort are both algorithms to sort a list of items from smallest to largest. Bubble sort sorts the list in time proportional to the number of elements squared (
+  
+    
+      
+        
+          
+            
+              
+                O
+              
+            
+            
+              (
+              
+                n
+                
+                  2
+                
+              
+              )
+            
+          
+        
+      
+    
+    {\displaystyle \scriptstyle {{\mathcal {O}}\left(n^{2}\right)}}
+  
+, see Big O notation), but only requires a small amount of extra memory which is constant with respect to the length of the list (
+  
+    
+      
+        
+          
+            
+              
+                O
+              
+            
+            
+              (
+              1
+              )
+            
+          
+        
+      
+    
+    {\textstyle \scriptstyle {{\mathcal {O}}\left(1\right)}}
+  
+). Timsort sorts the list in time linearithmic (proportional to a quantity times its logarithm) in the list's length (
+  
+    
+      
+        
+          
+            
+              O
+              
+                (
+                
+                  n
+                  log
+                  â¡
+                  n
+                
+                )
+              
+            
+          
+        
+      
+    
+    {\textstyle \scriptstyle {\mathcal {O\left(n\log n\right)}}}
+  
+), but has a space requirement linear in the length of the list (
+  
+    
+      
+        
+          
+            
+              O
+              
+                (
+                n
+                )
+              
+            
+          
+        
+      
+    
+    {\textstyle \scriptstyle {\mathcal {O\left(n\right)}}}
+  
+). If large lists must be sorted at high speed for a given application, timsort is a better choice; however, if minimizing the memory footprint of the sorting is more important, bubble sort is a better choice.
+
+Contents
+
+1 Background
+2 Overview
+
+2.1 Theoretical analysis
+2.2 Benchmarking: measuring performance
+2.3 Implementation concerns
+
+
+3 Measures of resource usage
+
+3.1 Time
+
+3.1.1 Theory
+3.1.2 Practice
+
+
+3.2 Space
+
+3.2.1 Caching and memory hierarchy
+
+
+
+
+4 Criticism of the current state of programming
+5 Competitions for the best algorithms
+6 See also
+7 References
+8 External links
+
+
+
+Background[edit]
+The importance of efficiency with respect to time was emphasised by Ada Lovelace in 1843 as applying to Charles Babbage's mechanical analytical engine:
+
+"In almost every computation a great variety of arrangements for the succession of the processes is possible, and various considerations must influence the selections amongst them for the purposes of a calculating engine. One essential object is to choose that arrangement which shall tend to reduce to a minimum the time necessary for completing the calculation"[1]
+Early electronic computers were severely limited both by the speed of operations and the amount of memory available. In some cases it was realized that there was a spaceâtime trade-off, whereby a task could be handled either by using a fast algorithm which used quite a lot of working memory, or by using a slower algorithm which used very little working memory. The engineering trade-off was then to use the fastest algorithm which would fit in the available memory.
+Modern computers are significantly faster than the early computers, and have a much larger amount of memory available (Gigabytes instead of Kilobytes). Nevertheless, Donald Knuth emphasised that efficiency is still an important consideration:
+
+  "In established engineering disciplines a 12% improvement, easily obtained, is never considered marginal and I believe the same viewpoint should prevail in software engineering"[2]
+Overview[edit]
+An algorithm is considered efficient if its resource consumption, also known as computational cost, is at or below some acceptable level. Roughly speaking, 'acceptable' means:  it will run in a reasonable amount of time or space on an available computer, typically as a function of the size of the input. Since the 1950s computers have seen dramatic increases in both the available computational power and in the available amount of memory, so current acceptable levels would have been unacceptable even 10 years ago. In fact, thanks to the approximate doubling of computer power every 2 years, tasks that are acceptably efficient on modern smartphones and embedded systems may have been unacceptably inefficient for industrial servers 10 years ago.
+Computer manufacturers frequently bring out new models, often with higher performance. Software costs can be quite high, so in some cases the simplest and cheapest way of getting higher performance might be to just buy a faster computer, provided it is compatible with an existing computer.
+There are many ways in which the resources used by an algorithm can be measured: the two most common measures are speed and memory usage; other measures could include transmission speed, temporary disk usage, long-term disk usage, power consumption, total cost of ownership, response time to external stimuli, etc. Many of these measures depend on the size of the input to the algorithm, i.e. the amount of data to be processed. They might also depend on the way in which the data is arranged; for example, some sorting algorithms perform poorly on data which is already sorted, or which is sorted in reverse order.
+In practice, there are other factors which can affect the efficiency of an algorithm, such as requirements for accuracy and/or reliability. As detailed below, the way in which an algorithm is implemented can also have a significant effect on actual efficiency, though many aspects of this relate to optimization issues.
+
+Theoretical analysis[edit]
+In the theoretical analysis of algorithms, the normal practice is to estimate their complexity in the asymptotic sense. The most commonly used notation to describe resource consumption or "complexity" is Donald Knuth's Big O notation, representing the complexity of an algorithm as a function of the size of the input 
+  
+    
+      
+        
+          n
+        
+      
+    
+    {\textstyle \scriptstyle n}
+  
+. Big O notation is an asymptotic measure of function complexity, where 
+  
+    
+      
+        
+          
+            f
+            
+              (
+              n
+              )
+            
+            
+            =
+            
+            
+              
+                O
+              
+            
+            
+              (
+              
+                g
+                
+                  (
+                  n
+                  )
+                
+              
+              )
+            
+          
+        
+      
+    
+    {\textstyle \scriptstyle {f\left(n\right)\,=\,{\mathcal {O}}\left(g\left(n\right)\right)}}
+  
+ roughly means the time requirement for an algorithm is proportional to 
+  
+    
+      
+        
+          
+            g
+            
+              (
+              n
+              )
+            
+          
+        
+      
+    
+    {\displaystyle \scriptstyle {g\left(n\right)}}
+  
+, omitting lower-order terms that contribute less than 
+  
+    
+      
+        
+          
+            g
+            
+              (
+              n
+              )
+            
+          
+        
+      
+    
+    {\displaystyle \scriptstyle {g\left(n\right)}}
+  
+ to the growth of the function as 
+  
+    
+      
+        
+          n
+        
+      
+    
+    {\displaystyle \scriptstyle n}
+  
+ grows arbitrarily large. This estimate may be misleading when 
+  
+    
+      
+        
+          n
+        
+      
+    
+    {\textstyle \scriptstyle n}
+  
+ is small, but is generally sufficiently accurate when 
+  
+    
+      
+        
+          n
+        
+      
+    
+    {\textstyle \scriptstyle n}
+  
+ is large as the notation is asymptotic. For example, bubble sort may be faster than merge sort when only a few items are to be sorted; however either implementation is likely to meet performance requirements for a small list. Typically, programmers are interested in algorithms that scale efficiently to large input sizes, and merge sort is preferred over bubble sort for lists of length encountered in most data-intensive programs.
+Some examples of Big O notation applied to algorithms' asymptotic time complexity include:
+
+
+
+
+Notation
+Name
+Examples
+
+
+
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        1
+        )
+        
+      
+    
+    {\displaystyle {\mathcal {O}}(1)\,}
+  
+
+constant
+Finding the median from a sorted list of measurements;  Using a constant-size lookup table; Using a suitable hash function for looking up an item.
+
+
+
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        log
+        â¡
+        
+          n
+        
+        )
+        
+      
+    
+    {\displaystyle {\mathcal {O}}(\log {n})\,}
+  
+
+logarithmic
+Finding an item in a sorted array with a binary search or a balanced search tree as well as all operations in a Binomial heap.
+
+
+
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        n
+        )
+        
+      
+    
+    {\displaystyle {\mathcal {O}}(n)\,}
+  
+
+linear
+Finding an item in an unsorted list or a malformed tree (worst case) or in an unsorted array; Adding two n-bit integers by ripple carry.
+
+
+
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        n
+        log
+        â¡
+        n
+        )
+        
+      
+    
+    {\displaystyle {\mathcal {O}}(n\log n)\,}
+  
+
+linearithmic, loglinear, or quasilinear
+Performing a Fast Fourier transform; heapsort, quicksort (best and average case), or merge sort
+
+
+
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+        
+      
+    
+    {\displaystyle {\mathcal {O}}(n^{2})\,}
+  
+
+quadratic
+Multiplying two n-digit numbers by a simple algorithm; bubble sort (worst case or naive implementation), Shell sort, quicksort (worst case), selection sort or insertion sort
+
+
+
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        
+          c
+          
+            n
+          
+        
+        )
+        ,
+        
+        c
+        >
+        1
+      
+    
+    {\displaystyle {\mathcal {O}}(c^{n}),\;c>1}
+  
+
+exponential
+Finding the optimal (non-approximate) solution to the travelling salesman problem using dynamic programming; determining if two logical statements are equivalent using brute-force search
+
+Benchmarking: measuring performance[edit]
+For new versions of software or to provide comparisons with competitive systems, benchmarks are sometimes used, which assist with gauging an algorithms relative performance. If a new sort algorithm is produced, for example, it can be compared with its predecessors to ensure that at least it is efficient as before with known data, taking into consideration any functional improvements. Benchmarks can be used by customers when comparing various products from alternative suppliers to estimate which product will best suit their specific requirements in terms of functionality and performance. For example, in the mainframe world certain proprietary sort products from independent software companies such as Syncsort compete with products from the major suppliers such as IBM for speed.
+Some benchmarks provide opportunities for producing an analysis comparing the relative speed of various compiled and interpreted languages for example[3][4]
+and The Computer Language Benchmarks Game compares the performance of implementations of typical programming problems in several programming languages.
+Even creating "do it yourself" benchmarks can demonstrate the relative performance of different programming languages, using a variety of user specified criteria. This is quite simple, as a "Nine language performance roundup" by Christopher W. Cowell-Shah demonstrates by example.[5]
+
+Implementation concerns[edit]
+Implementation issues can also have an effect on efficiency, such as the choice of programming language, or the way in which the algorithm is actually coded,[6] or the choice of a compiler for a particular language, or the compilation options used, or even the operating system being used. In many cases a language implemented by an interpreter may be much slower than a language implemented by a compiler.[3] See the articles on just-in-time compilation and interpreted languages.
+There are other factors which may affect time or space issues, but which may be outside of a programmer's control; these include data alignment, data granularity, cache locality, cache coherency, garbage collection, instruction-level parallelism, multi-threading (at either a hardware or software level), simultaneous multitasking, and subroutine calls.[7]
+Some processors have capabilities for vector processing, which allow a single instruction to operate on multiple operands; it may or may not be easy for a programmer or compiler to use these capabilities. Algorithms designed for sequential processing may need to be completely redesigned to make use of parallel processing, or they could be easily reconfigured. As parallel and distributed computing grow in importance in the late 2010s, more investments are being made into efficient high-level APIs for parallel and distributed computing systems such as CUDA, TensorFlow, Hadoop, OpenMP and MPI.
+Another problem which can arise in programming is that processors compatible with the same instruction set (such as x86-64 or ARM) may implement an instruction in different ways, so that instructions which are relatively fast on some models may be relatively slow on other models. This often presents challenges to optimizing compilers, which must have a great amount of knowledge of the specific CPU and other hardware available on the compilation target to best optimize a program for performance. In the extreme case, a compiler may be forced to emulate instructions not supported on a compilation target platform, forcing it to generate code or link an external library call to produce a result that is otherwise incomputable on that platform, even if it is natively supported and more efficient in hardware on other platforms. This is often the case in embedded systems with respect to floating-point arithmetic, where small and low-power microcontrollers often lack hardware support for floating-point arithmetic and thus require computationally expensive software routines to produce floating point calculations.
+
+Measures of resource usage[edit]
+Measures are normally expressed as a function of the size of the input 
+  
+    
+      
+        
+          
+            n
+          
+        
+      
+    
+    {\displaystyle \scriptstyle {n}}
+  
+.
+The two most common measures are:
+
+Time: how long does the algorithm take to complete?
+Space: how much working memory (typically RAM) is needed by the algorithm? This has two aspects: the amount of memory needed by the code (auxiliary space usage), and the amount of memory needed for the data on which the code operates (intrinsic space usage).
+For computers whose power is supplied by a battery (e.g. laptops and smartphones), or for very long/large calculations (e.g. supercomputers), other measures of interest are:
+
+Direct power consumption: power needed directly to operate the computer.
+Indirect power consumption: power needed for cooling, lighting, etc.
+As of 2018[update], power consumption is growing as an important metric for computational tasks of all types and at all scales ranging from embedded Internet of things devices to system-on-chip devices to server farms. This trend is often referred to as green computing.
+Less common measures of computational efficiency may also be relevant in some cases:
+
+Transmission size: bandwidth could be a limiting factor. Data compression can be used to reduce the amount of data to be transmitted. Displaying a picture or image (e.g. Google logo) can result in transmitting tens of thousands of bytes (48K in this case) compared with transmitting six bytes for the text "Google". This is important for I/O bound computing tasks.
+External space: space needed on a disk or other external memory device; this could be for temporary storage while the algorithm is being carried out, or it could be long-term storage needed to be carried forward for future reference.
+Response time (latency): this is particularly relevant in a real-time application when the computer system must respond quickly to some external event.
+Total cost of ownership: particularly if a computer is dedicated to one particular algorithm.
+Time[edit]
+Theory[edit]
+Analyze the algorithm, typically using time complexity analysis to get an estimate of the running time as a function of the size of the input data. The result is normally expressed using Big O notation. This is useful for comparing algorithms, especially when a large amount of data is to be processed. More detailed estimates are needed to compare algorithm performance when the amount of data is small, although this is likely to be of less importance. Algorithms which include parallel processing may be more difficult to analyze.
+
+Practice[edit]
+Use a benchmark to time the use of an algorithm. Many programming languages have an available function which provides CPU time usage. For long-running algorithms the elapsed time could also be of interest. Results should generally be averaged over several tests.
+Run-based profiling can be very sensitive to hardware configuration and the possibility of other programs or tasks running at the same time in a multi-processing and multi-programming environment.
+This sort of test also depends heavily on the selection of a particular programming language, compiler, and compiler options, so algorithms being compared must all be implemented under the same conditions.
+
+Space[edit]
+This section is concerned with use of memory resources (registers, cache, RAM, virtual memory, secondary memory) while the algorithm is being executed. As for time analysis above, analyze the algorithm, typically using space complexity analysis to get an estimate of the run-time memory needed as a function as the size of the input data. The result is normally expressed using Big O notation.
+There are up to four aspects of memory usage to consider:
+
+The amount of memory needed to hold the code for the algorithm.
+The amount of memory needed for the input data.
+The amount of memory needed for any output data.
+Some algorithms, such as sorting, often rearrange the input data and don't need any additional space for output data. This property is referred to as "in-place" operation.
+The amount of memory needed as working space during the calculation.
+This includes local variables and any stack space needed by routines called during a calculation; this stack space can be significant for algorithms which use recursive techniques.
+Early electronic computers, and early home computers, had relatively small amounts of working memory. For example, the 1949 Electronic Delay Storage Automatic Calculator (EDSAC) had a maximum working memory of 1024 17-bit words, while the 1980 Sinclair ZX80 came initially with 1024 8-bit bytes of working memory. In the late 2010s, it is typical for personal computers to have between 4 and 32 GB of RAM, an increase of over 300 million times as much memory.
+
+Caching and memory hierarchy[edit]
+Further information: Memory hierarchy
+Current computers can have relatively large amounts of memory (possibly Gigabytes), so having to squeeze an algorithm into a confined amount of memory is much less of a problem than it used to be. But the presence of four different categories of memory can be significant:
+
+Processor registers, the fastest of computer memory technologies with the least amount of storage space. Most direct computation on modern computers occurs with source and destination operands in registers before being updated to the cache, main memory and virtual memory if needed. On a processor core, there are typically on the order of hundreds of bytes or fewer of register availability, although a register file may contain more physical registers than architectural registers defined in the instruction set architecture.
+Cache memory is the second fastest and second smallest memory available in the memory hierarchy. Caches are present in CPUs, GPUs, hard disk drives and external peripherals, and are typically implemented in static RAM. Memory caches are multi-leveled; lower levels are larger, slower and typically shared between processor cores in multi-core processors. In order to process operands in cache memory, a processing unit must fetch the data from the cache, perform the operation in registers and write the data back to the cache. This operates at speeds comparable (about 2-10 times slower) with the CPU or GPU's arithmetic logic unit or floating-point unit if in the L1 cache.[8] It is about 10 times slower if there is an L1 cache miss and it must be retrieved from and written to the L2 cache, and a further 10 times slower if there is an L2 cache miss and it must be retrieved from an L3 cache, if present.
+Main physical memory is most often implemented in dynamic RAM (DRAM). The main memory is much larger (typically gigabytes compared to â8 megabytes) than an L3 CPU cache, with read and write latencies typically 10-100 times slower.[8] As of 2018[update], RAM is increasingly implemented on-chip of processors, as CPU or GPU memory.
+Virtual memory is most often implemented in terms of secondary storage such as a hard disk, and is an extension to the memory hierarchy that has much larger storage space but much larger latency, typically around 1000 times slower than a cache miss for a value in RAM.[8] While originally motivated to create the impression of higher amounts of memory being available than were truly available, virtual memory is more important in contemporary usage for its time-space tradeoff and enabling the usage of virtual machines.[8] Cache misses from main memory are called page faults, and incur huge performance penalties on programs.
+An algorithm whose memory needs will fit in cache memory will be much faster than an algorithm which fits in main memory, which in turn will be very much faster than an algorithm which has to resort to virtual memory. Because of this, cache replacement policies are extremely important to high-performance computing, as are cache-aware programming and data alignment. To further complicate the issue, some systems have up to three levels of cache memory, with varying effective speeds. Different systems will have different amounts of these various types of memory, so the effect of algorithm memory needs can vary greatly from one system to another.
+In the early days of electronic computing, if an algorithm and its data wouldn't fit in main memory then the algorithm couldn't be used. Nowadays the use of virtual memory appears to provide much memory, but at the cost of performance. If an algorithm and its data will fit in cache memory, then very high speed can be obtained; in this case minimizing space will also help minimize time. This is called the principle of locality, and can be subdivided into locality of reference, spatial locality and temporal locality. An algorithm which will not fit completely in cache memory but which exhibits locality of reference may perform reasonably well.
+
+Criticism of the current state of programming[edit]
+David May FRS a British computer scientist and currently Professor of Computer Science at University of Bristol and founder and CTO of XMOS Semiconductor, believes one of the problems is that there is a reliance on Moore's law to solve inefficiencies. He has advanced an 'alternative' to Moore's law (May's law) stated as follows:[9]
+
+Software efficiency halves every 18 months, compensating Moore's Law
+
+
+May goes on to state:
+
+In ubiquitous systems, halving the instructions executed can double the battery life and big data sets bring big opportunities for better software and algorithms: Reducing the number of operations from NâÃâN to NâÃâlog(N) has a dramatic effect when N is large ... for N = 30 billion, this change is as good as 50 years of technology improvements.
+
+
+Software author Adam N. Rosenburg in his blog "The failure of the Digital computer", has described the current state of programming as nearing the "Software event horizon", (alluding to the fictitious "shoe event horizon" described by Douglas Adams in his Hitchhiker's Guide to the Galaxy book[10]). He estimates there has been a 70Â dB factor loss of productivity or "99.99999 percent, of its ability to deliver the goods", since the 1980sâ"When Arthur C. Clarke compared the reality of computing in 2001 to the computer HAL 9000 in his book 2001: A Space Odyssey, he pointed out how wonderfully small and powerful computers were but how disappointing computer programming had become".
+Competitions for the best algorithms[edit]
+The following competitions invite entries for the best algorithms based on some arbitrary criteria decided by the judges:
+
+Wired magazine[11]
+See also[edit]
+Analysis of algorithmsâhow to determine the resources needed by an algorithm
+Arithmetic codingâa form of variable-length entropy encoding for efficient data compression
+Associative arrayâa data structure that can be made more efficient using Patricia trees or Judy arrays
+Benchmarkâa method for measuring comparative execution times in defined cases
+Best, worst and average caseâconsiderations for estimating execution times in three scenarios
+Binary search algorithmâa simple and efficient technique for searching sorted arrays
+Branch tableâa technique for reducing instruction path-length, size of machine code, (and often also memory)
+Comparison of programming paradigmsâparadigm specific performance considerations
+Compiler optimizationâcompiler-derived optimization
+Computational complexity of mathematical operations
+Computational complexity theory
+Computer performanceâcomputer hardware metrics
+Data compressionâreducing transmission bandwidth and disk storage
+Database indexâa data structure that improves the speed of data retrieval operations on a database table
+Entropy encodingâencoding data efficiently using frequency of occurrence of strings as a criterion for substitution
+Garbage collectionâautomatic freeing of memory after use
+Green computingâa move to implement 'greener' technologies, consuming less resources
+Huffman algorithmâan algorithm for efficient data encoding
+Improving Managed code PerformanceâMicrosoft MSDN Library
+Locality of referenceâfor avoidance of caching delays caused by non-local memory access
+Loop optimization
+Memory management
+Optimization (computer science)
+Performance analysisâmethods of measuring actual performance of an algorithm at run-time
+Real-time computingâfurther examples of time-critical applications
+Run-time analysisâestimation of expected run-times and an algorithm's scalability
+Simultaneous multithreading
+Sorting algorithm Â§Â Comparison of algorithms
+Speculative execution or Eager execution
+Branch prediction
+Super-threading
+Hyper-threading
+Threaded codeâsimilar to virtual method table or branch table
+Virtual method tableâbranch table with dynamically assigned pointers for dispatching
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Green, Christopher, Classics in the History of Psychology, retrieved 19 May 2013
+
+^ Knuth, Donald (1974), "Structured Programming with go-to Statements" (PDF), Computing Surveys, 6 (4): 261â301, CiteSeerXÂ 10.1.1.103.6084, doi:10.1145/356635.356640, S2CIDÂ 207630080, archived from the original (PDF) on 24 August 2009, retrieved 19 May 2013
+
+^ Jump up to: a b "Floating Point Benchmark: Comparing Languages (Fourmilog: None Dare Call It Reason)". Fourmilab.ch. 4 August 2005. Retrieved 14 December 2011.
+
+^ "Whetstone Benchmark History". Roylongbottom.org.uk. Retrieved 14 December 2011.
+
+^ OSNews Staff. "Nine Language Performance Round-up: Benchmarking Math & File I/O". www.osnews.com. Retrieved 18 September 2018.
+
+^ Kriegel, Hans-Peter; Schubert, Erich; Zimek, Arthur (2016). "The (black) art of runtime evaluation: Are we comparing algorithms or implementations?". Knowledge and Information Systems. 52 (2): 341â378. doi:10.1007/s10115-016-1004-2. ISSNÂ 0219-1377. S2CIDÂ 40772241.
+
+^ Guy Lewis Steele, Jr. "Debunking the 'Expensive Procedure Call' Myth, or, Procedure Call Implementations Considered Harmful, or, Lambda: The Ultimate GOTO". MIT AI Lab. AI Lab Memo AIM-443. October 1977.[1]
+
+^ Jump up to: a b c d Hennessy, John L; Patterson, David A; AsanoviÄ, Krste; Bakos, Jason D; Colwell, Robert P; Bhattacharjee, Abhishek; Conte, Thomas M; Duato, JosÃ©; Franklin, Diana; Goldberg, David; Jouppi, Norman P; Li, Sheng; Muralimanohar, Naveen; Peterson, Gregory D; Pinkston, Timothy Mark; Ranganathan, Prakash; Wood, David Allen; Young, Clifford; Zaky, Amr (2011). Computer Architecture: a Quantitative Approach (SixthÂ ed.). ISBNÂ 978-0128119051. OCLCÂ 983459758.
+
+^ "Archived copy" (PDF). Archived from the original (PDF) on 3 March 2016. Retrieved 23 February 2009.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ "The Failure of the Digital Computer".
+
+^ Fagone, Jason (29 November 2010). "Teen Mathletes Do Battle at Algorithm Olympics". Wired.
+
+
+External links[edit]
+
+
+
+Wikibooks has a book on the topic of: Optimizing Code for Speed
+
+Animation of the Boyer-Moore algorithm (Java Applet)
+"How algorithms shape our world".   A TED (conference) Talk by Kevin Slavin.
+Misconceptions about algorithmic efficiency in high-schools
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteComputer scienceNote: This template roughly follows the 2012 ACM Computing Classification System.Hardware
+Printed circuit board
+Peripheral
+Integrated circuit
+Very Large Scale Integration
+Systems on Chip (SoCs)
+Energy consumption (Green computing)
+Electronic design automation
+Hardware acceleration
+Computer systems organization
+Computer architecture
+Embedded system
+Real-time computing
+Dependability
+Networks
+Network architecture
+Network protocol
+Network components
+Network scheduler
+Network performance evaluation
+Network service
+Software organization
+Interpreter
+Middleware
+Virtual machine
+Operating system
+Software quality
+Software notations and tools
+Programming paradigm
+Programming language
+Compiler
+Domain-specific language
+Modeling language
+Software framework
+Integrated development environment
+Software configuration management
+Software library
+Software repository
+Software development
+Control variable
+Software development process
+Requirements analysis
+Software design
+Software construction
+Software deployment
+Software maintenance
+Programming team
+Open-source model
+Theory of computation
+Model of computation
+Formal language
+Automata theory
+Computability theory
+Computational complexity theory
+Logic
+Semantics
+Algorithms
+Algorithm design
+Analysis of algorithms
+Algorithmic efficiency
+Randomized algorithm
+Computational geometry
+Mathematics of computing
+Discrete mathematics
+Probability
+Statistics
+Mathematical software
+Information theory
+Mathematical analysis
+Numerical analysis
+Theoretical computer science
+Information systems
+Database management system
+Information storage systems
+Enterprise information system
+Social information systems
+Geographic information system
+Decision support system
+Process control system
+Multimedia information system
+Data mining
+Digital library
+Computing platform
+Digital marketing
+World Wide Web
+Information retrieval
+Security
+Cryptography
+Formal methods
+Security services
+Intrusion detection system
+Hardware security
+Network security
+Information security
+Application security
+Humanâcomputer interaction
+Interaction design
+Social computing
+Ubiquitous computing
+Visualization
+Accessibility
+Concurrency
+Concurrent computing
+Parallel computing
+Distributed computing
+Multithreading
+Multiprocessing
+Artificial intelligence
+Natural language processing
+Knowledge representation and reasoning
+Computer vision
+Automated planning and scheduling
+Search methodology
+Control method
+Philosophy of artificial intelligence
+Distributed artificial intelligence
+Machine learning
+Supervised learning
+Unsupervised learning
+Reinforcement learning
+Multi-task learning
+Cross-validation
+Graphics
+Animation
+Rendering
+Image manipulation
+Graphics processing unit
+Mixed reality
+Virtual reality
+Image compression
+Solid modeling
+Applied computing
+E-commerce
+Enterprise software
+Computational mathematics
+Computational physics
+Computational chemistry
+Computational biology
+Computational social science
+Computational engineering
+Computational healthcare
+Digital art
+Electronic publishing
+Cyberwarfare
+Electronic voting
+Video games
+Word processing
+Operations research
+Educational technology
+Document management
+
+ Category
+ Outline
+WikiProject
+ Commons
+
+showvteSoftware qualityQualitiesInternal
+Size
+Maintainability
+Flexibility
+Portability
+Reusability
+Readability
+Scalability
+Testability
+Understandability
+Loose coupling
+Orthogonality
+External
+Usability
+Reliability
+Adaptability
+Correctness
+Accuracy
+Efficiency
+Robustness
+Security
+Safety
+Standards and lists
+ISO/IEC 9126
+Non-functional requirements
+List of system quality attributes
+Processes
+Software quality management
+Software quality control
+Software quality assurance
+
+
+ Commons
+
+Authority control 
+Integrated Authority File (Germany)
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Algorithmic_efficiency&oldid=1054652787"
+		Categories: Analysis of algorithmsComputer performanceSoftware optimizationSoftware qualityHidden categories: CS1 maint: archived copy as titleArticles with short descriptionShort description matches WikidataUse dmy dates from June 2013Articles containing potentially dated statements from 2018All articles containing potentially dated statementsArticles with GND identifiers
+	

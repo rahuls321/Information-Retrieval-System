@@ -1,0 +1,795 @@
+
+Title:
+Matrix chain multiplication
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Mathematics optimization problem
+Matrix chain multiplication (or the matrix chain ordering problem[citation needed]) is an optimization problem concerning the most efficient way to multiply a given sequence of matrices.  The problem is not actually to perform the multiplications, but merely to decide the sequence of the matrix multiplications involved.  The problem may be solved using dynamic programming.
+There are many options because matrix multiplication is associative. In other words, no matter how the product is parenthesized, the result obtained will remain the same. For example, for four matrices A, B, C, and D, there are five possible options:
+
+((AB)C)D = (A(BC))D = (AB)(CD) = A((BC)D) = A(B(CD)).
+Although it does not affect the product, the order in which the terms are parenthesized affects the number of simple arithmetic operations needed to compute the product, that is, the computational complexity. 
+For example, if A is a 10 Ã 30 matrix, B is a 30 Ã 5 matrix, and C is a 5 Ã 60 matrix, then
+
+computing (AB)C needs (10Ã30Ã5) + (10Ã5Ã60)  = 1500 + 3000 = 4500 operations, while
+computing A(BC) needs (30Ã5Ã60) + (10Ã30Ã60) = 9000 + 18000 = 27000 operations.
+Clearly the first method is more efficient. With this information, the problem statement can be refined as "how to determine the optimal parenthesization of a product of n matrices?" Checking each possible parenthesization (brute force) would require a run-time that is exponential in the number of matrices, which is very slow and impractical for large n. A quicker solution to this problem can be achieved by breaking up the problem into a set of related subproblems.
+
+Contents
+
+1 A dynamic programming algorithm
+2 More efficient algorithms
+
+2.1 Hu & Shing (1981)
+2.2 Chin-Hu-Shing approximating algorithm
+
+
+3 Generalizations
+4 See also
+5 References
+
+
+
+A dynamic programming algorithm[edit]
+To begin, let us assume that all we really want to know is the minimum cost, or minimum number of arithmetic operations needed to multiply out the matrices. If we are only multiplying two matrices, there is only one way to multiply them, so the minimum cost is the cost of doing this. In general, we can find the minimum cost using the following recursive algorithm:
+
+Take the sequence of matrices and separate it into two subsequences.
+Find the minimum cost of multiplying out each subsequence.
+Add these costs together, and add in the cost of multiplying the two result matrices.
+Do this for each possible position at which the sequence of matrices can be split, and take the minimum over all of them.
+For example, if we have four matrices ABCD, we compute the cost required to find each of (A)(BCD), (AB)(CD), and (ABC)(D), making recursive calls to find the minimum cost to compute ABC, AB, CD, and BCD. We then choose the best one. Better still, this yields not only the minimum cost, but also demonstrates the best way of doing the multiplication: group it the way that yields the lowest total cost, and do the same for each factor.
+However, this algorithm has exponential runtime complexity making it as inefficient as the naive approach of trying all permutations. The reason is that the algorithm does a lot of redundant work. For example, above we made a recursive call to find the best cost for computing both ABC and AB. But finding the best cost for computing ABC also requires finding the best cost for AB. As the recursion grows deeper, more and more of this type of unnecessary repetition occurs.
+One simple solution is called memoization: each time we compute the minimum cost needed to multiply out a specific subsequence, we save it. If we are ever asked to compute it again, we simply give the saved answer, and do not recompute it. Since there are about n2/2 different subsequences, where n is the number of matrices, the space required to do this is reasonable. It can be shown that this simple trick brings the runtime down to O(n3) from O(2n), which is more than efficient enough for real applications. This is top-down dynamic programming.
+The following bottom-up approach [1] computes, for each 2 â¤ k â¤ n, the minimum costs of all subsequences of length k using the costs of smaller subsequences already computed.
+It has the same asymptotic runtime and requires no recursion.
+Pseudocode:
+
+// Matrix A[i] has dimension dims[i-1] x dims[i] for i = 1..n
+MatrixChainOrder(int dims[])
+{
+    // length[dims] = n + 1
+    n = dims.length - 1;
+    // m[i,j] = Minimum number of scalar multiplications (i.e., cost)
+    // needed to compute the matrix A[i]A[i+1]...A[j] = A[i..j]
+    // The cost is zero when multiplying one matrix
+    for (i = 1; i <= n; i++)
+        m[i, i] = 0;
+
+    for (len = 2; len <= n; len++) { // Subsequence lengths
+        for (i = 1; i <= n - len + 1; i++) {
+            j = i + len - 1;
+            m[i, j] = MAXINT;
+            for (k = i; k <= j - 1; k++) {
+                cost = m[i, k] + m[k+1, j] + dims[i-1]*dims[k]*dims[j];
+                if (cost < m[i, j]) {
+                    m[i, j] = cost;
+                    s[i, j] = k; // Index of the subsequence split that achieved minimal cost
+                }
+            }
+        }
+    }
+}
+
+NoteÂ : The first index for dims is 0 and the first index for m and s is 1.
+A Java implementation using zero based array indexes along with a convenience method for printing the solved order of operations:
+
+public class MatrixOrderOptimization {
+    protected int[][]m;
+    protected int[][]s;
+    public void matrixChainOrder(int[] dims) {
+        int n = dims.length - 1;
+        m = new int[n][n];
+        s = new int[n][n];
+
+        for (int lenMinusOne = 1; lenMinusOne < n; lenMinusOne++) {
+            for (int i = 0; i < n - lenMinusOne; i++) {
+                int j = i + lenMinusOne;
+                m[i][j] = Integer.MAX_VALUE;
+                for (int k = i; k < j; k++) {
+                    int cost = m[i][k] + m[k+1][j] + dims[i]*dims[k+1]*dims[j+1];
+                    if (cost < m[i][j]) {
+                        m[i][j] = cost;
+                        s[i][j] = k;
+                    }
+                }
+            }
+        }
+    }
+
+    public void printOptimalParenthesizations() {
+        boolean[] inAResult = new boolean[s.length];
+        printOptimalParenthesizations(s, 0, s.length - 1, inAResult);
+    }
+
+    void printOptimalParenthesizations(int[][]s, int i, int j,  /* for pretty printing: */ boolean[] inAResult) {
+        if (i != j) {
+            printOptimalParenthesizations(s, i, s[i][j], inAResult);
+            printOptimalParenthesizations(s, s[i][j] + 1, j, inAResult);
+            String istr = inAResult[i] ? "_result " : " ";
+            String jstr = inAResult[j] ? "_result " : " ";
+            System.out.println(" A_" + i + istr + "* A_" + j + jstr);
+            inAResult[i] = true;
+            inAResult[j] = true;
+        }
+    }
+}
+
+At the end of this program, we have the minimum cost for the full sequence.
+
+More efficient algorithms[edit]
+There are algorithms that are more efficient than the O(n3) dynamic programming algorithm, though they are more complex.
+
+Hu & Shing (1981)[edit]
+An algorithm published in 1981 by Hu and Shing achieves O(nÂ logÂ n) computational complexity.[2][3][4]
+They showed how the matrix chain multiplication problem can be transformed (or reduced) into the problem of triangulation of a regular polygon.  The polygon is oriented such that there is a horizontal bottom side, called the base, which represents the final result. The other n sides of the polygon, in the clockwise direction, represent the matrices. The vertices on each end of a side are the dimensions of the matrix represented by that side.  With n matrices in the multiplication chain there are nâ1 binary operations and Cnâ1 ways of placing parentheses, where Cnâ1 is the (nâ1)-th Catalan number. The algorithm exploits that there are also Cnâ1 possible triangulations of a polygon with n+1 sides.
+This image illustrates possible triangulations of a regular hexagon.  These correspond to the different ways that parentheses can be placed to order the multiplications for a product of 5 matrices.
+
+
+For the example below, there are four sides: A, B, C and the final result ABC.  A is a 10Ã30 matrix, B is a 30Ã5 matrix, C is a 5Ã60 matrix, and the final result is a 10Ã60 matrix. The regular polygon for this example is a 4-gon, i.e. a square:
+
+
+The matrix product AB is a 10x5 matrix and BC is a 30x60 matrix. The two possible triangulations in this example are:
+
+
+		
+			
+			
+Polygon representation of (AB)C
+
+			
+		
+		
+			
+			
+Polygon representation of A(BC)
+
+			
+		
+
+The cost of a single triangle in terms of the number of multiplications needed is the product of its vertices. The total cost of a particular triangulation of the polygon is the sum of the costs of all its triangles:
+
+(AB)C: (10Ã30Ã5) + (10Ã5Ã60) = 1500 + 3000 = 4500 multiplications
+A(BC): (30Ã5Ã60) + (10Ã30Ã60) = 9000 + 18000 = 27000 multiplications
+Hu & Shing developed an algorithm that finds an optimum solution for the minimum cost partition problem in O(nÂ logÂ n) time.
+
+Chin-Hu-Shing approximating algorithm[edit]
+In the introduction of [4] an approximating algorithm, the Chin-Hu-Shing approximating algorithm, is presented. While this algorithm produces an approximation of the optimal triangulation it is worth explaining it since it makes the understanding of the techniques utilized by Hu-Shing in their work easier.
+To each vertex V of the polygon is associated a weight w. Suppose we have three consecutive vertices 
+  
+    
+      
+        
+          V
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+          
+        
+        ,
+        
+          V
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle V_{i-1},V_{i},V_{i+1}}
+  
+, and that 
+  
+    
+      
+        
+          V
+          
+            min
+          
+        
+      
+    
+    {\displaystyle V_{\min }}
+  
+ is the vertex with minimum weight 
+  
+    
+      
+        
+          w
+          
+            min
+          
+        
+      
+    
+    {\displaystyle w_{\min }}
+  
+.
+We look at the quadrilateral with vertices 
+  
+    
+      
+        
+          V
+          
+            min
+          
+        
+        ,
+        
+          V
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+          
+        
+        ,
+        
+          V
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle V_{\min },V_{i-1},V_{i},V_{i+1}}
+  
+ (in clockwise order).
+We can triangulate it in two ways:
+
+
+  
+    
+      
+        (
+        
+          V
+          
+            min
+          
+        
+        ,
+        
+          V
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle (V_{\min },V_{i-1},V_{i})}
+  
+ and 
+  
+    
+      
+        (
+        
+          V
+          
+            min
+          
+        
+        ,
+        
+          V
+          
+            i
+            +
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle (V_{\min },V_{i+1},V_{i})}
+  
+, with cost 
+  
+    
+      
+        
+          w
+          
+            min
+          
+        
+        
+          w
+          
+            i
+            â
+            1
+          
+        
+        
+          w
+          
+            i
+          
+        
+        +
+        
+          w
+          
+            min
+          
+        
+        
+          w
+          
+            i
+            +
+            1
+          
+        
+        
+          w
+          
+            i
+          
+        
+      
+    
+    {\displaystyle w_{\min }w_{i-1}w_{i}+w_{\min }w_{i+1}w_{i}}
+  
+
+
+  
+    
+      
+        (
+        
+          V
+          
+            min
+          
+        
+        ,
+        
+          V
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+            +
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle (V_{\min },V_{i-1},V_{i+1})}
+  
+ and 
+  
+    
+      
+        (
+        
+          V
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+          
+        
+        ,
+        
+          V
+          
+            i
+            +
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle (V_{i-1},V_{i},V_{i+1})}
+  
+ with cost 
+  
+    
+      
+        
+          w
+          
+            min
+          
+        
+        
+          w
+          
+            i
+            â
+            1
+          
+        
+        
+          w
+          
+            i
+            +
+            1
+          
+        
+        +
+        
+          w
+          
+            i
+            â
+            1
+          
+        
+        
+          w
+          
+            i
+          
+        
+        
+          w
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle w_{\min }w_{i-1}w_{i+1}+w_{i-1}w_{i}w_{i+1}}
+  
+.
+Therefore, if
+
+
+  
+    
+      
+        
+          w
+          
+            min
+          
+        
+        
+          w
+          
+            i
+            â
+            1
+          
+        
+        
+          w
+          
+            i
+            +
+            1
+          
+        
+        +
+        
+          w
+          
+            i
+            â
+            1
+          
+        
+        
+          w
+          
+            i
+          
+        
+        
+          w
+          
+            i
+            +
+            1
+          
+        
+        <
+        
+          w
+          
+            min
+          
+        
+        
+          w
+          
+            i
+            â
+            1
+          
+        
+        
+          w
+          
+            i
+          
+        
+        +
+        
+          w
+          
+            min
+          
+        
+        
+          w
+          
+            i
+            +
+            1
+          
+        
+        
+          w
+          
+            i
+          
+        
+      
+    
+    {\displaystyle w_{\min }w_{i-1}w_{i+1}+w_{i-1}w_{i}w_{i+1}<w_{\min }w_{i-1}w_{i}+w_{\min }w_{i+1}w_{i}}
+  
+
+or equivalently
+
+
+  
+    
+      
+        
+          
+            1
+            
+              w
+              
+                i
+              
+            
+          
+        
+        +
+        
+          
+            1
+            
+              w
+              
+                min
+              
+            
+          
+        
+        <
+        
+          
+            1
+            
+              w
+              
+                i
+                +
+                1
+              
+            
+          
+        
+        +
+        
+          
+            1
+            
+              w
+              
+                i
+                â
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {1}{w_{i}}}+{\frac {1}{w_{\min }}}<{\frac {1}{w_{i+1}}}+{\frac {1}{w_{i-1}}}}
+  
+
+we remove the vertex 
+  
+    
+      
+        
+          V
+          
+            i
+          
+        
+      
+    
+    {\displaystyle V_{i}}
+  
+ from the polygon and add the side 
+  
+    
+      
+        (
+        
+          V
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          V
+          
+            i
+            +
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle (V_{i-1},V_{i+1})}
+  
+ to the triangulation.
+We repeat this process until no 
+  
+    
+      
+        
+          V
+          
+            i
+          
+        
+      
+    
+    {\displaystyle V_{i}}
+  
+ satisfies the condition above.
+For all the remaining vertices 
+  
+    
+      
+        
+          V
+          
+            n
+          
+        
+      
+    
+    {\displaystyle V_{n}}
+  
+, we add the side 
+  
+    
+      
+        (
+        
+          V
+          
+            min
+          
+        
+        ,
+        
+          V
+          
+            n
+          
+        
+        )
+      
+    
+    {\displaystyle (V_{\min },V_{n})}
+  
+ to the triangulation. 
+This gives us a nearly optimal triangulation.
+
+This section needs expansion. You can help by adding to it.  (April 2009)
+Generalizations[edit]
+The matrix chain multiplication problem generalizes to solving a more abstract problem: given a linear sequence of objects, an associative binary operation on those objects, and a way to compute the cost of performing that operation on any two given objects (as well as all partial results), compute the minimum cost way to group the objects to apply the operation over the sequence.[5] One somewhat contrived special case of this is string concatenation of a list of strings. In C, for example, the cost of concatenating two strings of length m and n using strcat is O(mÂ +Â n), since we need O(m) time to find the end of the first string and O(n) time to copy the second string onto the end of it. Using this cost function, we can write a dynamic programming algorithm to find the fastest way to concatenate a sequence of strings. However, this optimization is rather useless because we can straightforwardly concatenate the strings in time proportional to the sum of their lengths. A similar problem exists for singly linked lists.
+Another generalization is to solve the problem when parallel processors are available. In this case, instead of adding the costs of computing each factor of a matrix product, we take the maximum because we can do them simultaneously. This can drastically affect both the minimum cost and the final optimal grouping; more "balanced" groupings that keep all the processors busy are favored. There are even more sophisticated approaches.[6]
+
+See also[edit]
+Associahedron
+Tamari lattice
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ 
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Cormen, Thomas H; Leiserson, Charles E; Rivest, Ronald L; Stein, Clifford (2001). "15.2: Matrix-chain multiplication". Introduction to Algorithms. Vol.Â Second Edition. MIT Press and McGraw-Hill. pp.Â 331â338. ISBNÂ 978-0-262-03293-3.
+
+^ 
+Hu, TC; Shing, MT (1982). "Computation of Matrix Chain Products, Part I" (PDF). SIAM Journal on Computing. 11 (2): 362â373. CiteSeerXÂ 10.1.1.695.2923. doi:10.1137/0211028. ISSNÂ 0097-5397.
+
+^ 
+Hu, TC; Shing, MT (1984). "Computation of Matrix Chain Products, Part II" (PDF). SIAM Journal on Computing. 13 (2): 228â251. CiteSeerXÂ 10.1.1.695.4875. doi:10.1137/0213017. ISSNÂ 0097-5397.
+
+^ Jump up to: a b 
+Artur, Czumaj (1996). "Very Fast Approximation of the Matrix Chain Product Problem" (PDF). Journal of Algorithms. 21: 71â79. CiteSeerXÂ 10.1.1.218.8168. doi:10.1006/jagm.1996.0037. Archived from the original (PDF) on 2018-07-27.
+
+^ G. Baumgartner, D. Bernholdt, D. Cociorva, R. Harrison, M. Nooijen, J. Ramanujam and P. Sadayappan. A Performance Optimization Framework for Compilation of Tensor Contraction Expressions into Parallel Programs. 7th International Workshop on High-Level Parallel Programming Models and Supportive Environments (HIPS '02). Fort Lauderdale, Florida. 2002 available at http://citeseer.ist.psu.edu/610463.html and at http://www.csc.lsu.edu/~gb/TCE/Publications/OptFramework-HIPS02.pdf
+
+^ Heejo Lee, Jong Kim, Sungje Hong, and Sunggu Lee. Processor Allocation and Task Scheduling of Matrix Chain Products on Parallel Systems Archived 2011-07-22 at the Wayback Machine. IEEE Trans. on Parallel and Distributed Systems, Vol. 14, No. 4, pp.Â 394â407, Apr. 2003
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Matrix_chain_multiplication&oldid=1034831608"
+		Categories: Optimization algorithms and methodsMatricesDynamic programmingHidden categories: CS1: long volume valueWebarchive template wayback linksArticles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from February 2021Articles to be expanded from April 2009All articles to be expandedArticles using small message boxes
+	

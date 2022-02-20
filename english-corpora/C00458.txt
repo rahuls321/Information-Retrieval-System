@@ -1,0 +1,2711 @@
+
+Title:
+FordâFulkerson algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+
+Algorithm to compute the maximum flow in a flow network (equivalently; the minimum cut)
+The FordâFulkerson method or FordâFulkerson algorithm (FFA) is a greedy algorithm that computes the maximum flow in a flow network. It is sometimes called a "method" instead of an "algorithm" as the approach to finding augmenting paths in a residual graph is not fully specified[1] or it is specified in several implementations with different running times.[2] It was published in 1956 by L. R. Ford Jr. and D. R. Fulkerson.[3] The name "FordâFulkerson" is often also used for the EdmondsâKarp algorithm, which is a fully defined implementation of the FordâFulkerson method.
+The idea behind the algorithm is as follows: as long as there is a path from the source (start node) to the sink (end node), with available capacity on all edges in the path, we send flow along one of the paths. Then we find another path, and so on. A path with available capacity is called an augmenting path.
+
+Contents
+
+1 Algorithm
+2 Complexity
+3 Integral example
+4 Non-terminating example
+5 Python implementation of EdmondsâKarp algorithm
+6 See also
+7 Notes
+8 References
+9 External links
+
+
+
+Algorithm[edit]
+Let 
+  
+    
+      
+        G
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G(V,E)}
+  
+ be a graph, and for each edge from u to v, let 
+  
+    
+      
+        c
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle c(u,v)}
+  
+ be the capacity and 
+  
+    
+      
+        f
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle f(u,v)}
+  
+ be the flow. We want to find the maximum flow from the source s to the sink t. After every step in the algorithm the following is maintained:
+
+
+
+Capacity constraints
+
+
+  
+    
+      
+        â
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+        :
+        Â 
+        f
+        (
+        u
+        ,
+        v
+        )
+        â¤
+        c
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle \forall (u,v)\in E:\ f(u,v)\leq c(u,v)}
+  
+
+The flow along an edge cannot exceed its capacity.
+
+
+Skew symmetry
+
+
+  
+    
+      
+        â
+        (
+        u
+        ,
+        v
+        )
+        â
+        E
+        :
+        Â 
+        f
+        (
+        u
+        ,
+        v
+        )
+        =
+        â
+        f
+        (
+        v
+        ,
+        u
+        )
+      
+    
+    {\displaystyle \forall (u,v)\in E:\ f(u,v)=-f(v,u)}
+  
+
+The net flow from u to v must be the opposite of the net flow from v to u (see example).
+
+
+Flow conservation
+
+
+  
+    
+      
+        â
+        u
+        â
+        V
+        :
+        u
+        â 
+        s
+        
+          Â andÂ 
+        
+        u
+        â 
+        t
+        â
+        
+          â
+          
+            w
+            â
+            V
+          
+        
+        f
+        (
+        u
+        ,
+        w
+        )
+        =
+        0
+      
+    
+    {\displaystyle \forall u\in V:u\neq s{\text{ and }}u\neq t\Rightarrow \sum _{w\in V}f(u,w)=0}
+  
+
+The net flow to a node is zero, except for the source, which "produces" flow, and the sink, which "consumes" flow.
+
+
+Value(f)
+
+
+  
+    
+      
+        
+          â
+          
+            (
+            s
+            ,
+            u
+            )
+            â
+            E
+          
+        
+        f
+        (
+        s
+        ,
+        u
+        )
+        =
+        
+          â
+          
+            (
+            v
+            ,
+            t
+            )
+            â
+            E
+          
+        
+        f
+        (
+        v
+        ,
+        t
+        )
+      
+    
+    {\displaystyle \sum _{(s,u)\in E}f(s,u)=\sum _{(v,t)\in E}f(v,t)}
+  
+
+The flow leaving from s must be equal to the flow arriving at t.
+
+
+This means that the flow through the network is a legal flow after each round in the algorithm. We define the residual network 
+  
+    
+      
+        
+          G
+          
+            f
+          
+        
+        (
+        V
+        ,
+        
+          E
+          
+            f
+          
+        
+        )
+      
+    
+    {\displaystyle G_{f}(V,E_{f})}
+  
+ to be the network with capacity 
+  
+    
+      
+        
+          c
+          
+            f
+          
+        
+        (
+        u
+        ,
+        v
+        )
+        =
+        c
+        (
+        u
+        ,
+        v
+        )
+        â
+        f
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle c_{f}(u,v)=c(u,v)-f(u,v)}
+  
+ and no flow. Notice that it can happen that a flow from v to u is allowed in the residual
+network, though disallowed in the original network: if 
+  
+    
+      
+        f
+        (
+        u
+        ,
+        v
+        )
+        >
+        0
+      
+    
+    {\displaystyle f(u,v)>0}
+  
+ and 
+  
+    
+      
+        c
+        (
+        v
+        ,
+        u
+        )
+        =
+        0
+      
+    
+    {\displaystyle c(v,u)=0}
+  
+ then 
+  
+    
+      
+        
+          c
+          
+            f
+          
+        
+        (
+        v
+        ,
+        u
+        )
+        =
+        c
+        (
+        v
+        ,
+        u
+        )
+        â
+        f
+        (
+        v
+        ,
+        u
+        )
+        =
+        f
+        (
+        u
+        ,
+        v
+        )
+        >
+        0
+      
+    
+    {\displaystyle c_{f}(v,u)=c(v,u)-f(v,u)=f(u,v)>0}
+  
+.
+
+
+Algorithm FordâFulkerson
+
+Inputs  Given a Network 
+  
+    
+      
+        G
+        =
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G=(V,E)}
+  
+ with flow capacity c, a source node s, and a sink node t
+Output Compute a flow f from s to t of maximum value
+
+  
+    
+      
+        f
+        (
+        u
+        ,
+        v
+        )
+        â
+        0
+      
+    
+    {\displaystyle f(u,v)\leftarrow 0}
+  
+ for all edges 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle (u,v)}
+  
+
+While there is a path p from s to t in 
+  
+    
+      
+        
+          G
+          
+            f
+          
+        
+      
+    
+    {\displaystyle G_{f}}
+  
+, such that 
+  
+    
+      
+        
+          c
+          
+            f
+          
+        
+        (
+        u
+        ,
+        v
+        )
+        >
+        0
+      
+    
+    {\displaystyle c_{f}(u,v)>0}
+  
+ for all edges 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+        â
+        p
+      
+    
+    {\displaystyle (u,v)\in p}
+  
+:
+Find 
+  
+    
+      
+        
+          c
+          
+            f
+          
+        
+        (
+        p
+        )
+        =
+        min
+        {
+        
+          c
+          
+            f
+          
+        
+        (
+        u
+        ,
+        v
+        )
+        :
+        (
+        u
+        ,
+        v
+        )
+        â
+        p
+        }
+      
+    
+    {\displaystyle c_{f}(p)=\min\{c_{f}(u,v):(u,v)\in p\}}
+  
+
+For each edge 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+        â
+        p
+      
+    
+    {\displaystyle (u,v)\in p}
+  
+
+
+  
+    
+      
+        f
+        (
+        u
+        ,
+        v
+        )
+        â
+        f
+        (
+        u
+        ,
+        v
+        )
+        +
+        
+          c
+          
+            f
+          
+        
+        (
+        p
+        )
+      
+    
+    {\displaystyle f(u,v)\leftarrow f(u,v)+c_{f}(p)}
+  
+ (Send flow along the path)
+
+  
+    
+      
+        f
+        (
+        v
+        ,
+        u
+        )
+        â
+        f
+        (
+        v
+        ,
+        u
+        )
+        â
+        
+          c
+          
+            f
+          
+        
+        (
+        p
+        )
+      
+    
+    {\displaystyle f(v,u)\leftarrow f(v,u)-c_{f}(p)}
+  
+ (The flow might be "returned" later)
+"â" denotes assignment.  For instance, "largest â item" means that the value of largest changes to the value of item.
+"return" terminates the algorithm and outputs the following value.
+
+The path in step 2 can be found with, for example, a breadth-first search (BFS) or a depth-first search in 
+  
+    
+      
+        
+          G
+          
+            f
+          
+        
+        (
+        V
+        ,
+        
+          E
+          
+            f
+          
+        
+        )
+      
+    
+    {\displaystyle G_{f}(V,E_{f})}
+  
+. If you use the former, the algorithm is called EdmondsâKarp.
+When no more paths in step 2 can be found, s will not be able to reach t in the residual
+network. If S is the set of nodes reachable by s in the residual network, then the total
+capacity in the original network of edges from S to the remainder of V is on the one hand
+equal to the total flow we found from s to t,
+and on the other hand serves as an upper bound for all such flows.
+This proves that the flow we found is maximal. See also Max-flow Min-cut theorem.
+If the graph 
+  
+    
+      
+        G
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G(V,E)}
+  
+ has multiple sources and sinks, we act as follows:
+Suppose that 
+  
+    
+      
+        T
+        =
+        {
+        t
+        â£
+        t
+        
+          Â is a sink
+        
+        }
+      
+    
+    {\displaystyle T=\{t\mid t{\text{ is a sink}}\}}
+  
+ and 
+  
+    
+      
+        S
+        =
+        {
+        s
+        â£
+        s
+        
+          Â is a source
+        
+        }
+      
+    
+    {\displaystyle S=\{s\mid s{\text{ is a source}}\}}
+  
+. Add a new source 
+  
+    
+      
+        
+          s
+          
+            â
+          
+        
+      
+    
+    {\displaystyle s^{*}}
+  
+ with an edge 
+  
+    
+      
+        (
+        
+          s
+          
+            â
+          
+        
+        ,
+        s
+        )
+      
+    
+    {\displaystyle (s^{*},s)}
+  
+ from 
+  
+    
+      
+        
+          s
+          
+            â
+          
+        
+      
+    
+    {\displaystyle s^{*}}
+  
+ to every node 
+  
+    
+      
+        s
+        â
+        S
+      
+    
+    {\displaystyle s\in S}
+  
+, with capacity 
+  
+    
+      
+        c
+        (
+        
+          s
+          
+            â
+          
+        
+        ,
+        s
+        )
+        =
+        
+          d
+          
+            s
+          
+        
+        
+        (
+        
+          d
+          
+            s
+          
+        
+        =
+        
+          â
+          
+            (
+            s
+            ,
+            u
+            )
+            â
+            E
+          
+        
+        c
+        (
+        s
+        ,
+        u
+        )
+        )
+      
+    
+    {\displaystyle c(s^{*},s)=d_{s}\;(d_{s}=\sum _{(s,u)\in E}c(s,u))}
+  
+. And add a new sink 
+  
+    
+      
+        
+          t
+          
+            â
+          
+        
+      
+    
+    {\displaystyle t^{*}}
+  
+ with an edge 
+  
+    
+      
+        (
+        t
+        ,
+        
+          t
+          
+            â
+          
+        
+        )
+      
+    
+    {\displaystyle (t,t^{*})}
+  
+ from every node 
+  
+    
+      
+        t
+        â
+        T
+      
+    
+    {\displaystyle t\in T}
+  
+ to 
+  
+    
+      
+        
+          t
+          
+            â
+          
+        
+      
+    
+    {\displaystyle t^{*}}
+  
+, with capacity 
+  
+    
+      
+        c
+        (
+        t
+        ,
+        
+          t
+          
+            â
+          
+        
+        )
+        =
+        
+          d
+          
+            t
+          
+        
+        
+        (
+        
+          d
+          
+            t
+          
+        
+        =
+        
+          â
+          
+            (
+            v
+            ,
+            t
+            )
+            â
+            E
+          
+        
+        c
+        (
+        v
+        ,
+        t
+        )
+        )
+      
+    
+    {\displaystyle c(t,t^{*})=d_{t}\;(d_{t}=\sum _{(v,t)\in E}c(v,t))}
+  
+. Then apply the FordâFulkerson algorithm.
+Also, if a node u has capacity constraint 
+  
+    
+      
+        
+          d
+          
+            u
+          
+        
+      
+    
+    {\displaystyle d_{u}}
+  
+, we replace this node with two nodes 
+  
+    
+      
+        
+          u
+          
+            
+              i
+              n
+            
+          
+        
+        ,
+        
+          u
+          
+            
+              o
+              u
+              t
+            
+          
+        
+      
+    
+    {\displaystyle u_{\mathrm {in} },u_{\mathrm {out} }}
+  
+, and an edge 
+  
+    
+      
+        (
+        
+          u
+          
+            
+              i
+              n
+            
+          
+        
+        ,
+        
+          u
+          
+            
+              o
+              u
+              t
+            
+          
+        
+        )
+      
+    
+    {\displaystyle (u_{\mathrm {in} },u_{\mathrm {out} })}
+  
+, with capacity 
+  
+    
+      
+        c
+        (
+        
+          u
+          
+            
+              i
+              n
+            
+          
+        
+        ,
+        
+          u
+          
+            
+              o
+              u
+              t
+            
+          
+        
+        )
+        =
+        
+          d
+          
+            u
+          
+        
+      
+    
+    {\displaystyle c(u_{\mathrm {in} },u_{\mathrm {out} })=d_{u}}
+  
+. Then apply the FordâFulkerson algorithm.
+
+Complexity[edit]
+By adding the flow augmenting path to the flow already established in the graph, the maximum flow will be reached when no more flow augmenting paths can be found in the graph.  However, there is no certainty that this situation will ever be reached, so the best that can be guaranteed is that the answer will be correct if the algorithm terminates.  In the case that the algorithm runs forever, the flow might not even converge towards the maximum flow.  However, this situation only occurs with irrational flow values.[4]  When the capacities are integers, the runtime of FordâFulkerson is bounded by 
+  
+    
+      
+        O
+        (
+        E
+        f
+        )
+      
+    
+    {\displaystyle O(Ef)}
+  
+ (see big O notation), where 
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+ is the number of edges in the graph and 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ is the maximum flow in the graph.  This is because each augmenting path can be found in 
+  
+    
+      
+        O
+        (
+        E
+        )
+      
+    
+    {\displaystyle O(E)}
+  
+ time and increases the flow by an integer amount of at least 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+, with the upper bound 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+.
+A variation of the FordâFulkerson algorithm with guaranteed termination and a runtime independent of the maximum flow value is the EdmondsâKarp algorithm, which runs in 
+  
+    
+      
+        O
+        (
+        V
+        
+          E
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(VE^{2})}
+  
+ time.
+
+Integral example[edit]
+The following example shows the first steps of FordâFulkerson in a flow network with 4 nodes, source 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ and sink 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+. This example shows the worst-case behaviour of the algorithm. In each step, only a flow of 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ is sent across the network. If breadth-first-search were used instead, only two steps would be needed.
+
+
+
+
+Path
+
+Capacity
+
+Resulting flow network
+
+
+Initial flow network
+
+
+
+
+
+  
+    
+      
+        A
+        ,
+        B
+        ,
+        C
+        ,
+        D
+      
+    
+    {\displaystyle A,B,C,D}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                min
+                (
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                A
+                ,
+                B
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                B
+                ,
+                C
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                C
+                ,
+                D
+                )
+                )
+              
+            
+            
+              
+                =
+                
+
+                
+              
+              
+                
+                min
+                (
+                c
+                (
+                A
+                ,
+                B
+                )
+                â
+                f
+                (
+                A
+                ,
+                B
+                )
+                ,
+                c
+                (
+                B
+                ,
+                C
+                )
+                â
+                f
+                (
+                B
+                ,
+                C
+                )
+                ,
+                c
+                (
+                C
+                ,
+                D
+                )
+                â
+                f
+                (
+                C
+                ,
+                D
+                )
+                )
+              
+            
+            
+              
+                =
+                
+
+                
+              
+              
+                
+                min
+                (
+                1000
+                â
+                0
+                ,
+                1
+                â
+                0
+                ,
+                1000
+                â
+                0
+                )
+                =
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\min(c_{f}(A,B),c_{f}(B,C),c_{f}(C,D))\\={}&\min(c(A,B)-f(A,B),c(B,C)-f(B,C),c(C,D)-f(C,D))\\={}&\min(1000-0,1-0,1000-0)=1\end{aligned}}}
+  
+
+
+
+
+
+
+  
+    
+      
+        A
+        ,
+        C
+        ,
+        B
+        ,
+        D
+      
+    
+    {\displaystyle A,C,B,D}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                min
+                (
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                A
+                ,
+                C
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                C
+                ,
+                B
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                B
+                ,
+                D
+                )
+                )
+              
+            
+            
+              
+                =
+                
+
+                
+              
+              
+                
+                min
+                (
+                c
+                (
+                A
+                ,
+                C
+                )
+                â
+                f
+                (
+                A
+                ,
+                C
+                )
+                ,
+                c
+                (
+                C
+                ,
+                B
+                )
+                â
+                f
+                (
+                C
+                ,
+                B
+                )
+                ,
+                c
+                (
+                B
+                ,
+                D
+                )
+                â
+                f
+                (
+                B
+                ,
+                D
+                )
+                )
+              
+            
+            
+              
+                =
+                
+
+                
+              
+              
+                
+                min
+                (
+                1000
+                â
+                0
+                ,
+                0
+                â
+                (
+                â
+                1
+                )
+                ,
+                1000
+                â
+                0
+                )
+                =
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\min(c_{f}(A,C),c_{f}(C,B),c_{f}(B,D))\\={}&\min(c(A,C)-f(A,C),c(C,B)-f(C,B),c(B,D)-f(B,D))\\={}&\min(1000-0,0-(-1),1000-0)=1\end{aligned}}}
+  
+
+
+
+
+
+After 1998 more steps ...
+
+
+Final flow network
+
+
+
+Notice how flow is "pushed back" from 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ to 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ when finding the path 
+  
+    
+      
+        A
+        ,
+        C
+        ,
+        B
+        ,
+        D
+      
+    
+    {\displaystyle A,C,B,D}
+  
+.
+
+Non-terminating example[edit]
+
+Consider the flow network shown on the right, with source 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+, sink 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+, capacities of edges 
+  
+    
+      
+        
+          e
+          
+            1
+          
+        
+      
+    
+    {\displaystyle e_{1}}
+  
+, 
+  
+    
+      
+        
+          e
+          
+            2
+          
+        
+      
+    
+    {\displaystyle e_{2}}
+  
+ and 
+  
+    
+      
+        
+          e
+          
+            3
+          
+        
+      
+    
+    {\displaystyle e_{3}}
+  
+ respectively 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+, 
+  
+    
+      
+        r
+        =
+        (
+        
+          
+            5
+          
+        
+        â
+        1
+        )
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle r=({\sqrt {5}}-1)/2}
+  
+ and 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ and the capacity of all other edges some integer 
+  
+    
+      
+        M
+        â¥
+        2
+      
+    
+    {\displaystyle M\geq 2}
+  
+. The constant 
+  
+    
+      
+        r
+      
+    
+    {\displaystyle r}
+  
+ was chosen so, that 
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+        =
+        1
+        â
+        r
+      
+    
+    {\displaystyle r^{2}=1-r}
+  
+. We use augmenting paths according to the following table, where 
+  
+    
+      
+        
+          p
+          
+            1
+          
+        
+        =
+        {
+        s
+        ,
+        
+          v
+          
+            4
+          
+        
+        ,
+        
+          v
+          
+            3
+          
+        
+        ,
+        
+          v
+          
+            2
+          
+        
+        ,
+        
+          v
+          
+            1
+          
+        
+        ,
+        t
+        }
+      
+    
+    {\displaystyle p_{1}=\{s,v_{4},v_{3},v_{2},v_{1},t\}}
+  
+, 
+  
+    
+      
+        
+          p
+          
+            2
+          
+        
+        =
+        {
+        s
+        ,
+        
+          v
+          
+            2
+          
+        
+        ,
+        
+          v
+          
+            3
+          
+        
+        ,
+        
+          v
+          
+            4
+          
+        
+        ,
+        t
+        }
+      
+    
+    {\displaystyle p_{2}=\{s,v_{2},v_{3},v_{4},t\}}
+  
+ and 
+  
+    
+      
+        
+          p
+          
+            3
+          
+        
+        =
+        {
+        s
+        ,
+        
+          v
+          
+            1
+          
+        
+        ,
+        
+          v
+          
+            2
+          
+        
+        ,
+        
+          v
+          
+            3
+          
+        
+        ,
+        t
+        }
+      
+    
+    {\displaystyle p_{3}=\{s,v_{1},v_{2},v_{3},t\}}
+  
+.
+
+
+
+Step
+Augmenting path
+Sent flow
+Residual capacities
+
+
+
+  
+    
+      
+        
+          e
+          
+            1
+          
+        
+      
+    
+    {\displaystyle e_{1}}
+  
+
+
+  
+    
+      
+        
+          e
+          
+            2
+          
+        
+      
+    
+    {\displaystyle e_{2}}
+  
+
+
+  
+    
+      
+        
+          e
+          
+            3
+          
+        
+      
+    
+    {\displaystyle e_{3}}
+  
+
+
+
+0
+
+
+
+  
+    
+      
+        
+          r
+          
+            0
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle r^{0}=1}
+  
+
+
+  
+    
+      
+        r
+      
+    
+    {\displaystyle r}
+  
+
+
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+
+
+
+1
+
+  
+    
+      
+        {
+        s
+        ,
+        
+          v
+          
+            2
+          
+        
+        ,
+        
+          v
+          
+            3
+          
+        
+        ,
+        t
+        }
+      
+    
+    {\displaystyle \{s,v_{2},v_{3},t\}}
+  
+
+
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            0
+          
+        
+      
+    
+    {\displaystyle r^{0}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            1
+          
+        
+      
+    
+    {\displaystyle r^{1}}
+  
+
+
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+
+
+
+2
+
+  
+    
+      
+        
+          p
+          
+            1
+          
+        
+      
+    
+    {\displaystyle p_{1}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            1
+          
+        
+      
+    
+    {\displaystyle r^{1}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle r^{2}}
+  
+
+
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            1
+          
+        
+      
+    
+    {\displaystyle r^{1}}
+  
+
+
+
+3
+
+  
+    
+      
+        
+          p
+          
+            2
+          
+        
+      
+    
+    {\displaystyle p_{2}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            1
+          
+        
+      
+    
+    {\displaystyle r^{1}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle r^{2}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            1
+          
+        
+      
+    
+    {\displaystyle r^{1}}
+  
+
+
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+
+
+
+4
+
+  
+    
+      
+        
+          p
+          
+            1
+          
+        
+      
+    
+    {\displaystyle p_{1}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle r^{2}}
+  
+
+
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            3
+          
+        
+      
+    
+    {\displaystyle r^{3}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle r^{2}}
+  
+
+
+
+5
+
+  
+    
+      
+        
+          p
+          
+            3
+          
+        
+      
+    
+    {\displaystyle p_{3}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle r^{2}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle r^{2}}
+  
+
+
+  
+    
+      
+        
+          r
+          
+            3
+          
+        
+      
+    
+    {\displaystyle r^{3}}
+  
+
+
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+
+
+Note that after step 1 as well as after step 5, the residual capacities of edges 
+  
+    
+      
+        
+          e
+          
+            1
+          
+        
+      
+    
+    {\displaystyle e_{1}}
+  
+, 
+  
+    
+      
+        
+          e
+          
+            2
+          
+        
+      
+    
+    {\displaystyle e_{2}}
+  
+ and 
+  
+    
+      
+        
+          e
+          
+            3
+          
+        
+      
+    
+    {\displaystyle e_{3}}
+  
+ are in the form 
+  
+    
+      
+        
+          r
+          
+            n
+          
+        
+      
+    
+    {\displaystyle r^{n}}
+  
+, 
+  
+    
+      
+        
+          r
+          
+            n
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle r^{n+1}}
+  
+ and 
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+, respectively, for some 
+  
+    
+      
+        n
+        â
+        
+          N
+        
+      
+    
+    {\displaystyle n\in \mathbb {N} }
+  
+. This means that we can use augmenting paths 
+  
+    
+      
+        
+          p
+          
+            1
+          
+        
+      
+    
+    {\displaystyle p_{1}}
+  
+, 
+  
+    
+      
+        
+          p
+          
+            2
+          
+        
+      
+    
+    {\displaystyle p_{2}}
+  
+, 
+  
+    
+      
+        
+          p
+          
+            1
+          
+        
+      
+    
+    {\displaystyle p_{1}}
+  
+ and 
+  
+    
+      
+        
+          p
+          
+            3
+          
+        
+      
+    
+    {\displaystyle p_{3}}
+  
+ infinitely many times and residual capacities of these edges will always be in the same form. Total flow in the network after step 5 is 
+  
+    
+      
+        1
+        +
+        2
+        (
+        
+          r
+          
+            1
+          
+        
+        +
+        
+          r
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle 1+2(r^{1}+r^{2})}
+  
+. If we continue to use augmenting paths as above, the total flow converges to 
+  
+    
+      
+        
+          1
+          +
+          2
+          
+            â
+            
+              i
+              =
+              1
+            
+            
+              â
+            
+          
+          
+            r
+            
+              i
+            
+          
+          =
+          3
+          +
+          2
+          r
+        
+      
+    
+    {\displaystyle \textstyle 1+2\sum _{i=1}^{\infty }r^{i}=3+2r}
+  
+.  However, note that there is a flow of value 
+  
+    
+      
+        2
+        M
+        +
+        1
+      
+    
+    {\displaystyle 2M+1}
+  
+, by sending 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ units of flow along 
+  
+    
+      
+        s
+        
+          v
+          
+            1
+          
+        
+        t
+      
+    
+    {\displaystyle sv_{1}t}
+  
+, 1 unit of flow along 
+  
+    
+      
+        s
+        
+          v
+          
+            2
+          
+        
+        
+          v
+          
+            3
+          
+        
+        t
+      
+    
+    {\displaystyle sv_{2}v_{3}t}
+  
+, and 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ units of flow along 
+  
+    
+      
+        s
+        
+          v
+          
+            4
+          
+        
+        t
+      
+    
+    {\displaystyle sv_{4}t}
+  
+. Therefore, the algorithm never terminates and the flow does not even converge to the maximum flow.[5]
+Another non-terminating example based on the Euclidean algorithm is given by Backman & Huynh (2018), where they also show that the worst case running-time of the Ford-Fulkerson algorithm on a network 
+  
+    
+      
+        G
+        (
+        V
+        ,
+        E
+        )
+      
+    
+    {\displaystyle G(V,E)}
+  
+ in ordinal numbers is 
+  
+    
+      
+        
+          Ï
+          
+            Î
+            (
+            
+              |
+            
+            E
+            
+              |
+            
+            )
+          
+        
+      
+    
+    {\displaystyle \omega ^{\Theta (|E|)}}
+  
+.
+
+
+Python implementation of EdmondsâKarp algorithm[edit]
+import collections
+
+class Graph:
+    """This class represents a directed graph using adjacency matrix representation."""
+
+    def __init__(self, graph):
+        self.graph = graph  # residual graph
+        self.row = len(graph)
+
+    def bfs(self, s, t, parent):
+        """Returns true if there is a path from source 's' to sink 't' in
+        residual graph. Also fills parent[] to store the path."""
+
+        # Mark all the vertices as not visited
+        visited = [False] * self.row
+
+        # Create a queue for BFS
+        queue = collections.deque()
+
+        # Mark the source node as visited and enqueue it
+        queue.append(s)
+        visited[s] = True
+
+        # Standard BFS loop
+        while queue:
+            u = queue.popleft()
+
+            # Get all adjacent vertices of the dequeued vertex u
+            # If an adjacent has not been visited, then mark it
+            # visited and enqueue it
+            for ind, val in enumerate(self.graph[u]):
+                if (visited[ind] == False) and (val > 0):
+                    queue.append(ind)
+                    visited[ind] = True
+                    parent[ind] = u
+
+        # If we reached sink in BFS starting from source, then return
+        # true, else false
+        return visited[t]
+
+    # Returns the maximum flow from s to t in the given graph
+    def edmonds_karp(self, source, sink):
+
+        # This array is filled by BFS and to store path
+        parent = [-1] * self.row
+
+        max_flow = 0  # There is no flow initially
+
+        # Augment the flow while there is path from source to sink
+        while self.bfs(source, sink, parent):
+
+            # Find minimum residual capacity of the edges along the
+            # path filled by BFS. Or we can say find the maximum flow
+            # through the path found.
+            path_flow = float("Inf")
+            s = sink
+            while s != source:
+                path_flow = min(path_flow, self.graph[parent[s]][s])
+                s = parent[s]
+
+            # Add path flow to overall flow
+            max_flow += path_flow
+
+            # update residual capacities of the edges and reverse edges
+            # along the path
+            v = sink
+            while v != source:
+                u = parent[v]
+                self.graph[u][v] -= path_flow
+                self.graph[v][u] += path_flow
+                v = parent[v]
+
+        return max_flow
+
+See also[edit]
+Berge's theorem
+Approximate max-flow min-cut theorem
+Turn restriction routing
+Dinic's algorithm
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Laung-Terng Wang, Yao-Wen Chang, Kwang-Ting (Tim) Cheng (2009). Electronic Design Automation: Synthesis, Verification, and Test. Morgan Kaufmann. pp.Â 204. ISBNÂ 978-0080922003.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ Thomas H. Cormen; Charles E. Leiserson; Ronald L. Rivest; Clifford Stein (2009). Introduction to Algorithms. MIT Press. pp.Â 714. ISBNÂ 978-0262258104.
+
+^ Ford, L. R.; Fulkerson, D. R. (1956). "Maximal flow through a network" (PDF). Canadian Journal of Mathematics. 8: 399â404. doi:10.4153/CJM-1956-045-5.
+
+^ https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.295.9049&rep=rep1&type=pdf
+
+^ Zwick, Uri (21 August 1995). "The smallest networks on which the FordâFulkerson maximum flow procedure may fail to terminate". Theoretical Computer Science. 148 (1): 165â170. doi:10.1016/0304-3975(95)00022-O.
+
+
+References[edit]
+Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2001). "Section 26.2: The FordâFulkerson method". Introduction to Algorithms (SecondÂ ed.). MIT Press and McGrawâHill. pp.Â 651â664. ISBNÂ 0-262-03293-7.
+George T. Heineman; Gary Pollice; Stanley Selkow (2008). "Chapter 8:Network Flow Algorithms". Algorithms in a Nutshell. Oreilly Media. pp.Â 226â250. ISBNÂ 978-0-596-51624-6.
+Jon Kleinberg; Ãva Tardos (2006). "Chapter 7:Extensions to the Maximum-Flow Problem". Algorithm Design. Pearson Education. pp.Â 378â384. ISBNÂ 0-321-29535-8.
+Samuel Gutekunst (2009). ENGRI 1101. Cornell University.
+Backman, Spencer; Huynh, Tony (2018). "Transfinite FordâFulkerson on a finite network". Computability. 7 (4): 341â347. arXiv:1504.04363. doi:10.3233/COM-180082. S2CIDÂ 15497138.
+External links[edit]
+A tutorial explaining the FordâFulkerson method to solve the max-flow problem
+Another Java animation
+Java Web Start application
+ Media related to Ford-Fulkerson's algorithm at Wikimedia Commons
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=FordâFulkerson_algorithm&oldid=1068824858"
+		Categories: Network flow problemGraph algorithmsHidden categories: CS1 maint: multiple names: authors listUse American English from April 2019All Wikipedia articles written in American EnglishArticles with short descriptionShort description is different from WikidataCommons category link from WikidataArticles with example pseudocodeArticles with example Python (programming language) code
+	

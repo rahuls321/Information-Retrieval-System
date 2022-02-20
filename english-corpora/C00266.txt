@@ -1,0 +1,391 @@
+
+Title:
+Semaphore (programming)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about the computer programming term. For other uses, see Semaphore (disambiguation).
+  A semaphore (Dutch: seinpaal, the term used in Dijkstra's original description[1]).
+Variable used in a concurrent system
+In computer science, a semaphore is a variable or abstract data type used to control access to a common resource by multiple threads and avoid critical section problems in a concurrent system such as a multitasking operating system. A trivial semaphore is a plain variable that is changed (for example, incremented or decremented, or toggled) depending on programmer-defined conditions.
+A useful way to think of a semaphore as used in a real-world system is as a record of how many units of a particular resource are available, coupled with operations to adjust that record safely (i.e., to avoid race conditions) as units are acquired or become free, and, if necessary, wait until a unit of the resource becomes available. 
+Semaphores are a useful tool in the prevention of race conditions; however, their use is by no means a guarantee that a program is free from these problems. Semaphores which allow an arbitrary resource count are called counting semaphores, while semaphores which are restricted to the values 0 and 1 (or locked/unlocked, unavailable/available) are called binary semaphores and are used to implement locks.
+The semaphore concept was invented by Dutch computer scientist Edsger Dijkstra in 1962 or 1963,[2] when Dijkstra and his team were developing an operating system for the  Electrologica X8. That system eventually became known as THE multiprogramming system.
+
+Contents
+
+1 Library analogy
+
+1.1 Important observations
+
+
+2 Semantics and implementation
+3 Examples
+
+3.1 Trivial example
+3.2 Login queue
+3.3 Producerâconsumer problem
+
+
+4 Operation names
+5 Semaphores vs. mutexes
+6 See also
+7 References
+8 External links
+
+8.1 Introductions
+8.2 References
+
+
+
+
+
+Library analogy[edit]
+Suppose a library has 10 identical study rooms, to be used by one student at a time. Students must request a room from the front desk if they wish to use a study room. If no rooms are free, students wait at the desk until someone relinquishes a room. When a student has finished using a room, the student must return to the desk and indicate that one room has become free.
+In the simplest implementation, the clerk at the front desk knows only the number of free rooms available, which they only know correctly if all of the students actually use their room while they've signed up for them and return them when they're done. When a student requests a room, the clerk decreases this number. When a student releases a room, the clerk increases this number. The room can be used for as long as desired, and so it is not possible to book rooms ahead of time.
+In this scenario the front desk count-holder represents a counting semaphore, the rooms are the resource, and the students represent processes/threads. The value of the semaphore in this scenario is initially 10, with all rooms empty. When a student requests a room, they are granted access, and the value of the semaphore is changed to 9. After the next student comes, it drops to 8, then 7 and so on. If someone requests a room and the current value of the semaphore is 0,[3] they are forced to wait until a room is freed (when the count is increased from 0). If one of the rooms was released, but there are several students waiting, then any method can be used to select the one who will occupy the room (like FIFO or flipping a coin). And of course, a student needs to inform the clerk about releasing their room only after really leaving it, otherwise, there can be an awkward situation when such student is in the process of leaving the room (they are packing their textbooks, etc.) and another student enters the room before they leave it.
+
+Important observations[edit]
+When used to control access to a pool of resources, a semaphore tracks only how many resources are free; it does not keep track of which of the resources are free. Some other mechanism (possibly involving more semaphores) may be required to select a particular free resource.
+The paradigm is especially powerful because the semaphore count may serve as a useful trigger for a number of different actions. The librarian above may turn the lights off in the study hall when there are no students remaining, or may place a sign that says the rooms are very busy when most of the rooms are occupied.
+The success of the protocol requires applications to follow it correctly. Fairness and safety are likely to be compromised (which practically means a program may behave slowly, act erratically, hang or crash) if even a single process acts incorrectly. This includes:
+
+requesting a resource and forgetting to release it;
+releasing a resource that was never requested;
+holding a resource for a long time without needing it;
+using a resource without requesting it first (or after releasing it).
+Even if all processes follow these rules, multi-resource deadlock may still occur when there are different resources managed by different semaphores and when processes need to use more than one resource at a time, as illustrated by the dining philosophers problem.
+
+Semantics and implementation[edit]
+Counting semaphores are equipped with two operations, historically denoted as P and V (see Â§Â Operation names for alternative names). Operation V increments the semaphore S, and operation P decrements it.
+The value of the semaphore S is the number of units of the resource that are currently available. The P operation wastes time or sleeps until a resource protected by the semaphore becomes available, at which time the resource is immediately claimed. The V operation is the inverse: it makes a resource available again after the process has finished using it.
+One important property of semaphore S is that its value cannot be changed except by using the V and P operations.
+A simple way to understand .mw-parser-output .monospaced{font-family:monospace,monospace}wait (P) and signal (V) operations is:
+
+wait: Decrements the value of semaphore variable by 1. If the new value of the semaphore variable is negative, the process executing wait is blocked (i.e., added to the semaphore's queue). Otherwise, the process continues execution, having used a unit of the resource.
+signal: Increments the value of semaphore variable by 1. After the increment, if the pre-increment value was negative (meaning there are processes waiting for a resource), it transfers a blocked process from the semaphore's waiting queue to the ready queue.
+Many operating systems provide efficient semaphore primitives that unblock a waiting process when the semaphore is incremented. This means that processes do not waste time checking the semaphore value unnecessarily.
+The counting semaphore concept can be extended with the ability to claim or return more than one "unit" from the semaphore, a technique implemented in Unix. The modified V and P operations are as follows, using square brackets to indicate atomic operations, i.e., operations which appear indivisible from the perspective of other processes:
+
+function V(semaphore S, integer I):
+    [S â S + I]
+
+function P(semaphore S, integer I):
+    repeat:
+        [if S â¥ I:
+        S â S â I
+        break]
+
+However, the remainder of this section refers to semaphores with unary V and P operations, unless otherwise specified.
+To avoid starvation, a semaphore has an associated queue of processes (usually with FIFO semantics). If a process performs a P operation on a semaphore that has the value zero, the process is added to the semaphore's queue and its execution is suspended. When another process increments the semaphore by performing a V operation, and there are processes on the queue, one of them is removed from the queue and resumes execution. When processes have different priorities the queue may be ordered by priority, so that the highest priority process is taken from the queue first.
+If the implementation does not ensure atomicity of the increment, decrement and comparison operations, then there is a risk of increments or decrements being forgotten, or of the semaphore value becoming negative. Atomicity may be achieved by using a machine instruction that is able to read, modify and write the semaphore in a single operation. In the absence of such a hardware instruction, an atomic operation may be synthesized through the use of a software mutual exclusion algorithm. On uniprocessor systems, atomic operations can be ensured by temporarily suspending preemption or disabling hardware interrupts. This approach does not work on multiprocessor systems where it is possible for two programs sharing a semaphore to run on different processors at the same time. To solve this problem in a multiprocessor system a locking variable can be used to control access to the semaphore. The locking variable is manipulated using a test-and-set-lock command.
+
+Examples[edit]
+Trivial example[edit]
+Consider a variable A and a boolean variable S. A is only accessed when S is marked true. Thus, S is a semaphore for A.
+One can imagine a stoplight signal (S) just before a train station (A). In this case, if the signal is green, then one can enter the train station. If it is yellow or red (or any other color), the train station cannot be accessed.
+
+Login queue[edit]
+Consider a system that can only support ten users (S=10). Whenever a user logs in, P is called, decrementing the semaphore S by 1. Whenever a user logs out, V is called, incrementing S by 1 representing a login slot that has become available. When S is 0, any users wishing to log in must wait until S increases; the login request is enqueued onto a FIFO queue until a slot is freed. Mutual exclusion is used to ensure that requests are enqueued in order. Whenever S increases (login slots available), a login request is dequeued, and the user owning the request is allowed to log in. If S is already greater than or equal to 0, then login requests are immediately dequeued.
+
+Producerâconsumer problem[edit]
+In the producerâconsumer problem, one process (the producer) generates data items and another process (the consumer) receives and uses them. They communicate using a queue of maximum size N and are subject to the following conditions:
+
+the consumer must wait for the producer to produce something if the queue is empty;
+the producer must wait for the consumer to consume something if the queue is full.
+The semaphore solution to the producerâconsumer problem tracks the state of the queue with two semaphores: emptyCount, the number of empty places in the queue, and fullCount, the number of elements in the queue. To maintain integrity, emptyCount may be lower (but never higher) than the actual number of empty places in the queue, and fullCount may be lower (but never higher) than the actual number of items in the queue. Empty places and items represent two kinds of resources, empty boxes and full boxes, and the semaphores emptyCount and fullCount maintain control over these resources.
+The binary semaphore useQueue ensures that the integrity of the state of the queue itself is not compromised, for example by two producers attempting to add items to an empty queue simultaneously, thereby corrupting its internal state. Alternatively a mutex could be used in place of the binary semaphore.
+The emptyCount is initially N, fullCount is initially 0, and useQueue is initially 1.
+The producer does the following repeatedly:
+
+produce:
+    P(emptyCount)
+    P(useQueue)
+    putItemIntoQueue(item)
+    V(useQueue)
+    V(fullCount)
+
+The consumer does the following repeatedly
+
+consume:
+    P(fullCount)
+    P(useQueue)
+    item â getItemFromQueue()
+    V(useQueue)
+    V(emptyCount)
+
+Below is a substantive example:
+
+A single consumer enters its critical section. Since fullCount is 0, the consumer blocks.
+Several producers enter the producer critical section. No more than N producers may enter their critical section due to emptyCount constraining their entry.
+The producers, one at a time, gain access to the queue through useQueue and deposit items in the queue.
+Once the first producer exits its critical section, fullCount is incremented, allowing one consumer to enter its critical section.
+Note that emptyCount may be much lower than the actual number of empty places in the queue, for example in the case where many producers have decremented it but are waiting their turn on useQueue before filling empty places. Note that emptyCount + fullCount â¤ N  always holds, with equality if and only if no producers or consumers are executing their critical sections.
+
+Operation names[edit]
+The canonical names V and P come from the initials of Dutch words. V is generally explained as verhogen ("increase"). Several explanations have been offered for P, including proberen ("to test" or "to try"),[4] passeren ("pass"), and pakken ("grab"). Dijkstra's earliest paper on the subject[2] gives passering ("passing") as the meaning for P, and vrijgave ("release") as the meaning for V. It also mentions that the terminology is taken from that used in railroad signals. Dijkstra subsequently wrote that he intended P to stand for prolaag,[5] short for probeer te verlagen, literally "try to reduce", or to parallel the terms used in the other case, "try to decrease".[6][7][8]
+In ALGOL 68, the Linux kernel,[9] and in some English textbooks, the V and P operations are called, respectively, up and down. In software engineering practice, they are often called signal and wait,[10] release and acquire[10] (which the standard Java library[11] uses), or post and pend. Some texts[12][13] call them vacate and procure to match the original Dutch initials.
+
+Semaphores vs. mutexes[edit]
+A mutex is a locking mechanism that sometimes uses the same basic implementation as the binary semaphore. The differences between them are in how they are used. While a binary semaphore may be colloquially referred to as a mutex, a true mutex has a more specific use-case and definition, in that only the task that locked the mutex is supposed to unlock it. This constraint aims to handle some potential problems of using semaphores:
+
+Priority inversion: If the mutex knows who locked it and is supposed to unlock it, it is possible to promote the priority of that task whenever a higher-priority task starts waiting on the mutex.
+Premature task termination: Mutexes may also provide deletion safety, where the task holding the mutex cannot be accidentally deleted.[citation needed]
+Termination deadlock: If a mutex-holding task terminates for any reason, the OS can release the mutex and signal waiting tasks of this condition.
+Recursion deadlock: a task is allowed to lock a reentrant mutex multiple times as it unlocks it an equal number of times.
+Accidental release: An error is raised on the release of the mutex if the releasing task is not its owner.
+See also[edit]
+Cigarette smokers problem
+Dining philosophers problem
+Readers-writers problem
+Sleeping barber problem
+Monitor
+Spurious wakeup
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Dijkstra, Edsger W. Over seinpalen (EWD-74) (PDF). E.W. Dijkstra Archive. Center for American History, University of Texas at Austin. (transcription)
+
+^ Jump up to: a b Dijkstra, Edsger W. Over de sequentialiteit van procesbeschrijvingen (EWD-35) (PDF). E.W. Dijkstra Archive. Center for American History, University of Texas at Austin. (transcription) (undated, 1962 or 1963)
+
+^ The Little Book of Semaphores Allen B. Downey
+
+^ Silberschatz, Galvin & Gagne 2008, p.Â 234 harvnb error: no target: CITEREFSilberschatzGalvinGagne2008 (help)
+
+^ Dijkstra, Edsger W. EWD-74 (PDF). E.W. Dijkstra Archive. Center for American History, University of Texas at Austin. (transcription)
+
+^ Dijkstra, Edsger W. MULTIPROGAMMERING EN DE X8 (EWD-51) (PDF). E.W. Dijkstra Archive. Center for American History, University of Texas at Austin. (transcription) (in Dutch)
+
+^ Dijkstra's own translation reads "try-and-decrease", although that phrase might be confusing for those unaware of the colloquial "try-and..."
+
+^ (PATCH 1/19) MUTEX: Introduce simple mutex implementation Linux Kernel Mailing List, 19 December 2005
+
+^ Linux Kernel hacking HOWTO LinuxGrill.com
+
+^ Jump up to: a b Mullender, Sape; Cox, Russ (2008). Semaphores in Plan 9 (PDF). 3rd International Workshop on Plan 9.
+
+^ java.util.concurrent.Semaphore
+
+^ "exec.library/Procure". amigadev.elowar.com. Retrieved 2016-09-19.
+
+^ "exec.library/Vacate". amigadev.elowar.com. Retrieved 2016-09-19.
+
+
+External links[edit]
+Introductions[edit]
+Hilsheimer, Volker (2004). "Implementing a Read/Write Mutex" (Web page). Qt Quarterly, Issue 11 - Q3 2004
+Zelenski, Julie; Parlante, Nick. "Thread and Semaphore Examples" (pdf). Handout. CS107 Programming Paradigms. Stanford Engineering Everwhere (SEE). Spring 2008 (23).
+References[edit]
+Dijkstra, Edsger W. Cooperating sequential processes (EWD-123) (PDF). E.W. Dijkstra Archive. Center for American History, University of Texas at Austin. (transcription) (September 1965)
+"semaphore.h - semaphores (REALTIME)". The Open Group Base Specifications Issue 6 IEEE Std 1003.1, 2004 Edition. Open Group. 2004.
+Downey, Allen B. (2016) [2005]. "The Little Book of Semaphores" (2ndÂ ed.). Green Tea Press.
+LeppÃ¤jÃ¤rvi, Jouni (May 11, 2008). "A pragmatic, historically oriented survey on the universality of synchronization primitives" (pdf). University of Oulu, Finland.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+vteEdsger DijkstraNotableworks
+A Primer of ALGOL 60 Programming (book)
+Structured Programming (book)
+A Discipline of Programming (book)
+A Method of Programming (book)
+Predicate Calculus and Program Semantics (book)
+Selected Writings on Computing: A Personal Perspective (book)
+A Note on Two Problems in Connexion with Graphs
+Cooperating Sequential Processes
+Solution of a Problem in Concurrent Programming Control
+The Structure of the 'THE'-Multiprogramming System
+Go To Statement Considered Harmful
+Notes on Structured Programming
+The Humble Programmer
+Programming Considered as a Human Activity
+How Do We Tell Truths That Might Hurt?
+On the Role of Scientific Thought
+Self-stabilizing Systems in Spite of Distributed Control
+On the Cruelty of Really Teaching Computer Science
+Selected papers
+EWD manuscripts
+Main researchareas
+Theoretical computing science
+Software engineering
+Systems science
+Algorithm design
+Concurrent computing
+Distributed computing
+Formal methods
+Programming methodology
+Programming language research
+Program design and development
+Software architecture
+Philosophy of computer programming and computing science
+ScientificcontributionsConcepts,methods,principlesand theories
+DijkstraâZonneveld ALGOL 60 compiler (first complete working ALGOL 60 compiler)
+Call stack
+Concurrency
+Concurrent programming
+Cooperating sequential processes
+Critical section
+Deadly embrace (deadlock)
+Dining philosophers problem
+Dutch national flag problem
+Fault-tolerant system
+Goto-less programming
+Guarded Command Language
+Layered structure in software architecture
+Levels of abstraction
+Multithreaded programming
+Mutual exclusion (mutex)
+Producerâconsumer problem (bounded buffer problem)
+Program families
+Predicate transformer semantics
+Process synchronization
+Self-stabilizing distributed system
+Semaphore (programming)
+Separation of concerns
+Sleeping barber problem
+Software crisis
+Structured analysis
+Structured programming
+THE multiprogramming system
+Unbounded nondeterminism
+Weakest precondition calculus
+Algorithms
+Banker's algorithm
+Dijkstra's algorithm
+DJP algorithm (Prim's algorithm)
+Dijkstra-Scholten algorithm
+Dekker's algorithm (generalization)
+Smoothsort
+Shunting-yard algorithm
+Tri-color marking algorithm
+Concurrent algorithms
+Distributed algorithms
+Deadlock prevention algorithms
+Mutual exclusion algorithms
+Self-stabilizing algorithms
+Relatedpeople
+Shlomi Dolev
+Per Brinch Hansen
+Tony Hoare
+Ole-Johan Dahl
+Leslie Lamport
+David Parnas
+Jaap Zonneveld
+Carel S. Scholten 
+Adriaan van Wijngaarden
+Niklaus Wirth
+Othertopics
+Centrum Wiskunde & Informatica (CWI Amsterdam)
+Electrologica X1
+Electrologica X8
+Dijkstra Prize (Edsger W. Dijkstra Prize in Distributed Computing)
+Dijkstra Fellowship
+International Symposium on Stabilization, Safety, and Security of Distributed Systems
+E.W. Dijkstra Archive (University of Texas at Austin)
+List of important publications in computer science
+List of important publications in theoretical computer science
+List of important publications in concurrent, parallel, and distributed computing
+List of pioneers in computer science
+List of people considered father or mother of a technical field
+
+ Wikiquote
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Semaphore_(programming)&oldid=1055451319"
+		Categories: Concurrency controlEdsger W. DijkstraDutch inventionsHidden categories: Harv and Sfn no-target errorsArticles containing Dutch-language textArticles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from May 2019CS1: long volume value
+	

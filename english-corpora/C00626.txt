@@ -1,0 +1,1043 @@
+
+Title:
+Consistent hashing
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In computer science, consistent hashing[1][2] is a special kind of hashing technique such that when a hash table is resized, only 
+  
+    
+      
+        n
+        
+          /
+        
+        m
+      
+    
+    {\displaystyle n/m}
+  
+ keys need to be remapped on average where 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ is the number of keys and 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ is the number of slots. In contrast, in most traditional hash tables, a change in the number of array slots causes nearly all keys to be remapped because the mapping between the keys and the slots is defined by a modular operation.
+
+Contents
+
+1 History
+2 Basic Technique
+
+2.1 Implementation
+2.2 Reduction variance
+
+
+3 Practical Extensions
+4 Comparison with Rendezvous Hashing and other alternatives
+5 Complexity
+6 Examples
+7 References
+8 External links
+
+
+
+History[edit]
+The term "consistent hashing" was introduced by David Karger et al. at MIT for use in distributed caching, particularly for the web.[3] This academic paper from 1997 in Symposium on Theory of Computing introduced the term "consistent hashing" as a way of distributing requests among a changing population of web servers.[4] Each slot is then represented by a server in a distributed system or cluster. The addition of a server and the removal of a server (during scalability or outage) requires only 
+  
+    
+      
+        n
+        u
+        m
+        _
+        k
+        e
+        y
+        s
+        
+          /
+        
+        n
+        u
+        m
+        _
+        s
+        l
+        o
+        t
+        s
+      
+    
+    {\displaystyle num\_keys/num\_slots}
+  
+ items to be re-shuffled when the number of slots (i.e. servers) change. The authors mention linear hashing and its ability to handle sequential server addition and removal, while consistent hashing allows servers to be added and removed in an arbitrary order.
+[1] The paper was later re-purposed to address technical challenge of keeping track of a file in peer-to-peer networks such as a distributed hash table.[5][6]
+Teradata used this technique in their distributed database, released in 1986, although they did not use this term. Teradata still uses the concept of a hash table to fulfill exactly this purpose. Akamai Technologies was founded in 1998 by the scientists Daniel Lewin and F. Thomson Leighton (co-authors of the article coining "consistent hashing"). In Akamai's content delivery network,[7] consistent hashing is used to balance the load within a cluster of servers, while a stable marriage algorithm is used to balance load across clusters.[2]
+Consistent hashing has also been used to reduce the impact of partial system failures in large web applications to provide robust caching without incurring the system-wide fallout of a failure.[8] Consistent hashing is also the cornerstone of distributed hash tables (DHTs), which employ hash values to partition a keyspace across a distributed set of nodes, then construct an overlay network of connected nodes that provide efficient node retrieval by key.
+Rendezvous hashing, designed in 1996, is a simpler and more general technique[citation needed]. It achieves the goals of consistent hashing using the very different highest random weight (HRW) algorithm.
+
+Basic Technique[edit]
+  In this case, using consistent hashing would result in the "BLOB" getting stored server 139. A BLOB is mapped to the next server that appears on the circle in clockwise order until it reaches a server which is 
+  
+    
+      
+        Î¶
+        â¤
+        
+          server ID
+        
+      
+    
+    {\displaystyle \zeta \leq {\text{server ID}}}
+  
+
+In the problem of load balancing, for example, when a BLOB object has to be assigned to one of 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ servers on a cluster, a standard hash function could be used in such a way that we calculate the hash value for that BLOB, assuming the resultant value of the hash is 
+  
+    
+      
+        Î²
+      
+    
+    {\displaystyle \beta }
+  
+, we perform modular operation with the number of servers (
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ in this case) to determine the server in which we can place the BLOB: 
+  
+    
+      
+        Î¶
+        =
+        Î²
+        Â 
+        %
+        Â 
+        n
+      
+    
+    {\displaystyle \zeta =\beta \ \%\ n}
+  
+; hence the BLOB will be placed in the server whose 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+ is successor of 
+  
+    
+      
+        Î¶
+      
+    
+    {\displaystyle \zeta }
+  
+ in this case. However, when a server is added or removed during outage or scaling (when 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ changes), all the BLOBs in every server should be reassigned and moved due to rehashing, but this operation is expensive.
+Consistent hashing was designed to avoid the problem of having to reassign every BLOB when a server is added or removed throughout the cluster. The central idea is, we use a hash function that randomly maps both the BLOB and servers to a unit circle, usually 
+  
+    
+      
+        2
+        Ï
+      
+    
+    {\displaystyle 2\pi }
+  
+ radians. For example, 
+  
+    
+      
+        Î¶
+        =
+        Î¦
+        Â 
+        %
+        Â 
+        360
+      
+    
+    {\displaystyle \zeta =\Phi \ \%\ 360}
+  
+ (where 
+  
+    
+      
+        Î¦
+      
+    
+    {\displaystyle \Phi }
+  
+ is hash of a BLOB or server's identifier, like IP address or UUID). Each BLOB is then assigned to the next server that appears on the circle in clockwise order. Usually, binary search algorithm or linear search is used to find a "spot" or server to place that particular BLOB in 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        N
+        )
+      
+    
+    {\displaystyle O(\log N)}
+  
+ or 
+  
+    
+      
+        O
+        (
+        N
+        )
+      
+    
+    {\displaystyle O(N)}
+  
+ complexities respectively; and in every iteration, which happens in clockwise manner, an operation 
+  
+    
+      
+        Î¶
+        Â 
+        â¤
+        Â 
+        Î¨
+      
+    
+    {\displaystyle \zeta \ \leq \ \Psi }
+  
+ (where 
+  
+    
+      
+        Î¨
+      
+    
+    {\displaystyle \Psi }
+  
+ is the value of the server within the cluster) is performed to find the server to place the BLOB. This provides an even distribution of BLOBs to servers. But, more importantly, if a server fails and is removed from the circle, only the BLOBs that were mapped to the failed server need to be reassigned to the next server in clockwise order. Likewise, if a new server is added, it is added to the unit circle, and only the BLOBs mapped to that server need to be reassigned. 
+Importantly, when a server is added or removed, the vast majority of the BLOBs maintain their prior server assignments, and the addition of 
+  
+    
+      
+        
+          n
+          
+            t
+            h
+          
+        
+      
+    
+    {\displaystyle n^{th}}
+  
+ server only causes 
+  
+    
+      
+        1
+        
+          /
+        
+        n
+      
+    
+    {\displaystyle 1/n}
+  
+ fraction of the BLOBs to relocate. Although the process of moving BLOBs across cache servers in the cluster depends on the context, commonly, the newly added cache server identifies its âsuccessorâ and moves all the BLOBs, whose mapping belongs to this server (i.e. whose hash value is less than that of the new server), from it. However, in the case of web page caches, in most implementations there is no involvement of moving or copying, assuming the cached BLOB is small enough. When a request hits a newly added cache server, a cache miss happens and a request to the actual web server is made and the BLOB is cached locally for future requests. The redundant BLOBs on the previously used cache servers would be removed as per the cache eviction policies.[9]
+
+Implementation[edit]
+Let 
+  
+    
+      
+        
+          h
+          
+            b
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle h_{b}(x)}
+  
+ and 
+  
+    
+      
+        
+          h
+          
+            s
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle h_{s}(x)}
+  
+ be the hash functions used for the BLOB and server's unique identifier respectively. In practice, a binary search tree (BST) is used to dynamically maintain the 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+ within a cluster or hashring, and to find the successor or minimum within the BST, tree traversal is used.
+
+Inserting 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ into the cluster
+Let 
+  
+    
+      
+        Î²
+      
+    
+    {\displaystyle \beta }
+  
+ be the hash value of a BLOB such that, 
+  
+    
+      
+        
+          h
+          
+            b
+          
+        
+        (
+        x
+        )
+        =
+        Î²
+        Â 
+        %
+        Â 
+        360
+      
+    
+    {\displaystyle h_{b}(x)=\beta \ \%\ 360}
+  
+ where 
+  
+    
+      
+        x
+        â
+        
+          B
+          L
+          O
+          B
+        
+      
+    
+    {\displaystyle x\in \mathrm {BLOB} }
+  
+ and 
+  
+    
+      
+        
+          h
+          
+            b
+          
+        
+        (
+        x
+        )
+        =
+        Î¶
+      
+    
+    {\displaystyle h_{b}(x)=\zeta }
+  
+. To insert 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+, find the successor of 
+  
+    
+      
+        Î¶
+      
+    
+    {\displaystyle \zeta }
+  
+ in the BST of 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+s. If 
+  
+    
+      
+        Î¶
+      
+    
+    {\displaystyle \zeta }
+  
+ is larger than all of the 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+s, the BLOB is placed in the server with smallest 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+ value.
+Deleting 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ from the cluster
+Find the successor of 
+  
+    
+      
+        Î¶
+      
+    
+    {\displaystyle \zeta }
+  
+ in the BST, remove the BLOB from the returned 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+. If 
+  
+    
+      
+        Î¶
+      
+    
+    {\displaystyle \zeta }
+  
+ has no successor, remove the BLOB from the smallest of the 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+s.[10]
+Insert a server into cluster
+Let 
+  
+    
+      
+        Î¦
+      
+    
+    {\displaystyle \Phi }
+  
+ be the hash value of a server's identifier such that, 
+  
+    
+      
+        
+          h
+          
+            s
+          
+        
+        (
+        x
+        )
+        =
+        Î¦
+        Â 
+        %
+        Â 
+        360
+      
+    
+    {\displaystyle h_{s}(x)=\Phi \ \%\ 360}
+  
+ where 
+  
+    
+      
+        x
+        â
+        {
+        
+          IP address, UUID
+        
+        }
+      
+    
+    {\displaystyle x\in \{{\text{IP address, UUID}}\}}
+  
+ and 
+  
+    
+      
+        
+          h
+          
+            s
+          
+        
+        (
+        x
+        )
+        =
+        Î¸
+      
+    
+    {\displaystyle h_{s}(x)=\theta }
+  
+. Move all the BLOBs, whose hash value is smaller than 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+, from the server whose 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+ is successor of 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+. If 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+ is largest of all the 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+s, move the relevant BLOBs from the smallest of the 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+s into 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+.[11]
+Delete a server from cluster
+Find the successor of 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+ in the BST, move the BLOBs from 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+ into its successor server. If 
+  
+    
+      
+        Î¸
+      
+    
+    {\displaystyle \theta }
+  
+ doesn't have a successor, move the BLOBs into the smallest of the 
+  
+    
+      
+        
+          server ID
+        
+      
+    
+    {\displaystyle {\text{server ID}}}
+  
+s.[12]
+Reduction variance[edit]
+To avoid skewness of multiple nodes within the radian, which happen due to lack of randomness in the distribution of the servers within the cluster, multiple labels are used. Those duplicate labels are called âvirtual nodesâ i.e. multiple labels which point to a single ârealâ label or server within the cluster. The amount of virtual nodes or duplicate labels used for a particular server within a cluster is called the âweightâ of that particular server.[13]
+
+Practical Extensions[edit]
+A number of extensions to the basic technique are needed for effectively using consistent hashing for load balancing in practice. In the basic scheme above, if a server fails, all its BLOBs are reassigned to the next server in clockwise order, potentially doubling the load of that server. This may not be desirable. To ensure a more even redistribution of BLOBs on server failure, each server can be hashed to multiple locations on the unit circle. When a server fails, the BLOBs assigned to each of its replicas on the unit circle will get reassigned to a different server in clockwise order, thus redistributing the BLOBs more evenly. Another extension concerns a situation where a single BLOB gets "hot" and is accessed a large number of times and will have to be hosted in multiple servers. In this situation, the BLOB may be assigned to multiple contiguous servers by traversing the unit circle in clockwise order. A more complex practical consideration arises when two BLOBs are hashed near each other in the unit circle and both get "hot" at the same time. In this case, both BLOBs will use the same set of contiguous servers in the unit circle. This situation can be ameliorated by each BLOB choosing a different hash function for mapping servers to the unit circle.[2]
+
+Comparison with Rendezvous Hashing and other alternatives[edit]
+Rendezvous hashing, designed in 1996, is a simpler and more general technique, and permits fully distributed agreement on a set of 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ options out of a possible set of 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ options. It can in fact be shown that consistent hashing is a special case of rendezvous hashing. Because of its simplicity and generality, Rendezvous Hashing is now being used in place of Consistent Hashing in many applications.
+If key values will always increase monotonically, an alternative approach using a hash table with monotonic keys may be more suitable than consistent hashing.[citation needed]
+
+Complexity[edit]
+
+Asymptotic time complexities for 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ nodes (or slots) and 
+  
+    
+      
+        K
+      
+    
+    {\displaystyle K}
+  
+ keys
+
+
+
+
+Classic hash table
+
+Consistent hashing
+
+
+add a node
+
+
+  
+    
+      
+        O
+        (
+        K
+        )
+      
+    
+    {\displaystyle O(K)}
+  
+
+
+
+  
+    
+      
+        O
+        (
+        K
+        
+          /
+        
+        N
+        +
+        log
+        â¡
+        N
+        )
+      
+    
+    {\displaystyle O(K/N+\log N)}
+  
+
+
+
+remove a node
+
+
+  
+    
+      
+        O
+        (
+        K
+        )
+      
+    
+    {\displaystyle O(K)}
+  
+
+
+
+  
+    
+      
+        O
+        (
+        K
+        
+          /
+        
+        N
+        +
+        log
+        â¡
+        N
+        )
+      
+    
+    {\displaystyle O(K/N+\log N)}
+  
+
+
+
+add a key
+
+
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+
+
+
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        N
+        )
+      
+    
+    {\displaystyle O(\log N)}
+  
+
+
+
+remove a key
+
+
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+
+
+
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        N
+        )
+      
+    
+    {\displaystyle O(\log N)}
+  
+
+
+The 
+  
+    
+      
+        O
+        (
+        K
+        
+          /
+        
+        N
+        )
+      
+    
+    {\displaystyle O(K/N)}
+  
+ is an average cost for redistribution of keys and the 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        N
+        )
+      
+    
+    {\displaystyle O(\log N)}
+  
+ complexity for consistent hashing comes from the fact that a binary search among nodes angles is required to find the next node on the ring.[citation needed]
+
+Examples[edit]
+Known examples of consistent hashing use include:
+
+Couchbase automated data partitioning [14]
+OpenStack's Object Storage Service Swift[15]
+Partitioning component of Amazon's storage system Dynamo[16]
+Data partitioning in Apache Cassandra[17]
+Data partitioning in Voldemort[18]
+Akka's consistent hashing router[19]
+Riak, a distributed key-value database[20]
+Gluster, a network-attached storage file system[21]
+Akamai content delivery network[22]
+Discord chat application[23]
+Maglev network load balancer[24]
+Data partitioning in Azure Cosmos DB
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Karger, D.; Lehman, E.; Leighton, T.; Panigrahy, R.; Levine, M.; Lewin, D. (1997). Consistent Hashing and Random Trees: Distributed Caching Protocols for Relieving Hot Spots on the World Wide Web. Proceedings of the Twenty-ninth Annual ACM Symposium on Theory of Computing. ACM Press New York, NY, USA. pp.Â 654â663. doi:10.1145/258533.258660.
+
+^ Jump up to: a b c Bruce Maggs and Ramesh Sitaraman (2015). "Algorithmic nuggets in content delivery" (PDF). ACM SIGCOMM Computer Communication Review. 45 (3).
+
+^ Roughgarden & Valiant 2021, p.Â 2.
+
+^ Roughgarden & Valiant 2021, p.Â 7.
+
+^ Roughgarden & Valiant 2021, p.Â 8.
+
+^ I. Stoica et al., "Chord: a scalable peer-to-peer lookup protocol for Internet applications," in IEEE/ACM Transactions on Networking, vol. 11, no. 1, pp. 17-32, Feb. 2003, doi: 10.1109/TNET.2002.808407.
+
+^ Nygren., E.; Sitaraman R. K.; Sun, J. (2010). "The Akamai Network: A Platform for High-Performance Internet Applications" (PDF). ACM SIGOPS Operating Systems Review. 44 (3): 2â19. doi:10.1145/1842733.1842736. S2CIDÂ 207181702. Archived (PDF) from the original on September 13, 2012. Retrieved November 19, 2012.
+
+^ Karger, D.; Sherman, A.; Berkheimer, A.; Bogstad, B.; Dhanidina, R.; Iwamoto, K.; Kim, B.; Matkins, L.; Yerushalmi, Y. (1999). "Web Caching with Consistent Hashing". Computer Networks. 31 (11): 1203â1213. doi:10.1016/S1389-1286(99)00055-9. Archived from the original on 2008-07-21. Retrieved 2008-02-05.
+
+^ Roughgarden & Valiant 2021, p.Â 6.
+
+^ Moitra 2016, p.Â 2.
+
+^ Moitra 2016, p.Â 2-3.
+
+^ Moitra 2016, p.Â 3.
+
+^ Roughgarden & Valiant 2021, p.Â 6-7.
+
+^ "What Exactly Is Membase?". Retrieved 2020-10-29.
+
+^ Holt, Greg (February 2011). "Building a Consistent Hashing Ring". openstack.org. Retrieved 2019-11-17.
+
+^ DeCandia, G.; Hastorun, D.; Jampani, M.; Kakulapati, G.; Lakshman, A.; Pilchin, A.; Sivasubramanian, S.; Vosshall, P.; Vogels, Werner (2007). "Dynamo: Amazon's Highly Available Key-Value Store" (PDF). Proceedings of the 21st ACM Symposium on Operating Systems Principles. 41 (6): 205â220. doi:10.1145/1323293.1294281. Retrieved 2018-06-07.
+
+^ Lakshman, Avinash; Malik, Prashant (2010). "Cassandra: a decentralized structured storage system". ACM SIGOPS Operating Systems Review. 44 (2): 35â40. doi:10.1145/1773912.1773922.
+
+^ "Design -- Voldemort". www.project-voldemort.com/. Archived from the original on 9 February 2015. Retrieved 9 February 2015. Consistent hashing is a technique that avoids these problems, and we use it to compute the location of each key on the cluster.
+
+^ "Akka Routing". akka.io. Retrieved 2019-11-16.
+
+^ "Riak Concepts". Archived from the original on 2015-09-19. Retrieved 2016-12-06.
+
+^ "GlusterFS Algorithms: Distribution". gluster.org. 2012-03-01. Retrieved 2019-11-16.
+
+^ Roughgarden, Tim; Valiant, Gregory (2016-03-28). "Modern Algorithmic Toolbox" (PDF). stanford.edu. Retrieved 2019-11-17.
+
+^ Vishnevskiy, Stanislav (2017-07-06). "How Discord Scaled Elixir to 5,000,000 Concurrent Users". Retrieved 2019-11-17.
+
+^ Eisenbud, Daniel E.; Yi, Cheng; Contavalli, Carlo; Smith, Cody; Kononov, Roman; Mann-Hielscher, Eric; Cilingiroglu, Ardas; Cheyney, Bin; Shang, Wentao; Hosein, Jinnah Dylan. "Maglev: A Fast and Reliable Software Network Load Balancer" (PDF). Retrieved 2019-11-17.
+
+
+
+
+Roughgarden, Tim; Valiant, Gregory (28 March 2021). "The Modern Algorithmic Toolbox, Introduction to Consistent Hashing" (PDF). Stanford University. Archived (PDF) from the original on 25 July 2021. Retrieved 7 October 2021.
+Moitra, Ankur (10 February 2016). "Advanced Algorithms, 6.854" (PDF). Massachusetts Institute of Technology. Archived (PDF) from the original on 13 April 2021. Retrieved 8 October 2021.
+External links[edit]
+Understanding Consistent hashing
+Consistent hashing by Michael Nielsen on June 3, 2009
+Consistent Hashing, Danny Lewin, and the Creation of Akamai
+Jump Consistent Hashing: A Fast, Minimal Memory, Consistent Hash Algorithm
+Rendezvous Hashing: an alternative to Consistent Hashing
+Implementations in various languages:
+C
+C++
+C#
+Erlang
+Go
+Java
+PHP
+Ruby
+Python
+Python (again)
+Perl
+Perl6
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Consistent_hashing&oldid=1069411656"
+		Categories: HashingHidden categories: All articles with unsourced statementsArticles with unsourced statements from April 2021Articles with unsourced statements from October 2019
+	

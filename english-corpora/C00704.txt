@@ -1,0 +1,1420 @@
+
+Title:
+LL parser
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		a top-down parser that parses input from left to right
+In computer science, an LL parser (Left-to-right, leftmost derivation) is a top-down parser for a restricted context-free language. It parses the input from Left to right, performing Leftmost derivation of the sentence.
+An LL parser is called an LL(k) parser if it uses k tokens of lookahead when parsing a sentence. A grammar is called an LL(k) grammar if an LL(k) parser can be constructed from it. A formal language is called an LL(k) language if it has an LL(k) grammar. The set of LL(k) languages is properly contained in that of LL(k+1) languages, for each kÂ â¥Â 0.[1] A corollary of this is that not all context-free languages can be recognized by an LL(k) parser. 
+An LL parser is called LL-regular if it parses precisely the class of LL-regular languages.[clarification needed][2][3][4] LLR grammars are a proper superset of LL(k) grammars for any k. For every LLR grammar there exists an LLR parser that parses the grammar in linear time.
+Two nomenclative outlier parser types are LL(*) and LL(finite). A parser is called LL(*)/LL(finite) if it uses the LL(*)/LL(finite) parsing strategy. [5][6] LL(*) and LL(finite) parsers are functionally more closely resemblant to PEG parsers. An LL(finite) parser can parse an arbitrary LL(k) grammar optimally in the amount of lookahead and lookahead comparisons. The class of grammars parsable by the LL(*) strategy encompasses some context-sensitive languages due to the use of syntactic and semantic predicates and has not been identified. It has been suggested that LL(*) parsers are better thought of as TDPL parsers.[7]
+Against the popular misconception, LL(*) parsers are not LLR in general, and are guaranteed by construction to perform worse on average (super-linear against linear time) and far worse in the worst-case (exponential against linear time).
+LL grammars, particularly LL(1) grammars, are of great practical interest, as parsers for these grammars are easy to construct, and many computer languages are designed to be LL(1) for this reason.[8] LL parsers are table-based parsers,[citation needed] similar to LR parsers. LL grammars can also be parsed by recursive descent parsers. According to Waite and Goos (1984),[9] LL(k) grammars were introduced by Stearns and Lewis (1969).[10]
+
+Contents
+
+1 Overview
+2 Parser
+3 Concrete example
+
+3.1 Set up
+3.2 Parsing procedure
+3.3 Parser implementation in C++
+3.4 Parser implementation in Python
+
+
+4 Remarks
+5 Constructing an LL(1) parsing table
+6 Constructing an LL(k) parsing table
+7 Conflicts
+
+7.1 Terminology
+7.2 LL(1) conflicts
+
+7.2.1 FIRST/FIRST conflict
+
+7.2.1.1 Special case: left recursion
+
+
+7.2.2 FIRST/FOLLOW conflict
+
+
+7.3 Solutions to LL(1) conflicts
+
+7.3.1 Left factoring
+7.3.2 Substitution
+7.3.3 Left recursion removal
+
+
+
+
+8 See also
+9 Notes
+10 External links
+
+
+
+Overview[edit]
+For a given context-free grammar, the parser attempts to find the leftmost derivation.
+Given an example grammar 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+:
+
+
+  
+    
+      
+        S
+        â
+        E
+      
+    
+    {\displaystyle S\to E}
+  
+
+
+  
+    
+      
+        E
+        â
+        (
+        E
+        +
+        E
+        )
+      
+    
+    {\displaystyle E\to (E+E)}
+  
+
+
+  
+    
+      
+        E
+        â
+        i
+      
+    
+    {\displaystyle E\to i}
+  
+
+the leftmost derivation for 
+  
+    
+      
+        w
+        =
+        (
+        (
+        i
+        +
+        i
+        )
+        +
+        i
+        )
+      
+    
+    {\displaystyle w=((i+i)+i)}
+  
+ is:
+
+
+  
+    
+      
+        S
+        Â 
+        
+          
+            â
+            
+              (
+              1
+              )
+            
+          
+        
+        Â 
+        E
+        Â 
+        
+          
+            â
+            
+              (
+              2
+              )
+            
+          
+        
+        Â 
+        (
+        E
+        +
+        E
+        )
+        Â 
+        
+          
+            â
+            
+              (
+              2
+              )
+            
+          
+        
+        Â 
+        (
+        (
+        E
+        +
+        E
+        )
+        +
+        E
+        )
+        Â 
+        
+          
+            â
+            
+              (
+              3
+              )
+            
+          
+        
+        Â 
+        (
+        (
+        i
+        +
+        E
+        )
+        +
+        E
+        )
+        Â 
+        
+          
+            â
+            
+              (
+              3
+              )
+            
+          
+        
+        Â 
+        (
+        (
+        i
+        +
+        i
+        )
+        +
+        E
+        )
+        Â 
+        
+          
+            â
+            
+              (
+              3
+              )
+            
+          
+        
+        Â 
+        (
+        (
+        i
+        +
+        i
+        )
+        +
+        i
+        )
+      
+    
+    {\displaystyle S\ {\overset {(1)}{\Rightarrow }}\ E\ {\overset {(2)}{\Rightarrow }}\ (E+E)\ {\overset {(2)}{\Rightarrow }}\ ((E+E)+E)\ {\overset {(3)}{\Rightarrow }}\ ((i+E)+E)\ {\overset {(3)}{\Rightarrow }}\ ((i+i)+E)\ {\overset {(3)}{\Rightarrow }}\ ((i+i)+i)}
+  
+
+Generally, there are multiple possibilities when selecting a rule to expand the leftmost non-terminal. In step 2 of the previous example, the parser must choose whether to apply rule 2 or rule 3:
+
+
+  
+    
+      
+        S
+        Â 
+        
+          
+            â
+            
+              (
+              1
+              )
+            
+          
+        
+        Â 
+        E
+        Â 
+        
+          
+            â
+            
+              (
+              ?
+              )
+            
+          
+        
+        Â 
+        ?
+      
+    
+    {\displaystyle S\ {\overset {(1)}{\Rightarrow }}\ E\ {\overset {(?)}{\Rightarrow }}\ ?}
+  
+
+To be efficient, the parser must be able to make this choice deterministically when possible, without backtracking. For some grammars, it can do this by peeking on the unread input (without reading). In our example, if the parser knows that the next unread symbol is 
+  
+    
+      
+        (
+      
+    
+    {\displaystyle (}
+  
+ , the only correct rule that can be used is 2.
+Generally, an 
+  
+    
+      
+        L
+        L
+        (
+        k
+        )
+      
+    
+    {\displaystyle LL(k)}
+  
+ parser can look ahead at 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ symbols. However, given a grammar, the problem of determining if there exists a 
+  
+    
+      
+        L
+        L
+        (
+        k
+        )
+      
+    
+    {\displaystyle LL(k)}
+  
+ parser for some 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ that recognizes it is undecidable. For each 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+, there is a language that cannot be recognized by an 
+  
+    
+      
+        L
+        L
+        (
+        k
+        )
+      
+    
+    {\displaystyle LL(k)}
+  
+ parser, but can be by an 
+  
+    
+      
+        L
+        L
+        (
+        k
+        +
+        1
+        )
+      
+    
+    {\displaystyle LL(k+1)}
+  
+.
+We can use the above analysis to give the following formal definition:
+Let 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ be a context-free grammar and 
+  
+    
+      
+        k
+        â¥
+        1
+      
+    
+    {\displaystyle k\geq 1}
+  
+. We say that 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ is 
+  
+    
+      
+        L
+        L
+        (
+        k
+        )
+      
+    
+    {\displaystyle LL(k)}
+  
+, if and only if for any two leftmost derivations:
+
+
+  
+    
+      
+        S
+        Â 
+        â
+        Â 
+        â¯
+        Â 
+        â
+        Â 
+        w
+        A
+        Î±
+        Â 
+        â
+        Â 
+        â¯
+        Â 
+        â
+        Â 
+        w
+        Î²
+        Î±
+        Â 
+        â
+        Â 
+        â¯
+        Â 
+        â
+        Â 
+        w
+        u
+      
+    
+    {\displaystyle S\ \Rightarrow \ \cdots \ \Rightarrow \ wA\alpha \ \Rightarrow \ \cdots \ \Rightarrow \ w\beta \alpha \ \Rightarrow \ \cdots \ \Rightarrow \ wu}
+  
+
+
+  
+    
+      
+        S
+        Â 
+        â
+        Â 
+        â¯
+        Â 
+        â
+        Â 
+        w
+        A
+        Î±
+        Â 
+        â
+        Â 
+        â¯
+        Â 
+        â
+        Â 
+        w
+        Î³
+        Î±
+        Â 
+        â
+        Â 
+        â¯
+        Â 
+        â
+        Â 
+        w
+        v
+      
+    
+    {\displaystyle S\ \Rightarrow \ \cdots \ \Rightarrow \ wA\alpha \ \Rightarrow \ \cdots \ \Rightarrow \ w\gamma \alpha \ \Rightarrow \ \cdots \ \Rightarrow \ wv}
+  
+
+the following condition holds: the prefix of the string 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ of length 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ equals the prefix of the string 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ of length 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ implies 
+  
+    
+      
+        Î²
+        Â 
+        =
+        Â 
+        Î³
+      
+    
+    {\displaystyle \beta \ =\ \gamma }
+  
+.
+In this definition, 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ is the start symbol and 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ any non-terminal. The already derived input 
+  
+    
+      
+        w
+      
+    
+    {\displaystyle w}
+  
+, and yet unread 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ and 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ are strings of terminals. The Greek letters 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+, 
+  
+    
+      
+        Î²
+      
+    
+    {\displaystyle \beta }
+  
+ and 
+  
+    
+      
+        Î³
+      
+    
+    {\displaystyle \gamma }
+  
+ represent any string of both terminals and non-terminals (possibly empty). The prefix length corresponds to the lookahead buffer size, and the definition says that this buffer is enough to distinguish between any two derivations of different words.
+
+Parser[edit]
+The 
+  
+    
+      
+        L
+        L
+        (
+        k
+        )
+      
+    
+    {\displaystyle LL(k)}
+  
+ parser is a deterministic pushdown automaton with the ability to peek on the next 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ input symbols without reading. This peek capability can be emulated by storing the lookahead buffer contents in the finite state space, since both buffer and input alphabet are finite in size. As a result, this does not make the automaton more powerful, but is a convenient abstraction.
+The stack alphabet is 
+  
+    
+      
+        Î
+        =
+        N
+        âª
+        Î£
+      
+    
+    {\displaystyle \Gamma =N\cup \Sigma }
+  
+, where:
+
+
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ is the set of non-terminals;
+
+  
+    
+      
+        Î£
+      
+    
+    {\displaystyle \Sigma }
+  
+ the set of terminal (input) symbols with a special end-of-input (EOI) symbol 
+  
+    
+      
+        $
+      
+    
+    {\displaystyle \$}
+  
+.
+The parser stack initially contains the starting symbol above the EOI: 
+  
+    
+      
+        [
+        Â 
+        S
+        Â 
+        $
+        Â 
+        ]
+      
+    
+    {\displaystyle [\ S\ \$\ ]}
+  
+. During operation, the parser repeatedly replaces the symbol 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ on top of the stack:
+
+with some 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+, if 
+  
+    
+      
+        X
+        â
+        N
+      
+    
+    {\displaystyle X\in N}
+  
+ and there is a rule 
+  
+    
+      
+        X
+        â
+        Î±
+      
+    
+    {\displaystyle X\to \alpha }
+  
+;
+with 
+  
+    
+      
+        Ïµ
+      
+    
+    {\displaystyle \epsilon }
+  
+ (in some notations 
+  
+    
+      
+        Î»
+      
+    
+    {\displaystyle \lambda }
+  
+), i.e. 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ is popped off the stack, if 
+  
+    
+      
+        X
+        â
+        Î£
+      
+    
+    {\displaystyle X\in \Sigma }
+  
+. In this case, an input symbol 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ is read and if 
+  
+    
+      
+        x
+        â 
+        X
+      
+    
+    {\displaystyle x\neq X}
+  
+, the parser rejects the input.
+If the last symbol to be removed from the stack is the EOI, the parsing is successful; the automaton accepts via an empty stack.
+The states and the transition function are not explicitly given; they are specified (generated) using a more convenient parse table instead. The table provides the following mapping:
+
+row: top-of-stack symbol 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+
+column: 
+  
+    
+      
+        
+          |
+        
+        w
+        
+          |
+        
+        â¤
+        k
+      
+    
+    {\displaystyle |w|\leq k}
+  
+ lookahead buffer contents
+cell: rule number for 
+  
+    
+      
+        X
+        â
+        Î±
+      
+    
+    {\displaystyle X\to \alpha }
+  
+ or 
+  
+    
+      
+        Ïµ
+      
+    
+    {\displaystyle \epsilon }
+  
+
+If the parser cannot perform a valid transition, the input is rejected (empty cells). To make the table more compact, only the non-terminal rows are commonly displayed, since the action is the same for terminals.
+
+Concrete example[edit]
+Set up[edit]
+To explain an LL(1) parser's workings we will consider the following small LL(1) grammar:
+
+S â F
+S â ( S + F )
+F â a
+and parse the following input:
+
+( a + a )
+An LL(1) parsing table for a grammar has a row for each of the non-terminals and a column for each terminal (including the special terminal, represented here as $, that is used to indicate the end of the input stream).
+Each cell of the table may point to at most one rule of the grammar (identified by its number). For example, in the parsing table for the above grammar, the cell for the non-terminal 'S' and terminal '(' points to the rule number 2:
+
+
+
+
+
+(
+
+)
+
+a
+
++
+
+$
+
+
+S
+
+2
+â
+1
+â
+
+â
+
+
+F
+
+â
+â
+3
+â
+
+â
+
+The algorithm to construct a parsing table is described in a later section, but first let's see how the parser uses the parsing table to process its input.
+
+Parsing procedure[edit]
+In each step, the parser reads the next-available symbol from the input stream, and the top-most symbol from the stack. If the input symbol and the stack-top symbol match, the parser discards them both, leaving only the unmatched symbols in the input stream and on the stack.
+Thus, in its first step, the parser reads the input symbol '(' and the stack-top symbol 'S'. The parsing table instruction comes from the column headed by the input symbol '(' and the row headed by the stack-top symbol 'S'; this cell contains '2', which instructs the parser to apply rule (2).  The parser has to rewrite 'S' to '( S + F )' on the stack by removing 'S' from stack and pushing ')', 'F', '+', 'S', '(' onto the stack, and this writes the rule number 2 to the output. The stack then becomes:
+
+[ (, S, +, F, ), $ ]
+
+In the second step, the parser removes the '(' from its input stream and from its stack, since they now match. The stack now becomes:
+
+[ S, +, F, ), $ ]
+
+Now the parser has an 'a' on its input stream and an 'S' as its stack top. The parsing table instructs it to apply rule (1) from the grammar and write the rule number 1 to the output stream. The stack becomes:
+
+[ F, +, F, ), $ ]
+
+The parser now has an 'a' on its input stream and an 'F' as its stack top. The parsing table instructs it to apply rule (3) from the grammar and write the rule number 3 to the output stream. The stack becomes:
+
+[ a, +, F, ), $ ]
+
+The parser now has an 'a' on the input stream and an 'a' at its stack top. Because they are the same, it removes it from the input stream and pops it from the top of the stack. The parser then has an '+' on the input stream and '+' is at the top of the stack meaning, like with 'a', it is popped from the stack and removed from the input stream. This results in:
+
+[ F, ), $ ]
+
+In the next three steps the parser will replace 'F' on the stack by 'a', write the rule number 3 to the output stream and remove the 'a' and ')' from both the stack and the input stream. The parser thus ends with '$' on both its stack and its input stream.
+In this case the parser will report that it has accepted the input string and write the following list of rule numbers to the output stream:
+
+[ 2, 1, 3, 3 ]
+This is indeed a list of rules for a leftmost derivation of the input string, which is:
+
+S â ( S + F ) â ( F + F ) â ( a + F ) â ( a + a )
+Parser implementation in C++[edit]
+Below follows a C++ implementation of a table-based LL parser for the example language:
+
+#include <iostream>
+#include <map>
+#include <stack>
+
+enum Symbols {
+	// the symbols:
+	// Terminal symbols:
+	TS_L_PARENS,	// (
+	TS_R_PARENS,	// )
+	TS_A,		// a
+	TS_PLUS,	// +
+	TS_EOS,		// $, in this case corresponds to '\0'
+	TS_INVALID,	// invalid token
+
+	// Non-terminal symbols:
+	NTS_S,		// S
+	NTS_F		// F
+};
+
+/*
+Converts a valid token to the corresponding terminal symbol
+*/
+Symbols lexer(char c)
+{
+	switch (c)
+	{
+		case '(':  return TS_L_PARENS;
+		case ')':  return TS_R_PARENS;
+		case 'a':  return TS_A;
+		case '+':  return TS_PLUS;
+		case '\0': return TS_EOS; // end of stack: the $ terminal symbol
+		default:   return TS_INVALID;
+	}
+}
+
+int main(int argc, char **argv)
+{
+	using namespace std;
+
+	if (argc < 2)
+	{
+		cout << "usage:\n\tll '(a+a)'" << endl;
+		return 0;
+	}
+
+	// LL parser table, maps < non-terminal, terminal> pair to action
+	map< Symbols, map<Symbols, int> > table;
+	stack<Symbols>	ss;	// symbol stack
+	char *p;	// input buffer
+
+	// initialize the symbols stack
+	ss.push(TS_EOS);	// terminal, $
+	ss.push(NTS_S);		// non-terminal, S
+
+	// initialize the symbol stream cursor
+	p = &argv[1][0];
+
+	// set up the parsing table
+	table[NTS_S][TS_L_PARENS] = 2;
+	table[NTS_S][TS_A] = 1;
+	table[NTS_F][TS_A] = 3;
+
+	while (ss.size() > 0)
+	{
+		if (lexer(*p) == ss.top())
+		{
+			cout << "Matched symbols: " << lexer(*p) << endl;
+			p++;
+			ss.pop();
+		}
+		else
+		{
+			cout << "Rule " << table[ss.top()][lexer(*p)] << endl;
+			switch (table[ss.top()][lexer(*p)])
+			{
+				case 1:	// 1. S â F
+					ss.pop();
+					ss.push(NTS_F);	// F
+					break;
+
+				case 2:	// 2. S â ( S + F )
+					ss.pop();
+					ss.push(TS_R_PARENS);	// )
+					ss.push(NTS_F);		// F
+					ss.push(TS_PLUS);	// +
+					ss.push(NTS_S);		// S
+					ss.push(TS_L_PARENS);	// (
+					break;
+
+				case 3:	// 3. F â a
+					ss.pop();
+					ss.push(TS_A);	// a
+					break;
+
+				default:
+					cout << "parsing table defaulted" << endl;
+					return 0;
+			}
+		}
+	}
+
+	cout << "finished parsing" << endl;
+
+	return 0;
+}
+
+Parser implementation in Python[edit]
+# All constants are indexed from 0
+TERM = 0
+RULE = 1
+
+# Terminals
+T_LPAR = 0
+T_RPAR = 1
+T_A = 2
+T_PLUS = 3
+T_END = 4
+T_INVALID = 5
+
+# Non-Terminals
+N_S = 0
+N_F = 1
+
+# Parse table
+table = [[ 1, -1, 0, -1, -1, -1],
+         [-1, -1, 2, -1, -1, -1]]
+
+RULES = [[(RULE, N_F)],
+         [(TERM, T_LPAR), (RULE, N_S), (TERM, T_PLUS), (RULE, N_F), (TERM, T_RPAR)],
+         [(TERM, T_A)]]
+
+stack = [(TERM, T_END), (RULE, N_S)]
+
+def lexical_analysis(inputstring):
+    print("Lexical analysis")
+    tokens = []
+    for c in inputstring:
+        if c   == "+": tokens.append(T_PLUS)
+        elif c == "(": tokens.append(T_LPAR)
+        elif c == ")": tokens.append(T_RPAR)
+        elif c == "a": tokens.append(T_A)
+        else: tokens.append(T_INVALID)
+    tokens.append(T_END)
+    print(tokens)
+    return tokens
+
+def syntactic_analysis(tokens):
+    print("Syntactic analysis")
+    position = 0
+    while len(stack) > 0:
+        (stype, svalue) = stack.pop()
+        token = tokens[position]
+        if stype == TERM:
+            if svalue == token:
+                position += 1
+                print("pop", svalue)
+                if token == T_END:
+                    print("input accepted")
+            else:
+                print("bad term on input:", token)
+                break
+        elif stype == RULE:
+            print("svalue", svalue, "token", token)
+            rule = table[svalue][token]
+            print("rule", rule)
+            for r in reversed(RULES[rule]):
+                stack.append(r)
+        print("stack", stack)
+
+inputstring = "(a+a)"
+syntactic_analysis(lexical_analysis(inputstring))
+
+Remarks[edit]
+As can be seen from the example, the parser performs three types of steps depending on whether the top of the stack is a nonterminal, a terminal or the special symbol $:
+
+If the top is a nonterminal then the parser looks up in the parsing table, on the basis of this nonterminal and the symbol on the input stream, which rule of the grammar it should use to replace nonterminal on the stack. The number of the rule is written to the output stream. If the parsing table indicates that there is no such rule then the parser reports an error and stops.
+If the top is a terminal then the parser compares it to the symbol on the input stream and if they are equal they are both removed. If they are not equal the parser reports an error and stops.
+If the top is $ and on the input stream there is also a $ then the parser reports that it has successfully parsed the input, otherwise it reports an error. In both cases the parser will stop.
+These steps are repeated until the parser stops, and then it will have either completely parsed the input and written a leftmost derivation to the output stream or it will have reported an error.
+
+Constructing an LL(1) parsing table[edit]
+In order to fill the parsing table, we have to establish what grammar rule the parser should choose if it sees a nonterminal A on the top of its stack and a symbol a on its input stream.
+It is easy to see that such a rule should be of the form A â w and that the language corresponding to w should have at least one string starting with a.
+For this purpose we define the First-set of w, written here as Fi(w), as the set of terminals that can be found at the start of some string in w, plus Îµ if the empty string also belongs to w.
+Given a grammar with the rules A1 â w1, â¦, An â wn, we can compute the Fi(wi) and Fi(Ai) for every rule as follows:
+
+initialize every Fi(Ai) with the empty set
+add Fi(wi) to Fi(Ai) for every rule Ai â wi, where Fi is defined as follows:
+Fi(aw') = { a } for every terminal a
+Fi(Aw') = Fi(A) for every nonterminal A with Îµ not in Fi(A)
+Fi(Aw' ) = (Fi(A) \ { Îµ }) âª Fi(w' ) for every nonterminal A with Îµ in Fi(A)
+Fi(Îµ) = { Îµ }
+add Fi(wi) to Fi(Ai) for every rule Ai â wi
+do steps 2 and 3 until all Fi sets stay the same.
+The result is the least fixed point solution to the following system:
+
+Fi(A) â Fi(w) for each rule A â w
+Fi(a) â { a }, for each terminal a
+Fi(w0 w1) â Fi(w0)Â·Fi(w1), for all words w0 and w1
+Fi(Îµ) â {Îµ}
+where, for sets of words U and V, the truncated product is defined by 
+  
+    
+      
+        U
+        â
+        V
+        =
+        {
+        (
+        u
+        v
+        )
+        :
+        1
+        :
+        u
+        â
+        U
+        ,
+        v
+        â
+        V
+        }
+      
+    
+    {\displaystyle U\cdot V=\{(uv):1:u\in U,v\in V\}}
+  
+, and w:1 denotes the initial length-1 prefix of words w of length 2 or more, or w, itself, if w has length 0 or 1.
+Unfortunately, the First-sets are not sufficient to compute the parsing table.
+This is because a right-hand side w of a rule might ultimately be rewritten to the empty string.
+So the parser should also use the rule A â w if Îµ is in Fi(w) and it sees on the input stream a symbol that could follow A. Therefore, we also need the Follow-set of A, written as Fo(A) here, which is defined as the set of terminals a such that there is a string of symbols Î±AaÎ² that can be derived from the start symbol. We use $ as a special terminal indicating end of input stream, and S as start symbol.
+Computing the Follow-sets for the nonterminals in a grammar can be done as follows:
+
+initialize Fo(S) with { $ } and every other Fo(Ai) with the empty set
+if there is a rule of the form Aj â wAiw' , then
+if the terminal a is in Fi(w' ), then add a to Fo(Ai)
+if Îµ is in Fi(w' ), then add Fo(Aj) to Fo(Ai)
+if w'  has length 0, then add Fo(Aj) to Fo(Ai)
+repeat step 2 until all Fo sets stay the same.
+This provides the least fixed point solution to the following system:
+
+Fo(S) â {$}
+Fo(A) â Fi(w)Â·Fo(B) for each rule of the form B â ... A w
+Now we can define exactly which rules will appear where in the parsing table.
+If T[A, a] denotes the entry in the table for nonterminal A and terminal a, then
+
+T[A,a] contains the rule A â w if and only if
+a is in Fi(w) or
+Îµ is in Fi(w) and a is in Fo(A).
+Equivalently: T[A, a] contains the rule A â w for each a â Fi(w)Â·Fo(A).
+If the table contains at most one rule in every one of its cells, then the parser will always know which rule it has to use and can therefore parse strings without backtracking.
+It is in precisely this case that the grammar is called an LL(1) grammar.
+
+Constructing an LL(k) parsing table[edit]
+The construction for LL(1) parsers can be adapted to LL(k) for k > 1 with the following modifications:
+
+the truncated product is defined 
+  
+    
+      
+        U
+        â
+        V
+        =
+        {
+        (
+        u
+        v
+        )
+        :
+        1
+        :
+        u
+        â
+        U
+        ,
+        v
+        â
+        V
+        }
+      
+    
+    {\displaystyle U\cdot V=\{(uv):1:u\in U,v\in V\}}
+  
+, where w:k denotes the initial length-k prefix of words of length > k, or w, itself, if w has length k or less,
+Fo(S) = {$k}
+where an input is suffixed by k end-markers $, to fully account for the k lookahead context.
+Until the mid-1990s, it was widely believed that LL(k) parsing (for k > 1) was impractical,[citation needed] since the parser table would have exponential size in k in the worst case. This perception changed gradually after the release of the Purdue Compiler Construction Tool Set around 1992, when it was demonstrated that many programming languages can be parsed efficiently by an LL(k) parser without triggering the worst-case behavior of the parser.  Moreover, in certain cases LL parsing is feasible even with unlimited lookahead.  By contrast, traditional parser generators like yacc use LALR(1) parser tables to construct a restricted LR parser with a fixed one-token lookahead.
+
+Conflicts[edit]
+As described in the introduction, LL(1) parsers recognize languages that have LL(1) grammars, which are a special case of context-free grammars; LL(1) parsers cannot recognize all context-free languages. The LL(1) languages are a proper subset of the LR(1) languages, which in turn are a proper subset of all context-free languages.  In order for a context-free grammar to be an LL(1) grammar, certain conflicts must not arise, which we describe in this section.
+
+Terminology[edit]
+Let A be a non-terminal. FIRST(A) is (defined to be) the set of terminals that can appear in the first position of any string derived from A. FOLLOW(A) is the union over:[11]
+
+FIRST(B) where B is any non-terminal that immediately follows A in the right-hand side of a production rule.
+FOLLOW(B) where B is any head of a rule of the form B â wA.
+LL(1) conflicts[edit]
+There are two main types of LL(1) conflicts:
+
+FIRST/FIRST conflict[edit]
+The FIRST sets of two different grammar rules for the same non-terminal intersect.
+An example of an LL(1) FIRST/FIRST conflict:
+
+S -> E | E 'a'
+E -> 'b' | Îµ
+
+FIRST(E) = {b, Îµ} and FIRST(E a) = {b, a}, so when the table is drawn, there is conflict under terminal b of production rule S.
+
+Special case: left recursion[edit]
+Left recursion will cause a FIRST/FIRST conflict with all alternatives.
+
+E -> E '+' term | alt1 | alt2
+
+FIRST/FOLLOW conflict[edit]
+The FIRST and FOLLOW set of a grammar rule overlap. With an empty string (Îµ) in the FIRST set it is unknown which alternative to select.
+An example of an LL(1) conflict:
+
+S -> A 'a' 'b'
+A -> 'a' | Îµ
+
+The FIRST set of A now is {a, Îµ} and the FOLLOW set {a}.
+
+Solutions to LL(1) conflicts[edit]
+Left factoring[edit]
+A common left-factor is "factored out".
+
+A -> X | X Y Z
+
+becomes
+
+A -> X B
+B -> Y Z | Îµ
+
+Can be applied when two alternatives start with the same symbol like a FIRST/FIRST conflict.
+Another example (more complex) using above FIRST/FIRST conflict example:
+
+S -> E | E 'a'
+E -> 'b' | Îµ
+
+becomes (merging into a single non-terminal)
+
+S -> 'b' | Îµ | 'b' 'a' | 'a'
+
+then through left-factoring, becomes
+
+S -> 'b' E | E
+E -> 'a' | Îµ
+
+Substitution[edit]
+Substituting a rule into another rule to remove indirect or FIRST/FOLLOW conflicts.
+Note that this may cause a FIRST/FIRST conflict.
+
+Left recursion removal[edit]
+See.[12]
+For a general method, see removing left recursion.
+A simple example for left recursion removal:
+The following production rule has left recursion on E
+
+E -> E '+' T
+E -> T
+
+This rule is nothing but list of Ts separated by '+'. In a regular expression form T ('+' T)*.
+So the rule could be rewritten as 
+
+E -> T Z
+Z -> '+' T Z
+Z -> Îµ
+
+Now there is no left recursion and no conflicts on either of the rules.
+However, not all context-free grammars have an equivalent LL(k)-grammar, e.g.:
+
+S -> A | B
+A -> 'a' A 'b' | Îµ
+B -> 'a' B 'b' 'b' | Îµ
+
+It can be shown that there does not exist any LL(k)-grammar accepting the language generated by this grammar.
+
+See also[edit]
+Comparison of parser generators
+Parse tree
+Top-down parsing
+Bottom-up parsing
+Notes[edit]
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Rosenkrantz, D. J.; Stearns, R. E. (1970). "Properties of Deterministic Top Down Grammars". Information and Control. 17 (3): 226â256. doi:10.1016/s0019-9958(70)90446-8.
+
+^ Jarzabek, Stanislav; Krawczyk, Tomasz (1974). "LL-Regular Grammars". Instytutu Maszyn Matematycznych: 107â119.
+
+^ Jarzabek, Stanislav; Krawczyk, Tomasz (Nov 1975). "LL-Regular Grammars". Information Processing Letters. 4 (2): 31â37. doi:10.1016/0020-0190(75)90009-5.
+
+^ David A. Poplawski (Aug 1977). Properties of LL-Regular Languages (Technical Report). Purdue University, Department of Computer Science.
+
+^ Parr, Terence and Fisher, Kathleen (2011). "LL (*) the foundation of the ANTLR parser generator". ACM SIGPLAN Notices. 46 (6): 425â436. doi:10.1145/1993316.1993548.{{cite journal}}:  CS1 maint: multiple names: authors list (link)
+
+^ Belcak, Peter (2020). "The LL(finite) parsing strategy for optimal LL(k) parsing". arXiv:2010.07874 [cs.PL].
+
+^ Ford, Bryan (2004). "Parsing Expression Grammars: A Recognition-Based Syntactic Foundation". ACM SIGPLAN Notices. doi:10.1145/982962.964011.
+
+^ Pat Terry (2005). Compiling with C# and Java. Pearson Education. pp.Â 159â164. ISBNÂ 9780321263605.
+
+^ William M. Waite and Gerhard Goos (1984). Compiler Construction. Texts and Monographs in Computer Science. Heidelberg: Springer. ISBNÂ 978-3-540-90821-0. Here: Sect.Â 5.3.2, p.Â 121-127; in particular, p.Â 123.
+
+^ Richard E. Stearns and P.M. Lewis (1969). "Property Grammars and Table Machines". Information and Control. 14 (6): 524â549. doi:10.1016/S0019-9958(69)90312-X.
+
+^ "LL Grammars" (PDF). Archived (PDF) from the original on 2010-06-18. Retrieved 2010-05-11.
+
+^ Modern Compiler Design, Grune, Bal, Jacobs and Langendoen
+
+
+External links[edit]
+A tutorial on implementing LL(1) parsers in C# (archived)
+Parsing Simulator This simulator is used to generate parsing tables LL(1) and to resolve the exercises of the book.
+LL(1) DSL PEG parser (toolkit framework)
+Language theoretic comparison of LL and LR grammars
+LL(k) Parsing Theory
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteParsing algorithmsTop-down
+LL
+Recursive descent
+Tail recursive
+Pratt parser
+Bottom-up
+Precedence
+Simple
+Operator
+Shunting-yard
+Bounded-context
+LR
+Simple
+Look-ahead
+Canonical
+Generalized
+CYK
+Recursive ascent
+Shift-reduce
+Mixed, other
+Combinator
+Chart
+Earley
+Related topics
+PEG
+Definite clause grammar
+Deterministic parsing
+Dynamic programming
+Memoization
+Parser generator
+LALR
+Parse tree
+AST
+Scannerless parsing
+History of compiler construction
+Comparison of parser generators
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=LL_parser&oldid=1068892369"
+		Categories: Parsing algorithmsHidden categories: CS1 maint: multiple names: authors listArticles with short descriptionPages with lower-case short descriptionShort description is different from WikidataWikipedia articles needing clarification from August 2021All articles with unsourced statementsArticles with unsourced statements from February 2019Articles with unsourced statements from February 2007Articles with example C++ codeArticles with example Python (programming language) codePages that use a deprecated format of the math tags
+	

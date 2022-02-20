@@ -1,0 +1,1669 @@
+
+Title:
+Blob detection
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article may be too technical for most readers to understand. Please help improve it to make it understandable to non-experts, without removing the technical details.  (September 2009) (Learn how and when to remove this template message)
+.mw-parser-output .sidebar{width:22em;float:right;clear:right;margin:0.5em 0 1em 1em;background:#f8f9fa;border:1px solid #aaa;padding:0.2em;text-align:center;line-height:1.4em;font-size:88%;border-collapse:collapse;display:table}body.skin-minerva .mw-parser-output .sidebar{display:table!important;float:right!important;margin:0.5em 0 1em 1em!important}.mw-parser-output .sidebar-subgroup{width:100%;margin:0;border-spacing:0}.mw-parser-output .sidebar-left{float:left;clear:left;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-none{float:none;clear:both;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-outer-title{padding:0 0.4em 0.2em;font-size:125%;line-height:1.2em;font-weight:bold}.mw-parser-output .sidebar-top-image{padding:0.4em}.mw-parser-output .sidebar-top-caption,.mw-parser-output .sidebar-pretitle-with-top-image,.mw-parser-output .sidebar-caption{padding:0.2em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-pretitle{padding:0.4em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-title,.mw-parser-output .sidebar-title-with-pretitle{padding:0.2em 0.8em;font-size:145%;line-height:1.2em}.mw-parser-output .sidebar-title-with-pretitle{padding:0.1em 0.4em}.mw-parser-output .sidebar-image{padding:0.2em 0.4em 0.4em}.mw-parser-output .sidebar-heading{padding:0.1em 0.4em}.mw-parser-output .sidebar-content{padding:0 0.5em 0.4em}.mw-parser-output .sidebar-content-with-subgroup{padding:0.1em 0.4em 0.2em}.mw-parser-output .sidebar-above,.mw-parser-output .sidebar-below{padding:0.3em 0.8em;font-weight:bold}.mw-parser-output .sidebar-collapse .sidebar-above,.mw-parser-output .sidebar-collapse .sidebar-below{border-top:1px solid #aaa;border-bottom:1px solid #aaa}.mw-parser-output .sidebar-navbar{text-align:right;font-size:115%;padding:0 0.4em 0.4em}.mw-parser-output .sidebar-list-title{padding:0 0.4em;text-align:left;font-weight:bold;line-height:1.6em;font-size:105%}.mw-parser-output .sidebar-list-title-c{padding:0 0.4em;text-align:center;margin:0 3.3em}@media(max-width:720px){body.mediawiki .mw-parser-output .sidebar{width:100%!important;clear:both;float:none!important;margin-left:0!important;margin-right:0!important}}Feature detection
+Edge detection
+Canny
+Deriche
+Differential
+Sobel
+Prewitt
+Roberts cross
+
+Corner detection
+Harris operator
+Shi and Tomasi
+Level curve curvature
+Hessian feature strength measures
+SUSAN
+FAST
+
+Blob detection
+Laplacian of Gaussian (LoG)
+Difference of Gaussians (DoG)
+Determinant of Hessian  (DoH)
+Maximally stable extremal regions
+PCBR
+
+Ridge detection
+Hough transform
+Hough transform
+Generalized Hough transform
+
+Structure tensor
+Structure tensor
+Generalized structure tensor
+
+Affine invariant feature detection
+Affine shape adaptation
+Harris affine
+Hessian affine
+
+Feature description
+SIFT
+SURF
+GLOH
+HOG
+
+Scale space
+Scale-space axioms
+Implementation details
+Pyramids
+.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vte
+In computer vision, blob detection methods are aimed at detecting regions in a digital image that differ in properties, such as brightness or color, compared to surrounding regions. Informally, a blob is a region of an image in which some properties are constant or approximately constant; all the points in a blob can be considered in some sense to be similar to each other. The most common method for blob detection is convolution.
+Given some property of interest expressed as a function of position on the image, there are two main classes of blob detectors: (i)Â differential methods, which are based on derivatives of the function with respect to position, and (ii)Â methods based on local extrema, which are based on finding the local maxima and minima of the function. With the more recent terminology used in the field, these detectors can also be referred to as interest point operators, or alternatively interest region operators (see also interest point detection and corner detection).
+There are several motivations for studying and developing blob detectors. One main reason is to provide complementary information about regions, which is not obtained from edge detectors or corner detectors. In early work in the area, blob detection was used to obtain regions of interest for further processing. These regions could signal the presence of objects or parts of objects in the image domain with application to object recognition and/or object tracking. In other domains, such as histogram analysis, blob descriptors can also be used for peak detection with application to segmentation. Another common use of blob descriptors is as main primitives for texture analysis and texture recognition. In more recent work, blob descriptors have found increasingly popular use as interest points for wide baseline stereo matching and to signal the presence of informative image features for appearance-based object recognition based on local image statistics. There is also the related notion of ridge detection to signal the presence of elongated objects.
+
+Contents
+
+1 The Laplacian of Gaussian
+2 The difference of Gaussians approach
+3 The determinant of the Hessian
+4 The hybrid Laplacian and determinant of the Hessian operator (Hessian-Laplace)
+5 Affine-adapted differential blob detectors
+6 Spatio-temporal blob detectors
+7 Grey-level blobs, grey-level blob trees and scale-space blobs
+
+7.1 Lindeberg's watershed-based grey-level blob detection algorithm
+
+
+8 Maximally stable extremal regions (MSER)
+9 See also
+10 References
+11 Further reading
+
+
+
+The Laplacian of Gaussian[edit]
+One of the first and also most common blob detectors is based on the Laplacian of the Gaussian (LoG). Given an input image 
+  
+    
+      
+        f
+        (
+        x
+        ,
+        y
+        )
+      
+    
+    {\displaystyle f(x,y)}
+  
+, this image is convolved by a Gaussian kernel
+
+
+  
+    
+      
+        g
+        (
+        x
+        ,
+        y
+        ,
+        t
+        )
+        =
+        
+          
+            1
+            
+              2
+              Ï
+              t
+            
+          
+        
+        
+          e
+          
+            â
+            
+              
+                
+                  
+                    x
+                    
+                      2
+                    
+                  
+                  +
+                  
+                    y
+                    
+                      2
+                    
+                  
+                
+                
+                  2
+                  t
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle g(x,y,t)={\frac {1}{2\pi t}}e^{-{\frac {x^{2}+y^{2}}{2t}}}}
+  
+
+at a certain scale 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ to give a scale space representation 
+  
+    
+      
+        L
+        (
+        x
+        ,
+        y
+        ;
+        t
+        )
+        Â 
+        =
+        g
+        (
+        x
+        ,
+        y
+        ,
+        t
+        )
+        â
+        f
+        (
+        x
+        ,
+        y
+        )
+      
+    
+    {\displaystyle L(x,y;t)\ =g(x,y,t)*f(x,y)}
+  
+. Then, the result of applying the Laplacian operator
+
+
+  
+    
+      
+        
+          â
+          
+            2
+          
+        
+        L
+        =
+        
+          L
+          
+            x
+            x
+          
+        
+        +
+        
+          L
+          
+            y
+            y
+          
+        
+      
+    
+    {\displaystyle \nabla ^{2}L=L_{xx}+L_{yy}}
+  
+
+is computed, which usually results in strong positive responses for dark blobs of radius 
+  
+    
+      
+        r
+        =
+        
+          
+            2
+            t
+          
+        
+      
+    
+    {\textstyle r={\sqrt {2t}}}
+  
+ (for a two-dimensional image, 
+  
+    
+      
+        r
+        =
+        
+          
+            d
+            t
+          
+        
+      
+    
+    {\textstyle r={\sqrt {dt}}}
+  
+ for a d-dimensional image) and strong negative responses for bright blobs of similar size. A main problem when applying this operator at a single scale, however, is that the operator response is strongly dependent on the relationship between the size of the blob structures in the image domain and the size of the Gaussian kernel used for pre-smoothing. In order to automatically capture blobs of different (unknown) size in the image domain, a multi-scale approach is therefore necessary.
+A straightforward way to obtain a multi-scale blob detector with automatic scale selection is to consider the scale-normalized Laplacian operator
+
+
+  
+    
+      
+        
+          â
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+        =
+        t
+        
+        (
+        
+          L
+          
+            x
+            x
+          
+        
+        +
+        
+          L
+          
+            y
+            y
+          
+        
+        )
+      
+    
+    {\displaystyle \nabla _{\mathrm {norm} }^{2}L=t\,(L_{xx}+L_{yy})}
+  
+
+and to detect scale-space maxima/minima, that are points that are simultaneously local maxima/minima of 
+  
+    
+      
+        
+          â
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+      
+    
+    {\displaystyle \nabla _{\mathrm {norm} }^{2}L}
+  
+ with respect to both space and scale (Lindeberg 1994, 1998). Thus, given a discrete two-dimensional input image 
+  
+    
+      
+        f
+        (
+        x
+        ,
+        y
+        )
+      
+    
+    {\displaystyle f(x,y)}
+  
+ a three-dimensional discrete scale-space volume 
+  
+    
+      
+        L
+        (
+        x
+        ,
+        y
+        ,
+        t
+        )
+      
+    
+    {\displaystyle L(x,y,t)}
+  
+ is computed and a point is regarded as a bright (dark) blob if the value at this point is greater (smaller) than the value in all its 26 neighbours. Thus, simultaneous selection of interest points 
+  
+    
+      
+        (
+        
+          
+            
+              x
+              ^
+            
+          
+        
+        ,
+        
+          
+            
+              y
+              ^
+            
+          
+        
+        )
+      
+    
+    {\displaystyle ({\hat {x}},{\hat {y}})}
+  
+ and scales 
+  
+    
+      
+        
+          
+            
+              t
+              ^
+            
+          
+        
+      
+    
+    {\displaystyle {\hat {t}}}
+  
+ is performed according to
+
+
+  
+    
+      
+        (
+        
+          
+            
+              x
+              ^
+            
+          
+        
+        ,
+        
+          
+            
+              y
+              ^
+            
+          
+        
+        ;
+        
+          
+            
+              t
+              ^
+            
+          
+        
+        )
+        =
+        
+          argmaxminlocal
+          
+            (
+            x
+            ,
+            y
+            ;
+            t
+            )
+          
+        
+        â¡
+        (
+        (
+        
+          â
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+        )
+        (
+        x
+        ,
+        y
+        ;
+        t
+        )
+        )
+      
+    
+    {\displaystyle ({\hat {x}},{\hat {y}};{\hat {t}})=\operatorname {argmaxminlocal} _{(x,y;t)}((\nabla _{\mathrm {norm} }^{2}L)(x,y;t))}
+  
+.
+Note that this notion of blob provides a concise and mathematically precise operational definition of the notion of "blob", which directly leads to an efficient and robust algorithm for blob detection. Some basic properties of blobs defined from scale-space maxima of the normalized Laplacian operator are that the responses are covariant with translations, rotations and rescalings in the image domain. Thus, if a scale-space maximum is assumed at a point 
+  
+    
+      
+        (
+        
+          x
+          
+            0
+          
+        
+        ,
+        
+          y
+          
+            0
+          
+        
+        ;
+        
+          t
+          
+            0
+          
+        
+        )
+      
+    
+    {\displaystyle (x_{0},y_{0};t_{0})}
+  
+ then under a rescaling of the image by a scale factor 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+, there will be a scale-space maximum at 
+  
+    
+      
+        
+          (
+          
+            s
+            
+              x
+              
+                0
+              
+            
+            ,
+            s
+            
+              y
+              
+                0
+              
+            
+            ;
+            
+              s
+              
+                2
+              
+            
+            
+              t
+              
+                0
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \left(sx_{0},sy_{0};s^{2}t_{0}\right)}
+  
+ in the rescaled image (Lindeberg 1998). This in practice highly useful property implies that besides the specific topic of Laplacian blob detection, local maxima/minima of the scale-normalized Laplacian are also used for scale selection in other contexts, such as in corner detection, scale-adaptive feature tracking (Bretzner and Lindeberg 1998), in the scale-invariant feature transform (Lowe 2004) as well as other image descriptors for image matching and object recognition.
+The scale selection properties of the Laplacian operator and other closely scale-space interest point detectors are analyzed in detail in (Lindeberg 2013a).[1]
+In (Lindeberg 2013b, 2015)[2][3] it is shown that there exist other scale-space interest point detectors, such as the determinant of the Hessian operator, that perform better than Laplacian operator or its difference-of-Gaussians approximation for image-based matching using local SIFT-like image descriptors.
+
+The difference of Gaussians approach[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Difference of Gaussians
+From the fact that the scale space representation 
+  
+    
+      
+        L
+        (
+        x
+        ,
+        y
+        ,
+        t
+        )
+      
+    
+    {\displaystyle L(x,y,t)}
+  
+ satisfies the diffusion equation
+
+
+  
+    
+      
+        
+          â
+          
+            t
+          
+        
+        L
+        =
+        
+          
+            1
+            2
+          
+        
+        
+          â
+          
+            2
+          
+        
+        L
+      
+    
+    {\displaystyle \partial _{t}L={\frac {1}{2}}\nabla ^{2}L}
+  
+
+it follows that the Laplacian of the Gaussian operator 
+  
+    
+      
+        
+          â
+          
+            2
+          
+        
+        L
+        (
+        x
+        ,
+        y
+        ,
+        t
+        )
+      
+    
+    {\displaystyle \nabla ^{2}L(x,y,t)}
+  
+ can also be computed as the limit case of the difference between two Gaussian smoothed images (scale space representations)
+
+
+  
+    
+      
+        
+          â
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+        (
+        x
+        ,
+        y
+        ;
+        t
+        )
+        â
+        
+          
+            t
+            
+              Î
+              t
+            
+          
+        
+        
+          (
+          
+            L
+            (
+            x
+            ,
+            y
+            ;
+            t
+            +
+            Î
+            t
+            )
+            â
+            L
+            (
+            x
+            ,
+            y
+            ;
+            t
+            )
+          
+          )
+        
+      
+    
+    {\displaystyle \nabla _{\mathrm {norm} }^{2}L(x,y;t)\approx {\frac {t}{\Delta t}}\left(L(x,y;t+\Delta t)-L(x,y;t)\right)}
+  
+.
+In the computer vision literature, this approach is referred to as the difference of Gaussians (DoG) approach. Besides minor technicalities, however, this operator is in essence similar to the Laplacian and can be seen as an approximation of the Laplacian operator. In a similar fashion as for the Laplacian blob detector, blobs can be detected from scale-space extrema of differences of Gaussiansâsee (Lindeberg 2012, 2015)[3][4] for the explicit relation between the difference-of-Gaussian operator and the scale-normalized Laplacian operator. This approach is for instance used in the scale-invariant feature transform (SIFT) algorithmâsee Lowe (2004).
+
+The determinant of the Hessian[edit]
+By considering the scale-normalized determinant of the Hessian, also referred to as the MongeâAmpÃ¨re operator,
+
+
+  
+    
+      
+        det
+        
+          H
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+        
+        L
+        =
+        
+          t
+          
+            2
+          
+        
+        
+          (
+          
+            
+              L
+              
+                x
+                x
+              
+            
+            
+              L
+              
+                y
+                y
+              
+            
+            â
+            
+              L
+              
+                x
+                y
+              
+              
+                2
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \det H_{\mathrm {norm} }L=t^{2}\left(L_{xx}L_{yy}-L_{xy}^{2}\right)}
+  
+
+where 
+  
+    
+      
+        H
+        L
+      
+    
+    {\displaystyle HL}
+  
+ denotes the Hessian matrix of the scale-space representation 
+  
+    
+      
+        L
+      
+    
+    {\displaystyle L}
+  
+ and then detecting scale-space maxima of this operator one obtains another straightforward differential blob detector with automatic scale selection which also responds to saddles (Lindeberg 1994, 1998)
+
+
+  
+    
+      
+        (
+        
+          
+            
+              x
+              ^
+            
+          
+        
+        ,
+        
+          
+            
+              y
+              ^
+            
+          
+        
+        ;
+        
+          
+            
+              t
+              ^
+            
+          
+        
+        )
+        =
+        
+          argmaxlocal
+          
+            (
+            x
+            ,
+            y
+            ;
+            t
+            )
+          
+        
+        â¡
+        (
+        (
+        det
+        
+          H
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+        
+        L
+        )
+        (
+        x
+        ,
+        y
+        ;
+        t
+        )
+        )
+      
+    
+    {\displaystyle ({\hat {x}},{\hat {y}};{\hat {t}})=\operatorname {argmaxlocal} _{(x,y;t)}((\det H_{\mathrm {norm} }L)(x,y;t))}
+  
+.
+The blob points 
+  
+    
+      
+        (
+        
+          
+            
+              x
+              ^
+            
+          
+        
+        ,
+        
+          
+            
+              y
+              ^
+            
+          
+        
+        )
+      
+    
+    {\displaystyle ({\hat {x}},{\hat {y}})}
+  
+ and scales 
+  
+    
+      
+        
+          
+            
+              t
+              ^
+            
+          
+        
+      
+    
+    {\displaystyle {\hat {t}}}
+  
+ are also defined from an operational differential geometric definitions that leads to blob descriptors that are covariant with translations, rotations and rescalings in the image domain. In terms of scale selection, blobs defined from scale-space extrema of the determinant of the Hessian (DoH) also have slightly better scale selection properties under non-Euclidean affine transformations than the more commonly used Laplacian operator (Lindeberg 1994, 1998, 2015).[3] In simplified form, the scale-normalized determinant of the Hessian computed from Haar wavelets is used as the basic interest point operator in the SURF descriptor (Bay et al. 2006) for image matching and object recognition.
+A detailed analysis of the selection properties of the determinant of the Hessian operator and other closely scale-space interest point detectors is given in (Lindeberg 2013a)[1] showing that the determinant of the Hessian operator has better scale selection properties under affine image transformations than the Laplacian operator.
+In (Lindeberg 2013b, 2015)[2][3] it is shown that the determinant of the Hessian operator performs significantly better than the Laplacian operator or its difference-of-Gaussians approximation, as well as better than the Harris or Harris-Laplace operators, for image-based matching using local SIFT-like or SURF-like image descriptors, leading to higher efficiency values and lower 1-precision scores.
+
+The hybrid Laplacian and determinant of the Hessian operator (Hessian-Laplace)[edit]
+A hybrid operator between the Laplacian and the determinant of the Hessian blob detectors has also been proposed, where spatial selection is done by the determinant of the Hessian and scale selection is performed with the scale-normalized Laplacian (Mikolajczyk and Schmid 2004):
+
+
+  
+    
+      
+        (
+        
+          
+            
+              x
+              ^
+            
+          
+        
+        ,
+        
+          
+            
+              y
+              ^
+            
+          
+        
+        )
+        =
+        
+          argmaxlocal
+          
+            (
+            x
+            ,
+            y
+            )
+          
+        
+        â¡
+        (
+        (
+        det
+        H
+        L
+        )
+        (
+        x
+        ,
+        y
+        ;
+        t
+        )
+        )
+      
+    
+    {\displaystyle ({\hat {x}},{\hat {y}})=\operatorname {argmaxlocal} _{(x,y)}((\det HL)(x,y;t))}
+  
+
+
+  
+    
+      
+        
+          
+            
+              t
+              ^
+            
+          
+        
+        =
+        
+          argmaxminlocal
+          
+            t
+          
+        
+        â¡
+        (
+        (
+        
+          â
+          
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+        )
+        (
+        
+          
+            
+              x
+              ^
+            
+          
+        
+        ,
+        
+          
+            
+              y
+              ^
+            
+          
+        
+        ;
+        t
+        )
+        )
+      
+    
+    {\displaystyle {\hat {t}}=\operatorname {argmaxminlocal} _{t}((\nabla _{\mathrm {norm} }^{2}L)({\hat {x}},{\hat {y}};t))}
+  
+
+This operator has been used for image matching, object recognition as well as texture analysis.
+
+Affine-adapted differential blob detectors[edit]
+The blob descriptors obtained from these blob detectors with automatic scale selection are invariant to translations, rotations and uniform rescalings in the spatial domain. The images that constitute the input to a computer vision system are, however, also subject to perspective distortions. To obtain blob descriptors that are more robust to perspective transformations, a natural approach is to devise a blob detector that is invariant to affine transformations. In practice, affine invariant interest points can be obtained by applying affine shape adaptation to a blob descriptor, where the shape of the smoothing kernel is iteratively warped to match the local image structure around the blob, or equivalently a local image patch is iteratively warped while the shape of the smoothing kernel remains rotationally symmetric (Lindeberg and Garding 1997; Baumberg 2000; Mikolajczyk and Schmid 2004, Lindeberg 2008). In this way, we can define affine-adapted versions of the Laplacian/Difference of Gaussian operator, the determinant of the Hessian and the Hessian-Laplace operator (see also Harris-Affine and Hessian-Affine).
+
+Spatio-temporal blob detectors[edit]
+The determinant of the Hessian operator has been extended to joint space-time by Willems et al. [5] and Lindeberg,
+[6] leading to the following scale-normalized differential expression:
+
+
+  
+    
+      
+        det
+        (
+        
+          H
+          
+            (
+            x
+            ,
+            y
+            ,
+            t
+            )
+            ,
+            
+              n
+              o
+              r
+              m
+            
+          
+        
+        L
+        )
+        =
+        
+          s
+          
+            2
+            
+              Î³
+              
+                s
+              
+            
+          
+        
+        
+          Ï
+          
+            
+              Î³
+              
+                Ï
+              
+            
+          
+        
+        
+          (
+          
+            
+              L
+              
+                x
+                x
+              
+            
+            
+              L
+              
+                y
+                y
+              
+            
+            
+              L
+              
+                t
+                t
+              
+            
+            +
+            2
+            
+              L
+              
+                x
+                y
+              
+            
+            
+              L
+              
+                x
+                t
+              
+            
+            
+              L
+              
+                y
+                t
+              
+            
+            â
+            
+              L
+              
+                x
+                x
+              
+            
+            
+              L
+              
+                y
+                t
+              
+              
+                2
+              
+            
+            â
+            
+              L
+              
+                y
+                y
+              
+            
+            
+              L
+              
+                x
+                t
+              
+              
+                2
+              
+            
+            â
+            
+              L
+              
+                t
+                t
+              
+            
+            
+              L
+              
+                x
+                y
+              
+              
+                2
+              
+            
+          
+          )
+        
+        .
+      
+    
+    {\displaystyle \det(H_{(x,y,t),\mathrm {norm} }L)=s^{2\gamma _{s}}\tau ^{\gamma _{\tau }}\left(L_{xx}L_{yy}L_{tt}+2L_{xy}L_{xt}L_{yt}-L_{xx}L_{yt}^{2}-L_{yy}L_{xt}^{2}-L_{tt}L_{xy}^{2}\right).}
+  
+
+In the work by Willems et al.,[5] a simpler expression corresponding to 
+  
+    
+      
+        
+          Î³
+          
+            s
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle \gamma _{s}=1}
+  
+ and 
+  
+    
+      
+        
+          Î³
+          
+            Ï
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle \gamma _{\tau }=1}
+  
+ was used. In Lindeberg,[6] it was shown that 
+  
+    
+      
+        
+          Î³
+          
+            s
+          
+        
+        =
+        5
+        
+          /
+        
+        4
+      
+    
+    {\displaystyle \gamma _{s}=5/4}
+  
+ and 
+  
+    
+      
+        
+          Î³
+          
+            Ï
+          
+        
+        =
+        5
+        
+          /
+        
+        4
+      
+    
+    {\displaystyle \gamma _{\tau }=5/4}
+  
+ implies better scale selection properties in the sense that the selected scale levels obtained from a spatio-temporal Gaussian blob with spatial extent 
+  
+    
+      
+        s
+        =
+        
+          s
+          
+            0
+          
+        
+      
+    
+    {\displaystyle s=s_{0}}
+  
+ and temporal extent 
+  
+    
+      
+        Ï
+        =
+        
+          Ï
+          
+            0
+          
+        
+      
+    
+    {\displaystyle \tau =\tau _{0}}
+  
+ will perfectly match the spatial extent and the temporal duration of the blob, with scale selection performed by detecting spatio-temporal scale-space extrema of the differential expression.
+The Laplacian operator has been extended to spatio-temporal video data by Lindeberg,[6] leading to the following two spatio-temporal operators, which also constitute models of receptive fields of non-lagged vs. lagged neurons in the LGN:
+
+
+  
+    
+      
+        
+          â
+          
+            t
+            ,
+            
+              n
+              o
+              r
+              m
+            
+          
+        
+        (
+        
+          â
+          
+            (
+            x
+            ,
+            y
+            )
+            ,
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+        )
+        =
+        
+          s
+          
+            
+              Î³
+              
+                s
+              
+            
+          
+        
+        
+          Ï
+          
+            
+              Î³
+              
+                Ï
+              
+            
+            
+              /
+            
+            2
+          
+        
+        (
+        
+          L
+          
+            x
+            x
+            t
+          
+        
+        +
+        
+          L
+          
+            y
+            y
+            t
+          
+        
+        )
+        ,
+      
+    
+    {\displaystyle \partial _{t,\mathrm {norm} }(\nabla _{(x,y),\mathrm {norm} }^{2}L)=s^{\gamma _{s}}\tau ^{\gamma _{\tau }/2}(L_{xxt}+L_{yyt}),}
+  
+
+
+  
+    
+      
+        
+          â
+          
+            t
+            t
+            ,
+            
+              n
+              o
+              r
+              m
+            
+          
+        
+        (
+        
+          â
+          
+            (
+            x
+            ,
+            y
+            )
+            ,
+            
+              n
+              o
+              r
+              m
+            
+          
+          
+            2
+          
+        
+        L
+        )
+        =
+        
+          s
+          
+            
+              Î³
+              
+                s
+              
+            
+          
+        
+        
+          Ï
+          
+            
+              Î³
+              
+                Ï
+              
+            
+          
+        
+        (
+        
+          L
+          
+            x
+            x
+            t
+            t
+          
+        
+        +
+        
+          L
+          
+            y
+            y
+            t
+            t
+          
+        
+        )
+        .
+      
+    
+    {\displaystyle \partial _{tt,\mathrm {norm} }(\nabla _{(x,y),\mathrm {norm} }^{2}L)=s^{\gamma _{s}}\tau ^{\gamma _{\tau }}(L_{xxtt}+L_{yytt}).}
+  
+
+For the first operator, scale selection properties call for using 
+  
+    
+      
+        
+          Î³
+          
+            s
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle \gamma _{s}=1}
+  
+ and 
+  
+    
+      
+        
+          Î³
+          
+            Ï
+          
+        
+        =
+        1
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle \gamma _{\tau }=1/2}
+  
+, if we want this operator to assume its maximum value over spatio-temporal scales at a spatio-temporal scale level reflecting the spatial extent and the temporal duration of an onset Gaussian blob. For the second operator, scale selection properties call for using 
+  
+    
+      
+        
+          Î³
+          
+            s
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle \gamma _{s}=1}
+  
+ and 
+  
+    
+      
+        
+          Î³
+          
+            Ï
+          
+        
+        =
+        3
+        
+          /
+        
+        4
+      
+    
+    {\displaystyle \gamma _{\tau }=3/4}
+  
+, if we want this operator to assume its maximum value over spatio-temporal scales at a spatio-temporal scale level reflecting the spatial extent and the temporal duration of a blinking Gaussian blob.
+
+Grey-level blobs, grey-level blob trees and scale-space blobs[edit]
+A natural approach to detect blobs is to associate a bright (dark) blob with each local maximum (minimum) in the intensity landscape. A main problem with such an approach, however, is that local extrema are very sensitive to noise. To address this problem, Lindeberg (1993, 1994) studied the problem of detecting local maxima with extent at multiple scales in scale space. A region with spatial extent defined from a watershed analogy was associated with each local maximum, as well a local contrast defined from a so-called delimiting saddle point. A local extremum with extent defined in this way was referred to as a grey-level blob. Moreover, by proceeding with the watershed analogy beyond the delimiting saddle point, a grey-level blob tree was defined to capture the nested topological structure of level sets in the intensity landscape, in a way that is invariant to affine deformations in the image domain and monotone intensity transformations. By studying how these structures evolve with increasing scales, the notion of scale-space blobs was introduced. Beyond local contrast and extent, these scale-space blobs also measured how stable image structures are in scale-space, by measuring their scale-space lifetime.
+It was proposed that regions of interest and scale descriptors obtained in this way, with associated scale levels defined from the scales at which normalized measures of blob strength assumed their maxima over scales could be used for guiding other early visual processing. An early prototype of simplified vision systems was developed where such regions of interest and scale descriptors were used for directing the focus-of-attention of an active vision system. While the specific technique that was used in these prototypes can be substantially improved with the current knowledge in computer vision, the overall general approach is still valid, for example in the way that local extrema over scales of the scale-normalized Laplacian operator are nowadays used for providing scale information to other visual processes.
+
+Lindeberg's watershed-based grey-level blob detection algorithm[edit]
+For the purpose of detecting grey-level blobs (local extrema with extent) from a watershed analogy,
+Lindeberg developed an algorithm based on pre-sorting the pixels,
+alternatively connected regions having the same intensity, in
+decreasing order of the intensity values.
+Then, comparisons were made between nearest neighbours of either pixels or connected regions.
+For simplicity, consider the case of detecting bright grey-level blobs and
+let the notation "higher neighbour" stand for "neighbour pixel having a higher grey-level value".
+Then, at any stage in the algorithm (carried out in decreasing order of intensity values)
+is based on the following classification rules:
+
+If a region has no higher neighbour, then it is a local maximum and will be the seed of a blob. Set a flag which allows the blob to grow.
+Else, if it has at least one higher neighbour, which is background, then it cannot be part of any blob and must be background.
+Else, if it has more than one higher neighbour and if those higher neighbours are parts of different blobs, then it cannot be a part of any blob, and must be background. If any of the higher neighbors are still allowed to grow, clear their flag which allows them to grow.
+Else, it has one or more higher neighbours, which are all parts of the same blob. If that blob is still allowed to grow then the current region should be included as a part of that blob. Otherwise the region should be set to background.
+Compared to other watershed methods, the flooding in this algorithm stops once the intensity level falls below the intensity value of the so-called delimiting saddle point associated with the local maximum. However, it is rather straightforward to extend this approach to other types of watershed constructions. For example, by proceeding beyond the first delimiting saddle point a "grey-level blob tree" can be constructed. Moreover, the grey-level blob detection method was embedded in a scale space representation and performed at all levels of scale, resulting in a representation called the scale-space primal sketch.
+This algorithm with its applications in computer vision is described in more detail in Lindeberg's thesis [7] as well as the monograph on scale-space theory [8] partially based
+on that work. Earlier presentations of this algorithm can also be found in.[9][10] More detailed treatments of applications of grey-level blob detection and the scale-space primal sketch to computer vision and medical image analysis are given in.[11][12][13]
+
+Maximally stable extremal regions (MSER)[edit]
+Main article: Maximally stable extremal regions
+Matas et al. (2002) were interested in defining image descriptors that are robust under perspective transformations. They studied level sets in the intensity landscape and measured how stable these were along the intensity dimension. Based on this idea, they defined a notion of maximally stable extremal regions and showed how these image descriptors can be used as image features for stereo matching.
+There are close relations between this notion and the above-mentioned notion of grey-level blob tree. The maximally stable extremal regions can be seen as making a specific subset of the grey-level blob tree explicit for further processing.
+
+See also[edit]
+Blob extraction
+Corner detection
+Affine shape adaptation
+Scale space
+Ridge detection
+Interest point detection
+Feature detection (computer vision)
+Harris affine region detector
+Hessian affine region detector
+PCBR
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b Lindeberg, Tony (2013) "Scale Selection Properties of Generalized Scale-Space Interest Point Detectors", Journal of Mathematical Imaging and Vision, Volume 46, Issue 2, pages 177-210.
+
+^ Jump up to: a b Lindeberg (2013) "Image Matching Using Generalized Scale-Space Interest Points", Scale Space and Variational Methods in Computer Vision, Springer Lecture Notes in Computer Science Volume 7893, 2013, pp 355-367.
+
+^ Jump up to: a b c d T. Lindeberg ``Image matching using generalized scale-space interest points", Journal of Mathematical Imaging and Vision, volume 52, number 1, pages 3-36, 2015.
+
+^ T. Lindeberg ``Scale invariant feature transform, Scholarpedia, 7(5):10491, 2012.
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Geert Willems, Tinne Tuytelaars and Luc van Gool (2008). "An efficient dense and scale-invariant spatiotemporal-temporal interest point detector". European Conference on Computer Vision. Springer Lecture Notes in Computer Science. Vol.Â 5303. pp.Â 650â663. doi:10.1007/978-3-540-88688-4_48.
+
+^ Jump up to: a b c 
+Tony Lindeberg (2018). "Spatio-temporal scale selection in video data". Journal of Mathematical Imaging and Vision. Vol.Â 60, no.Â 4. pp.Â 525â562. doi:10.1007/s10851-017-0766-9.
+
+^ Lindeberg, T. (1991) Discrete Scale-Space Theory and the Scale-Space Primal Sketch, PhD thesis, Department of Numerical Analysis and Computing Science, Royal Institute of Technology, S-100 44 Stockholm, Sweden, May 1991. (ISSN 1101-2250. ISRN KTH NA/P--91/8--SE) (The grey-level blob detection algorithm is described in section 7.1)
+
+^ Lindeberg, Tony, Scale-Space Theory in Computer Vision, Kluwer Academic Publishers, 1994 ISBNÂ 0-7923-9418-6
+
+^ T. Lindeberg and J.-O. Eklundh, "Scale detection and region extraction from a scale-space primal sketch", in Proc. 3rd International Conference on Computer Vision, (Osaka, Japan), pp. 416--426, Dec. 1990. (See Appendix A.1 for the basic definitions for the watershed-based grey-level blob detection algorithm.)
+
+^ T. Lindeberg and J.-O. Eklundh, "On the computation of a scale-space primal sketch", Journal of Visual Communication and Image Representation, vol. 2, pp. 55--78, Mar. 1991.
+
+^ Lindeberg, T.: Detecting salient blob-like image structures and their scales with a scale-space primal sketch: A method for focus-of-attention, International Journal of Computer Vision, 11(3), 283--318, 1993.
+
+^ Lindeberg, T, Lidberg, Par and Roland, P. E..: "Analysis of Brain Activation Patterns Using a 3-D Scale-Space Primal Sketch", Human Brain Mapping, vol 7, no 3, pp 166--194, 1999.
+
+^ Jean-Francois Mangin, Denis RiviÃ¨re, Olivier Coulon, Cyril Poupon, Arnaud Cachia, Yann Cointepas, Jean-Baptiste Poline, Denis Le Bihan, Jean RÃ©gis, Dimitri Papadopoulos-Orfanos: "Coordinate-based versus structural approaches to brain image analysis". Artificial Intelligence in Medicine 30(2): 177-197 (2004) Archived July 21, 2011, at the Wayback Machine
+
+
+Further reading[edit]
+H. Bay; T. Tuytelaars & L. van Gool (2006). "SURF: Speeded Up Robust Features". Proceedings of the 9th European Conference on Computer Vision, Springer LNCS volume 3951, part 1. pp.Â 404â417.
+L. Bretzner & T. Lindeberg (1998). "Feature Tracking with Automatic Selection of Spatial Scales" (abstract page). Computer Vision and Image Understanding. 71 (3): 385â392. doi:10.1006/cviu.1998.0650.
+T. Lindeberg (1993). "Detecting Salient Blob-Like Image Structures and Their Scales with a Scale-Space Primal Sketch: A Method for Focus-of-Attention" (abstract page). International Journal of Computer Vision. 11 (3): 283â318. doi:10.1007/BF01469346. S2CIDÂ 11998035.
+T. Lindeberg (1994). Scale-Space Theory in Computer Vision. Springer. ISBNÂ 978-0-7923-9418-1.
+T. Lindeberg (1998). "Feature detection with automatic scale selection" (abstract page). International Journal of Computer Vision. 30 (2): 77â116. doi:10.1023/A:1008045108935. S2CIDÂ 723210.
+Lindeberg, T.; Garding, J. (1997). "Shape-adapted smoothing in estimation of 3-{D} depth cues from affine distortions of local 2-{D} structure". Image and Vision Computing. 15 (6): 415â434. doi:10.1016/S0262-8856(97)01144-X.
+Lindeberg, T. (2008). "Scale-space".  In Wah, Benjamin (ed.). Encyclopedia of Computer Science and Engineering. Vol.Â IV. John Wiley and Sons. pp.Â 2495â2504. doi:10.1002/9780470050118.ecse609. ISBNÂ 978-0-470-05011-8.
+D. G. Lowe (2004). "Distinctive Image Features from Scale-Invariant Keypoints". International Journal of Computer Vision. 60 (2): 91â110. CiteSeerXÂ 10.1.1.73.2924. doi:10.1023/B:VISI.0000029664.99615.94. S2CIDÂ 221242327.
+J. Matas; O. Chum; M. Urban & T. Pajdla (2002). "Robust wide baseline stereo from maximally stable extremum regions" (PDF). British Machine Vision Conference. pp.Â 384â393.
+K. Mikolajczyk; C. Schmid (2004). "Scale and affine invariant interest point detectors" (PDF). International Journal of Computer Vision. 60 (1): 63â86. doi:10.1023/B:VISI.0000027790.02288.f2. S2CIDÂ 1704741.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Blob_detection&oldid=1018858472"
+		Categories: Feature detection (computer vision)Hidden categories: Webarchive template wayback linksWikipedia articles that are too technical from September 2009All articles that are too technical
+	

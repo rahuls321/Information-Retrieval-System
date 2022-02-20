@@ -1,0 +1,369 @@
+
+Title:
+Command pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article includes a list of references, related reading or external links, but its sources remain unclear because it lacks inline citations. Please help to improve this article by introducing more precise citations.  (December 2012) (Learn how and when to remove this template message)
+In object-oriented programming, the command pattern is a behavioral design pattern in which an object is used to encapsulate all information needed to perform an action or trigger an event at a later time. This information includes the method name, the object that owns the method and values for the method parameters.
+Four terms always associated with the command pattern are command, receiver, invoker and client. A command object knows about receiver and invokes a method of the receiver. Values for parameters of the receiver method are stored in the command.  The receiver object to execute these methods is also stored in the command object by aggregation. The receiver then does the work when the execute() method in command is called. An invoker object knows how to execute a command, and optionally does bookkeeping about the command execution. The invoker does not know anything about a concrete command, it knows only about the command interface. Invoker object(s), command objects and receiver objects are held by a client object, the client decides which receiver objects it assigns to the command objects, and which commands it assigns to the invoker. The client decides which commands to execute at which points. To execute a command, it passes the command object to the invoker object.
+Using command objects makes it easier to construct general components that need to delegate, sequence or execute method calls at a time of their choosing without the need to know the class of the method or the method parameters. Using an invoker object allows bookkeeping about command executions to be conveniently performed, as well as implementing different modes for commands, which are managed by the invoker object, without the need for the client to be aware of the existence of bookkeeping or modes.
+The central ideas of this design pattern closely mirror the semantics of first-class functions and higher-order functions in functional programming languages.  Specifically, the invoker object is a higher-order function of which the command object is a first-class argument.
+
+Contents
+
+1 Overview
+2 Structure
+
+2.1 UML class and sequence diagram
+2.2 UML class diagram
+
+
+3 Uses
+4 Terminology
+5 Example
+6 See also
+7 Sources
+8 References
+9 External links
+
+
+
+Overview[edit]
+The command[1]
+design pattern is one of the twenty-three well-known GoF design patterns that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+Using the command design pattern can solve these problems:[2]
+
+Coupling the invoker of a request to a particular request should be avoided. That is, hard-wired requests should be avoided.
+It should be possible to configure an object (that invokes a request) with a request.
+Implementing (hard-wiring) a request directly into a class is inflexible because it couples the class to a particular request at compile-time, which makes it impossible to specify a request at run-time.
+Using the command design pattern describes the following solution:
+
+Define separate (command) objects that encapsulate a request.
+A class delegates a request to a command object instead of implementing a particular request directly.
+This enables one to configure a class with a command object that is used to perform a request. The class is no longer coupled to a particular request and has no knowledge (is independent) of how the request is carried out.
+See also the UML class and sequence diagram below.
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Command design pattern. [3]
+In the above UML class diagram, the Invoker class doesn't implement a request directly.
+Instead, Invoker refers to the Command interface to perform a request (command.execute()), which makes the Invoker independent of how the request is performed.
+The Command1 class implements the Command interface by performing an action on a receiver (receiver1.action1()).
+The UML sequence diagram
+shows the run-time interactions: The Invoker object calls execute() on a Command1 object.
+Command1 calls action1() on a Receiver1 object,
+which performs the request.
+
+UML class diagram[edit]
+  UML diagram of the command pattern
+Uses[edit]
+GUI buttons and menu items
+In Swing and Borland Delphi programming, an Action is a command object. In addition to the ability to perform the desired command, an .mw-parser-output .monospaced{font-family:monospace,monospace}Action may have an associated icon, keyboard shortcut, tooltip text, and so on. A toolbar button or menu item component may be completely initialized using only the Action object.
+Macro recording
+If all user actions are represented by command objects, a program can record a sequence of actions simply by keeping a list of the command objects as they are executed. It can then "play back" the same actions by executing the same command objects again in sequence. If the program embeds a scripting engine, each command object can implement a toScript() method, and user actions can then be easily recorded as scripts.
+Mobile code
+Using languages such as Java where code can be streamed/slurped from one location to another via URLClassloaders and Codebases the commands can enable new behavior to be delivered to remote locations (EJB Command, Master Worker).
+Multi-level undo
+If all user actions in a program are implemented as command objects, the program can keep a stack of the most recently executed commands. When the user wants to undo a command, the program simply pops the most recent command object and executes its undo() method.
+Networking
+It is possible to send whole command objects across the network to be executed on the other machines, for example player actions in computer games.
+Parallel processing
+Where the commands are written as tasks to a shared resource and executed by many threads in parallel (possibly on remote machines; this variant is often referred to as the Master/Worker pattern)
+Progress bars
+Suppose a program has a sequence of commands that it executes in order. If each command object has a getEstimatedDuration() method, the program can easily estimate the total duration. It can show a progress bar that meaningfully reflects how close the program is to completing all the tasks.
+Thread pools
+A typical, general-purpose thread pool class might have a public addTask() method that adds a work item to an internal queue of tasks waiting to be done. It maintains a pool of threads that execute commands from the queue. The items in the queue are command objects. Typically these objects implement a common interface such as java.lang.Runnable that allows the thread pool to execute the command even though the thread pool class itself was written without any knowledge of the specific tasks for which it would be used.
+Transactional behavior
+Similar to undo, a database engine or software installer may keep a list of operations that have been or will be performed. Should one of them fail, all others can be reversed or discarded (usually called rollback). For example, if two database tables that refer to each other must be updated, and the second update fails, the transaction can be rolled back, so that the first table does not now contain an invalid reference.
+Wizards
+Often a wizard presents several pages of configuration for a single action that happens only when the user clicks the "Finish" button on the last page. In these cases, a natural way to separate user interface code from application code is to implement the wizard using a command object. The command object is created when the wizard is first displayed. Each wizard page stores its GUI changes in the command object, so the object is populated as the user progresses. "Finish" simply triggers a call to execute(). This way, the command class will work.
+Terminology[edit]
+The terminology used to describe command pattern implementations is not consistent and can therefore be confusing.
+This is the result of ambiguity, the use of synonyms, and implementations that may obscure the original pattern by going well beyond it.
+
+Ambiguity.
+The term command is ambiguous. For example, move up, move up may refer to a single (move up) command that should be executed twice, or it may refer to two commands, each of which happens to do the same thing (move up). If the former command is added twice to an undo stack, both items on the stack refer to the same command instance. This may be appropriate when a command can always be undone the same way (e.g. move down). Both the Gang of Four and the Java example below use this interpretation of the term command. On the other hand, if the latter commands are added to an undo stack, the stack refers to two separate objects. This may be appropriate when each object on the stack must contain information that allows the command to be undone. For example, to undo a delete selection command, the object may contain a copy of the deleted text so that it can be re-inserted, if the delete selection command must be undone. Note that using a separate object for each invocation of a command is also an example of the chain of responsibility pattern.
+The term execute is also ambiguous. It may refer to running the code identified by the command object's execute method. However, in Microsoft's Windows Presentation Foundation a command is considered to have been executed when the command's execute method has been invoked, but that does not necessarily mean that the application code has run. That occurs only after some further event processing.
+Synonyms and homonyms.
+Client, Source, Invoker: the button, toolbar button, or menu item clicked, the shortcut key pressed by the user.
+Command Object, Routed Command Object, Action Object: a singleton object (e.g. there is only one CopyCommand object), which knows about shortcut keys, button images, command text, etc. related to the command. A source/invoker object calls the Command/Action object's execute/performAction method. The Command/Action object notifies the appropriate source/invoker objects when the availability of a command/action has changed. This allows buttons and menu items to become inactive (grayed out) when a command/action cannot be executed/performed.
+Receiver, Target Object: the object that is about to be copied, pasted, moved, etc. The receiver object owns the method that is called by the command's execute method. The receiver is typically also the target object. For example, if the receiver object is a cursor and the method is called moveUp, then one would expect that the cursor is the target of the moveUp action. On the other hand, if the code is defined by the command object itself, the target object will be a different object entirely.
+Command Object, routed event arguments, event object: the object that is passed from the source to the Command/Action object, to the Target object to the code that does the work. Each button click or shortcut key results in a new command/event object. Some implementations add more information to the command/event object as it is being passed from one object (e.g. CopyCommand) to another (e.g. document section). Other implementations put command/event objects in other event objects (like a box inside a bigger box) as they move along the line, to avoid naming conflicts. (See also chain of responsibility pattern.)
+Handler, ExecutedRoutedEventHandler, method, function: the actual code that does the copying, pasting, moving, etc. In some implementations the handler code is part of the command/action object. In other implementations the code is part of the Receiver/Target Object, and in yet other implementations the handler code is kept separate from the other objects.
+Command Manager, Undo Manager, Scheduler, Queue, Dispatcher, Invoker: an object that puts command/event objects on an undo stack or redo stack, or that holds on to command/event objects until other objects are ready to act on them, or that routes the command/event objects to the appropriate receiver/target object or handler code.
+Implementations that go well beyond the original command pattern.
+Microsoft's Windows Presentation Foundation (WPF), introduces routed commands, which combine the command pattern with event processing. As a result, the command object no longer contains a reference to the target object nor a reference to the application code. Instead, invoking the command object's execute command results in a so-called Executed Routed Event that during the event's tunneling or bubbling may encounter a so-called binding object that identifies the target and the application code, which is executed at that point.
+Example[edit]
+Consider a "simple" switch. In this example we configure the Switch with two commands: to turn the light on and to turn the light off.
+A benefit of this particular implementation of the command pattern is that the switch can be used with any device, not just a light. The Switch in the following C# implementation turns a light on and off, but the Switch's constructor is able to accept any subclasses of Command for its two parameters. For example, you could configure the Switch to start an engine.
+
+using System;
+
+namespace CommandPattern
+{    
+    public interface ICommand
+    {
+        void Execute();
+    }
+
+    /* The Invoker class */
+    public class Switch
+    {
+        ICommand _closedCommand;
+        ICommand _openedCommand;
+
+        public Switch(ICommand closedCommand, ICommand openedCommand)
+        {
+            this._closedCommand = closedCommand;
+            this._openedCommand = openedCommand;
+        }
+
+        // Close the circuit / power on
+        public void Close()
+        {
+           this._closedCommand.Execute();
+        }
+
+        // Open the circuit / power off
+        public void Open()
+        {
+            this._openedCommand.Execute();
+        }
+    }
+
+    /* An interface that defines actions that the receiver can perform */
+    public interface ISwitchable
+    {
+        void PowerOn();
+        void PowerOff();
+    }
+
+    /* The Receiver class */
+    public class Light : ISwitchable
+    {
+        public void PowerOn()
+        {
+            Console.WriteLine("The light is on");
+        }
+
+        public void PowerOff()
+        {
+            Console.WriteLine("The light is off");
+        }
+    }
+
+    /* The Command for turning on the device - ConcreteCommand #1 */
+    public class CloseSwitchCommand : ICommand
+    {
+        private ISwitchable _switchable;
+
+        public CloseSwitchCommand(ISwitchable switchable)
+        {
+            _switchable = switchable;
+        }
+
+        public void Execute()
+        {
+            _switchable.PowerOn();
+        }
+    }
+
+    /* The Command for turning off the device - ConcreteCommand #2 */
+    public class OpenSwitchCommand : ICommand
+    {
+        private ISwitchable _switchable;
+
+        public OpenSwitchCommand(ISwitchable switchable)
+        {
+            _switchable = switchable;
+        }
+
+        public void Execute()
+        {
+            _switchable.PowerOff();
+        }
+    }
+
+    /* The test class or client */
+    internal class Program
+    {
+        public static void Main(string[] arguments)
+        {
+            string argument = arguments.Length > 0 ? arguments[0].ToUpper() : null;
+
+            ISwitchable lamp = new Light();
+
+            // Pass reference to the lamp instance to each command
+            ICommand switchClose = new CloseSwitchCommand(lamp);
+            ICommand switchOpen = new OpenSwitchCommand(lamp);
+
+            // Pass reference to instances of the Command objects to the switch
+            Switch @switch = new Switch(switchClose, switchOpen);
+
+            if (argument == "ON")
+            {
+                // Switch (the Invoker) will invoke Execute() on the command object.
+                @switch.Close();
+            }
+            else if (argument == "OFF")
+            {
+                // Switch (the Invoker) will invoke the Execute() on the command object.
+                @switch.Open();
+            }
+            else
+            {
+                Console.WriteLine("Argument \"ON\" or \"OFF\" is required.");
+            }
+        }
+    }
+}
+
+See also[edit]
+Batch queue
+Closure
+Command queue
+Function object
+Job scheduler
+Modelâviewâcontroller
+Priority queue
+Software design pattern
+GoF â Design Patterns
+Sources[edit]
+The first published mention of using a Command class to implement interactive systems seems to be a 1985 article by Henry Lieberman.[4] The first published description of a (multiple-level) undo-redo mechanism, using a Command class with execute and undo methods, and a history list, appears to be the first (1988) edition of Bertrand Meyer's book Object-oriented Software Construction,[5] section 12.2.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma; Richard Helm; Ralph Johnson; John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 233ff. ISBNÂ 0-201-63361-2.
+
+^ "The Command design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "The Command design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Lieberman, Henry (1985). "There's more to menu systems than meets the screen". SIGGRAPH Computer Graphics: 181â189.
+
+^ Meyer, Bertrand (1988). Object-Oriented Software Construction (1stÂ ed.). Prentice-Hall.
+
+
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Command pattern.
+
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Command implementations in various languages
+
+Command Pattern
+Java Tip 68: Learn how to implement the Command pattern in Java
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Command_pattern&oldid=1061530663"
+		Categories: Software design patternsHidden categories: Articles lacking in-text citations from December 2012All articles lacking in-text citationsCommons category link from WikidataArticles with example C Sharp codeArticles with example Java codeArticles with example JavaScript codeArticles with example Python (programming language) codeArticles with example Ruby codeArticles with example Scala code
+	

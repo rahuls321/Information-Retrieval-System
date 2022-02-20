@@ -1,0 +1,1038 @@
+
+Title:
+Mersenne Twister
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Pseudorandom number generator
+The Mersenne Twister is by far the most widely used general-purpose pseudorandom number generator (PRNG).[1] Its name derives from the fact that its period length is chosen to be a Mersenne prime.
+The Mersenne Twister was developed in 1997 by Makoto MatsumotoÂ [ja] (æ¾æ¬ ç) and Takuji Nishimura (è¥¿æ æå£«).[2] It was designed specifically to rectify most of the flaws found in older PRNGs.
+The most commonly used version of the Mersenne Twister algorithm is based on the Mersenne prime 219937Â âÂ 1.  The standard implementation of that, MT19937, uses a 32-bit word length. There is another implementation (with five variants[3]) that uses a 64-bit word length, MT19937-64; it generates a different sequence.
+
+Contents
+
+1 Application
+
+1.1 Software
+
+
+2 Advantages
+3 Disadvantages
+4 Alternatives
+5 k-distribution
+6 Algorithmic detail
+
+6.1 Initialization
+6.2 Comparison with classical GFSR
+6.3 Pseudocode
+
+
+7 Variants
+
+7.1 CryptMT
+7.2 MTGP
+7.3 SFMT
+7.4 TinyMT
+
+
+8 References
+9 Further reading
+10 External links
+
+
+
+Application[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Pseudorandom number generator
+Software[edit]
+The Mersenne Twister is used as default PRNG by the following software:
+
+Programming languages: Dyalog APL,[4] IDL,[5] R,[6] Ruby,[7] Free Pascal,[8] PHP,[9] Python (also used in NumPy, while there changed to PCG64 by default as of 1.17[10]),[11][12][13] Julia[14] CMU Common Lisp,[15] Embeddable Common Lisp,[16] Steel Bank Common Lisp,[17]
+Linux libraries and software: GLib,[18] GNU Multiple Precision Arithmetic Library,[19] GNU Octave,[20]  GNU Scientific Library,[21]
+Other: Microsoft Excel,[22] GAUSS,[23] gretl,[24]Stata.[25] SageMath,[26] Scilab,[27] Maple,[28] MATLAB,[29]
+It is also available in Apache Commons,[30] in standard C++  (since C++11),[31][32] and in Mathematica.[33] Add-on implementations are provided in many program libraries, including the Boost C++ Libraries,[34] the CUDA Library,[35] and the NAG Numerical Library.[36]
+The Mersenne Twister is one of two PRNGs in SPSS: the other generator is kept only for compatibility with older programs, and the Mersenne Twister is stated to be "more reliable".[37]
+The Mersenne Twister is similarly one of the PRNGs in SAS: the other generators are older and deprecated.[38]
+The Mersenne Twister is the default PRNG in Stata, the other one is KISS, for compatibility with older versions of Stata.[39]
+
+Advantages[edit]
+Permissively-licensed and patent-free for all variants except CryptMT.
+Passes numerous tests for statistical randomness, including the Diehard tests and most, but not all of the TestU01 tests.[40]
+A very long period of 219937Â âÂ 1. Note that while a long period is not a guarantee of quality in a random number generator, short periods, such as the 232 common in many older software packages, can be problematic.[41]
+k-distributed to 32-bit accuracy for every 1 â¤ k â¤ 623 (for a definition of k-distributed, see below)
+Implementations generally create random numbers faster than true random methods. A study found that the Mersenne Twister creates 64-bit floating point random numbers approximately twenty times faster than the hardware-implemented, processor-based RDRAND instruction set.[42]
+Disadvantages[edit]
+Relatively large state buffer, of 2.5 KiB, unless the TinyMT variant (discussed below) is used.
+Mediocre throughput by modern standards, unless the SFMT variant (discussed below) is used.[43]
+Exhibits two clear failures (linear complexity) in both Crush and BigCrush in the TestU01 suite. The test, like Mersenne Twister, is based on an F2-algebra.[40] There are a number of other generators that pass all the tests (and numerous generators that fail badly)[clarification needed].
+Multiple instances that differ only in seed value (but not other parameters) are not generally appropriate for Monte-Carlo simulations that require independent random number generators, though there exists a method for choosing multiple sets of parameter values.[44][45]
+Poor diffusion: can take a long time to start generating output that passes randomness tests, if the initial state is highly non-randomâparticularly if the initial state has many zeros. A consequence of this is that two instances of the generator, started with initial states that are almost the same, will usually output nearly the same sequence for many iterations, before eventually diverging. The 2002 update to the MT algorithm has improved initialization, so that beginning with such a state is very unlikely.[46] The GPU version (MTGP) is said to be even better.[47]
+Contains subsequences with more 0's than 1's. This adds to the poor diffusion property to make recovery from many-zero states difficult.
+Is not cryptographically secure, unless the CryptMT variant (discussed below) is used. The reason is that observing a sufficient number of iterations (624 in the case of MT19937, since this is the size of the state vector from which future iterations are produced) allows one to predict all future iterations.
+Alternatives[edit]
+An alternative generator, WELL ("Well Equidistributed Long-period Linear"), offers quicker recovery, and equal randomness, and nearly equal speed.[48]
+Marsaglia's xorshift generators and variants are the fastest in the class of LFSRs.[49]
+64-bit MELGs ("64-bit Maximally Equidistributed F2-Linear Generators with Mersenne Prime Period") are completely optimized in terms of the k-distribution properties.[50]
+The ACORN family (published 1989) is another k-distributed PRNG, which shows similar computational speed to MT, and better statistical properties as it satisfies all the current (2019) TestU01 criteria; when used with appropriate choices of parameters, ACORN can have arbitrarily long period and precision.
+The PCG family is a more modern long-period generator, with better cache locality, and less detectable bias using modern analysis methods.[51]
+
+k-distribution[edit]
+A pseudorandom sequence xi of w-bit integers of period P is said to be k-distributed to v-bit accuracy if the following holds.
+
+Let truncv(x) denote the number formed by the leading v bits of x, and consider P of the k v-bit vectors
+
+  
+    
+      
+        (
+        
+          trunc
+          
+            v
+          
+        
+        â¡
+        (
+        
+          x
+          
+            i
+          
+        
+        )
+        ,
+        
+          trunc
+          
+            v
+          
+        
+        â¡
+        (
+        
+          x
+          
+            i
+            +
+            1
+          
+        
+        )
+        ,
+        
+        â¦
+        ,
+        
+          trunc
+          
+            v
+          
+        
+        â¡
+        (
+        
+          x
+          
+            i
+            +
+            k
+            â
+            1
+          
+        
+        )
+        )
+        
+        (
+        0
+        â¤
+        i
+        <
+        P
+        )
+      
+    
+    {\displaystyle (\operatorname {trunc} _{v}(x_{i}),\operatorname {trunc} _{v}(x_{i+1}),\,\ldots ,\operatorname {trunc} _{v}(x_{i+k-1}))\quad (0\leq i<P)}
+  
+.
+Then each of the 2kv possible combinations of bits occurs the same number of times in a period, except for the all-zero combination that occurs once less often.
+Algorithmic detail[edit]
+  Visualisation of generation of pseudo-random 32-bit integers using a Mersenne Twister. The 'Extract number' section shows an example where integer 0 has already been output and the index is at integer 1. 'Generate numbers' is run when all integers have been output.
+For a w-bit word length, the Mersenne Twister generates integers in the range [0, 2wÂ âÂ 1].
+The Mersenne Twister algorithm is based on a matrix linear recurrence over a finite binary field F2.  The algorithm is a twisted generalised feedback shift register[52] (twisted GFSR, or TGFSR) of rational normal form (TGFSR(R)), with state bit reflection and tempering. The basic idea is to define a series xi through a simple recurrence relation, and then output numbers of the form xiT, where T is an invertible F2-matrix called a tempering matrix.
+The general algorithm is characterized by the following quantities (some of these explanations make sense only after reading the rest of the algorithm):
+
+w: word size (in number of bits)
+n: degree of recurrence
+m: middle word, an offset used in the recurrence relation defining the series x, 1 â¤ m < n
+r: separation point of one word, or the number of bits of the lower bitmask, 0 â¤ r â¤ w â 1
+a: coefficients of the rational normal form twist matrix
+b, c: TGFSR(R) tempering bitmasks
+s, t: TGFSR(R) tempering bit shifts
+u, d, l: additional Mersenne Twister tempering bit shifts/masks
+with the restriction that 2nwâr â 1 is a Mersenne prime. This choice simplifies the primitivity test and k-distribution test that are needed in the parameter search.
+The series x is defined as a series of w-bit quantities with the recurrence relation:
+
+
+  
+    
+      
+        
+          x
+          
+            k
+            +
+            n
+          
+        
+        :=
+        
+          x
+          
+            k
+            +
+            m
+          
+        
+        â
+        
+          (
+          
+            (
+            
+              
+                
+                  x
+                  
+                    k
+                  
+                
+              
+              
+                u
+              
+            
+            â£
+            
+              
+                
+                  x
+                  
+                    k
+                    +
+                    1
+                  
+                
+              
+              
+                l
+              
+            
+            )
+            A
+          
+          )
+        
+        
+        
+        k
+        =
+        0
+        ,
+        1
+        ,
+        â¦
+      
+    
+    {\displaystyle x_{k+n}:=x_{k+m}\oplus \left(({x_{k}}^{u}\mid {x_{k+1}}^{l})A\right)\qquad \qquad k=0,1,\ldots }
+  
+
+where 
+  
+    
+      
+        â£
+      
+    
+    {\displaystyle \mid }
+  
+ denotes concatenation of bit vectors (with upper bits on the left), â the bitwise exclusive or (XOR), xku means the upper w â r bits of xk, and xk+1l means the lower r bits of xk+1. The twist transformation A is defined in rational normal form as:
+
+  
+    
+      
+        A
+        =
+        
+          
+            (
+            
+              
+                
+                  0
+                
+                
+                  
+                    I
+                    
+                      w
+                      â
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    a
+                    
+                      w
+                      â
+                      1
+                    
+                  
+                
+                
+                  (
+                  
+                    a
+                    
+                      w
+                      â
+                      2
+                    
+                  
+                  ,
+                  â¦
+                  ,
+                  
+                    a
+                    
+                      0
+                    
+                  
+                  )
+                
+              
+            
+            )
+          
+        
+      
+    
+    {\displaystyle A={\begin{pmatrix}0&I_{w-1}\\a_{w-1}&(a_{w-2},\ldots ,a_{0})\end{pmatrix}}}
+  
+
+with Iwâ1 as the (wÂ âÂ 1)Â ÃÂ (wÂ âÂ 1) identity matrix. The rational normal form has the benefit that multiplication by A can be efficiently expressed as: (remember that here matrix multiplication is being done in F2, and therefore bitwise XOR takes the place of addition)
+
+  
+    
+      
+        
+          x
+        
+        A
+        =
+        
+          
+            {
+            
+              
+                
+                  
+                    x
+                  
+                  â«
+                  1
+                
+                
+                  
+                    x
+                    
+                      0
+                    
+                  
+                  =
+                  0
+                
+              
+              
+                
+                  (
+                  
+                    x
+                  
+                  â«
+                  1
+                  )
+                  â
+                  
+                    a
+                  
+                
+                
+                  
+                    x
+                    
+                      0
+                    
+                  
+                  =
+                  1
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {x}}A={\begin{cases}{\boldsymbol {x}}\gg 1&x_{0}=0\\({\boldsymbol {x}}\gg 1)\oplus {\boldsymbol {a}}&x_{0}=1\end{cases}}}
+  
+
+where x0 is the lowest order bit of x.
+As like TGFSR(R), the Mersenne Twister is cascaded with a tempering transform to compensate for the reduced dimensionality of equidistribution (because of the choice of A being in the rational normal form). Note that this is equivalent to using the matrix A where A = Tâ1AT for T an invertible matrix, and therefore the analysis of characteristic polynomial mentioned below still holds.
+As with A, we choose a tempering transform to be easily computable, and so do not actually construct T itself. The tempering is defined in the case of Mersenne Twister as
+
+
+  
+    
+      
+        
+          
+            
+              
+                y
+              
+              
+                
+                â¡
+                x
+                â
+                (
+                (
+                x
+                â«
+                u
+                )
+                Â 
+                &
+                Â 
+                d
+                )
+              
+            
+            
+              
+                y
+              
+              
+                
+                â¡
+                y
+                â
+                (
+                (
+                y
+                âª
+                s
+                )
+                Â 
+                &
+                Â 
+                b
+                )
+              
+            
+            
+              
+                y
+              
+              
+                
+                â¡
+                y
+                â
+                (
+                (
+                y
+                âª
+                t
+                )
+                Â 
+                &
+                Â 
+                c
+                )
+              
+            
+            
+              
+                z
+              
+              
+                
+                â¡
+                y
+                â
+                (
+                y
+                â«
+                l
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}y&\equiv x\oplus ((x\gg u)~\And ~d)\\y&\equiv y\oplus ((y\ll s)~\And ~b)\\y&\equiv y\oplus ((y\ll t)~\And ~c)\\z&\equiv y\oplus (y\gg l)\end{aligned}}}
+  
+
+where x is the next value from the series, y a temporary intermediate value, z the value returned from the algorithm, with âª, â« as the bitwise left and right shifts, and & as the bitwise and. The first and last transforms are added in order to improve lower-bit equidistribution. From the property of TGFSR, s + t â¥ âw/2â â 1 is required to reach the upper bound of equidistribution for the upper bits.
+The coefficients for MT19937 are:
+
+(w, n, m, r)Â =Â (32, 624, 397, 31)
+aÂ =Â 9908B0DF16
+(u, d)Â =Â (11, FFFFFFFF16)
+(s, b)Â =Â (7, 9D2C568016)
+(t, c)Â =Â (15, EFC6000016)
+lÂ =Â 18
+Note that 32-bit implementations of the Mersenne Twister generally have dÂ =Â FFFFFFFF16. As a result, the d is occasionally omitted from the algorithm description, since the bitwise and with d in that case has no effect.
+The coefficients for MT19937-64 are:[53]
+
+(w, n, m, r)Â =Â (64, 312, 156, 31)
+aÂ =Â B5026F5AA96619E916
+(u, d)Â =Â (29, 555555555555555516)
+(s, b)Â =Â (17, 71D67FFFEDA6000016)
+(t, c)Â =Â (37, FFF7EEE00000000016)
+lÂ =Â 43
+Initialization[edit]
+The state needed for a Mersenne Twister implementation is an array of n values of w bits each. To initialize the array, a w-bit seed value is used to supply x0 through xnâ1 by setting x0 to the seed value and thereafter setting
+
+
+  
+    
+      
+        
+          x
+          
+            i
+          
+        
+        =
+        f
+        Ã
+        (
+        
+          x
+          
+            i
+            â
+            1
+          
+        
+        â
+        (
+        
+          x
+          
+            i
+            â
+            1
+          
+        
+        âª
+        (
+        w
+        â
+        2
+        )
+        )
+        +
+        i
+      
+    
+    {\displaystyle x_{i}=f\times (x_{i-1}\oplus (x_{i-1}\ll (w-2))+i}
+  
+
+for i from 1 to n â 1. 
+
+The first value the algorithm then generates is based on xn, not on x0.
+The constant f forms another parameter to the generator, though not part of the algorithm proper.
+The value for f for MT19937 is 1812433253.
+The value for f for MT19937-64 is 6364136223846793005.[53]
+Comparison with classical GFSR[edit]
+In order to achieve the 2nwÂ âÂ rÂ âÂ 1 theoretical upper limit of the period in a TGFSR, ÏB(t) must be a primitive polynomial, ÏB(t) being the characteristic polynomial of
+
+
+  
+    
+      
+        B
+        =
+        
+          
+            (
+            
+              
+                
+                  0
+                
+                
+                  
+                    I
+                    
+                      w
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  â®
+                
+                
+                
+                
+                
+              
+              
+                
+                  
+                    I
+                    
+                      w
+                    
+                  
+                
+                
+                  â®
+                
+                
+                  â±
+                
+                
+                  â®
+                
+                
+                  â®
+                
+              
+              
+                
+                  â®
+                
+                
+                
+                
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  â¯
+                
+                
+                  
+                    I
+                    
+                      w
+                    
+                  
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  â¯
+                
+                
+                  0
+                
+                
+                  
+                    I
+                    
+                      w
+                      â
+                      r
+                    
+                  
+                
+              
+              
+                
+                  S
+                
+                
+                  0
+                
+                
+                  â¯
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+            
+            )
+          
+        
+        
+          
+            
+              
+            
+            
+              
+            
+            
+              
+                â
+                m
+                
+                  -th row
+                
+              
+            
+            
+              
+            
+            
+              
+            
+            
+              
+            
+          
+        
+      
+    
+    {\displaystyle B={\begin{pmatrix}0&I_{w}&\cdots &0&0\\\vdots &&&&\\I_{w}&\vdots &\ddots &\vdots &\vdots \\\vdots &&&&\\0&0&\cdots &I_{w}&0\\0&0&\cdots &0&I_{w-r}\\S&0&\cdots &0&0\end{pmatrix}}{\begin{matrix}\\\\\leftarrow m{\text{-th row}}\\\\\\\\\end{matrix}}}
+  
+
+
+  
+    
+      
+        S
+        =
+        
+          
+            (
+            
+              
+                
+                  0
+                
+                
+                  
+                    I
+                    
+                      r
+                    
+                  
+                
+              
+              
+                
+                  
+                    I
+                    
+                      w
+                      â
+                      r
+                    
+                  
+                
+                
+                  0
+                
+              
+            
+            )
+          
+        
+        A
+      
+    
+    {\displaystyle S={\begin{pmatrix}0&I_{r}\\I_{w-r}&0\end{pmatrix}}A}
+  
+
+The twist transformation improves the classical GFSR with the following key properties:
+
+The period reaches the theoretical upper limit 2nwÂ âÂ rÂ âÂ 1 (except if initialized with 0)
+Equidistribution in n dimensions (e.g. linear congruential generators can at best manage reasonable distribution in five dimensions)
+Pseudocode[edit]
+The following pseudocode implements the general Mersenne Twister algorithm. The constants w, n, m, r, a, u, d, s, b, t, c, l, and f are as in the algorithm description above. It is assumed that int represents a type sufficient to hold values with w bits:
+
+ // Create a length n array to store the state of the generator
+ int[0..n-1] MT
+ int indexÂ := n+1
+ const int lower_mask = (1 << r) - 1 // That is, the binary number of r 1's
+ const int upper_mask = lowest w bits of (not lower_mask)
+ 
+ // Initialize the generator from a seed
+ function seed_mt(int seed) {
+     indexÂ := n
+     MT[0]Â := seed
+     for i from 1 to (n - 1) { // loop over each element
+         MT[i]Â := lowest w bits of (f * (MT[i-1] xor (MT[i-1] >> (w-2))) + i)
+     }
+ }
+ 
+ // Extract a tempered value based on MT[index]
+ // calling twist() every n numbers
+ function extract_number() {
+     if index >= n {
+         if index > n {
+           error "Generator was never seeded"
+           // Alternatively, seed with constant value; 5489 is used in reference C code[54]
+         }
+         twist()
+     }
+ 
+     int yÂ := MT[index]
+     yÂ := y xor ((y >> u) and d)
+     yÂ := y xor ((y << s) and b)
+     yÂ := y xor ((y << t) and c)
+     yÂ := y xor (y >> l)
+ 
+     indexÂ := index + 1
+     return lowest w bits of (y)
+ }
+ 
+ // Generate the next n values from the series x_i 
+ function twist() {
+     for i from 0 to (n-1) {
+         int xÂ := (MT[i] and upper_mask)
+                   + (MT[(i+1) mod n] and lower_mask)
+         int xAÂ := x >> 1
+         if (x mod 2)Â != 0 { // lowest bit of x is 1
+             xAÂ := xA xor a
+         }
+         MT[i]Â := MT[(i + m) mod n] xor xA
+     }
+     indexÂ := 0
+ }
+
+Variants[edit]
+CryptMT[edit]
+Main article: CryptMT
+CryptMT is a stream cipher and cryptographically secure pseudorandom number generator which uses Mersenne Twister internally.[55][56] It was developed by Matsumoto and Nishimura alongside Mariko Hagita and Mutsuo Saito. It has been submitted to the eSTREAM project of the eCRYPT network.[55] Unlike Mersenne Twister or its other derivatives, CryptMT is patented.
+
+MTGP[edit]
+MTGP is a variant of Mersenne Twister optimised for graphics processing units published by Mutsuo Saito and Makoto Matsumoto.[57] The basic linear recurrence operations are extended from MT and parameters are chosen to allow many threads to compute the recursion in parallel, while sharing their state space to reduce memory load.  The paper claims improved equidistribution over MT and performance on a very old GPU (Nvidia GTX260 with 192 cores) of 4.7Â ms for 5Ã107 random 32-bit integers.
+
+SFMT[edit]
+This section needs expansion. You can help by adding to it.  (June 2007)
+The SFMT (SIMD-oriented Fast Mersenne Twister) is a variant of Mersenne Twister, introduced in 2006,[58] designed to be fast when it runs on 128-bit SIMD.
+
+It is roughly twice as fast as Mersenne Twister.[59]
+It has a better equidistribution property of v-bit accuracy than MT but worse than WELL ("Well Equidistributed Long-period Linear").
+It has quicker recovery from zero-excess initial state than MT, but slower than WELL.
+It supports various periods from 2607Â âÂ 1 to 2216091Â âÂ 1.
+Intel SSE2 and PowerPC AltiVec are supported by SFMT. It is also used for games with the Cell BE in the PlayStation 3.[60]
+
+TinyMT[edit]
+TinyMT is a variant of Mersenne Twister, proposed by Saito and Matsumoto in 2011.[61] TinyMT uses just 127 bits of state space, a significant decrease compared to the original's 2.5 KiB of state. However, it has a period of 2127Â âÂ 1, far shorter than the original, so it is only recommended by the authors in cases where memory is at a premium.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ E.g. Marsland S. (2011) Machine Learning (CRC Press), Â§4.1.1. Also see the section "Adoption in software systems".
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Matsumoto, M.; Nishimura, T. (1998). "Mersenne twister: a 623-dimensionally equidistributed uniform pseudo-random number generator" (PDF). ACM Transactions on Modeling and Computer Simulation. 8 (1): 3â30. CiteSeerXÂ 10.1.1.215.1141. doi:10.1145/272991.272995. S2CIDÂ 3332028.
+
+^ John Savard. "The Mersenne Twister". A subsequent paper, published in the year 2000, gave five additional forms of the Mersenne Twister with period 2^19937-1. All five were designed to be implemented with 64-bit arithmetic instead of 32-bit arithmetic.
+
+^ "Random link". Dyalog Language Reference Guide. Retrieved 2020-06-04.
+
+^ "RANDOMU (IDL Reference)". Exelis VIS Docs Center. Retrieved 2013-08-23.
+
+^ "Random Number Generators". CRAN Task View: Probability Distributions. Retrieved 2012-05-29.
+
+^ ""Random" class documentation". Ruby 1.9.3 documentation. Retrieved 2012-05-29.
+
+^ "random". free pascal documentation. Retrieved 2013-11-28.
+
+^ "mt_rand â Generate a better random value". PHP Manual. Retrieved 2016-03-02.
+
+^ "NumPy 1.17.0 Release Notes â NumPy v1.21 Manual". numpy.org. Retrieved 2021-06-29.
+
+^ "9.6 random â Generate pseudo-random numbers". Python v2.6.8 documentation. Retrieved 2012-05-29.
+
+^ "8.6 random â Generate pseudo-random numbers". Python v3.2 documentation. Retrieved 2012-05-29.
+
+^ "random â Generate pseudo-random numbers â Python 3.8.3 documentation". Python 3.8.3 documentation. Retrieved 2020-06-23.
+
+^ "Random Numbers". Julia Language DocumentationâThe Standard Library.
+
+^ "Design choices and extensions". CMUCL User's Manual. Retrieved 2014-02-03.
+
+^ "Random states". The ECL manual. Retrieved 2015-09-20.
+
+^ "Random Number Generation". SBCL User's Manual.
+
+^ "Random Numbers: GLib Reference Manual".
+
+^ "Random Number Algorithms". GNU MP. Retrieved 2013-11-21.
+
+^ "16.3 Special Utility Matrices". GNU Octave. Built-in Function: rand
+
+^ "Random number environment variables". GNU Scientific Library. Retrieved 2013-11-24.
+
+^ MÃ©lard, G. (2014), "On the accuracy of statistical procedures in Microsoft Excel 2010", Computational Statistics, 29 (5): 1095â1128, CiteSeerXÂ 10.1.1.455.5508, doi:10.1007/s00180-014-0482-5, S2CIDÂ 54032450.
+
+^ "GAUSS 14 Language Reference" (PDF).
+
+^ "uniform". Gretl Function Reference.
+
+^ "New random-number generatorâ64-bit Mersenne Twister".
+
+^ "Probability Distributions â Sage Reference Manual v7.2: Probablity".
+
+^ "grand - Random numbers". Scilab Help.
+
+^ "random number generator". Maple Online Help. Retrieved 2013-11-21.
+
+^ "Random number generator algorithms". Documentation Center, MathWorks.
+
+^ "Data Generation". Apache Commons Math User Guide.
+
+^ "Random Number Generation in C++11" (PDF). Standard C++ Foundation.
+
+^ "std::mersenne_twister_engine". Pseudo Random Number Generation. Retrieved 2012-09-25.
+
+^ [1] Mathematica Documentation
+
+^ "boost/random/mersenne_twister.hpp". Boost C++ Libraries. Retrieved 2012-05-29.
+
+^ "Host API Overview". CUDA Toolkit Documentation. Retrieved 2016-08-02.
+
+^ "G05 â Random Number Generators". NAG Library Chapter Introduction. Retrieved 2012-05-29.
+
+^ "Random Number Generators". IBM SPSS Statistics. Retrieved 2013-11-21.
+
+^ "Using Random-Number Functions". SAS Language Reference. Retrieved 2013-11-21.
+
+^ Stata help: set rng -- Set which random-number generator (RNG) to use
+
+^ a b P. L'Ecuyer and R. Simard, "TestU01: "A C library for empirical testing of random number generators", ACM Transactions on Mathematical Software, 33, 4, Article 22 (August 2007).
+
+^ Note: 219937 is approximately 4.3Â ÃÂ 106001; this is many orders of magnitude larger than the estimated number of particles in the observable universe, which is 1087.
+
+^ Route, Matthew (August 10, 2017). "Radio-flaring Ultracool Dwarf Population Synthesis". The Astrophysical Journal. 845 (1): 66. arXiv:1707.02212. Bibcode:2017ApJ...845...66R. doi:10.3847/1538-4357/aa7ede. S2CIDÂ 118895524.
+
+^ "SIMD-oriented Fast Mersenne Twister (SFMT): twice faster than Mersenne Twister". Japan Society for the Promotion of Science. Retrieved 27 March 2017.
+
+^ Makoto Matsumoto; Takuji Nishimura. "Dynamic Creation of Pseudorandom Number Generators" (PDF). Retrieved 19 July 2015.
+
+^ Hiroshi Haramoto; Makoto Matsumoto; Takuji Nishimura; FranÃ§ois Panneton; Pierre L'Ecuyer. "Efficient Jump Ahead for F2-Linear Random Number Generators" (PDF). Retrieved 12 Nov 2015.
+
+^ "mt19937ar: Mersenne Twister with improved initialization". hiroshima-u.ac.jp. Retrieved 4 October 2015.
+
+^ Fog, Agner (1 May 2015). "Pseudo-Random Number Generators for Vector Processors and Multicore Processors". Journal of Modern Applied Statistical Methods. 14 (1): 308â334. doi:10.22237/jmasm/1430454120.
+
+^ P. L'Ecuyer, "Uniform Random Number Generators", International Encyclopedia of Statistical Science, Lovric, Miodrag (Ed.), Springer-Verlag, 2010.
+
+^ "xorshift*/xorshift+ generators and the PRNG shootout".
+
+^ Harase, S.; Kimoto, T. (2018). "Implementing 64-bit Maximally Equidistributed F2-Linear Generators with Mersenne Prime Period". ACM Transactions on Mathematical Software. 44 (3): 30:1â30:11. arXiv:1505.06582. doi:10.1145/3159444. S2CIDÂ 14923086.
+
+^ "The PCG Paper". 27 July 2017.
+
+^ Matsumoto, M.; Kurita, Y. (1992). "Twisted GFSR generators". ACM Transactions on Modeling and Computer Simulation. 2 (3): 179â194. doi:10.1145/146382.146383. S2CIDÂ 15246234.
+
+^ a b "std::mersenne_twister_engine". Pseudo Random Number Generation. Retrieved 2015-07-20.
+
+^ Takuji Nishimura; Makoto Matsumoto. "A C-program for MT19937, with initialization improved 2002/1/26". Retrieved 20 July 2015.
+
+^ a b "CryptMt and Fubuki". eCRYPT. Retrieved 2017-11-12.
+
+^ Matsumoto, Makoto; Nishimura, Takuji; Hagita, Mariko; Saito, Mutsuo (2005). "Cryptographic Mersenne Twister and Fubuki Stream/Block Cipher" (PDF).
+
+^ Mutsuo Saito; Makoto Matsumoto (2010). "Variants of Mersenne Twister Suitable for Graphic Processors". arXiv:1005.4973v3 [cs.MS].
+
+^ "SIMD-oriented Fast Mersenne Twister (SFMT)". hiroshima-u.ac.jp. Retrieved 4 October 2015.
+
+^ "SFMT:Comparison of speed". hiroshima-u.ac.jp. Retrieved 4 October 2015.
+
+^ "PlayStation3 License". scei.co.jp. Retrieved 4 October 2015.
+
+^ "Tiny Mersenne Twister (TinyMT)". hiroshima-u.ac.jp. Retrieved 4 October 2015.
+
+
+Further reading[edit]
+Harase, S. (2014), "On the 
+  
+    
+      
+        
+          
+            F
+          
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \mathbb {F} _{2}}
+  
+-linear relations of Mersenne Twister pseudorandom number generators", Mathematics and Computers in Simulation, 100: 103â113, arXiv:1301.5435, doi:10.1016/j.matcom.2014.02.002, S2CIDÂ 6984431.
+Harase, S. (2019), "Conversion of Mersenne Twister to double-precision floating-point numbers", Mathematics and Computers in Simulation, 161: 76â83, arXiv:1708.06018, doi:10.1016/j.matcom.2018.08.006, S2CIDÂ 19777310.
+External links[edit]
+The academic paper for MT, and related articles by Makoto Matsumoto
+Mersenne Twister home page, with codes in C, Fortran, Java, Lisp and some other languages
+Mersenne Twister examples â a collection of Mersenne Twister implementations, in several programming languages - at GitHub
+SFMT in Action: Part I â Generating a DLL Including SSE2 Support â at Code Project
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteMarin Mersenne
+Mersenne conjectures
+Mersenne's laws
+Mersenne prime
+Double Mersenne number
+Great Internet Mersenne Prime Search
+List
+Mersenne Twister
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Mersenne_Twister&oldid=1067952568"
+		Categories: Pseudorandom number generatorsJapanese inventionsHidden categories: Articles with short descriptionShort description is different from WikidataArticles containing Japanese-language textWikipedia articles needing clarification from July 2020Articles to be expanded from June 2007All articles to be expandedArticles using small message boxesArticles with example pseudocode
+	

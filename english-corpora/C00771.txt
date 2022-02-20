@@ -1,0 +1,1576 @@
+
+Title:
+Limited-memory BFGS
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Limited-memory BFGS (L-BFGS or LM-BFGS) is an optimization algorithm in the family of quasi-Newton methods that approximates the BroydenâFletcherâGoldfarbâShanno algorithm (BFGS) using a limited amount of computer memory. It is a popular algorithm for parameter estimation in machine learning.[1][2] The algorithm's target problem is to minimize 
+  
+    
+      
+        f
+        (
+        
+          x
+        
+        )
+      
+    
+    {\displaystyle f(\mathbf {x} )}
+  
+ over unconstrained values of the real-vector 
+  
+    
+      
+        
+          x
+        
+      
+    
+    {\displaystyle \mathbf {x} }
+  
+ where 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ is a differentiable scalar function.
+Like the original BFGS, L-BFGS uses an estimate of the inverse Hessian matrix to steer its search through variable space, but where BFGS stores a dense 
+  
+    
+      
+        n
+        Ã
+        n
+      
+    
+    {\displaystyle n\times n}
+  
+ approximation to the inverse Hessian (n being the number of variables in the problem), L-BFGS stores only a few vectors that represent the approximation implicitly. Due to its resulting linear memory requirement, the L-BFGS method is particularly well suited for optimization problems with many variables. Instead of the inverse Hessian Hk, L-BFGS maintains a history of the past m updates of the position x and gradient âf(x), where generally the history size m can be small (often 
+  
+    
+      
+        m
+        <
+        10
+      
+    
+    {\displaystyle m<10}
+  
+). These updates are used to implicitly do operations requiring the Hk-vector product.
+
+Contents
+
+1 Algorithm
+2 Applications
+3 Variants
+
+3.1 L-BFGS-B
+3.2 OWL-QN
+3.3 O-LBFGS
+
+
+4 Implementation of variants
+5 Works cited
+6 Further reading
+
+
+
+Algorithm[edit]
+The algorithm starts with an initial estimate of the optimal value, 
+  
+    
+      
+        
+          
+            x
+          
+          
+            0
+          
+        
+      
+    
+    {\displaystyle \mathbf {x} _{0}}
+  
+, and proceeds iteratively to refine that estimate with a sequence of better estimates 
+  
+    
+      
+        
+          
+            x
+          
+          
+            1
+          
+        
+        ,
+        
+          
+            x
+          
+          
+            2
+          
+        
+        ,
+        â¦
+      
+    
+    {\displaystyle \mathbf {x} _{1},\mathbf {x} _{2},\ldots }
+  
+. The derivatives of the function 
+  
+    
+      
+        
+          g
+          
+            k
+          
+        
+        :=
+        â
+        f
+        (
+        
+          
+            x
+          
+          
+            k
+          
+        
+        )
+      
+    
+    {\displaystyle g_{k}:=\nabla f(\mathbf {x} _{k})}
+  
+ are used as a key driver of the algorithm to identify the direction of steepest descent, and also to form an estimate of the Hessian matrix (second derivative) of 
+  
+    
+      
+        f
+        (
+        
+          x
+        
+        )
+      
+    
+    {\displaystyle f(\mathbf {x} )}
+  
+.
+L-BFGS shares many features with other quasi-Newton algorithms, but is very different in how the matrix-vector multiplication 
+  
+    
+      
+        
+          d
+          
+            k
+          
+        
+        =
+        â
+        
+          H
+          
+            k
+          
+        
+        
+          g
+          
+            k
+          
+        
+      
+    
+    {\displaystyle d_{k}=-H_{k}g_{k}}
+  
+ is carried out, where 
+  
+    
+      
+        
+          d
+          
+            k
+          
+        
+      
+    
+    {\displaystyle d_{k}}
+  
+ is the approximate Newton's direction,  
+  
+    
+      
+        
+          g
+          
+            k
+          
+        
+      
+    
+    {\displaystyle g_{k}}
+  
+ is the current gradient, and 
+  
+    
+      
+        
+          H
+          
+            k
+          
+        
+      
+    
+    {\displaystyle H_{k}}
+  
+ is the inverse of the Hessian matrix. There are multiple published approaches using a history of updates to form this direction vector. Here, we give a common approach, the so-called "two loop recursion."[3][4]
+We take as given 
+  
+    
+      
+        
+          x
+          
+            k
+          
+        
+      
+    
+    {\displaystyle x_{k}}
+  
+, the position at the k-th iteration, and 
+  
+    
+      
+        
+          g
+          
+            k
+          
+        
+        â¡
+        â
+        f
+        (
+        
+          x
+          
+            k
+          
+        
+        )
+      
+    
+    {\displaystyle g_{k}\equiv \nabla f(x_{k})}
+  
+ where 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ is the function being minimized, and all vectors are column vectors. We also assume that we have stored the last m updates of the form 
+
+
+  
+    
+      
+        
+          s
+          
+            k
+          
+        
+        =
+        
+          x
+          
+            k
+            +
+            1
+          
+        
+        â
+        
+          x
+          
+            k
+          
+        
+      
+    
+    {\displaystyle s_{k}=x_{k+1}-x_{k}}
+  
+
+
+  
+    
+      
+        
+          y
+          
+            k
+          
+        
+        =
+        
+          g
+          
+            k
+            +
+            1
+          
+        
+        â
+        
+          g
+          
+            k
+          
+        
+      
+    
+    {\displaystyle y_{k}=g_{k+1}-g_{k}}
+  
+.
+We define 
+  
+    
+      
+        
+          Ï
+          
+            k
+          
+        
+        =
+        
+          
+            1
+            
+              
+                y
+                
+                  k
+                
+                
+                  â¤
+                
+              
+              
+                s
+                
+                  k
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle \rho _{k}={\frac {1}{y_{k}^{\top }s_{k}}}}
+  
+, and 
+  
+    
+      
+        
+          H
+          
+            k
+          
+          
+            0
+          
+        
+      
+    
+    {\displaystyle H_{k}^{0}}
+  
+ will be the 'initial' approximate of the inverse Hessian that our estimate at iteration k begins with.
+The algorithm is based on the BFGS recursion for the inverse Hessian as
+
+
+  
+    
+      
+        
+          H
+          
+            k
+            +
+            1
+          
+        
+        =
+        (
+        I
+        â
+        
+          Ï
+          
+            k
+          
+        
+        
+          s
+          
+            k
+          
+        
+        
+          y
+          
+            k
+          
+          
+            â¤
+          
+        
+        )
+        
+          H
+          
+            k
+          
+        
+        (
+        I
+        â
+        
+          Ï
+          
+            k
+          
+        
+        
+          y
+          
+            k
+          
+        
+        
+          s
+          
+            k
+          
+          
+            â¤
+          
+        
+        )
+        +
+        
+          Ï
+          
+            k
+          
+        
+        
+          s
+          
+            k
+          
+        
+        
+          s
+          
+            k
+          
+          
+            â¤
+          
+        
+        .
+      
+    
+    {\displaystyle H_{k+1}=(I-\rho _{k}s_{k}y_{k}^{\top })H_{k}(I-\rho _{k}y_{k}s_{k}^{\top })+\rho _{k}s_{k}s_{k}^{\top }.}
+  
+
+For a fixed k we define a sequence of vectors 
+  
+    
+      
+        
+          q
+          
+            k
+            â
+            m
+          
+        
+        ,
+        â¦
+        ,
+        
+          q
+          
+            k
+          
+        
+      
+    
+    {\displaystyle q_{k-m},\ldots ,q_{k}}
+  
+ as 
+  
+    
+      
+        
+          q
+          
+            k
+          
+        
+        :=
+        
+          g
+          
+            k
+          
+        
+      
+    
+    {\displaystyle q_{k}:=g_{k}}
+  
+ and 
+  
+    
+      
+        
+          q
+          
+            i
+          
+        
+        :=
+        (
+        I
+        â
+        
+          Ï
+          
+            i
+          
+        
+        
+          y
+          
+            i
+          
+        
+        
+          s
+          
+            i
+          
+          
+            â¤
+          
+        
+        )
+        
+          q
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle q_{i}:=(I-\rho _{i}y_{i}s_{i}^{\top })q_{i+1}}
+  
+. Then a recursive algorithm for calculating 
+  
+    
+      
+        
+          q
+          
+            i
+          
+        
+      
+    
+    {\displaystyle q_{i}}
+  
+ from 
+  
+    
+      
+        
+          q
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle q_{i+1}}
+  
+ is to define 
+  
+    
+      
+        
+          Î±
+          
+            i
+          
+        
+        :=
+        
+          Ï
+          
+            i
+          
+        
+        
+          s
+          
+            i
+          
+          
+            â¤
+          
+        
+        
+          q
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle \alpha _{i}:=\rho _{i}s_{i}^{\top }q_{i+1}}
+  
+ and 
+  
+    
+      
+        
+          q
+          
+            i
+          
+        
+        =
+        
+          q
+          
+            i
+            +
+            1
+          
+        
+        â
+        
+          Î±
+          
+            i
+          
+        
+        
+          y
+          
+            i
+          
+        
+      
+    
+    {\displaystyle q_{i}=q_{i+1}-\alpha _{i}y_{i}}
+  
+. We also define another sequence of vectors 
+  
+    
+      
+        
+          z
+          
+            k
+            â
+            m
+          
+        
+        ,
+        â¦
+        ,
+        
+          z
+          
+            k
+          
+        
+      
+    
+    {\displaystyle z_{k-m},\ldots ,z_{k}}
+  
+ as 
+  
+    
+      
+        
+          z
+          
+            i
+          
+        
+        :=
+        
+          H
+          
+            i
+          
+        
+        
+          q
+          
+            i
+          
+        
+      
+    
+    {\displaystyle z_{i}:=H_{i}q_{i}}
+  
+. There is another recursive algorithm for calculating these vectors which is to define 
+  
+    
+      
+        
+          z
+          
+            k
+            â
+            m
+          
+        
+        =
+        
+          H
+          
+            k
+          
+          
+            0
+          
+        
+        
+          q
+          
+            k
+            â
+            m
+          
+        
+      
+    
+    {\displaystyle z_{k-m}=H_{k}^{0}q_{k-m}}
+  
+ and then recursively define 
+  
+    
+      
+        
+          Î²
+          
+            i
+          
+        
+        :=
+        
+          Ï
+          
+            i
+          
+        
+        
+          y
+          
+            i
+          
+          
+            â¤
+          
+        
+        
+          z
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \beta _{i}:=\rho _{i}y_{i}^{\top }z_{i}}
+  
+ and 
+  
+    
+      
+        
+          z
+          
+            i
+            +
+            1
+          
+        
+        =
+        
+          z
+          
+            i
+          
+        
+        +
+        (
+        
+          Î±
+          
+            i
+          
+        
+        â
+        
+          Î²
+          
+            i
+          
+        
+        )
+        
+          s
+          
+            i
+          
+        
+      
+    
+    {\displaystyle z_{i+1}=z_{i}+(\alpha _{i}-\beta _{i})s_{i}}
+  
+. The value of 
+  
+    
+      
+        
+          z
+          
+            k
+          
+        
+      
+    
+    {\displaystyle z_{k}}
+  
+ is then our ascent direction.
+Thus we can compute the descent direction as follows:
+
+
+  
+    
+      
+        
+          
+            
+              
+                q
+                =
+                
+                  g
+                  
+                    k
+                  
+                
+              
+            
+            
+              
+                
+                  
+                    F
+                    o
+                    r
+                  
+                
+                Â 
+                i
+                =
+                k
+                â
+                1
+                ,
+                k
+                â
+                2
+                ,
+                â¦
+                ,
+                k
+                â
+                m
+              
+            
+            
+              
+                
+                
+                  Î±
+                  
+                    i
+                  
+                
+                =
+                
+                  Ï
+                  
+                    i
+                  
+                
+                
+                  s
+                  
+                    i
+                  
+                  
+                    â¤
+                  
+                
+                q
+              
+            
+            
+              
+                
+                q
+                =
+                q
+                â
+                
+                  Î±
+                  
+                    i
+                  
+                
+                
+                  y
+                  
+                    i
+                  
+                
+              
+            
+            
+              
+                
+                  Î³
+                  
+                    k
+                  
+                
+                =
+                
+                  
+                    
+                      
+                        s
+                        
+                          k
+                          â
+                          1
+                        
+                        
+                          â¤
+                        
+                      
+                      
+                        y
+                        
+                          k
+                          â
+                          1
+                        
+                      
+                    
+                    
+                      
+                        y
+                        
+                          k
+                          â
+                          1
+                        
+                        
+                          â¤
+                        
+                      
+                      
+                        y
+                        
+                          k
+                          â
+                          1
+                        
+                      
+                    
+                  
+                
+              
+            
+            
+              
+                
+                  H
+                  
+                    k
+                  
+                  
+                    0
+                  
+                
+                =
+                
+                  Î³
+                  
+                    k
+                  
+                
+                I
+              
+            
+            
+              
+                z
+                =
+                
+                  H
+                  
+                    k
+                  
+                  
+                    0
+                  
+                
+                q
+              
+            
+            
+              
+                
+                  
+                    F
+                    o
+                    r
+                  
+                
+                Â 
+                i
+                =
+                k
+                â
+                m
+                ,
+                k
+                â
+                m
+                +
+                1
+                ,
+                â¦
+                ,
+                k
+                â
+                1
+              
+            
+            
+              
+                
+                
+                  Î²
+                  
+                    i
+                  
+                
+                =
+                
+                  Ï
+                  
+                    i
+                  
+                
+                
+                  y
+                  
+                    i
+                  
+                  
+                    â¤
+                  
+                
+                z
+              
+            
+            
+              
+                
+                z
+                =
+                z
+                +
+                
+                  s
+                  
+                    i
+                  
+                
+                (
+                
+                  Î±
+                  
+                    i
+                  
+                
+                â
+                
+                  Î²
+                  
+                    i
+                  
+                
+                )
+              
+            
+            
+              
+                z
+                =
+                â
+                z
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{array}{l}q=g_{k}\\{\mathtt {For}}\ i=k-1,k-2,\ldots ,k-m\\\qquad \alpha _{i}=\rho _{i}s_{i}^{\top }q\\\qquad q=q-\alpha _{i}y_{i}\\\gamma _{k}={\frac {s_{k-1}^{\top }y_{k-1}}{y_{k-1}^{\top }y_{k-1}}}\\H_{k}^{0}=\gamma _{k}I\\z=H_{k}^{0}q\\{\mathtt {For}}\ i=k-m,k-m+1,\ldots ,k-1\\\qquad \beta _{i}=\rho _{i}y_{i}^{\top }z\\\qquad z=z+s_{i}(\alpha _{i}-\beta _{i})\\z=-z\end{array}}}
+  
+
+
+This formulation gives the search direction for the minimization problem, i.e., 
+  
+    
+      
+        z
+        =
+        â
+        
+          H
+          
+            k
+          
+        
+        
+          g
+          
+            k
+          
+        
+      
+    
+    {\displaystyle z=-H_{k}g_{k}}
+  
+. For maximization problems, one should thus take -z instead. Note that the initial approximate inverse Hessian 
+  
+    
+      
+        
+          H
+          
+            k
+          
+          
+            0
+          
+        
+      
+    
+    {\displaystyle H_{k}^{0}}
+  
+ is chosen as a diagonal matrix or even a multiple of the identity matrix since this is numerically efficient.
+The scaling of the initial matrix 
+  
+    
+      
+        
+          Î³
+          
+            k
+          
+        
+      
+    
+    {\displaystyle \gamma _{k}}
+  
+ ensures that the search direction is well scaled and therefore the unit step length is accepted in most iterations. A Wolfe line search is used to ensure that the curvature condition is satisfied and the BFGS updating is stable. Note that some software implementations use an Armijo backtracking line search, but cannot guarantee that the curvature condition 
+  
+    
+      
+        
+          y
+          
+            k
+          
+          
+            â¤
+          
+        
+        
+          s
+          
+            k
+          
+        
+        >
+        0
+      
+    
+    {\displaystyle y_{k}^{\top }s_{k}>0}
+  
+ will be satisfied by the chosen step since a step length greater than 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ may be needed to satisfy this condition. Some implementations address this by skipping the BFGS update when 
+  
+    
+      
+        
+          y
+          
+            k
+          
+          
+            â¤
+          
+        
+        
+          s
+          
+            k
+          
+        
+      
+    
+    {\displaystyle y_{k}^{\top }s_{k}}
+  
+ is negative or too close to zero, but this approach is not generally recommended since the updates may be skipped too often to allow the Hessian approximation 
+  
+    
+      
+        
+          H
+          
+            k
+          
+        
+      
+    
+    {\displaystyle H_{k}}
+  
+ to capture important curvature information.
+This two loop update only works for the inverse Hessian. Approaches to implementing L-BFGS using the direct approximate Hessian 
+  
+    
+      
+        
+          B
+          
+            k
+          
+        
+      
+    
+    {\displaystyle B_{k}}
+  
+ have also been developed, as have other means of approximating the inverse Hessian.[5]
+
+Applications[edit]
+L-BFGS has been called "the algorithm of choice" for fitting log-linear (MaxEnt) models and conditional random fields with 
+  
+    
+      
+        
+          â
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \ell _{2}}
+  
+-regularization.[1][2]
+
+Variants[edit]
+Since BFGS (and hence L-BFGS) is designed to minimize smooth functions without constraints, the L-BFGS algorithm must be modified to handle functions that include non-differentiable components or constraints. A popular class of modifications are called active-set methods, based on the concept of the active set. The idea is that when restricted to a small neighborhood of the current iterate, the function and constraints can be simplified.
+
+L-BFGS-B[edit]
+The L-BFGS-B algorithm extends L-BFGS to handle simple box constraints (aka bound constraints) on variables; that is, constraints of the form li â¤ xi â¤ ui where li and ui are per-variable constant lower and upper bounds, respectively (for each xi, either or both bounds may be omitted).[6][7] The method works by identifying fixed and free variables at every step (using a simple gradient method), and then using the L-BFGS method on the free variables only to get higher accuracy, and then repeating the process.
+
+OWL-QN[edit]
+Orthant-wise limited-memory quasi-Newton (OWL-QN) is an L-BFGS variant for fitting 
+  
+    
+      
+        
+          â
+          
+            1
+          
+        
+      
+    
+    {\displaystyle \ell _{1}}
+  
+-regularized models, exploiting the inherent sparsity of such models.[2]
+It minimizes functions of the form
+
+
+  
+    
+      
+        f
+        (
+        
+          
+            
+              x
+              â
+            
+          
+        
+        )
+        =
+        g
+        (
+        
+          
+            
+              x
+              â
+            
+          
+        
+        )
+        +
+        C
+        â
+        
+          
+            
+              x
+              â
+            
+          
+        
+        
+          â
+          
+            1
+          
+        
+      
+    
+    {\displaystyle f({\vec {x}})=g({\vec {x}})+C\|{\vec {x}}\|_{1}}
+  
+
+where 
+  
+    
+      
+        g
+      
+    
+    {\displaystyle g}
+  
+ is a differentiable convex loss function. The method is an active-set type method: at each iterate, it estimates the sign of each component of the variable, and restricts the subsequent step to have the same sign. Once the sign is fixed, the non-differentiable 
+  
+    
+      
+        â
+        
+          
+            
+              x
+              â
+            
+          
+        
+        
+          â
+          
+            1
+          
+        
+      
+    
+    {\displaystyle \|{\vec {x}}\|_{1}}
+  
+ term becomes a smooth linear term which can be handled by L-BFGS. After an L-BFGS step, the method allows some variables to change sign, and repeats the process.
+
+O-LBFGS[edit]
+Schraudolph et al. present an online approximation to both BFGS and L-BFGS.[8] Similar to stochastic gradient descent, this can be used to reduce the computational complexity by evaluating the error function and gradient on a randomly drawn subset of the overall dataset in each iteration. It has been shown that O-LBFGS has a global almost sure convergence [9] while the online approximation of BFGS (O-BFGS) is not necessarily convergent.[10]
+
+Implementation of variants[edit]
+The L-BFGS-B variant also exists as ACM TOMS algorithm 778.[7][11] In February 2011, some of the authors of the original L-BFGS-B code posted a major update (version 3.0).
+A reference implementation is available in Fortran 77 (and with a Fortran 90 interface).[12][13] This version, as well as older versions, has been converted to many other languages.
+An OWL-QN implementation is available as C++ implementation by its designers.[2][14]
+
+Works cited[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Malouf, Robert (2002). "A comparison of algorithms for maximum entropy parameter estimation". Proceedings of the Sixth Conference on Natural Language Learning (CoNLL-2002). pp.Â 49â55. doi:10.3115/1118853.1118871.
+
+^ Jump up to: a b c d Andrew, Galen; Gao, Jianfeng (2007). "Scalable training of Lâ-regularized log-linear models". Proceedings of the 24th International Conference on Machine Learning. doi:10.1145/1273496.1273501. ISBNÂ 9781595937933. S2CIDÂ 5853259.
+
+^ Matthies, H.; Strang, G. (1979). "The solution of non linear finite element equations". International Journal for Numerical Methods in Engineering. 14 (11): 1613â1626. Bibcode:1979IJNME..14.1613M. doi:10.1002/nme.1620141104.
+
+^ Nocedal, J. (1980). "Updating Quasi-Newton Matrices with Limited Storage". Mathematics of Computation. 35 (151): 773â782. doi:10.1090/S0025-5718-1980-0572855-7.
+
+^ Byrd, R. H.; Nocedal, J.; Schnabel, R. B. (1994). "Representations of Quasi-Newton Matrices and their use in Limited Memory Methods". Mathematical Programming. 63 (4): 129â156. doi:10.1007/BF01582063. S2CIDÂ 5581219.
+
+^ Byrd, R. H.; Lu, P.; Nocedal, J.; Zhu, C. (1995). "A Limited Memory Algorithm for Bound Constrained Optimization". SIAM J. Sci. Comput. 16 (5): 1190â1208. doi:10.1137/0916069.
+
+^ Jump up to: a b Zhu, C.; Byrd, Richard H.; Lu, Peihuang; Nocedal, Jorge (1997). "L-BFGS-B: Algorithm 778: L-BFGS-B, FORTRAN routines for large scale bound constrained optimization". ACM Transactions on Mathematical Software. 23 (4): 550â560. doi:10.1145/279232.279236. S2CIDÂ 207228122.
+
+^ Schraudolph, N.; Yu, J.; GÃ¼nter, S. (2007). A stochastic quasi-Newton method for online convex optimization. AISTATS.
+
+^ Mokhtari, A.; Ribeiro, A. (2015). "Global convergence of online limited memory BFGS" (PDF). Journal of Machine Learning Research. 16: 3151â3181. arXiv:1409.2045.
+
+^ Mokhtari, A.; Ribeiro, A. (2014). "RES: Regularized Stochastic BFGS Algorithm". IEEE Transactions on Signal Processing. 62 (23): 6089â6104. arXiv:1401.7625. Bibcode:2014ITSP...62.6089M. CiteSeerXÂ 10.1.1.756.3003. doi:10.1109/TSP.2014.2357775. S2CIDÂ 15214938.
+
+^ "TOMS Home". toms.acm.org.
+
+^ Morales, J. L.; Nocedal, J. (2011). "Remark on "algorithm 778: L-BFGS-B: Fortran subroutines for large-scale bound constrained optimization"". ACM Transactions on Mathematical Software. 38: 1â4. doi:10.1145/2049662.2049669. S2CIDÂ 16742561.
+
+^ "L-BFGS-B Nonlinear Optimization Code". users.iems.northwestern.edu.
+
+^ "Orthant-Wise Limited-memory Quasi-Newton Optimizer for L1-regularized Objectives". Microsoft Download Center.
+
+
+Further reading[edit]
+Liu, D. C.; Nocedal, J. (1989). "On the Limited Memory Method for Large Scale Optimization". Mathematical Programming B. 45 (3): 503â528. CiteSeerXÂ 10.1.1.110.6443. doi:10.1007/BF01589116. S2CIDÂ 5681609.
+Haghighi, Aria (2 Dec 2014). "Numerical Optimization: Understanding L-BFGS".
+Pytlak, Radoslaw (2009). "Limited Memory Quasi-Newton Algorithms". Conjugate Gradient Algorithms in Nonconvex Optimization. Springer. pp.Â 159â190. ISBNÂ 978-3-540-85633-7.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteOptimization: Algorithms, methods, and heuristicshideUnconstrained nonlinearFunctions
+Golden-section search
+Interpolation methods
+Line search
+NelderâMead method
+Successive parabolic interpolation
+GradientsConvergence
+Trust region
+Wolfe conditions
+QuasiâNewton
+BerndtâHallâHallâHausman
+BroydenâFletcherâGoldfarbâShanno and L-BFGS
+DavidonâFletcherâPowell
+Symmetric rank-one (SR1)
+Other methods
+Conjugate gradient
+GaussâNewton
+Gradient
+LevenbergâMarquardt
+Powell's dog leg method
+Truncated Newton
+Hessians
+Newton's method
+showConstrained nonlinearGeneral
+Barrier methods
+Penalty methods
+Differentiable
+Augmented Lagrangian methods
+Sequential quadratic programming
+Successive linear programming
+showConvex optimizationConvex minimization
+Cutting-plane method
+Reduced gradient (FrankâWolfe)
+Subgradient method
+Linear andquadraticInterior point
+Affine scaling
+Ellipsoid algorithm of Khachiyan
+Projective algorithm of Karmarkar
+Basis-exchange
+Simplex algorithm of Dantzig
+Revised simplex algorithm
+Criss-cross algorithm
+Principal pivoting algorithm of Lemke
+showCombinatorialParadigms
+Approximation algorithm
+Dynamic programming
+Greedy algorithm
+Integer programming
+Branch and bound/cut
+Graph algorithmsMinimum spanning tree
+BorÅ¯vka
+Prim
+Kruskal
+
+    Shortest path
+BellmanâFord
+SPFA
+Dijkstra
+FloydâWarshall
+Network flows
+Dinic
+EdmondsâKarp
+FordâFulkerson
+Pushârelabel maximum flow
+showMetaheuristics
+Evolutionary algorithm
+Hill climbing
+Local search
+Simulated annealing
+Tabu search
+
+Software
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Limited-memory_BFGS&oldid=1050393862"
+		Categories: Optimization algorithms and methods
+	

@@ -1,0 +1,378 @@
+
+Title:
+Real-time operating system
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Computer operating system for applications with critical timing constraints
+A real-time operating system (RTOS) is an operating system (OS) for real-time applications that processes data and events that have critically defined time constraints. An RTOS is distinct from a time sharing operating system, such as Unix, which manages the sharing of system resources with a scheduler, data buffers, or fixed task prioritization in a multitasking or multiprogramming environment. Processing time requirements need to be fully understood and bound rather than just kept as a minimum. All processing must occur within the defined constraints. Real-time operating systems are event-driven and preemptive, meaning the OS is capable of monitoring the relevant priority of competing tasks, and make changes to the task priority. Event-driven systems switch between tasks based on their priorities, while time-sharing systems switch the task based on clock interrupts.
+
+Contents
+
+1 Characteristics
+2 Design philosophies
+3 Scheduling
+
+3.1 Algorithms
+
+
+4 Intertask communication and resource sharing
+
+4.1 Temporarily masking/disabling interrupts
+4.2 Mutexes
+4.3 Message passing
+
+
+5 Interrupt handlers and the scheduler
+6 Memory allocation
+7 See also
+8 References
+
+
+
+Characteristics[edit]
+A key characteristic of an RTOS is the level of its consistency concerning the amount of time it takes to accept and complete an application's task; the variability is 'jitter'.[1] A 'hard' real-time operating system (hard RTOS) has less jitter than a 'soft' real-time operating system (soft RTOS). A late answer is a wrong answer in a hard RTOS while a late answer is acceptable in a soft RTOS. The chief design goal is not high throughput, but rather a guarantee of a soft or hard performance category. An RTOS that can usually or generally meet a deadline is a soft real-time OS, but if it can meet a deadline deterministically it is a hard real-time OS.[2]
+An RTOS has an advanced algorithm for scheduling. Scheduler flexibility enables a wider, computer-system orchestration of process priorities, but a real-time OS is more frequently dedicated to a narrow set of applications. Key factors in a real-time OS are minimal interrupt latency and minimal thread switching latency; a real-time OS is valued more for how quickly or how predictably it can respond than for the amount of work it can perform in a given period of time.[3]
+See the comparison of real-time operating systems for a comprehensive list. Also, see the list of operating systems for all types of operating systems.
+
+Design philosophies[edit]
+An RTOS is an operating system in which the time taken to process an input stimulus is less than the time lapsed until the next input stimulus of the same type.
+The most common designs are:
+
+Event-driven â switches tasks only when an event of higher priority needs servicing; called preemptive priority, or priority scheduling.
+Time-sharing â switches tasks on a regular clocked interrupt, and on events; called round robin.
+Time sharing designs switch tasks more often than strictly needed, but give smoother multitasking, giving the illusion that a process or user has sole use of a machine.
+Early CPU designs needed many cycles to switch tasks during which the CPU could do nothing else useful. Because switching took so long, early OSes tried to minimize wasting CPU time by avoiding unnecessary task switching.
+
+Scheduling[edit]
+In typical designs, a task has three states:
+
+Running (executing on the CPU);
+Ready (ready to be executed);
+Blocked (waiting for an event, I/O for example).
+Most tasks are blocked or ready most of the time because generally only one task can run at a time per CPU. The number of items in the ready queue can vary greatly, depending on the number of tasks the system needs to perform and the type of scheduler that the system uses. On simpler non-preemptive but still multitasking systems, a task has to give up its time on the CPU to other tasks, which can cause the ready queue to have a greater number of overall tasks in the ready to be executed state (resource starvation).
+Usually, the data structure of the ready list in the scheduler is designed to minimize the worst-case length of time spent in the scheduler's critical section, during which preemption is inhibited, and, in some cases, all interrupts are disabled, but the choice of data structure depends also on the maximum number of tasks that can be on the ready list.
+If there are never more than a few tasks on the ready list, then a doubly linked list of ready tasks is likely optimal. If the ready list usually contains only a few tasks but occasionally contains more, then the list should be sorted by priority. That way, finding the highest priority task to run does not require iterating through the entire list. Inserting a task then requires walking the ready list until reaching either the end of the list, or a task of lower priority than that of the task being inserted.
+Care must be taken not to inhibit preemption during this search. Longer critical sections should be divided into small pieces. If an interrupt occurs that makes a high priority task ready during the insertion of a low priority task, that high priority task can be inserted and run immediately before the low priority task is inserted.
+The critical response time, sometimes called the flyback time, is the time it takes to queue a new ready task and restore the state of the highest priority task to running. In a well-designed RTOS, readying a new task will take 3 to 20 instructions per ready-queue entry, and restoration of the highest-priority ready task will take 5 to 30 instructions.
+In more advanced systems, real-time tasks share computing resources with many non-real-time tasks, and the ready list can be arbitrarily long. In such systems, a scheduler ready list implemented as a linked list would be inadequate.
+
+Algorithms[edit]
+Some commonly used RTOS scheduling algorithms are:
+
+Cooperative scheduling
+Preemptive scheduling
+Rate-monotonic scheduling
+Round-robin scheduling
+Fixed priority pre-emptive scheduling, an implementation of preemptive time slicing
+Fixed-Priority Scheduling with Deferred Preemption
+Fixed-Priority Non-preemptive Scheduling
+Critical section preemptive scheduling
+Static time scheduling
+Earliest Deadline First approach
+Stochastic digraphs with multi-threaded graph traversal
+Intertask communication and resource sharing[edit]
+A multitasking operating system like Unix is poor at real-time tasks. The scheduler gives the highest priority to jobs with the lowest demand on the computer, so there is no way to ensure that a time-critical job will have access to enough resources. Multitasking systems must manage sharing data and hardware resources among multiple tasks. It is usually unsafe for two tasks to access the same specific data or hardware resource simultaneously.[4] There are three common approaches to resolve this problem:
+
+Temporarily masking/disabling interrupts[edit]
+General-purpose operating systems usually do not allow user programs to mask (disable) interrupts, because the user program could control the CPU for as long as it wishes. Some modern CPUs do not allow user mode code to disable interrupts as such control is considered a key operating system resource. Many embedded systems and RTOSs, however, allow the application itself to run in kernel mode for greater system call efficiency and also to permit the application to have greater control of the operating environment without requiring OS intervention.
+On single-processor systems, an application running in kernel mode and masking interrupts is the lowest overhead method to prevent simultaneous access to a shared resource. While interrupts are masked and the current task does not make a blocking OS call, the current task has exclusive use of the CPU since no other task or interrupt can take control, so the critical section is protected. When the task exits its critical section, it must unmask interrupts; pending interrupts, if any, will then execute. Temporarily masking interrupts should only be done when the longest path through the critical section is shorter than the desired maximum interrupt latency. Typically this method of protection is used only when the critical section is just a few instructions and contains no loops. This method is ideal for protecting hardware bit-mapped registers when the bits are controlled by different tasks.
+
+Mutexes[edit]
+When the shared resource must be reserved without blocking all other tasks (such as waiting for Flash memory to be written), it is better to use mechanisms also available on general-purpose operating systems, such as a mutex and OS-supervised interprocess messaging. Such mechanisms involve system calls, and usually invoke the OS's dispatcher code on exit, so they typically take hundreds of CPU instructions to execute, while masking interrupts may take as few as one instruction on some processors.
+A (non-recursive) mutex is either locked or unlocked. When a task has locked the mutex, all other tasks must wait for the mutex to be unlocked by its  owner - the original thread. A task may set a timeout on its wait for a mutex. There are several well-known problems with mutex based designs such as priority inversion and deadlocks.
+In priority inversion a high priority task waits because a low priority task has a mutex, but the lower priority task is not given CPU time to finish its work. A typical solution is to have the task that owns a mutex 'inherit' the priority of the highest waiting task. But this simple approach gets more complex when there are multiple levels of waiting: task A waits for a mutex locked by task B, which waits for a mutex locked by task C. Handling multiple levels of inheritance causes other code to run in high priority context and thus can cause starvation of medium-priority threads.
+In a deadlock, two or more tasks lock mutex without timeouts and then wait forever for the other task's mutex, creating a cyclic dependency. The simplest deadlock scenario occurs when two tasks alternately lock two mutex, but in the opposite order. Deadlock is prevented by careful design.
+
+Message passing[edit]
+The other approach to resource sharing is for tasks to send messages in an organized message passing scheme. In this paradigm, the resource is managed directly by only one task. When another task wants to interrogate or manipulate the resource, it sends a message to the managing task. Although their real-time behavior is less crisp than semaphore systems, simple message-based systems avoid most protocol deadlock hazards, and are generally better-behaved than semaphore systems. However, problems like those of semaphores are possible. Priority inversion can occur when a task is working on a low-priority message and ignores a higher-priority message (or a message originating indirectly from a high priority task) in its incoming message queue. Protocol deadlocks can occur when two or more tasks wait for each other to send response messages.
+
+Interrupt handlers and the scheduler[edit]
+Since an interrupt handler blocks the highest priority task from running, and since real-time operating systems are designed to keep thread latency to a minimum, interrupt handlers are typically kept as short as possible. The interrupt handler defers all interaction with the hardware if possible; typically all that is necessary is to acknowledge or disable the interrupt (so that it won't occur again when the interrupt handler returns) and notify a task that work needs to be done. This can be done by unblocking a driver task through releasing a semaphore, setting a flag or sending a message. A scheduler often provides the ability to unblock a task from interrupt handler context.
+An OS maintains catalogues of objects it manages such as threads, mutexes, memory, and so on. Updates to this catalogue must be strictly controlled. For this reason, it can be problematic when an interrupt handler calls an OS function while the application is in the act of also doing so. The OS function called from an interrupt handler could find the object database to be in an inconsistent state because of the application's update. There are two major approaches to deal with this problem: the unified architecture and the segmented architecture. RTOSs implementing the unified architecture solve the problem by simply disabling interrupts while the internal catalogue is updated. The downside of this is that interrupt latency increases, potentially losing interrupts. The segmented architecture does not make direct OS calls but delegates the OS related work to a separate handler. This handler runs at a higher priority than any thread but lower than the interrupt handlers. The advantage of this architecture is that it adds very few cycles to interrupt latency. As a result, OSes which implement the segmented architecture are more predictable and can deal with higher interrupt rates compared to the unified architecture.[citation needed]
+Similarly, the System Management Mode on x86 compatible Hardware can take a lot of time before it returns control to the operating system.
+
+Memory allocation[edit]
+Memory allocation is more critical in a real-time operating system than in other operating systems.
+First, for stability there cannot be memory leaks (memory that is allocated but not freed after use). The device should work indefinitely, without ever needing a reboot. For this reason, dynamic memory allocation is frowned upon.[citation needed] Whenever possible, all required memory allocation is specified statically at compile time.
+Another reason to avoid dynamic memory allocation is memory fragmentation. With frequent allocation and releasing of small chunks of memory, a situation may occur where available memory is divided into several sections and the RTOS is incapable of allocating a large enough continuous block of memory, although there is enough free memory. Secondly, speed of allocation is important. A standard memory allocation scheme scans a linked list of indeterminate length to find a suitable free memory block,[5] which is unacceptable in an RTOS since memory allocation has to occur within a certain amount of time.
+Because mechanical disks have much longer and more unpredictable response times, swapping to disk files is not used for the same reasons as RAM allocation discussed above.
+The simple fixed-size-blocks algorithm works quite well for simple embedded systems because of its low overhead.
+
+See also[edit]
+
+
+
+The Wikibook Embedded Systems has a page on the topic of: Real-Time Operating Systems
+
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Adaptive Partition Scheduler
+Comparison of real-time operating systems
+Data General RDOS
+DO-178B
+Earliest deadline first scheduling
+Firmware
+FreeRTOS
+Interruptible operating system
+Least slack time scheduling
+OSEK
+POSIX
+Rate-monotonic scheduling
+Robot Operating System
+SCADA
+Synchronous programming language
+Time-triggered system
+Time-utility function
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Response Time and Jitter".
+
+^ Tanenbaum, Andrew (2008). Modern Operating Systems. Upper Saddle River, NJ: Pearson/Prentice Hall. p.Â 160. ISBNÂ 978-0-13-600663-3.
+
+^ "RTOS Concepts".
+
+^ Phraner, Ralph A. (Fall 1984). "The Future of Unix on the IBM PC". BYTE. pp.Â 59â64.
+
+^ "CS 241, University of Illinois" (PDF).
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteReal-time operating systems (RTOS)Open-source
+BeRTOS
+ChibiOS/RT
+Contiki
+eCos
+ERIKA Enterprise
+FreeRTOS
+FunkOS
+ÂµC/OS
+Mynewt
+Nano-RK
+NuttX
+RIOT
+RTAI
+RTEMS
+RTLinux
+RT-Thread
+seL4
+TI-RTOS
+TRON
+Wombat
+Xenomai
+Zephyr
+Proprietary
+4690 OS
+DioneOS
+embOS
+Integrity
+Junos OS
+LynxOS
+MQX
+Nucleus RTOS
+OpenComRTOS
+OSE
+OS-9
+OS2000
+PikeOS
+QNX
+REAL/32
+REX OS
+ScreenOS
+ThreadX
+TPF
+VRTX
+VxWorks
+Windows Embedded Compact
+Discontinued
+4680 OS
+ChorusOS
+Concurrent DOS
+DNIX
+DSOS
+EROS
+FlexOS
+Harmony
+MERT â UNIX-RT
+Multiuser DOS
+pSOS
+RMX
+RSX-11
+RT-11
+Sintran III
+Symbian
+THEOS
+Thoth
+UNOS
+VAXELN
+Developers
+Gordon Bell
+David Cheriton
+Dave Cutler
+Dan Dodge
+Adam Dunkels
+Ken Sakamura
+Comparison
+Category
+vteEmbedded systemsGeneral terms
+ASIC
+Board support package
+Bootloader
+Consumer electronics
+Cross compiler
+Embedded database
+Embedded hypervisor
+Embedded OS
+Embedded software
+FPGA
+IoT
+Memory footprint
+Microcontroller
+Single-board computer
+Raspberry Pi
+SoC
+Firmware and controls
+Closed platform
+Crippleware
+Custom firmware
+Defective by Design
+Hacking of consumer electronics
+Homebrew (video games)
+iOS jailbreaking
+PlayStation 3 Jailbreak
+Proprietary firmware
+Rooting (Android)
+Vendor lock-in
+Boot loaders
+U-Boot
+Barebox
+Software libraries
+uClibc
+dietlibc
+Embedded GLIBC
+lwIP
+musl
+Programming tools
+Almquist shell
+BitBake
+Buildroot
+BusyBox
+OpenEmbedded
+Stand-alone shell
+Toybox
+Yocto Project
+Operating systems
+Linux on embedded systems
+Linux for mobile devices
+Light-weight Linux distribution
+Real-time operating system
+Windows IoT
+Win CE
+Programming languages
+Ada
+Assembly language
+CAPL
+Embedded C
+Embedded C++
+Embedded Java
+MISRA C
+
+Lightweight browsers
+List of open-source computing hardware
+Open-source robotics
+
+vteOperating systemsGeneral
+Advocacy
+Comparison
+Forensic engineering
+History
+List
+Timeline
+Usage share
+User features comparison
+Variants
+Disk operating system
+Distributed operating system
+Embedded operating system
+Hobbyist operating system
+Just enough operating system
+Mobile operating system
+Network operating system
+Object-oriented operating system
+Real-time operating system
+Supercomputer operating system
+KernelArchitectures
+Exokernel
+Hybrid
+Microkernel
+Monolithic
+vkernel
+Rump kernel
+Unikernel
+Components
+Device driver
+Loadable kernel module
+User space and kernel space
+Process managementConcepts
+Computer multitasking (Cooperative, Preemptive)
+Context switch
+Interrupt
+IPC
+Process
+Process control block
+Real-time
+Thread
+Time-sharing
+Schedulingalgorithms
+Fixed-priority preemptive
+Multilevel feedback queue
+Round-robin
+Shortest job next
+Memory management,resource protection
+Bus error
+General protection fault
+Memory protection
+Paging
+Protection ring
+Segmentation fault
+Virtual memory
+Storage access,file systems
+Boot loader
+Defragmentation
+Device file
+File attribute
+Inode
+Journal
+Partition
+Virtual file system
+Virtual tape library
+Supporting concepts
+API
+Computer network
+HAL
+Live CD
+Live USB
+Shell
+CLI
+GUI
+3D GUI
+NUI
+TUI
+VUI
+ZUI
+PXE
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Real-time_operating_system&oldid=1065552870"
+		Categories: Real-time operating systemsOperating systemsReal-time computingHidden categories: Articles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from November 2017Articles with unsourced statements from April 2018
+	

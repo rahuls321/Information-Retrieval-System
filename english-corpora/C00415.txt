@@ -1,0 +1,559 @@
+
+Title:
+Shunting-yard algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Algorithm to parse a syntax with infix notation to postfix notation
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (August 2013) (Learn how and when to remove this template message)
+In computer science, the shunting-yard algorithm is a method for parsing mathematical expressions specified in infix notation. It can produce either a postfix notation string, also known as Reverse Polish notation (RPN), or an abstract syntax tree (AST).[1] The algorithm was invented by Edsger Dijkstra and named the "shunting yard" algorithm because its operation resembles that of a railroad shunting yard. Dijkstra first described the Shunting Yard Algorithm in the Mathematisch Centrum report MR 34/61.
+Like the evaluation of RPN, the shunting yard algorithm is stack-based. Infix expressions are the form of mathematical notation most people are used to, for instance "3 + 4" or "3 + 4 Ã (2 â 1)". For the conversion there are two text variables (strings), the input and the output. There is also a stack that holds operators not yet added to the output queue. To convert, the program reads each symbol in order and does something based on that symbol. The result for the above examples would be (in Reverse Polish notation) "3 4 +" and "3 4 2 1 â Ã +", respectively.
+The shunting yard algorithm will correctly parse all valid infix expressions, but does not reject all invalid expressions. For example, "1 2 +" is not a valid infix expression, but would be parsed as "1 + 2". The algorithm can however reject expressions with mismatched parentheses.
+The shunting-yard algorithm was later generalized into operator-precedence parsing.
+
+Contents
+
+1 A simple conversion
+2 Graphical illustration
+3 The algorithm in detail
+4 Detailed example
+5 See also
+6 References
+7 External links
+
+
+
+A simple conversion[edit]
+Input: 3 + 4
+Push 3 to the output queue (whenever a number is read it is pushed to the output)
+Push + (or its ID) onto the operator stack
+Push 4 to the output queue
+After reading the expression, pop the operators off the stack and add them to the output.
+In this case there is only one, "+".
+Output: 3 4 +
+This already shows a couple of rules:
+
+All numbers are pushed to the output when they are read.
+At the end of reading the expression, pop all operators off the stack and onto the output.
+Graphical illustration[edit]
+
+Graphical illustration of algorithm, using a three-way railroad junction. The input is processed one symbol at a time: if a variable or number is found, it is copied directly to the output a), c), e), h). If the symbol is an operator, it is pushed onto the operator stack b), d), f). If the operator's precedence is lower than that of the operators at the top of the stack or the precedents are equal and the operator is left associative, then that operator is popped off the stack and added to the output g). Finally, any remaining operators are popped off the stack and added to the output i).
+
+The algorithm in detail[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}For important terms, see token (parser), function (mathematics), Operator associativity, and Order of operations.
+/* This implementation does not implement composite functions, functions with variable number of arguments, and unary operators. */
+
+while there are tokens to be read:
+    read a token
+    if the token is:
+    - a number:
+        put it into the output queue
+    - a function:
+        push it onto the operator stack 
+    - an operator o1:
+        while (
+            there is an operator o2 other than the left parenthesis at the top
+            of the operator stack, and (o2 has greater precedence than o1
+            or they have the same precedence and o1 is left-associative)
+        ):
+            pop o2 from the operator stack into the output queue
+        push o1 onto the operator stack
+    - a left parenthesis (i.e. "("):
+        push it onto the operator stack
+    - a right parenthesis (i.e. ")"):
+        while the operator at the top of the operator stack is not a left parenthesis:
+            {assert the operator stack is not empty}
+            /* If the stack runs out without finding a left parenthesis, then there are mismatched parentheses. */
+            pop the operator from the operator stack into the output queue
+        {assert there is a left parenthesis at the top of the operator stack}
+        pop the left parenthesis from the operator stack and discard it
+        if there is a function token at the top of the operator stack, then:
+            pop the function from the operator stack into the output queue
+/* After the while loop, pop the remaining items from the operator stack into the output queue. */
+while there are tokens on the operator stack:
+    /* If the operator token on the top of the stack is a parenthesis, then there are mismatched parentheses. */
+    {assert the operator on top of the stack is not a (left) parenthesis}
+    pop the operator from the operator stack onto the output queue
+
+To analyze the running time complexity of this algorithm, one has only to note that each token will be read once, each number, function, or operator will be printed once, and each function, operator, or parenthesis will be pushed onto the stack and popped off the stack onceâtherefore, there are at most a constant number of operations executed per token, and the running time is thus O(n)âlinear in the size of the input.
+The shunting yard algorithm can also be applied to produce prefix notation (also known as Polish notation). To do this one would simply start from the end of a string of tokens to be parsed and work backwards, reverse the output queue (therefore making the output queue an output stack), and flip the left and right parenthesis behavior (remembering that the now-left parenthesis behavior should pop until it finds a now-right parenthesis). And changing the associativity condition to right.
+
+Detailed example[edit]
+Input: 3 + 4 Ã 2 Ã· ( 1 â 5 ) ^ 2 ^ 3
+
+
+
+Operator
+Precedence
+Associativity
+
+
+^
+4
+Right
+
+
+Ã
+3
+Left
+
+
+Ã·
+3
+Left
+
+
++
+2
+Left
+
+
+â
+2
+Left
+
+The symbol ^ represents the power operator.
+
+
+
+Token
+Action
+Output(in RPN)
+Operatorstack
+Notes
+
+
+3
+Add token to output
+3
+
+
+
+
++
+Push token to stack
+3
++
+
+
+
+4
+Add token to output
+3 4
++
+
+
+
+Ã
+Push token to stack
+3 4
+Ã +
+Ã has higher precedence than +
+
+
+2
+Add token to output
+3 4 2
+Ã +
+
+
+
+Ã·
+Pop stack to output
+3 4 2 Ã
++
+Ã· and Ã have same precedence
+
+
+Push token to stack
+3 4 2 Ã
+Ã· +
+Ã· has higher precedence than +
+
+
+(
+Push token to stack
+3 4 2 Ã
+( Ã· +
+
+
+
+1
+Add token to output
+3 4 2 Ã 1
+( Ã· +
+
+
+
+â
+Push token to stack
+3 4 2 Ã 1
+â ( Ã· +
+
+
+
+5
+Add token to output
+3 4 2 Ã 1 5
+â ( Ã· +
+
+
+
+)
+Pop stack to output
+3 4 2 Ã 1 5 â
+( Ã· +
+Repeated until "(" found
+
+
+Pop stack
+3 4 2 Ã 1 5 â
+Ã· +
+Discard matching parenthesis
+
+
+^
+Push token to stack
+3 4 2 Ã 1 5 â
+^ Ã· +
+^ has higher precedence than Ã·
+
+
+2
+Add token to output
+3 4 2 Ã 1 5 â 2
+^ Ã· +
+
+
+
+^
+Push token to stack
+3 4 2 Ã 1 5 â 2
+^ ^ Ã· +
+^ is evaluated right-to-left
+
+
+3
+Add token to output
+3 4 2 Ã 1 5 â 2 3
+^ ^ Ã· +
+
+
+
+end
+Pop entire stack to output
+3 4 2 Ã 1 5 â 2 3 ^ ^ Ã· +
+
+
+
+Input: sin ( max ( 2, 3 ) Ã· 3 Ã Ï )
+
+
+
+Token
+Action
+Output =(in RPN)
+Operatorstack
+Notes
+
+
+sin
+Push token to stack
+
+sin
+
+
+
+(
+Push token to stack
+
+( sin
+
+
+
+max
+Push token to stack
+
+max ( sin
+
+
+
+(
+Push token to stack
+
+( max ( sin
+
+
+
+2
+Add token to output
+2
+( max ( sin
+
+
+
+,
+Ignore
+2
+( max ( sin
+
+
+
+3
+Add token to output
+2 3
+( max ( sin
+
+
+
+)
+Pop stack to output
+2 3
+( max ( sin
+Repeated until "(" is at the top of the stack
+
+
+Pop stack
+2 3
+max ( sin
+Discarding matching parentheses
+
+
+Pop stack to output
+2 3 max
+( sin
+Function at top of the stack
+
+
+Ã·
+Push token to stack
+2 3 max
+Ã· ( sin
+
+
+
+3
+Add token to output
+2 3 max 3
+Ã· ( sin
+
+
+
+Ã
+Pop stack to output
+2 3 max 3 Ã·
+( sin
+
+
+
+Push token to stack
+2 3 max 3 Ã·
+Ã ( sin
+
+
+
+Ï
+Add token to output
+2 3 max 3 Ã· Ï
+Ã ( sin
+
+
+
+)
+Pop stack to output
+2 3 max 3 Ã· Ï Ã
+( sin
+Repeated until "(" is at the top of the stack
+
+
+Pop stack
+2 3 max 3 Ã· Ï Ã
+sin
+Discarding matching parentheses
+
+
+Pop stack to output
+2 3 max 3 Ã· Ï Ã sin
+
+Function at top of the stack
+
+
+end
+Pop entire stack to output
+2 3 max 3 Ã· Ï Ã sin
+
+
+
+See also[edit]
+Operator-precedence parser
+Stack-sortable permutation
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Theodore Norvell (1999). "Parsing Expressions by Recursive Descent". www.engr.mun.ca. Retrieved 2020-12-28.
+
+
+External links[edit]
+Dijkstra's original description of the Shunting yard algorithm
+Literate Programs implementation in C
+Java Applet demonstrating the Shunting yard algorithm
+Silverlight widget demonstrating the Shunting yard algorithm and evaluation of arithmetic expressions
+Parsing Expressions by Recursive Descent Theodore Norvell Â© 1999â2001. Access date September 14, 2006.
+Matlab code, evaluation of arithmetic expressions using the shunting yard algorithm
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteEdsger DijkstraNotableworks
+A Primer of ALGOL 60 Programming (book)
+Structured Programming (book)
+A Discipline of Programming (book)
+A Method of Programming (book)
+Predicate Calculus and Program Semantics (book)
+Selected Writings on Computing: A Personal Perspective (book)
+A Note on Two Problems in Connexion with Graphs
+Cooperating Sequential Processes
+Solution of a Problem in Concurrent Programming Control
+The Structure of the 'THE'-Multiprogramming System
+Go To Statement Considered Harmful
+Notes on Structured Programming
+The Humble Programmer
+Programming Considered as a Human Activity
+How Do We Tell Truths That Might Hurt?
+On the Role of Scientific Thought
+Self-stabilizing Systems in Spite of Distributed Control
+On the Cruelty of Really Teaching Computer Science
+Selected papers
+EWD manuscripts
+Main researchareas
+Theoretical computing science
+Software engineering
+Systems science
+Algorithm design
+Concurrent computing
+Distributed computing
+Formal methods
+Programming methodology
+Programming language research
+Program design and development
+Software architecture
+Philosophy of computer programming and computing science
+ScientificcontributionsConcepts,methods,principlesand theories
+DijkstraâZonneveld ALGOL 60 compiler (first complete working ALGOL 60 compiler)
+Call stack
+Concurrency
+Concurrent programming
+Cooperating sequential processes
+Critical section
+Deadly embrace (deadlock)
+Dining philosophers problem
+Dutch national flag problem
+Fault-tolerant system
+Goto-less programming
+Guarded Command Language
+Layered structure in software architecture
+Levels of abstraction
+Multithreaded programming
+Mutual exclusion (mutex)
+Producerâconsumer problem (bounded buffer problem)
+Program families
+Predicate transformer semantics
+Process synchronization
+Self-stabilizing distributed system
+Semaphore (programming)
+Separation of concerns
+Sleeping barber problem
+Software crisis
+Structured analysis
+Structured programming
+THE multiprogramming system
+Unbounded nondeterminism
+Weakest precondition calculus
+Algorithms
+Banker's algorithm
+Dijkstra's algorithm
+DJP algorithm (Prim's algorithm)
+Dijkstra-Scholten algorithm
+Dekker's algorithm (generalization)
+Smoothsort
+Shunting-yard algorithm
+Tri-color marking algorithm
+Concurrent algorithms
+Distributed algorithms
+Deadlock prevention algorithms
+Mutual exclusion algorithms
+Self-stabilizing algorithms
+Relatedpeople
+Shlomi Dolev
+Per Brinch Hansen
+Tony Hoare
+Ole-Johan Dahl
+Leslie Lamport
+David Parnas
+Jaap Zonneveld
+Carel S. Scholten 
+Adriaan van Wijngaarden
+Niklaus Wirth
+Othertopics
+Centrum Wiskunde & Informatica (CWI Amsterdam)
+Electrologica X1
+Electrologica X8
+Dijkstra Prize (Edsger W. Dijkstra Prize in Distributed Computing)
+Dijkstra Fellowship
+International Symposium on Stabilization, Safety, and Security of Distributed Systems
+E.W. Dijkstra Archive (University of Texas at Austin)
+List of important publications in computer science
+List of important publications in theoretical computer science
+List of important publications in concurrent, parallel, and distributed computing
+List of pioneers in computer science
+List of people considered father or mother of a technical field
+
+ Wikiquote
+
+vteParsing algorithmsTop-down
+LL
+Recursive descent
+Tail recursive
+Pratt parser
+Bottom-up
+Precedence
+Simple
+Operator
+Shunting-yard
+Bounded-context
+LR
+Simple
+Look-ahead
+Canonical
+Generalized
+CYK
+Recursive ascent
+Shift-reduce
+Mixed, other
+Combinator
+Chart
+Earley
+Related topics
+PEG
+Definite clause grammar
+Deterministic parsing
+Dynamic programming
+Memoization
+Parser generator
+LALR
+Parse tree
+AST
+Scannerless parsing
+History of compiler construction
+Comparison of parser generators
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Shunting-yard_algorithm&oldid=1064515055"
+		Categories: Parsing algorithmsDutch inventionsEdsger W. DijkstraHidden categories: Articles with short descriptionShort description is different from WikidataArticles lacking in-text citations from August 2013All articles lacking in-text citations
+	

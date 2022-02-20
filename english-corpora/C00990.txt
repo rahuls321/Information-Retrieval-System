@@ -1,0 +1,936 @@
+
+Title:
+Cryptographically-secure pseudorandom number generator
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Type of functions designed for being unsolvable by root-finding algorithms
+A cryptographically secure pseudorandom number generator (CSPRNG) or cryptographic pseudorandom number generator (CPRNG)[1] is a pseudorandom number generator (PRNG) with properties that make it suitable for use in cryptography. It is also loosely known as a cryptographic random number generator (CRNG) (see Random number generation Â§ "True" vs. pseudo-random numbers).[2][3]
+Most cryptographic applications require random numbers, for example:
+
+key generation
+nonces
+salts in certain signature schemes, including ECDSA, RSASSA-PSS
+The "quality" of the randomness required for these applications varies.
+For example, creating a nonce in some protocols needs only uniqueness.
+On the other hand, the generation of a master key requires a higher quality, such as more entropy. And in the case of one-time pads, the information-theoretic guarantee of perfect secrecy only holds if the key material comes from a true random source with high entropy, and thus any kind of pseudorandom number generator is insufficient.
+Ideally, the generation of random numbers in CSPRNGs uses entropy obtained from a high-quality source, generally the operating system's randomness API. However, unexpected correlations have been found in several such ostensibly independent processes. From an information-theoretic point of view, the amount of randomness, the entropy that can be generated, is equal to the entropy provided by the system. But sometimes, in practical situations, more random numbers are needed than there is entropy available. Also, the processes to extract randomness from a running system are slow in actual practice.  In such instances, a CSPRNG can sometimes be used. A CSPRNG can "stretch" the available entropy over more bits.
+
+Contents
+
+1 Requirements
+2 Definitions
+3 Entropy extraction
+4 Designs
+
+4.1 Designs based on cryptographic primitives
+4.2 Number-theoretic designs
+4.3 Special designs
+
+
+5 Standards
+6 NSA kleptographic backdoor in the Dual_EC_DRBG PRNG
+7 Security flaws
+
+7.1 DUHK attack
+7.2 Japanese PURPLE cipher machine
+
+
+8 References
+9 External links
+
+
+
+Requirements[edit]
+The requirements of an ordinary PRNG are also satisfied by a cryptographically secure PRNG, but the reverse is not true. CSPRNG requirements fall into two groups: first, that they pass statistical randomness tests; and secondly, that they hold up well under serious attack, even when part of their initial or running state becomes available to an attacker.[citation needed]
+
+Every CSPRNG should satisfy the next-bit test. That is, given the first k bits of a random sequence, there is no polynomial-time algorithm that can predict the (k+1)th bit with probability of success non-negligibly better than 50%.[4] Andrew Yao proved in 1982 that a generator passing the next-bit test will pass all other polynomial-time statistical tests for randomness.[5]
+Every CSPRNG should withstand "state compromise extensions". In the event that part or all of its state has been revealed (or guessed correctly), it should be impossible to reconstruct the stream of random numbers prior to the revelation. Additionally, if there is an entropy input while running, it should be infeasible to use knowledge of the input's state to predict future conditions of the CSPRNG state.
+Example: If the CSPRNG under consideration produces output by computing bits of Ï in sequence, starting from some unknown point in the binary expansion, it may well satisfy the next-bit test and thus be statistically random, as Ï appears to be a random sequence. (This would be guaranteed if Ï is a normal number, for example.) However, this algorithm is not cryptographically secure; an attacker who determines which bit of pi (i.e. the state of the algorithm) is currently in use will be able to calculate all preceding bits as well.
+Most PRNGs are not suitable for use as CSPRNGs and will fail on both counts. First, while most PRNGs outputs appear random to assorted statistical tests, they do not resist determined reverse engineering. Specialized statistical tests may be found specially tuned to such a PRNG that shows the random numbers not to be truly random. Second, for most PRNGs, when their state has been revealed, all past random numbers can be retrodicted, allowing an attacker to read all past messages, as well as future ones.
+CSPRNGs are designed explicitly to resist this type of cryptanalysis.
+
+Definitions[edit]
+In the asymptotic setting, a family of deterministic polynomial time computable functions 
+  
+    
+      
+        
+          G
+          
+            k
+          
+        
+        :
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            k
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            p
+            (
+            k
+            )
+          
+        
+      
+    
+    {\displaystyle G_{k}\colon \{0,1\}^{k}\to \{0,1\}^{p(k)}}
+  
+ for some polynomial p, is a pseudorandom number generator (PRNG, or PRG in some references), if it stretches the length of its input (
+  
+    
+      
+        p
+        (
+        k
+        )
+        >
+        k
+      
+    
+    {\displaystyle p(k)>k}
+  
+ for any k), and if its output is computationally indistinguishable from true randomness, i.e. for any probabilistic polynomial time algorithm A, which outputs 1 or 0 as a distinguisher,
+
+
+  
+    
+      
+        
+          |
+          
+            
+              Pr
+              
+                x
+                â
+                {
+                0
+                ,
+                1
+                
+                  }
+                  
+                    k
+                  
+                
+              
+            
+            [
+            A
+            (
+            G
+            (
+            x
+            )
+            )
+            =
+            1
+            ]
+            â
+            
+              Pr
+              
+                r
+                â
+                {
+                0
+                ,
+                1
+                
+                  }
+                  
+                    p
+                    (
+                    k
+                    )
+                  
+                
+              
+            
+            [
+            A
+            (
+            r
+            )
+            =
+            1
+            ]
+          
+          |
+        
+        <
+        Î¼
+        (
+        k
+        )
+      
+    
+    {\displaystyle \left|\Pr _{x\gets \{0,1\}^{k}}[A(G(x))=1]-\Pr _{r\gets \{0,1\}^{p(k)}}[A(r)=1]\right|<\mu (k)}
+  
+
+for some negligible function 
+  
+    
+      
+        Î¼
+      
+    
+    {\displaystyle \mu }
+  
+.[6] (The notation 
+  
+    
+      
+        x
+        â
+        X
+      
+    
+    {\displaystyle x\gets X}
+  
+ means that x is chosen uniformly at random from the set X.)
+There is an equivalent characterization: For any function family 
+  
+    
+      
+        
+          G
+          
+            k
+          
+        
+        :
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            k
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            p
+            (
+            k
+            )
+          
+        
+      
+    
+    {\displaystyle G_{k}\colon \{0,1\}^{k}\to \{0,1\}^{p(k)}}
+  
+, G is a PRNG if and only if the next output bit of G cannot be predicted by a polynomial time algorithm.[7]
+A forward-secure PRNG with block length 
+  
+    
+      
+        t
+        (
+        k
+        )
+      
+    
+    {\displaystyle t(k)}
+  
+ is a PRNG 
+  
+    
+      
+        
+          G
+          
+            k
+          
+        
+        :
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            k
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            k
+          
+        
+        Ã
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            t
+            (
+            k
+            )
+          
+        
+      
+    
+    {\displaystyle G_{k}\colon \{0,1\}^{k}\to \{0,1\}^{k}\times \{0,1\}^{t(k)}}
+  
+, where the input string 
+  
+    
+      
+        
+          s
+          
+            i
+          
+        
+      
+    
+    {\displaystyle s_{i}}
+  
+ with length k is the current state at period i, and the output (
+  
+    
+      
+        
+          s
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle s_{i+1}}
+  
+, 
+  
+    
+      
+        
+          y
+          
+            i
+          
+        
+      
+    
+    {\displaystyle y_{i}}
+  
+) consists of the next state 
+  
+    
+      
+        
+          s
+          
+            i
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle s_{i+1}}
+  
+ and the pseudorandom output block 
+  
+    
+      
+        
+          y
+          
+            i
+          
+        
+      
+    
+    {\displaystyle y_{i}}
+  
+ of period i, that withstands state compromise extensions in the following sense. If the initial state 
+  
+    
+      
+        
+          s
+          
+            1
+          
+        
+      
+    
+    {\displaystyle s_{1}}
+  
+ is chosen uniformly at random from 
+  
+    
+      
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            k
+          
+        
+      
+    
+    {\displaystyle \{0,1\}^{k}}
+  
+, then for any i, the sequence 
+  
+    
+      
+        (
+        
+          y
+          
+            1
+          
+        
+        ,
+        
+          y
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          y
+          
+            i
+          
+        
+        ,
+        
+          s
+          
+            i
+            +
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle (y_{1},y_{2},\dots ,y_{i},s_{i+1})}
+  
+ must be computationally indistinguishable from 
+  
+    
+      
+        (
+        
+          r
+          
+            1
+          
+        
+        ,
+        
+          r
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          r
+          
+            i
+          
+        
+        ,
+        
+          s
+          
+            i
+            +
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle (r_{1},r_{2},\dots ,r_{i},s_{i+1})}
+  
+, in which the 
+  
+    
+      
+        
+          r
+          
+            i
+          
+        
+      
+    
+    {\displaystyle r_{i}}
+  
+ are chosen uniformly at random from 
+  
+    
+      
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            t
+            (
+            k
+            )
+          
+        
+      
+    
+    {\displaystyle \{0,1\}^{t(k)}}
+  
+.[8]
+Any PRNG 
+  
+    
+      
+        G
+        :
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            k
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            p
+            (
+            k
+            )
+          
+        
+      
+    
+    {\displaystyle G\colon \{0,1\}^{k}\to \{0,1\}^{p(k)}}
+  
+ can be turned into a forward secure PRNG with block length 
+  
+    
+      
+        p
+        (
+        k
+        )
+        â
+        k
+      
+    
+    {\displaystyle p(k)-k}
+  
+ by splitting its output into the next state and the actual output. This is done by setting 
+  
+    
+      
+        G
+        (
+        s
+        )
+        =
+        
+          G
+          
+            0
+          
+        
+        (
+        s
+        )
+        â
+        
+          G
+          
+            1
+          
+        
+        (
+        s
+        )
+      
+    
+    {\displaystyle G(s)=G_{0}(s)\Vert G_{1}(s)}
+  
+, in which 
+  
+    
+      
+        
+          |
+        
+        
+          G
+          
+            0
+          
+        
+        (
+        s
+        )
+        
+          |
+        
+        =
+        
+          |
+        
+        s
+        
+          |
+        
+        =
+        k
+      
+    
+    {\displaystyle |G_{0}(s)|=|s|=k}
+  
+ and 
+  
+    
+      
+        
+          |
+        
+        
+          G
+          
+            1
+          
+        
+        (
+        s
+        )
+        
+          |
+        
+        =
+        p
+        (
+        k
+        )
+        â
+        k
+      
+    
+    {\displaystyle |G_{1}(s)|=p(k)-k}
+  
+; then G is a forward secure PRNG with 
+  
+    
+      
+        
+          G
+          
+            0
+          
+        
+      
+    
+    {\displaystyle G_{0}}
+  
+ as the next state and 
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+      
+    
+    {\displaystyle G_{1}}
+  
+ as the pseudorandom output block of the current period.
+
+Entropy extraction[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Randomness extractor
+Santha and Vazirani proved that several bit streams with weak randomness can be combined to produce a higher-quality quasi-random bit stream.[9]
+Even earlier, John von Neumann proved that a simple algorithm can remove a considerable amount of the bias in any bit stream,[10] which should be applied to each bit stream before using any variation of the SanthaâVazirani design.
+
+Designs[edit]
+In the discussion below, CSPRNG designs are divided into three classes:
+
+those based on cryptographic primitives such as ciphers and cryptographic hashes,
+those based upon mathematical problems thought to be hard, and
+special-purpose designs.
+The last often introduces additional entropy when available and, strictly speaking, are not  "pure" pseudorandom number generators, as their output is not completely determined by their initial state. This addition can prevent attacks even if the initial state is compromised.
+
+Designs based on cryptographic primitives[edit]
+A secure block cipher can be converted into a CSPRNG by running it in counter mode[dubious  â discuss]. This is done by choosing a random key and encrypting a 0, then encrypting a 1, then encrypting a 2, etc.  The counter can also be started at an arbitrary number other than zero.  Assuming an n-bit block cipher the output can be distinguished from random data after around 2n/2 blocks since, following the birthday problem, colliding blocks should become likely at that point, whereas a block cipher in CTR mode will never output identical blocks. For 64-bit block ciphers this limits the safe output size to a few gigabytes, with 128-bit blocks the limitation is large enough not to impact typical applications. However, when used alone it does not meet all of the criteria of a CSPRNG (as stated above) since it is not strong against "state compromise extensions": with knowledge of the state (in this case a counter and a key) you can predict all past output.
+A cryptographically secure hash of a counter might also act as a good CSPRNG in some cases. In this case, it is also necessary that the initial value of this counter is random and secret. However, there has been little study of these algorithms for use in this manner, and at least some authors warn against this use.[vague][11]
+Most stream ciphers work by generating a pseudorandom stream of bits that are combined (almost always XORed) with the plaintext; running the cipher on a counter will return a new pseudorandom stream, possibly with a longer period. The cipher can only be secure if the original stream is a good CSPRNG, although this is not necessarily the case (see the RC4 cipher). Again, the initial state must be kept secret.
+Number-theoretic designs[edit]
+The Blum Blum Shub algorithm has a security proof based on the difficulty of the quadratic residuosity problem. Since the only known way to solve that problem is to factor the modulus, it is generally regarded that the difficulty of integer factorization provides a conditional security proof for the Blum Blum Shub algorithm. However the algorithm is very inefficient and therefore impractical unless extreme security is needed.
+The BlumâMicali algorithm has a security proof based on the difficulty of the discrete logarithm problem but is also very inefficient.
+Daniel Brown of Certicom has written a 2006 security proof for Dual_EC_DRBG, based on the assumed hardness of the Decisional DiffieâHellman assumption, the x-logarithm problem, and the truncated point problem. The 2006 proof explicitly assumes a lower outlen[clarification needed] than in the Dual_EC_DRBG standard, and that the P and Q in the Dual_EC_DRBG standard (which were revealed in 2013 to be probably backdoored by NSA) are replaced with non-backdoored values.
+Special designs[edit]
+There are a number of practical PRNGs that have been designed to be cryptographically secure, including
+
+the Yarrow algorithm which attempts to evaluate the entropic quality of its inputs. Yarrow is used in macOS and other Apple OS' up until about Dec. 2019.  Apple has switched to Fortuna since then. (See /dev/random).
+the ChaCha20 algorithm replaced RC4 in OpenBSD (version 5.4),[12] NetBSD (version 7.0),[13] and FreeBSD (version 12.0).[14]
+ChaCha20 also replaced SHA-1 in Linux in version 4.8.[15]
+the Fortuna algorithm, the successor to Yarrow, which does not attempt to evaluate the entropic quality of its inputs.  Fortuna is used in FreeBSD.  Apple changed to Fortuna for most or all Apple OS' beginning around Dec. 2019.
+the function CryptGenRandom provided in Microsoft's Cryptographic Application Programming Interface
+ISAAC based on a variant of the RC4 cipher
+Linear-feedback shift register tuned with evolutionary algorithm based on the NIST Statistical Test Suite.[16][17]
+arc4random
+AES-CTR DRBG is often used as a random number generator in systems that use AES encryption.[18][19]
+ANSI X9.17 standard (Financial Institution Key Management (wholesale)), which has been adopted as a FIPS standard as well. It takes as input a TDEA (keying option 2) key bundle k and (the initial value of) a 64-bit random seed s.[20] Each time a random number is required it:
+Obtains the current date/time D to the maximum resolution possible.
+Computes a temporary value t = TDEAk(D)
+Computes the random value x = TDEAk(s â t), where â denotes bitwise exclusive or.
+Updates the seed s = TDEAk(x â t)
+Obviously, the technique is easily generalized to any block cipher; AES has been suggested.[21]
+Standards[edit]
+Several CSPRNGs have been standardized. For example,
+
+FIPS 186-4
+NIST SP 800-90A:
+This withdrawn standard has four PRNGs. Two of them are uncontroversial and proven: CSPRNGs named Hash_DRBG[22] and HMAC_DRBG.[23]
+The third PRNG in this standard, CTR DRBG, is based on a block cipher running in counter mode. It has an uncontroversial design but has been proven to be weaker in terms of distinguishing attack, than the security level of the underlying block cipher when the number of bits output from this PRNG is greater than two to the power of the underlying block cipher's block size in bits.[24]
+When the maximum number of bits output from this PRNG is equal to the 2blocksize, the resulting output delivers the mathematically expected security level that the key size would be expected to generate, but the output is shown to not be indistinguishable from a true random number generator.[24] When the maximum number of bits output from this PRNG is less than it, the expected security level is delivered and the output appears to be indistinguishable from a true random number generator.[24]
+It is noted in the next revision that claimed security strength for CTR_DRBG depends on limiting the total number of generate requests and the bits provided per generate request.
+The fourth and final PRNG in this standard is named Dual_EC_DRBG. It has been shown to not be cryptographically secure and is believed to have a kleptographic NSA backdoor.[25]
+NIST SP 800-90A Rev.1: This is essentially NIST SP 800-90A with Dual_EC_DRBG removed, and is the withdrawn standard's replacement.
+ANSI X9.17-1985 Appendix C
+ANSI X9.31-1998 Appendix A.2.4
+ANSI X9.62-1998 Annex A.4, obsoleted by ANSI X9.62-2005, Annex D (HMAC_DRBG)
+A good reference is maintained by NIST.
+There are also standards for statistical testing of new CSPRNG designs:
+
+A Statistical Test Suite for Random and Pseudorandom Number Generators, NIST Special Publication 800-22.
+NSA kleptographic backdoor in the Dual_EC_DRBG PRNG[edit]
+Main article: Dual_EC_DRBG
+The Guardian and The New York Times have reported in 2013 that the National Security Agency (NSA) inserted a backdoor into a pseudorandom number generator (PRNG) of NIST SP 800-90A which allows the NSA to readily decrypt material that was encrypted with the aid of Dual_EC_DRBG. Both papers report[26][27] that, as independent security experts long suspected,[28]  the NSA has been introducing weaknesses into CSPRNG standard 800-90; this being confirmed for the first time by one of the top secret documents leaked to the Guardian by Edward Snowden. The NSA worked covertly to get its own version of the NIST draft security standard approved for worldwide use in 2006. The leaked document states that "eventually, NSA became the sole editor." In spite of the known potential for a kleptographic backdoor and other known significant deficiencies with Dual_EC_DRBG, several companies such as RSA Security continued using Dual_EC_DRBG until the backdoor was confirmed in 2013.[29] RSA Security received a $10 million payment from the NSA to do so.[30]
+
+Security flaws[edit]
+DUHK attack[edit]
+On October 23, 2017, Shaanan Cohney, Matthew Green, and Nadia Heninger, cryptographers at The University of Pennsylvania and Johns Hopkins University released details of the DUHK (Don't Use Hard-coded Keys) attack on WPA2 where hardware vendors use a hardcoded seed key for the ANSI X9.31 RNG algorithm, stating "an attacker can brute-force encrypted data to discover the rest of the encryption parameters and deduce the master encryption key used to encrypt web sessions or virtual private network (VPN) connections."[31][32]
+
+Japanese PURPLE cipher machine[edit]
+During World War II, Japan used a cipher  machine for diplomatic communications; the United States was able to crack it and read its messages, mostly because the "key values" used were insufficiently random.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Huang, Andrew (2003). Hacking the Xbox: An Introduction to Reverse Engineering. No Starch Press Series. No Starch Press. p.Â 111. ISBNÂ 9781593270292. Retrieved 2013-10-24. [...] the keystream generator [...] can be thought of as a cryptographic pseudo-random number generator (CPRNG).
+
+^ Dufour, CÃ©dric. "How to ensure entropy and proper random numbers generation in virtual machines". Exoscale.
+
+^ "/dev/random Is More Like /dev/urandom With Linux 5.6 - Phoronix". www.phoronix.com.
+
+^ Katz, Jonathan; Lindell, Yehuda (2008). Introduction to Modern Cryptography. CRC press. p.Â 70. ISBNÂ 978-1584885511.
+
+^ Andrew Chi-Chih Yao. Theory and applications of trapdoor functions. In Proceedings of the 23rd IEEE Symposium on Foundations of Computer Science, 1982.
+
+^ Goldreich, Oded (2001), Foundations of cryptography I: Basic Tools, Cambridge: Cambridge University Press, ISBNÂ 978-0-511-54689-1, def 3.3.1.
+
+^ Goldreich, Oded (2001), Foundations of cryptography I: Basic Tools, Cambridge: Cambridge University Press, ISBNÂ 978-0-511-54689-1, Theorem 3.3.7.
+
+^ Dodis, Yevgeniy, Lecture 5 Notes of Introduction to Cryptography (PDF), retrieved 3 January 2016, def 4.
+
+^ 
+Miklos Santha, Umesh V. Vazirani (1984-10-24). "Generating quasi-random sequences from slightly-random sources" (PDF). Proceedings of the 25th IEEE Symposium on Foundations of Computer Science. University of California. pp.Â 434â440. ISBNÂ 0-8186-0591-X. Retrieved 2006-11-29.
+
+^ 
+John von Neumann (1963-03-01). "Various techniques for use in connection with random digits". The Collected Works of John von Neumann. Pergamon Press. pp.Â 768â770. ISBNÂ 0-08-009566-6.
+
+^ 
+Adam Young, Moti Yung (2004-02-01). Malicious Cryptography: Exposing Cryptovirology. sect 3.2: John Wiley & Sons. p.Â 416. ISBNÂ 978-0-7645-4975-5.{{cite book}}:  CS1 maint: location (link)
+
+^ "CVS log of arc4random.c". CVS. October 1, 2013.
+
+^ "CVS log of arc4random.c". CVS. November 16, 2014.
+
+^ "FreeBSD 12.0-RELEASE Release Notes: Runtime Libraries and API". FreeBSD.org. 5 March 2019. Retrieved 24 August 2019.
+
+^ "Github commit of random.c". Github. July 2, 2016.
+
+^ "A Statistical Test Suite for Random and Pseudorandom Number Generators for Cryptographic Applications" (PDF). Special Publication. NIST. April 2010.
+
+^ Poorghanad, A.; Sadr, A.; Kashanipour, A. (May 2008). "Generating High Quality Pseudo Random Number Using Evolutionary Methods" (PDF). IEEE Congress on Computational Intelligence and Security. 9: 331â335.
+
+^ Kleidermacher, David; Kleidermacher, Mike (2012). Embedded Systems Security: Practical Methods for Safe and Secure Software and Systems Development. Elsevier. p.Â 256. ISBNÂ 9780123868862.
+
+^ 
+Cox, George; Dike, Charles; Johnston, DJ (2011). "Intel's Digital Random Number Generator (DRNG)" (PDF). {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Menezes, Alfred; van Oorschot, Paul; Vanstone, Scott (1996). "Chapter 5: Pseudorandom Bits and Sequences" (PDF). Handbook of Applied Cryptography. CRC Press.
+
+^ 
+Young, Adam; Yung, Moti (2004-02-01). Malicious Cryptography: Exposing Cryptovirology. sect 3.5.1: John Wiley & Sons. ISBNÂ 978-0-7645-4975-5.{{cite book}}:  CS1 maint: location (link)
+
+^ Kan, Wilson (September 4, 2007). "Analysis of Underlying Assumptions in NIST DRBGs" (PDF). Retrieved November 19, 2016.
+
+^ Ye, Katherine Qinru (April 2016). "The Notorious PRG: Formal verification of the HMAC-DRBG pseudorandom number generator" (PDF). Retrieved November 19, 2016.
+
+^ Jump up to: a b c Campagna, Matthew J. (November 1, 2006). "Security Bounds for the NIST Codebook-based Deterministic Random Bit Generator" (PDF). Retrieved November 19, 2016.
+
+^ Perlroth, Nicole (September 10, 2013). "Government Announces Steps to Restore Confidence on Encryption Standards". The New York Times. Retrieved November 19, 2016.
+
+^ James Borger; Glenn Greenwald (6 September 2013). "Revealed: how US and UK spy agencies defeat internet privacy and security". The Guardian. The Guardian. Retrieved 7 September 2013.
+
+^ Nicole Perlroth (5 September 2013). "N.S.A. Able to Foil Basic Safeguards of Privacy on Web". The New York Times. Retrieved 7 September 2013.
+
+^ Bruce Schneier (15 November 2007). "Did NSA Put a Secret Backdoor in New Encryption Standard?". Wired. Retrieved 7 September 2013.
+
+^ Matthew Green. "RSA warns developers not to use RSA products".
+
+^ Joseph Menn (20 December 2013). "Exclusive: Secret contract tied NSA and security industry pioneer". Reuters.
+
+^ Shaanan Cohney; Matthew D. Green; Nadia Heninger. "Practical state recovery attacks against legacy RNG implementations" (PDF). duhkattack.com.
+
+^ "DUHK Crypto Attack Recovers Encryption Keys, Exposes VPN Connections". slashdot.org. Retrieved 25 October 2017.
+
+
+External links[edit]
+
+
+
+The Wikibook Cryptography has a page on the topic of: Random number generation
+
+RFCÂ 4086, Randomness Requirements for Security
+Java "entropy pool" for cryptographically secure unpredictable random numbers.
+Java standard class providing a cryptographically strong pseudo-random number generator (PRNG).
+Cryptographically Secure Random number on Windows without using CryptoAPI
+Conjectured Security of the ANSI-NIST Elliptic Curve RNG, Daniel R. L. Brown, IACR ePrint 2006/117.
+A Security Analysis of the NIST SP 800-90 Elliptic Curve Random Number Generator, Daniel R. L. Brown and Kristian Gjosteen, IACR ePrint 2007/048.  To appear in CRYPTO 2007.
+Cryptanalysis of the Dual Elliptic Curve Pseudorandom Generator, Berry Schoenmakers and Andrey Sidorenko, IACR ePrint 2006/190.
+Efficient Pseudorandom Generators Based on the DDH Assumption, Reza Rezaeian Farashahi and Berry Schoenmakers and Andrey Sidorenko, IACR ePrint 2006/321.
+Analysis of the Linux Random Number Generator, Zvi Gutterman and Benny Pinkas and Tzachy Reinman.
+NIST Statistical Test Suite documentation and software download.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteCryptography
+History of cryptography
+Outline of cryptography
+Cryptographic protocol
+Authentication protocol
+Cryptographic primitive
+Cryptanalysis
+Cryptocurrency
+Cryptosystem
+Cryptographic nonce
+Cryptovirology
+Hash function
+Cryptographic hash function
+Key derivation function
+Digital signature
+Kleptography
+Key (cryptography)
+Key exchange
+Key generator
+Key schedule
+Key stretching
+Keygen
+Cryptojacking malware
+Ransomware
+Random number generation
+Cryptographically secure pseudorandom number generator (CSPRNG)
+Pseudorandom noise (PRN)
+Secure channel
+Insecure channel
+Subliminal channel
+Encryption
+Decryption
+End-to-end encryption
+Information-theoretic security
+Plaintext
+Codetext
+Ciphertext
+Shared secret
+Trapdoor function
+Trusted timestamping
+Key-based routing
+Onion routing
+Garlic routing
+Kademlia
+Mix network
+
+Cryptographic hash function
+Block cipher
+Stream cipher
+Symmetric-key algorithm
+Public-key cryptography
+Quantum key distribution
+Quantum cryptography
+Post-quantum cryptography
+Message authentication code
+Random numbers
+Steganography
+
+ Category
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Cryptographically-secure_pseudorandom_number_generator&oldid=1069349086"
+		Categories: Cryptographic algorithmsCryptographically secure pseudorandom number generatorsCryptographic primitivesHidden categories: CS1 maint: locationCS1 errors: missing periodicalArticles with short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from January 2012All accuracy disputesArticles with disputed statements from April 2020All Wikipedia articles needing clarificationWikipedia articles needing clarification from January 2015Wikipedia articles needing clarification from August 2020
+	

@@ -1,0 +1,705 @@
+
+Title:
+First-class function
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Programming language feature
+In computer science, a programming language is said to have first-class functions if it treats functions as first-class citizens. This means the language supports passing functions as arguments to other functions, returning them as the values from other functions, and assigning them to variables or storing them in data structures.[1] Some programming language theorists require support for anonymous functions (function literals) as well.[2] In languages with first-class functions, the names of functions do not have any special status; they are treated like ordinary variables with a function type.[3] The term was coined by Christopher Strachey in the context of "functions as first-class citizens" in the mid-1960s.[4]
+First-class functions are a necessity for the functional programming style, in which the use of higher-order functions is a standard practice. A simple example of a higher-ordered function is the map function, which takes, as its arguments, a function and a list, and returns the list formed by applying the function to each member of the list. For a language to support map, it must support passing a function as an argument.
+There are certain implementation difficulties in passing functions as arguments or returning them as results, especially in the presence of non-local variables introduced in nested and anonymous functions. Historically, these were termed the funarg problems, the name coming from "function argument".[5] In early imperative languages these problems were avoided by either not supporting functions as result types (e.g. ALGOL 60, Pascal) or omitting nested functions and thus non-local variables (e.g. C). The early functional language Lisp took the approach of dynamic scoping, where non-local variables refer to the closest definition of that variable at the point where the function is executed, instead of where it was defined. Proper support for lexically scoped first-class functions was introduced in Scheme and requires handling references to functions as closures instead of bare function pointers,[4] which in turn makes garbage collection a necessity.
+
+Contents
+
+1 Concepts
+
+1.1 Higher-order functions: passing functions as arguments
+1.2 Anonymous and nested functions
+1.3 Non-local variables and closures
+1.4 Higher-order functions: returning functions as results
+1.5 Assigning functions to variables
+1.6 Equality of functions
+
+
+2 Type theory
+3 Language support
+4 See also
+5 Notes
+6 References
+7 External links
+
+
+
+Concepts[edit]
+In this section, we compare how particular programming idioms are handled in a functional language with first-class functions (Haskell) compared to an imperative language where functions are second-class citizens (C).
+
+Higher-order functions: passing functions as arguments[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Further information: Higher-order function
+In languages where functions are first-class citizens, functions can be passed as arguments to other functions in the same way as other values (a function taking another function as argument is called a higher-order function). In the language Haskell:
+
+map :: (a -> b) -> [a] -> [b]
+map f []     = []
+map f (x:xs) = f x : map f xs
+
+Languages where functions are not first-class often still allow one to write higher-order functions through the use of features such as function pointers or delegates. In the language C:
+
+void map(int (*f)(int), int x[], size_t n) {
+    for (int i = 0; i < n; i++)
+        x[i] = f(x[i]);
+}
+
+There are a number of differences between the two approaches that are not directly related to the support of first-class functions. The Haskell sample operates on lists, while the C sample operates on arrays. Both are the most natural compound data structures in the respective languages and making the C sample operate on linked lists would have made it unnecessarily complex. This also accounts for the fact that the C function needs an additional parameter (giving the size of the array.) The C function updates the array in-place, returning no value, whereas in Haskell data structures are persistent (a new list is returned while the old is left intact.) The Haskell sample uses recursion to traverse the list, while the C sample uses iteration. Again, this is the most natural way to express this function in both languages, but the Haskell sample could easily have been expressed in terms of a fold and the C sample in terms of recursion. Finally, the Haskell function has a polymorphic type, as this is not supported by C we have fixed all type variables to the type constant int.
+
+Anonymous and nested functions[edit]
+Further information: Anonymous function and Nested function
+In languages supporting anonymous functions, we can pass such a function as an argument to a higher-order function:
+
+main = map (\x -> 3 * x + 1) [1, 2, 3, 4, 5]
+
+In a language which does not support anonymous functions, we have to bind it to a name instead:
+
+int f(int x) {
+    return 3 * x + 1;
+}
+
+int main() {
+    int list[] = {1, 2, 3, 4, 5};
+    map(f, list, 5);
+}
+
+Non-local variables and closures[edit]
+Further information: Non-local variable and Closure (computer science)
+Once we have anonymous or nested functions, it becomes natural for them to refer to variables outside of their body (called non-local variables):
+
+main = let a = 3
+           b = 1
+        in map (\x -> a * x + b) [1, 2, 3, 4, 5]
+
+If functions are represented with bare function pointers, we can not know anymore how the value that is outside of the function's body should be passed to it, and because of that a closure needs to be built manually. Therefore we can not speak of "first-class" functions here.
+
+typedef struct {
+    int (*f)(int, int, int);
+    int *a;
+    int *b;
+} closure_t;
+
+void map(closure_t *closure, int x[], size_t n) {
+    for (int i = 0; i < n; ++i)
+        x[i] = (*closure->f)(*closure->a, *closure->b, x[i]);
+}
+
+int f(int a, int b, int x) {
+    return a * x + b;
+}
+
+void main() {
+    int l[] = {1, 2, 3, 4, 5};
+    int a = 3;
+    int b = 1;
+    closure_t closure = {f, &a, &b};
+    map(&closure, l, 5);
+}
+
+Also note that the map is now specialized to functions referring to two ints outside of their environment. This can be set up more generally, but requires more boilerplate code. If f would have been a nested function we would still have run into the same problem and this is the reason they are not supported in C.[6]
+
+Higher-order functions: returning functions as results[edit]
+When returning a function, we are in fact returning its closure. In the C example any local variables captured by the closure will go out of scope once we return from the function that builds the closure. Forcing the closure at a later point will result in undefined behaviour, possibly corrupting the stack. This is known as the upwards funarg problem.
+
+Assigning functions to variables[edit]
+Assigning functions to variables and storing them inside (global) datastructures potentially suffers from the same difficulties as returning functions.
+
+f :: [[Integer] -> [Integer]]
+f = let a = 3
+        b = 1
+     in [map (\x -> a * x + b), map (\x -> b * x + a)]
+
+Equality of functions[edit]
+Further information: Function equality
+As one can test most literals and values for equality, it is natural to ask whether a programming language can support testing functions for equality. On further inspection, this question appears more difficult and one has to distinguish between several types of function equality:[7]
+
+Extensional equality
+Two functions f and g are considered extensionally equal if they agree on their outputs for all inputs (âx. f(x) = g(x)). Under this definition of equality, for example, any two implementations of a stable sorting algorithm, such as insertion sort and merge sort, would be considered equal. Deciding on extensional equality is undecidable in general and even for functions with finite domains often intractable. For this reason no programming language implements function equality as extensional equality.
+Intensional equality
+Under intensional equality, two functions f and g are considered equal if they have the same "internal structure". This kind of equality could be implemented in interpreted languages by comparing the source code of the function bodies (such as in Interpreted Lisp 1.5) or the object code in compiled languages. Intensional equality implies extensional equality (assuming the functions are deterministic and have no hidden inputs, such as the program counter or a mutable global variable.)
+Reference equality
+Given the impracticality of implementing extensional and intensional equality, most languages supporting testing functions for equality use reference equality. All functions or closures are assigned a unique identifier (usually the address of the function body or the closure) and equality is decided based on equality of the identifier. Two separately defined, but otherwise identical function definitions will be considered unequal. Referential equality implies intensional and extensional equality. Referential equality breaks referential transparency and is therefore not supported in pure languages, such as Haskell.
+Type theory[edit]
+Main article: Function type
+In type theory, the type of functions accepting values of type A and returning values of type B may be written as A â B or BA. In the CurryâHoward correspondence, function types are related to logical implication; lambda abstraction corresponds to discharging hypothetical assumptions and function application corresponds to the modus ponens inference rule. Besides the usual case of programming functions, type theory also uses first-class functions to model associative arrays and similar data structures.
+In category-theoretical accounts of programming, the availability of first-class functions corresponds to the closed category assumption. For instance, the simply typed lambda calculus corresponds to the internal language of Cartesian closed categories.
+
+Language support[edit]
+Functional programming languages, such as Scheme, ML, Haskell, F#, and Scala, all have first-class functions. When Lisp, one of the earliest functional languages, was designed, not all aspects of first-class functions were then properly understood, resulting in functions being dynamically scoped. The later Scheme and Common Lisp dialects do have lexically scoped first-class functions.
+Many scripting languages, including Perl, Python, PHP, Lua, Tcl/Tk, JavaScript and Io, have first-class functions.
+For imperative languages, a distinction has to be made between Algol and its descendants such as Pascal, the traditional C family, and the modern garbage-collected variants. The Algol family has allowed nested functions and higher-order taking function as arguments, but not higher-order functions that return functions as results (except Algol 68, which allows this). The reason for this was that it was not known how to deal with non-local variables if a nested-function was returned as a result (and Algol 68 produces runtime errors in such cases).
+The C family allowed both passing functions as arguments and returning them as results, but avoided any problems by not supporting nested functions. (The gcc compiler allows them as an extension.) As the usefulness of returning functions primarily lies in the ability to return nested functions that have captured non-local variables, instead of top-level functions, these languages are generally not considered to have first-class functions.
+Modern imperative languages often support garbage-collection making the implementation of first-class functions feasible. First-class functions have often only been supported in later revisions of the language, including C# 2.0 and Apple's Blocks extension to C, C++, and Objective-C. C++11 has added support for anonymous functions and closures to the language, but because of the non-garbage collected nature of the language, special care has to be taken for non-local variables in functions to be returned as results (see below).
+
+
+
+Language
+Higher-order functions
+Nested functions
+Non-local variables
+Notes
+
+
+Arguments
+Results
+Named
+Anonymous
+Closures
+Partial application
+
+
+Algol family
+
+ALGOL 60
+Yes
+No
+Yes
+No
+Downwards
+No
+Have function types.
+
+
+ALGOL 68
+Yes
+Yes[8]
+Yes
+Yes
+Downwards[9]
+No
+
+
+Pascal
+Yes
+No
+Yes
+No
+Downwards
+No
+
+
+Ada
+Yes
+No
+Yes
+No
+Downwards
+No
+
+
+Oberon
+Yes
+Non-nested only
+Yes
+No
+Downwards
+No
+
+
+Delphi
+Yes
+Yes
+Yes
+2009
+2009
+No
+
+
+C family
+
+C
+Yes
+Yes
+Yes in GNU C
+No
+No
+No
+Has function pointers.
+
+
+C++
+Yes
+Yes
+C++11[10]
+C++11[11]
+C++11[11]
+C++11
+Has function pointers, function objects. (Also, see below.)
+Explicit partial application possible with std::bind.
+
+
+
+C#
+Yes
+Yes
+7
+2.0 / 3.0
+2.0
+3.0
+Has delegates (2.0) and lambda expressions (3.0).
+
+
+Objective-C
+Yes
+Yes
+Using anonymous
+2.0 + Blocks[12]
+2.0 + Blocks
+No
+Has function pointers.
+
+
+Java
+Yes
+Yes
+Using anonymous
+Java 8
+Java 8
+No
+Has anonymous inner classes.
+
+
+Go
+Yes
+Yes
+Using anonymous
+Yes
+Yes
+Yes[13]
+
+
+
+Limbo
+Yes
+Yes
+Yes
+Yes
+Yes
+No
+
+
+
+Newsqueak
+Yes
+Yes
+Yes
+Yes
+Yes
+No
+
+
+
+Rust
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes[14]
+
+
+
+Functional languages
+Lisp
+Syntax
+Syntax
+Yes
+Yes
+Common Lisp
+No
+(see below)
+
+
+Scheme
+Yes
+Yes
+Yes
+Yes
+Yes
+SRFI 26[15]
+
+
+
+Julia
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+Clojure
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+ML
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+Haskell
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+Scala
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+F#
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+OCaml
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+
+Scripting languages
+
+Io
+Yes
+Yes
+Yes
+Yes
+Yes
+No
+
+
+
+JavaScript
+Yes
+Yes
+Yes
+Yes
+Yes
+ECMAScript 5
+Partial application possible with user-land code on ES3 [16]
+
+
+Lua
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes[17]
+
+
+
+PHP
+Yes
+Yes
+Using anonymous
+5.3
+5.3
+No
+Partial application possible with user-land code.
+
+
+Perl
+Yes
+Yes
+6
+Yes
+Yes
+6[18]
+
+
+
+Python
+Yes
+Yes
+Yes
+Expressions only
+Yes
+2.5[19]
+(see below)
+
+
+Ruby
+Syntax
+Syntax
+Unscoped
+Yes
+Yes
+1.9
+(see below)
+
+
+Other languages
+
+Fortran
+Yes
+Yes
+Yes
+No
+No
+No
+
+
+
+Maple
+Yes
+Yes
+Yes
+Yes
+Yes
+No
+
+
+
+Mathematica
+Yes
+Yes
+Yes
+Yes
+Yes
+No
+
+
+
+MATLAB
+Yes
+Yes
+Yes
+Yes[20]
+Yes
+Yes
+Partial application possible by automatic generation of new functions.[21]
+
+
+Smalltalk
+Yes
+Yes
+Yes
+Yes
+Yes
+Partial
+Partial application possible through library.
+
+
+Swift
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+C++
+C++11 closures can capture non-local variables by copy construction, by reference (without extending their lifetime), or by move construction (the variable lives as long as the closure does). The first option is safe if the closure is returned but requires a copy and cannot be used to modify the original variable (which might not exist any more at the time the closure is called). The second option potentially avoids an expensive copy and allows to modify the original variable but is unsafe in case the closure is returned (see dangling references). The third option is safe if the closure is returned and does not require a copy but cannot be used to modify the original variable either.
+Java
+Java 8 closures can only capture final or "effectively final" non-local variables. Java's function types are represented as Classes.  Anonymous functions take the type inferred from the context.  Method references are limited.  For more details, see Anonymous function Â§Â Java limitations.
+Lisp
+Lexically scoped Lisp variants support closures. Dynamically scoped variants do not support closures or need a special construct to create closures.[22]
+In Common Lisp, the identifier of a function in the function namespace cannot be used as a reference to a first-class value. The special operator function must be used to retrieve the function as a value: (function foo) evaluates to a function object. #'foo exists as a shorthand notation. To apply such a function object, one must use the funcall function: (funcall #'foo bar baz).
+Python
+Explicit partial application with functools.partial since version 2.5, and operator.methodcaller since version 2.6.
+Ruby
+The identifier of a regular "function" in Ruby (which is really a method) cannot be used as a value or passed. It must first be retrieved into a Method or Proc object to be used as first-class data. The syntax for calling such a function object differs from calling regular methods.
+Nested method definitions do not actually nest the scope.
+Explicit currying with [1].
+See also[edit]
+Defunctionalization
+eval
+First-class message
+Kappa calculus â a formalism which excludes first-class functions
+Man or boy test
+Partial application
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Abelson, Harold; Sussman, Gerald Jay (1984). Structure and Interpretation of Computer Programs. MIT Press. Formulating Abstractions with Higher-Order Procedures. ISBNÂ 0-262-01077-1.
+
+^ Programming language pragmatics, by Michael Lee Scott, section 11.2 "Functional Programming".
+
+^ Roberto Ierusalimschy; Luiz Henrique de Figueiredo; Waldemar Celes (2005). "The Implementation of Lua 5.0". Journal of Universal Computer Science. 11 (7): 1159â1176. doi:10.3217/jucs-011-07-1159.
+
+^ Jump up to: a b Burstall, Rod; Strachey, Christopher (2000). "Understanding Programming Languages" (PDF). Higher-Order and Symbolic Computation. 13 (52): 11â49. doi:10.1023/A:1010052305354. S2CIDÂ 1989590. Archived from the original on February 16, 2010.{{cite journal}}:  CS1 maint: bot: original URL status unknown (link) (also  on 2010-02-16
+
+^ Joel Moses. "The Function of FUNCTION in LISP, or Why the FUNARG Problem Should be Called the Environment Problem". MIT AI Memo 199, 1970.
+
+^ "If you try to call the nested function through its address after the containing function has exited, all hell will break loose." (GNU Compiler Collection: Nested Functions)
+
+^ Andrew W. Appel (1995). "Intensional EqualityÂ ;=) for Continuations".
+
+^ Tanenbaum, A.S. (1977). "A comparison of PASCAL and Algol 68". The Computer Journal. 21 (4): 319. doi:10.1093/comjnl/21.4.316.
+
+^ "The History of Python: Origins of Python's "Functional" Features". 21 April 2009.
+
+^ Nested functions using lambdas/closures
+
+^ Jump up to: a b Doc No. 1968: V Samko; J Willcock, J JÃ¤rvi, D Gregor, A Lumsdaine (February 26, 2006) Lambda expressions and closures for C++
+
+^ "Mac Dev Center: Blocks Programming Topics: Introduction". Archived from the original on 2009-08-31.
+
+^ "2 examples in Go that you can have partial application".
+
+^ "partial_application". Docs.rs. Retrieved 2020-11-03.
+
+^ "SRFI 26: Notation for Specializing Parameters without Currying".
+
+^ "John Resig - Partial Application in JavaScript".
+
+^ Katz, Ian (July 23, 2010). "Lua Code for Curry (Currying Functions)". Archived from the original on 2018-11-06.
+
+^ "Blog | Perlgeek.deÂ :: Currying".
+
+^ "What's New in Python 2.5 â Python 3.10.0 documentation".
+
+^ "Anonymous Functions - MATLAB & Simulink - MathWorks United Kingdom".
+
+^ Partial Function Evaluation in MATLAB
+
+^ Closures in ZetaLisp Archived 2012-03-19 at the Wayback Machine
+
+
+References[edit]
+Leonidas Fegaras. "Functional Languages and Higher-Order Functions". CSE5317/CSE4305: Design and Construction of Compilers. University of Texas at Arlington.
+External links[edit]
+First-class functions on Rosetta Code.
+Higher order functions at IBM developerWorks
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=First-class_function&oldid=1066056226"
+		Categories: Compiler constructionData typesFunctional programmingPrimitive typesProgramming language theorySubroutinesHidden categories: CS1 maint: bot: original URL status unknownWebarchive template wayback linksArticles with short descriptionShort description is different from WikidataArticles with hatnote templates targeting a nonexistent pageArticles with example C codeArticles with example Haskell code
+	

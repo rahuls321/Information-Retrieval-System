@@ -1,0 +1,1065 @@
+
+Title:
+EdmondsâKarp algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+
+algorithm to compute the maximum flow in a flow network (equivalently; the minimum cut)
+In computer science, the EdmondsâKarp algorithm is an implementation of the FordâFulkerson method for computing the maximum flow in a flow network in 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          |
+        
+        
+          |
+        
+        E
+        
+          
+            |
+          
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(|V||E|^{2})}
+  
+ time. The algorithm was first published by Yefim Dinitz (whose name is also transliterated "E. A. Dinic", notably as author of his early papers) in 1970[1][2] and independently published by Jack Edmonds and Richard Karp in 1972.[3] Dinic's algorithm includes additional techniques that reduce the running time to 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          
+            |
+          
+          
+            2
+          
+        
+        
+          |
+        
+        E
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle O(|V|^{2}|E|)}
+  
+.[2]
+
+
+The Wikibook Algorithm implementation has a page on the topic of: Edmonds-Karp
+
+Contents
+
+1 Algorithm
+2 Pseudocode
+3 Example
+4 Notes
+5 References
+
+
+
+Algorithm[edit]
+The algorithm is identical to the FordâFulkerson algorithm, except that the search order when finding the augmenting path is defined. The path found must be a shortest path that has available capacity. This can be found by a breadth-first search, where we apply a weight of 1 to each edge. The running time of 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          |
+        
+        
+          |
+        
+        E
+        
+          
+            |
+          
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(|V||E|^{2})}
+  
+ is found by showing that each augmenting path can be found in 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        E
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle O(|E|)}
+  
+ time, that every time at least one of the 
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+ edges becomes saturated (an edge which has the maximum possible flow), that the distance from the saturated edge to the source along the augmenting path must be longer than last time it was saturated, and that the length is at most 
+  
+    
+      
+        
+          |
+        
+        V
+        
+          |
+        
+      
+    
+    {\displaystyle |V|}
+  
+. Another property of this algorithm is that the length of the shortest augmenting path increases monotonically. There is an accessible proof in Introduction to Algorithms.[4]
+
+Pseudocode[edit]
+algorithm EdmondsKarp is
+    input:
+        graph   (graph[v] should be the list of edges coming out of vertex v in the
+                 original graph and their corresponding constructed reverse edges
+                 which are used for push-back flow.
+                 Each edge should have a capacity, flow, source and sink as parameters,
+                 as well as a pointer to the reverse edge.)
+        s       (Source vertex)
+        t       (Sink vertex)
+    output:
+        flow    (Value of maximum flow)
+    
+    flowÂ := 0   (Initialize flow to zero)
+    repeat
+        (Run a breadth-first search (bfs) to find the shortest s-t path.
+         We use 'pred' to store the edge taken to get to each vertex,
+         so we can recover the path afterwards)
+        qÂ := queue()
+        q.push(s)
+        predÂ := array(graph.length)
+        while not empty(q)
+            curÂ := q.pull()
+            for Edge e in graph[cur] do
+                if pred[e.t] = null and e.t â  s and e.cap > e.flow then
+                    pred[e.t]Â := e
+                    q.push(e.t)
+
+        if not (pred[t] = null) then
+            (We found an augmenting path.
+             See how much flow we can send) 
+            dfÂ := â
+            for (eÂ := pred[t]; e â  null; eÂ := pred[e.s]) do
+                dfÂ := min(df, e.cap - e.flow)
+            (And update edges by that amount)
+            for (eÂ := pred[t]; e â  null; eÂ := pred[e.s]) do
+                e.flow Â := e.flow + df
+                e.rev.flowÂ := e.rev.flow - df
+            flowÂ := flow + df
+
+    until pred[t] = null  (i.e., until no augmenting path was found)
+    return flow
+
+Example[edit]
+Given a network of seven nodes, source A, sink G, and capacities as shown below:
+
+In the pairs 
+  
+    
+      
+        f
+        
+          /
+        
+        c
+      
+    
+    {\displaystyle f/c}
+  
+ written on the edges, 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ is the current flow, and 
+  
+    
+      
+        c
+      
+    
+    {\displaystyle c}
+  
+ is the capacity. The residual capacity from 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ to 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ is 
+  
+    
+      
+        
+          c
+          
+            f
+          
+        
+        (
+        u
+        ,
+        v
+        )
+        =
+        c
+        (
+        u
+        ,
+        v
+        )
+        â
+        f
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle c_{f}(u,v)=c(u,v)-f(u,v)}
+  
+, the total capacity, minus the flow that is already used. If the net flow from 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ to 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ is negative, it contributes to the residual capacity.
+
+
+
+
+Capacity
+
+Path
+
+Resulting network
+
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                min
+                (
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                A
+                ,
+                D
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                D
+                ,
+                E
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                E
+                ,
+                G
+                )
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                3
+                â
+                0
+                ,
+                2
+                â
+                0
+                ,
+                1
+                â
+                0
+                )
+                =
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                3
+                ,
+                2
+                ,
+                1
+                )
+                =
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\min(c_{f}(A,D),c_{f}(D,E),c_{f}(E,G))\\=&\min(3-0,2-0,1-0)=\\=&\min(3,2,1)=1\end{aligned}}}
+  
+
+
+
+  
+    
+      
+        A
+        ,
+        D
+        ,
+        E
+        ,
+        G
+      
+    
+    {\displaystyle A,D,E,G}
+  
+
+
+
+
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                min
+                (
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                A
+                ,
+                D
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                D
+                ,
+                F
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                F
+                ,
+                G
+                )
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                3
+                â
+                1
+                ,
+                6
+                â
+                0
+                ,
+                9
+                â
+                0
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                2
+                ,
+                6
+                ,
+                9
+                )
+                =
+                2
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\min(c_{f}(A,D),c_{f}(D,F),c_{f}(F,G))\\=&\min(3-1,6-0,9-0)\\=&\min(2,6,9)=2\end{aligned}}}
+  
+
+
+
+  
+    
+      
+        A
+        ,
+        D
+        ,
+        F
+        ,
+        G
+      
+    
+    {\displaystyle A,D,F,G}
+  
+
+
+
+
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                min
+                (
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                A
+                ,
+                B
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                B
+                ,
+                C
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                C
+                ,
+                D
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                D
+                ,
+                F
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                F
+                ,
+                G
+                )
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                3
+                â
+                0
+                ,
+                4
+                â
+                0
+                ,
+                1
+                â
+                0
+                ,
+                6
+                â
+                2
+                ,
+                9
+                â
+                2
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                3
+                ,
+                4
+                ,
+                1
+                ,
+                4
+                ,
+                7
+                )
+                =
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\min(c_{f}(A,B),c_{f}(B,C),c_{f}(C,D),c_{f}(D,F),c_{f}(F,G))\\=&\min(3-0,4-0,1-0,6-2,9-2)\\=&\min(3,4,1,4,7)=1\end{aligned}}}
+  
+
+
+
+  
+    
+      
+        A
+        ,
+        B
+        ,
+        C
+        ,
+        D
+        ,
+        F
+        ,
+        G
+      
+    
+    {\displaystyle A,B,C,D,F,G}
+  
+
+
+
+
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                min
+                (
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                A
+                ,
+                B
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                B
+                ,
+                C
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                C
+                ,
+                E
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                E
+                ,
+                D
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                D
+                ,
+                F
+                )
+                ,
+                
+                  c
+                  
+                    f
+                  
+                
+                (
+                F
+                ,
+                G
+                )
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                3
+                â
+                1
+                ,
+                4
+                â
+                1
+                ,
+                2
+                â
+                0
+                ,
+                0
+                â
+                (
+                â
+                1
+                )
+                ,
+                6
+                â
+                3
+                ,
+                9
+                â
+                3
+                )
+              
+            
+            
+              
+                =
+              
+              
+                
+                min
+                (
+                2
+                ,
+                3
+                ,
+                2
+                ,
+                1
+                ,
+                3
+                ,
+                6
+                )
+                =
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\min(c_{f}(A,B),c_{f}(B,C),c_{f}(C,E),c_{f}(E,D),c_{f}(D,F),c_{f}(F,G))\\=&\min(3-1,4-1,2-0,0-(-1),6-3,9-3)\\=&\min(2,3,2,1,3,6)=1\end{aligned}}}
+  
+
+
+
+  
+    
+      
+        A
+        ,
+        B
+        ,
+        C
+        ,
+        E
+        ,
+        D
+        ,
+        F
+        ,
+        G
+      
+    
+    {\displaystyle A,B,C,E,D,F,G}
+  
+
+
+
+
+Notice how the length of the augmenting path found by the algorithm (in red) never decreases. The paths found are the shortest possible. The flow found is equal to the capacity across the minimum cut in the graph separating the source and the sink. There is only one minimal cut in this graph, partitioning the nodes into the sets 
+  
+    
+      
+        {
+        A
+        ,
+        B
+        ,
+        C
+        ,
+        E
+        }
+      
+    
+    {\displaystyle \{A,B,C,E\}}
+  
+ and 
+  
+    
+      
+        {
+        D
+        ,
+        F
+        ,
+        G
+        }
+      
+    
+    {\displaystyle \{D,F,G\}}
+  
+, with the capacity
+
+
+  
+    
+      
+        c
+        (
+        A
+        ,
+        D
+        )
+        +
+        c
+        (
+        C
+        ,
+        D
+        )
+        +
+        c
+        (
+        E
+        ,
+        G
+        )
+        =
+        3
+        +
+        1
+        +
+        1
+        =
+        5.
+        Â 
+      
+    
+    {\displaystyle c(A,D)+c(C,D)+c(E,G)=3+1+1=5.\ }
+  
+
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Dinic, E. A. (1970). "Algorithm for solution of a problem of maximum flow in a network with power estimation". Soviet Mathematics - Doklady. Doklady. 11: 1277â1280.
+
+^ Jump up to: a b Yefim Dinitz (2006). "Dinitz' Algorithm: The Original Version and Even's Version" (PDF).  In Oded Goldreich; Arnold L. Rosenberg; Alan L. Selman (eds.). Theoretical Computer Science: Essays in Memory of Shimon Even. Springer. pp.Â 218â240. ISBNÂ 978-3-540-32880-3.
+
+^ Edmonds, Jack; Karp, Richard M. (1972). "Theoretical improvements in algorithmic efficiency for network flow problems" (PDF). Journal of the ACM. 19 (2): 248â264. doi:10.1145/321694.321699. S2CIDÂ 6375478.
+
+^ Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein (2009). "26.2". Introduction to Algorithms (thirdÂ ed.). MIT Press. pp.Â 727â730. ISBNÂ 978-0-262-03384-8.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+
+References[edit]
+Algorithms and Complexity (see pages 63â69).  https://web.archive.org/web/20061005083406/http://www.cis.upenn.edu/~wilf/AlgComp3.html
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteOptimization: Algorithms, methods, and heuristicsshowUnconstrained nonlinearFunctions
+Golden-section search
+Interpolation methods
+Line search
+NelderâMead method
+Successive parabolic interpolation
+GradientsConvergence
+Trust region
+Wolfe conditions
+QuasiâNewton
+BerndtâHallâHallâHausman
+BroydenâFletcherâGoldfarbâShanno and L-BFGS
+DavidonâFletcherâPowell
+Symmetric rank-one (SR1)
+Other methods
+Conjugate gradient
+GaussâNewton
+Gradient
+LevenbergâMarquardt
+Powell's dog leg method
+Truncated Newton
+Hessians
+Newton's method
+showConstrained nonlinearGeneral
+Barrier methods
+Penalty methods
+Differentiable
+Augmented Lagrangian methods
+Sequential quadratic programming
+Successive linear programming
+showConvex optimizationConvex minimization
+Cutting-plane method
+Reduced gradient (FrankâWolfe)
+Subgradient method
+Linear andquadraticInterior point
+Affine scaling
+Ellipsoid algorithm of Khachiyan
+Projective algorithm of Karmarkar
+Basis-exchange
+Simplex algorithm of Dantzig
+Revised simplex algorithm
+Criss-cross algorithm
+Principal pivoting algorithm of Lemke
+hideCombinatorialParadigms
+Approximation algorithm
+Dynamic programming
+Greedy algorithm
+Integer programming
+Branch and bound/cut
+Graph algorithmsMinimum spanning tree
+BorÅ¯vka
+Prim
+Kruskal
+
+    Shortest path
+BellmanâFord
+SPFA
+Dijkstra
+FloydâWarshall
+Network flows
+Dinic
+EdmondsâKarp
+FordâFulkerson
+Pushârelabel maximum flow
+showMetaheuristics
+Evolutionary algorithm
+Hill climbing
+Local search
+Simulated annealing
+Tabu search
+
+Software
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=EdmondsâKarp_algorithm&oldid=1055684494"
+		Categories: Network flow problemGraph algorithmsHidden categories: CS1 maint: multiple names: authors listUse American English from April 2019All Wikipedia articles written in American EnglishArticles with short descriptionPages with lower-case short descriptionShort description is different from Wikidata
+	

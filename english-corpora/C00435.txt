@@ -1,0 +1,1349 @@
+
+Title:
+Actor model
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Model of concurrent computation
+The actor model in computer science is a mathematical model of concurrent computation that treats actor as the universal primitive of concurrent computation. In response to a message it receives, an actor can: make local decisions, create more actors, send more messages, and determine how to respond to the next message received. Actors may modify their own private state, but can only affect each other indirectly through messaging (removing the need for lock-based synchronization).
+The actor model originated in 1973.[1] It has been used both as a framework for a theoretical understanding of computation and as the theoretical basis for several practical implementations of concurrent systems. The relationship of the model to other work is discussed in actor model and process calculi.
+
+Contents
+
+1 History
+2 Fundamental concepts
+3 Formal systems
+4 Applications
+5 Message-passing semantics
+
+5.1 Unbounded nondeterminism controversy
+5.2 Direct communication and asynchrony
+5.3 Actor creation plus addresses in messages means variable topology
+5.4 Inherently concurrent
+5.5 No requirement on order of message arrival
+5.6 Locality
+5.7 Composing actor systems
+5.8 Behaviors
+5.9 Modeling other concurrency systems
+5.10 Computational Representation Theorem
+5.11 Relationship to logic programming
+5.12 Migration
+5.13 Security
+5.14 Synthesizing addresses of actors
+5.15 Contrast with other models of message-passing concurrency
+
+
+6 Influence
+
+6.1 Theory
+6.2 Practice
+
+
+7 Addressed issues
+8 Programming with actors
+
+8.1 Early actor programming languages
+8.2 Later actor programming languages
+8.3 Actor libraries and frameworks
+
+
+9 See also
+10 References
+11 Further reading
+12 External links
+
+
+
+History[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: History of the Actor model
+According to Carl Hewitt, unlike previous models of computation, the actor model was inspired by physics, including general relativity and quantum mechanics.[citation needed] It was also influenced by the programming languages Lisp, Simula, early versions of Smalltalk, capability-based systems, and packet switching. Its development was "motivated by the prospect of highly parallel computing machines consisting of dozens, hundreds, or even thousands of independent microprocessors, each with its own local memory and communications processor, communicating via a high-performance communications network."[2] Since that time, the advent of massive concurrency through multi-core and manycore computer architectures has revived interest in the actor model.
+Following Hewitt, Bishop, and Steiger's 1973 publication, Irene Greif developed an operational semantics for the actor model as part of her doctoral research.[3] Two years later, Henry Baker and Hewitt published a set of axiomatic laws for actor systems.[4][5] Other major milestones include William Clinger's 1981 dissertation introducing a denotational semantics based on power domains[2] and Gul Agha's 1985 dissertation which further developed a transition-based semantic model complementary to Clinger's.[6] This resulted in the full development of actor model theory.
+Major software implementation work was done by Russ Atkinson, Giuseppe Attardi, Henry Baker, Gerry Barber, Peter Bishop, Peter de Jong, Ken Kahn, Henry Lieberman, Carl Manning, Tom Reinhardt, Richard Steiger and Dan Theriault in the Message Passing Semantics Group at Massachusetts Institute of Technology (MIT). Research groups led by Chuck Seitz at California Institute of Technology (Caltech) and Bill Dally at MIT constructed computer architectures that further developed the message passing in the model. See Actor model implementation.
+Research on the actor model has been carried out at California Institute of Technology, Kyoto University Tokoro Laboratory, Microelectronics and Computer Technology Corporation (MCC), MIT Artificial Intelligence Laboratory, SRI, Stanford University, University of Illinois at UrbanaâChampaign,[7] Pierre and Marie Curie University (University of Paris 6), University of Pisa, University of Tokyo Yonezawa Laboratory, Centrum Wiskunde & Informatica (CWI) and elsewhere.
+
+Fundamental concepts[edit]
+The actor model adopts the philosophy that everything is an actor. This is similar to the everything is an object philosophy used by some object-oriented programming languages.
+An actor is a computational entity that, in response to a message it receives, can concurrently:
+
+send a finite number of messages to other actors;
+create a finite number of new actors;
+designate the behavior to be used for the next message it receives.
+There is no assumed sequence to the above actions and they could be carried out in parallel.
+Decoupling the sender from communications sent was a fundamental advance of the actor model enabling asynchronous communication and control structures as patterns of passing messages.[8]
+Recipients of messages are identified by address, sometimes called "mailing address". Thus an actor can only communicate with actors whose addresses it has. It can obtain those from a message it receives, or if the address is for an actor it has itself created.
+The actor model is characterized by inherent concurrency of computation within and among actors, dynamic creation of actors, inclusion of actor addresses in messages, and interaction only through direct asynchronous message passing with no restriction on message arrival order.
+
+Formal systems[edit]
+Over the years, several different formal systems have been developed which permit reasoning about systems in the actor model. These include:
+
+Operational semantics[3][9]
+Laws for actor systems[4]
+Denotational semantics[2][10]
+Transition semantics[6]
+There are also formalisms that are not fully faithful to the actor model in that they do not formalize the guaranteed delivery of messages including the following (See Attempts to relate actor semantics to algebra and linear logic):
+
+Several different actor algebras[11][12][13]
+Linear logic[14]
+Applications[edit]
+The actor model can be used as a framework for modeling, understanding, and reasoning about a wide range of concurrent systems.[15] For example:
+
+Electronic mail (email) can be modeled as an actor system. Accounts are modeled as actors and email addresses as actor addresses.
+Web services can be modeled with Simple Object Access Protocol (SOAP) endpoints modeled as actor addresses.
+Objects with locks (e.g., as in Java and C#) can be modeled as a serializer, provided that their implementations are such that messages can continually arrive (perhaps by being stored in an internal queue). A serializer is an important kind of actor defined by the property that it is continually available to the arrival of new messages; every message sent to a serializer is guaranteed to arrive.[16]
+Testing and Test Control Notation (TTCN), both TTCN-2 and TTCN-3, follows actor model rather closely. In TTCN actor is a test component: either parallel test component (PTC) or main test component (MTC). Test components can send and receive messages to and from remote partners (peer test components or test system interface), the latter being identified by its address. Each test component has a behaviour tree bound to it; test components run in parallel and can be dynamically created by parent test components. Built-in language constructs allow the definition of actions to be taken when an expected message is received from the internal message queue, like sending a message to another peer entity or creating new test components.
+Message-passing semantics[edit]
+The actor model is about the semantics of message passing.
+
+Unbounded nondeterminism controversy[edit]
+Arguably, the first concurrent programs were interrupt handlers. During the course of its normal operation a computer needed to be able to receive information from outside (characters from a keyboard, packets from a network, etc). So when the information arrived the execution of the computer was interrupted and special code (called an interrupt handler) was called to put the information in a data buffer where it could be subsequently retrieved.
+In the early 1960s, interrupts began to be used to simulate the concurrent execution of several programs on one processor.[17] Having concurrency with shared memory gave rise to the problem of concurrency control. Originally, this problem was conceived as being one of mutual exclusion on a single computer. Edsger Dijkstra developed semaphores and later, between 1971 and 1973,[18] Tony Hoare[19] and Per Brinch Hansen[20] developed monitors to solve the mutual exclusion problem. However, neither of these solutions provided a programming language construct that encapsulated access to shared resources. This encapsulation was later accomplished by the serializer construct ([Hewitt and Atkinson 1977, 1979] and [Atkinson 1980]).
+The first models of computation (e.g., Turing machines, Post productions, the lambda calculus, etc.) were based on mathematics and made use of a global state to represent a computational step (later generalized in [McCarthy and Hayes 1969] and [Dijkstra 1976] see Event orderings versus global state). Each computational step was from one global state of the computation to the next global state. The global state approach was continued in automata theory for finite-state machines and push down stack machines, including their nondeterministic versions. Such nondeterministic automata have the property of bounded nondeterminism; that is, if a machine always halts when started in its initial state, then there is a bound on the number of states in which it halts.
+Edsger Dijkstra further developed the nondeterministic global state approach. Dijkstra's model gave rise to a controversy concerning unbounded nondeterminism (also called unbounded indeterminacy), a property of concurrency by which the amount of delay in servicing a request can become unbounded as a result of arbitration of contention for shared resources while still guaranteeing that the request will eventually be serviced. Hewitt argued that the actor model should provide the guarantee of service. In Dijkstra's model, although there could be an unbounded amount of time between the execution of sequential instructions on a computer, a (parallel) program that started out in a well defined state could terminate in only a bounded number of states [Dijkstra 1976]. Consequently, his model could not provide the guarantee of service. Dijkstra argued that it was impossible to implement unbounded nondeterminism.
+Hewitt argued otherwise: there is no bound that can be placed on how long it takes a computational circuit called an arbiter to settle (see metastability (electronics)).[21] Arbiters are used in computers to deal with the circumstance that computer clocks operate asynchronously with respect to input from outside, e.g., keyboard input, disk access, network input, etc. So it could take an unbounded time for a message sent to a computer to be received and in the meantime the computer could traverse an unbounded number of states.
+The actor model features unbounded nondeterminism which was captured in a mathematical model by Will Clinger using domain theory.[2] In the actor model, there is no global state.[dubious  â discuss]
+
+Direct communication and asynchrony[edit]
+Messages in the actor model are not necessarily buffered. This was a sharp break with previous approaches to models of concurrent computation. The lack of buffering caused a great deal of misunderstanding at the time of the development of the actor model and is still a controversial issue. Some researchers argued that the messages are buffered in the "ether" or the "environment". Also, messages in the actor model are simply sent (like packets in IP); there is no requirement for a synchronous handshake with the recipient.
+
+Actor creation plus addresses in messages means variable topology[edit]
+A natural development of the actor model was to allow addresses in messages. Influenced by packet switched networks [1961 and 1964], Hewitt proposed the development of a new model of concurrent computation in which communications would not have any required fields at all: they could be empty. Of course, if the sender of a communication desired a recipient to have access to addresses which the recipient did not already have, the address would have to be sent in the communication.
+For example, an actor might need to send a message to a recipient actor from which it later expects to receive a response, but the response will actually be handled by a third actor component that has been configured to receive and handle the response (for example, a different actor implementing the observer pattern). The original actor could accomplish this by sending a communication that includes the message it wishes to send, along with the address of the third actor that will handle the response. This third actor that will handle the response is called the resumption (sometimes also called a continuation or stack frame). When the recipient actor is ready to send a response, it sends the response message to the resumption actor address that was included in the original communication.
+So, the ability of actors to create new actors with which they can exchange communications, along with the ability to include the addresses of other actors in messages, gives actors the ability to create and participate in arbitrarily variable topological relationships with one another, much as the objects in Simula and other object-oriented languages may also be relationally composed into variable topologies of message-exchanging objects.
+
+Inherently concurrent[edit]
+As opposed to the previous approach based on composing sequential processes, the actor model was developed as an inherently concurrent model. In the actor model sequentiality was a special case that derived from concurrent computation as explained in actor model theory.
+
+No requirement on order of message arrival[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (March 2012) (Learn how and when to remove this template message)
+Hewitt argued against adding the requirement that messages must arrive in the order in which they are sent to the actor. If output message ordering is desired, then it can be modeled by a queue actor that provides this functionality. Such a queue actor would queue the messages that arrived so that they could be retrieved in FIFO order. So if an actor X sent a message M1 to an actor Y, and later X sent another message M2 to Y, there is no requirement that M1 arrives at Y before M2.
+In this respect the actor model mirrors packet switching systems which do not guarantee that packets must be received in the order sent. Not providing the order of delivery guarantee allows packet switching to buffer packets, use multiple paths to send packets, resend damaged packets, and to provide other optimizations.
+For example, actors are allowed to pipeline the processing of messages. What this means is that in the course of processing a message M1, an actor can designate the behavior to be used to process the next message, and then in fact begin processing another message M2 before it has finished processing M1. Just because an actor is allowed to pipeline the processing of messages does not mean that it must pipeline the processing. Whether a message is pipelined is an engineering tradeoff. How would an external observer know whether the processing of a message by an actor has been pipelined? There is no ambiguity in the definition of an actor created by the possibility of pipelining. Of course, it is possible to perform the pipeline optimization incorrectly in some implementations, in which case unexpected behavior may occur.
+
+Locality[edit]
+Another important characteristic of the actor model is locality.
+Locality means that in processing a message, an actor can send messages only to addresses that it receives in the message, addresses that it already had before it received the message, and addresses for actors that it creates while processing the message. (But see Synthesizing addresses of actors.)
+Also locality means that there is no simultaneous change in multiple locations. In this way it differs from some other models of concurrency, e.g., the Petri net model in which tokens are simultaneously removed from multiple locations and placed in other locations.
+
+Composing actor systems[edit]
+The idea of composing actor systems into larger ones is an important aspect of modularity that was developed in Gul Agha's doctoral dissertation,[6] developed later by Gul Agha, Ian Mason, Scott Smith, and Carolyn Talcott.[9]
+
+Behaviors[edit]
+A key innovation was the introduction of behavior specified as a mathematical function to express what an actor does when it processes a message, including specifying a new behavior to process the next message that arrives. Behaviors provided a mechanism to mathematically model the sharing in concurrency.
+Behaviors also freed the actor model from implementation details, e.g., the Smalltalk-72 token stream interpreter. However, it is critical to understand that the efficient implementation of systems described by the actor model require extensive optimization. See Actor model implementation for details.
+
+Modeling other concurrency systems[edit]
+Other concurrency systems (e.g., process calculi) can be modeled in the actor model using a two-phase commit protocol.[22]
+
+Computational Representation Theorem[edit]
+See also: Denotational semantics of the Actor model
+There is a Computational Representation Theorem in the actor model for systems which are closed in the sense that they do not receive communications from outside. The mathematical denotation denoted by a closed system 
+  
+    
+      
+        
+          
+            S
+          
+        
+      
+    
+    {\displaystyle {\mathtt {S}}}
+  
+ is constructed from an initial behavior â¥S and a behavior-approximating function progressionS. These obtain increasingly better approximations and construct a denotation (meaning) for 
+  
+    
+      
+        
+          
+            S
+          
+        
+      
+    
+    {\displaystyle {\mathtt {S}}}
+  
+ as follows [Hewitt 2008; Clinger 1981]:
+
+
+  
+    
+      
+        
+          
+            D
+            e
+            n
+            o
+            t
+            e
+          
+          
+            
+              S
+            
+          
+        
+        â¡
+        
+          lim
+          
+            i
+            â
+            â
+          
+        
+        
+          
+            p
+            r
+            o
+            g
+            r
+            e
+            s
+            s
+            i
+            o
+            n
+          
+          
+            
+              
+                
+                  S
+                
+              
+              
+                i
+              
+            
+          
+        
+        (
+        
+          â¥
+          
+            
+              S
+            
+          
+        
+        )
+      
+    
+    {\displaystyle \mathbf {Denote} _{\mathtt {S}}\equiv \lim _{i\to \infty }\mathbf {progression} _{{\mathtt {S}}^{i}}(\bot _{\mathtt {S}})}
+  
+
+In this way, S can be mathematically characterized in terms of all its possible behaviors (including those involving unbounded nondeterminism). Although 
+  
+    
+      
+        
+          
+            D
+            e
+            n
+            o
+            t
+            e
+          
+          
+            
+              S
+            
+          
+        
+      
+    
+    {\displaystyle \mathbf {Denote} _{\mathtt {S}}}
+  
+ is not an implementation of 
+  
+    
+      
+        
+          
+            S
+          
+        
+      
+    
+    {\displaystyle {\mathtt {S}}}
+  
+, it can be used to prove a generalization of the Church-Turing-Rosser-Kleene thesis [Kleene 1943]:
+A consequence of the above theorem is that a finite actor can nondeterministically respond with an uncountable[clarify] number of different outputs.
+
+Relationship to logic programming[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (March 2012) (Learn how and when to remove this template message)
+One of the key motivations for the development of the actor model was to understand and deal with the control structure issues that arose in development of the Planner programming language.[citation needed] Once the actor model was initially defined, an important challenge was to understand the power of the model relative to Robert Kowalski's thesis that "computation can be subsumed by deduction". Hewitt argued that Kowalski's thesis turned out to be false for the concurrent computation in the actor model (see Indeterminacy in concurrent computation).
+Nevertheless, attempts were made to extend logic programming to concurrent computation. However, Hewitt and Agha [1991] claimed that the resulting systems were not deductive in the following sense: computational steps of the concurrent logic programming systems do not follow deductively from previous steps (see Indeterminacy in concurrent computation). Recently, logic programming has been integrated into the actor model in a way that maintains logical semantics.[21]
+
+Migration[edit]
+Migration in the actor model is the ability of actors to change locations. E.g., in his dissertation, Aki Yonezawa modeled a post office that customer actors could enter, change locations within while operating, and exit. An actor that can migrate can be modeled by having a location actor that changes when the actor migrates. However the faithfulness of this modeling is controversial and the subject of research.[citation needed]
+
+Security[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (August 2021) (Learn how and when to remove this template message)
+The security of actors can be protected in the following ways:
+
+hardwiring in which actors are physically connected
+computer hardware as in Burroughs B5000, Lisp machine, etc.
+virtual machines as in Java virtual machine, Common Language Runtime, etc.
+operating systems as in capability-based systems
+signing and/or encryption of actors and their addresses
+Synthesizing addresses of actors[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (March 2012) (Learn how and when to remove this template message)
+A delicate point in the actor model is the ability to synthesize the address of an actor. In some cases security can be used to prevent the synthesis of addresses (see Security). However, if an actor address is simply a bit string then clearly it can be synthesized although it may be difficult or even infeasible to guess the address of an actor if the bit strings are long enough. SOAP uses a URL for the address of an endpoint where an actor can be reached. Since a URL is a character string, it can clearly be synthesized although encryption can make it virtually impossible to guess.
+Synthesizing the addresses of actors is usually modeled using mapping. The idea is to use an actor system to perform the mapping to the actual actor addresses. For example, on a computer the memory structure of the computer can be modeled as an actor system that does the mapping. In the case of SOAP addresses, it's modeling the DNS and the rest of the URL mapping.
+
+Contrast with other models of message-passing concurrency[edit]
+Robin Milner's initial published work on concurrency[23] was also notable in that it was not based on composing sequential processes. His work differed from the actor model because it was based on a fixed number of processes of fixed topology communicating numbers and strings using synchronous communication. The original communicating sequential processes (CSP) model[24] published by Tony Hoare differed from the actor model because it was based on the parallel composition of a fixed number of sequential processes connected in a fixed topology, and communicating using synchronous message-passing based on process names (see Actor model and process calculi history). Later versions of CSP abandoned communication based on process names in favor of anonymous communication via channels, an approach also used in Milner's work on the calculus of communicating systems and the Ï-calculus.
+These early models by Milner and Hoare both had the property of bounded nondeterminism. Modern, theoretical CSP ([Hoare 1985] and [Roscoe 2005]) explicitly provides unbounded nondeterminism.
+Petri nets and their extensions (e.g., coloured Petri nets) are like actors in that they are based on asynchronous message passing and unbounded nondeterminism, while they are like early CSP in that they define fixed topologies of elementary processing steps (transitions) and message repositories (places).
+
+Influence[edit]
+The actor model has been influential on both theory development and practical software development.
+
+Theory[edit]
+The actor model has influenced the development of the Ï-calculus and subsequent process calculi. In his Turing lecture, Robin Milner wrote:[25]
+
+Now, the pure lambda-calculus is built with just two kinds of thing: terms and variables. Can we achieve the same economy for a process calculus? Carl Hewitt, with his actors model, responded to this challenge long ago; he declared that a value, an operator on values, and a process should all be the same kind of thing: an actor.
+This goal impressed me, because it implies the homogeneity and completeness of expression ... But it was long before I could see how to attain the goal in terms of an algebraic calculus...
+
+So, in the spirit of Hewitt, our first step is to demand that all things denoted by terms or accessed by namesâvalues, registers, operators, processes, objectsâare all of the same kind of thing; they should all be processes.
+Practice[edit]
+The actor model has had extensive influence on commercial practice. For example, Twitter has used actors for scalability.[26] Also, Microsoft has used the actor model in the development of its Asynchronous Agents Library.[27] There are many other actor libraries listed in the actor libraries and frameworks section below.
+
+Addressed issues[edit]
+According to Hewitt [2006], the actor model addresses issues in computer and communications architecture, concurrent programming languages, and Web services including the following:
+
+Scalability: the challenge of scaling up concurrency both locally and nonlocally.
+Transparency: bridging the chasm between local and nonlocal concurrency. Transparency is currently a controversial issue. Some researchers[who?] have advocated a strict separation between local concurrency using concurrent programming languages (e.g., Java and C#) from nonlocal concurrency using SOAP for Web services. Strict separation produces a lack of transparency that causes problems when it is desirable/necessary to change between local and nonlocal access to Web services (see Distributed computing).
+Inconsistency: inconsistency is the norm because all very large knowledge systems about human information system interactions are inconsistent. This inconsistency extends to the documentation and specifications of very large systems (e.g., Microsoft Windows software, etc.), which are internally inconsistent.
+Many of the ideas introduced in the actor model are now also finding application in multi-agent systems for these same reasons [Hewitt 2006b 2007b]. The key difference is that agent systems (in most definitions) impose extra constraints upon the actors, typically requiring that they make use of commitments and goals.
+
+Programming with actors[edit]
+A number of different programming languages employ the actor model or some variation of it. These languages include:
+
+Early actor programming languages[edit]
+Act 1, 2 and 3[28][29]
+Acttalk[30]
+Ani[31]
+Cantor[32]
+Rosette[33]
+Later actor programming languages[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+ABCL
+AmbientTalk[34]
+Axum[35]
+CAL Actor Language
+D
+Dart
+E
+Elixir
+Erlang
+Fantom
+Humus[36]
+Io
+LFE
+Encore[37]
+Pony[38][39]
+Ptolemy Project
+P[40]
+P#[41]
+Rebeca Modeling Language
+Reia
+SALSA[42]
+Scala[43][44]
+TNSDL
+
+Actor libraries and frameworks[edit]
+Actor libraries or frameworks have also been implemented to permit actor-style programming in languages that don't have actors built-in. Some of these frameworks are:
+
+
+
+
+Name
+
+Status
+
+Latest release
+
+License
+
+Languages
+
+
+ReActed
+
+Active
+
+2021-09-05
+
+Apache 2.0
+
+Java
+
+
+Acteur
+
+Active
+
+2020-04-16[45]
+
+Apache-2.0 / MIT
+
+Rust
+
+
+Bastion
+
+Active
+
+2020-08-12[46]
+
+Apache-2.0 / MIT
+
+Rust
+
+
+Actix
+
+Active
+
+2020-09-11[47]
+
+MIT
+
+Rust
+
+
+Aojet
+
+Active
+
+2016-10-17
+
+MIT
+
+Swift
+
+
+Actor
+
+Active
+
+2017-03-09
+
+MIT
+
+Java
+
+
+Actor4j
+
+Active
+
+2020-01-31
+
+Apache 2.0
+
+Java
+
+
+Actr
+
+Active
+
+2019-04-09[48]
+
+Apache 2.0
+
+Java
+
+
+Vert.x
+
+Active
+
+2018-02-13
+
+Apache 2.0
+
+Java, Groovy, Javascript, Ruby, Scala, Kotlin, Ceylon
+
+
+ActorFx
+
+Inactive
+
+2013-11-13
+
+Apache 2.0
+
+.NET
+
+
+Akka (toolkit)
+
+Active
+
+2019-05-21[49]
+
+Apache 2.0
+
+Java and Scala
+
+
+Akka.NET
+
+Active
+
+2020-08-20[50]
+
+Apache 2.0
+
+.NET
+
+
+Remact.Net
+
+Inactive
+
+2016-06-26
+
+MIT
+
+.NET, Javascript
+
+
+Ateji PX
+
+Inactive
+
+?
+
+?
+
+Java
+
+
+czmq
+
+Active
+
+2016-11-10
+
+MPL-2
+
+C
+
+
+F# MailboxProcessor
+
+Active
+
+same as F# (built-in core library)
+
+Apache License
+
+F#
+
+
+Korus
+
+Active
+
+2010-02-04
+
+GPL 3
+
+Java
+
+
+Kilim[51]
+
+Active
+
+2018-11-09[52]
+
+MIT
+
+Java
+
+
+ActorFoundry (based on Kilim)
+
+Inactive
+
+2008-12-28
+
+?
+
+Java
+
+
+ActorKit
+
+Active
+
+2011-09-13[53]
+
+BSD
+
+Objective-C
+
+
+Cloud Haskell
+
+Active
+
+2015-06-17[54]
+
+BSD
+
+Haskell
+
+
+CloudI
+
+Active
+
+2021-05-27[55]
+
+MIT
+
+ATS, C/C++, Elixir/Erlang/LFE, Go, Haskell, Java, Javascript, OCaml, Perl, PHP, Python, Ruby
+
+
+Clutter
+
+Active
+
+2017-05-12[56]
+
+ LGPL 2.1
+
+C, C++ (cluttermm), Python (pyclutter), Perl (perl-Clutter)
+
+
+NAct
+
+Inactive
+
+2012-02-28
+
+ LGPL 3.0
+
+.NET
+
+
+Nact
+
+Active
+
+2018-06-06[57]
+
+Apache 2.0
+
+JavaScript/ReasonML
+
+
+Retlang
+
+Inactive
+
+2011-05-18[58]
+
+New BSD
+
+.NET
+
+
+JActor
+
+Inactive
+
+2013-01-22
+
+LGPL
+
+Java
+
+
+Jetlang
+
+Active
+
+2013-05-30[59]
+
+New BSD
+
+Java
+
+
+Haskell-Actor
+
+Active?
+
+2008
+
+New BSD
+
+Haskell
+
+
+GPars
+
+Active
+
+2014-05-09[60]
+
+Apache 2.0
+
+Groovy
+
+
+OOSMOS
+
+Active
+
+2019-05-09[61]
+
+GPL 2.0 and commercial (dual licensing)
+
+C. C++ friendly
+
+
+Panini
+
+Active
+
+2014-05-22
+
+MPL 1.1
+
+Programming Language by itself
+
+
+PARLEY
+
+Active?
+
+2007-22-07
+
+GPL 2.1
+
+Python
+
+
+Peernetic
+
+Active
+
+2007-06-29
+
+LGPL 3.0
+
+Java
+
+
+Picos
+
+Active
+
+2020-02-04
+
+MIT
+
+KRL
+
+
+PostSharp
+
+Active
+
+2014-09-24
+
+Commercial / Freemium
+
+.NET
+
+
+Pulsar
+
+Active
+
+2016-07-09[62]
+
+New BSD
+
+Python
+
+
+Pulsar
+
+Active
+
+2016-02-18[63]
+
+LGPL/Eclipse
+
+Clojure
+
+
+Pykka
+
+Active
+
+2019-05-07[64]
+
+Apache 2.0
+
+Python
+
+
+Termite Scheme
+
+Active?
+
+2009-05-21
+
+LGPL
+
+Scheme (Gambit implementation)
+
+
+Theron
+
+Inactive[65]
+
+2014-01-18[66]
+
+MIT[67]
+
+C++
+
+
+Thespian
+
+Active
+
+2020-03-10
+
+MIT
+
+Python
+
+
+Quasar
+
+Active
+
+2018-11-02[68]
+
+LGPL/Eclipse
+
+Java
+
+
+Libactor
+
+Active?
+
+2009
+
+ GPL 2.0
+
+C
+
+
+Actor-CPP
+
+Active
+
+2012-03-10[69]
+
+GPL 2.0
+
+C++
+
+
+S4 
+
+Inactive
+
+2012-07-31[70]
+
+Apache 2.0
+
+Java
+
+
+C++ Actor Framework (CAF)
+
+Active
+
+2020-02-08[71]
+
+Boost Software License 1.0 and BSD 3-Clause
+
+C++11
+
+
+Celluloid
+
+Active
+
+2018-12-20[72]
+
+MIT
+
+Ruby
+
+
+LabVIEW Actor Framework
+
+Active
+
+2012-03-01[73]
+
+National Instruments SLA
+
+LabVIEW
+
+
+LabVIEW Messenger Library
+
+Active
+
+2021-05-24
+
+BSD
+
+LabVIEW
+
+
+Orbit
+
+Active
+
+2019-05-28[74]
+
+New BSD
+
+Java
+
+
+QP frameworks for real-time embedded systems
+
+Active
+
+2019-05-25[75]
+
+GPL 2.0 and commercial (dual licensing)
+
+C and C++
+
+
+libprocess
+
+Active
+
+2013-06-19
+
+Apache 2.0
+
+C++
+
+
+SObjectizer
+
+Active
+
+2020-05-09[76]
+
+New BSD
+
+C++11
+
+
+rotor
+
+Active
+
+2020-10-23[77]
+
+MIT License
+
+C++17
+
+
+Orleans
+
+Active
+
+2021-09-03[78]
+
+MIT License
+
+C#/.NET
+
+
+Skynet
+
+Active
+
+2020-12-10
+
+MIT License
+
+C/Lua
+
+
+Reactors.IO
+
+Active
+
+2016-06-14
+
+BSD License
+
+Java/Scala
+
+
+libagents
+
+Active
+
+2020-03-08
+
+Free software license
+
+C++11
+
+
+Proto.Actor
+
+Active
+
+2021-01-05
+
+Free software license
+
+Go, C#, Python, JavaScript, Java, Kotlin
+
+
+FunctionalJava
+
+Active
+
+2018-08-18[79]
+
+BSD 3-Clause
+
+Java
+
+
+Riker
+
+Active
+
+2019-01-04
+
+MIT License
+
+Rust
+
+
+Comedy
+
+Active
+
+2019-03-09
+
+EPL 1.0
+
+JavaScript
+
+
+VLINGO XOOM Actors
+
+Active
+
+2017-12-20
+
+Mozilla Public License 2.0
+
+Java, Kotlin, JVM languages, C# .NET
+
+
+wasmCloud
+
+Active
+
+2021-03-23
+
+Apache 2.0
+
+WebAssembly (Rust, TinyGo, Zig, AssemblyScript)
+
+
+ray
+
+Active
+
+2020-08-27
+
+Apache 2.0
+
+Python
+
+See also[edit]
+Data flow
+Gordon Pask
+Input/output automaton
+Scientific community metaphor
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Hewitt, Carl; Bishop, Peter; Steiger, Richard (1973). "A Universal Modular Actor Formalism for Artificial Intelligence". IJCAI. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ a b c d William Clinger (June 1981). "Foundations of Actor Semantics". Mathematics Doctoral Dissertation. MIT. hdl:1721.1/6935. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ a b Irene Greif (August 1975). "Semantics of Communicating Parallel Processes". EECS Doctoral Dissertation. MIT. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ a b Henry Baker; Carl Hewitt (August 1977). "Laws for Communicating Parallel Processes". IFIP. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "Laws for Communicating Parallel Processes" (PDF). 10 May 1977.
+
+^ a b c Gul Agha (1986). "Actors: A Model of Concurrent Computation in Distributed Systems". Doctoral Dissertation. MIT Press. hdl:1721.1/6952. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "Home". Osl.cs.uiuc.edu. Archived from the original on 2013-02-22. Retrieved 2012-12-02.
+
+^ Carl Hewitt. Viewing Control Structures as Patterns of Passing Messages Journal of Artificial Intelligence. June 1977.
+
+^ a b Gul Agha; Ian Mason; Scott Smith; Carolyn Talcott (January 1993). "A Foundation for Actor Computation". Journal of Functional Programming.
+
+^ Carl Hewitt (2006-04-27). "What is Commitment? Physical, Organizational, and Social" (PDF). COIN@AAMAS. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Mauro Gaspari; Gianluigi Zavattaro (May 1997). "An Algebra of Actors" (PDF). Formal Methods for Open Object-Based Distributed Systems. Technical Report UBLCS-97-4. University of Bologna. pp.Â 3â18. doi:10.1007/978-0-387-35562-7_2. ISBNÂ 978-1-4757-5266-3.
+
+^ M. Gaspari; G. Zavattaro (1999). "An Algebra of Actors". Formal Methods for Open Object Based Systems. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Gul Agha; Prasanna Thati (2004). "An Algebraic Theory of Actors and Its Application to a Simple Object-Based Language" (PDF). From OO to FM (Dahl Festschrift) LNCS 2635. Archived from the original (PDF) on 2004-04-20. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ John Darlington; Y. K. Guo (1994). "Formalizing Actors in Linear Logic". International Conference on Object-Oriented Information Systems. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "What is the Actor Model & When Should You Use it?". Matt Ferderer. Retrieved 2021-08-25.
+
+^ Cheung, Leo (2017-07-25). "Why Akka and the actor model shine for IoT applications". InfoWorld. Retrieved 2021-08-25.
+
+^ Hansen, Per Brinch (2002). The Origins of Concurrent Programming: From Semaphores to Remote Procedure Calls. Springer. ISBNÂ 978-0-387-95401-1.
+
+^ Hansen, Per Brinch (1996). "Monitors and Concurrent Pascal: A Personal History". Communications of the ACM: 121â172.
+
+^ Hoare, Tony (October 1974). "Monitors: An Operating System Structuring Concept". Communications of the ACM. 17 (10): 549â557. doi:10.1145/355620.361161. S2CIDÂ 1005769.
+
+^ Hansen, Per Brinch (July 1973). Operating System Principles. Prentice-Hall.
+
+^ a b Hewitt, Carl (2012). "What is computation? Actor Model versus Turing's Model".  In Zenil, Hector (ed.). A Computable Universe: Understanding Computation & Exploring Nature as Computation. Dedicated to the memory of Alan M. Turing on the 100th anniversary of his birth. World Scientific Publishing Company.
+
+^ Frederick Knabe. A Distributed Protocol for Channel-Based Communication with Choice PARLE 1992.
+
+^ Robin Milner. Processes: A Mathematical Model of Computing Agents in Logic Colloquium 1973.
+
+^ C.A.R. Hoare. Communicating sequential processes CACM. August 1978.
+
+^ Milner, Robin (1993). "Elements of interaction". Communications of the ACM. 36: 78â89. doi:10.1145/151233.151240.
+
+^ "How Twitter Is Scaling Â«Â Waiming Mok's Blog". Waimingmok.wordpress.com. 2009-06-27. Retrieved 2012-12-02.
+
+^ "Actor-Based Programming with the Asynchronous Agents Library" MSDN September 2010.
+
+^ Henry Lieberman (June 1981). "A Preview of Act 1". MIT AI memo 625. hdl:1721.1/6350. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Henry Lieberman (June 1981). "Thinking About Lots of Things at Once without Getting Confused: Parallelism in Act 1". MIT AI memo 626. hdl:1721.1/6351. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Jean-Pierre Briot. Acttalk: A framework for object-oriented concurrent programming-design and experience 2nd France-Japan workshop. 1999.
+
+^ Ken Kahn. A Computational Theory of Animation MIT EECS Doctoral Dissertation. August 1979.
+
+^ William Athas and Nanette Boden Cantor: An Actor Programming System for Scientific Computing in Proceedings of the NSF Workshop on Object-Based Concurrent Programming. 1988. Special Issue of SIGPLAN Notices.
+
+^ Darrell Woelk. Developing InfoSleuth Agents Using Rosette: An Actor Based Language Proceedings of the CIKM '95 Workshop on Intelligent Information Agents. 1995.
+
+^ Dedecker J., Van Cutsem T., Mostinckx S., D'Hondt T., De Meuter W. Ambient-oriented Programming in AmbientTalk. In "Proceedings of the 20th European Conference on Object-Oriented Programming (ECOOP), Dave Thomas (Ed.), Lecture Notes in Computer Science Vol. 4067, pp. 230-254, Springer-Verlag.", 2006
+
+^ Darryl K. Taft (2009-04-17). "Microsoft Cooking Up New Parallel Programming Language". Eweek.com. Retrieved 2012-12-02.
+
+^ "Humus". Dalnefre.com. Retrieved 2012-12-02.
+
+^ Brandauer, Stephan;  etÂ al. (2015). "Parallel objects for multicores: A glimpse at the parallel language encore". Formal Methods for Multicore Programming. Springer International Publishing: 1â56.
+
+^ "The Pony Language".
+
+^ Clebsch, Sylvan; Drossopoulou, Sophia; Blessing, Sebastian; McNeil, Andy (2015). "Deny capabilities for safe, fast actors". Proceedings of the 5th International Workshop on Programming Based on Actors, Agents, and Decentralized Control - AGERE! 2015. pp.Â 1â12. doi:10.1145/2824815.2824816. ISBNÂ 9781450339018. S2CIDÂ 415745. by Sylvan Clebsch, Sophia Drossopoulou, Sebastian Blessing, Andy McNeil
+
+^ "The P Language". 2019-03-08.
+
+^ "The P# Language". 2019-03-12.
+
+^ Carlos Varela and Gul Agha (2001). "Programming Dynamically Reconfigurable Open Systems with SALSA". ACM SIGPLAN Notices. OOPSLA'2001 Intriguing Technology Track Proceedings. 36.
+
+^ Philipp Haller and Martin Odersky (September 2006). "Event-Based Programming without Inversion of Control" (PDF). Proc. JMLC 2006. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Philipp Haller and Martin Odersky (January 2007). "Actors that Unify Threads and Events" (PDF). Technical report LAMP 2007. Archived from the original (PDF) on 2011-06-07. Retrieved 2007-12-10. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "acteur - 0.9.1Â· David Bonet Â· Crates.io". crates.io. Retrieved 2020-04-16.
+
+^ Bulut, Mahmut (2019-12-15). "Bastion on Crates.io". Crates.io. Retrieved 2019-12-15.
+
+^ "actix - 0.10.0Â· Rob Ede Â· Crates.io". crates.io. Retrieved 2021-02-28.
+
+^ "Releases Â· zakgof/actr Â· GitHub". Github.com. Retrieved 2019-04-16.
+
+^ "Akka 2.5.23 Released Â· Akka". Akka. 2019-05-21. Retrieved 2019-06-03.
+
+^ Akka.NET v1.4.10 Stable Release GitHub - akkadotnet/akka.net: Port of Akka actors for .NET., Akka.NET, 2020-10-01, retrieved 2020-10-01
+
+^ Srinivasan, Sriram; Alan Mycroft (2008). "Kilim: Isolation-Typed Actors for Java" (PDF). European Conference on Object Oriented Programming ECOOP 2008. Cyprus. Retrieved 2016-02-25.
+
+^ "Releases Â· kilim/kilim Â· GitHub". Github.com. Retrieved 2019-06-03.
+
+^ "Commit History Â· stevedekorte/ActorKit Â· GitHub". Github.com. Retrieved 2016-02-25.
+
+^ "Commit History Â· haskell-distributed/distributed-process Â· GitHub". Github.com. Retrieved 2012-12-02.
+
+^ "Releases Â· CloudI/CloudI Â· GitHub". Github.com. Retrieved 2021-06-21.
+
+^ "Tags Â· GNOME/clutter Â· GitLab". gitlab.gnome.org. Retrieved 2019-06-03.
+
+^ "Releases Â· ncthbrt/nact Â· GitHub". Retrieved 2019-06-03.
+
+^ "Changes - retlang - Message based concurrency in .NET - Google Project Hosting". Retrieved 2016-02-25.
+
+^ "jetlang-0.2.9-bin.zip - jetlang - jetlang-0.2.9-bin.zip - Message based concurrency for Java - Google Project Hosting". 2012-02-14. Retrieved 2016-02-25.
+
+^ "GPars Releases". GitHub. Retrieved 2016-02-25.
+
+^ "Releases Â· oosmos/oosmos Â· GitHub". GitHub. Retrieved 2019-06-03.
+
+^ "Pulsar Design and Actors". Archived from the original on 2015-07-04.
+
+^ "Pulsar documentation". Archived from the original on 2013-07-26.
+
+^ "Changes â Pykka 2.0.0 documentation". pykka.org. Retrieved 2019-06-03.
+
+^ "Theron â Ashton Mason". Retrieved 2018-08-29.
+
+^ "Theron - Version 6.00.02 released". Theron-library.com. Archived from the original on 2016-03-16. Retrieved 2016-02-25.
+
+^ "Theron". Theron-library.com. Archived from the original on 2016-03-04. Retrieved 2016-02-25.
+
+^ "Releases Â· puniverse/quasar Â· GitHub". Retrieved 2019-06-03.
+
+^ "Changes - actor-cpp - An implementation of the actor model for C++ - Google Project Hosting". Retrieved 2012-12-02.
+
+^ "Commit History Â· s4/s4 Â· Apache". apache.org. Archived from the original on 2016-03-06. Retrieved 2016-01-16.
+
+^ "Releases Â· actor-framework/actor-framework Â· GitHub". Github.com. Retrieved 2020-03-07.
+
+^ "celluloid | RubyGems.org | your community gem host". RubyGems.org. Retrieved 2019-06-03.
+
+^ "Community: Actor Framework, LV 2011 revision (version 3.0.7)". Decibel.ni.com. 2011-09-23. Retrieved 2016-02-25.
+
+^ "Releases Â· orbit/orbit Â· GitHub". GitHub. Retrieved 2019-06-03.
+
+^ "QP Real-Time Embedded Frameworks & Tools - Browse Files at". Sourceforge.net. Retrieved 2019-06-03.
+
+^ "Releases Â· Stiffstream/sobjectizer Â· GitHub". GitHub. Retrieved 2019-06-19.
+
+^ "Releases Â· basiliscos/cpp-rotorÂ· GitHub". GitHub. Retrieved 2020-10-10.
+
+^ "Releases Â· dotnet/orleans Â· GitHub". GitHub. Retrieved 2021-09-03.
+
+^ "FunctionalJava releases". GitHub. Retrieved 2018-08-23.
+
+
+Further reading[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Gul Agha. Actors: A Model of Concurrent Computation in Distributed Systems. MIT Press 1985.
+Paul Baran. On Distributed Communications Networks IEEE Transactions on Communications Systems. March 1964.
+William A. Woods. Transition network grammars for natural language analysis CACM. 1970.
+Carl Hewitt. Procedural Embedding of Knowledge In Planner IJCAI 1971.
+G.M. Birtwistle, Ole-Johan Dahl, B. Myhrhaug and Kristen Nygaard. SIMULA Begin Auerbach Publishers Inc, 1973.
+Carl Hewitt, et al. Actor Induction and Meta-evaluation[permanent dead link] Conference Record of ACM Symposium on Principles of Programming Languages, January 1974.
+Carl Hewitt, et https://link.springer.com/chapter/10.1007/3-540-06859-7_147al.[permanent dead link] Behavioral Semantics of Nonrecursive Control Structure Proceedings of Colloque sur la Programmation, April 1974.
+Irene Greif and Carl Hewitt.  Actor Semantics of PLANNER-73 Conference Record of ACM Symposium on Principles of Programming Languages. January 1975.
+Carl Hewitt. How to Use What You Know IJCAI. September, 1975.
+Alan Kay and Adele Goldberg.  Smalltalk-72 Instruction Manual[permanent dead link] Xerox PARC Memo SSL-76-6.  May 1976.
+Edsger Dijkstra. A discipline of programming Prentice Hall. 1976.
+Carl Hewitt and Henry Baker Actors and Continuous Functionals Proceeding of IFIP Working Conference on Formal Description of Programming Concepts. August 1â5, 1977.
+Carl Hewitt and Russ Atkinson.  Synchronization in Actor Systems Proceedings of the 4th ACM SIGACT-SIGPLAN symposium on Principles of programming languages. 1977
+Carl Hewitt and Russ Atkinson.  Specification and Proof Techniques for Serializers IEEE Journal on Software Engineering. January 1979.
+Ken Kahn. A Computational Theory of Animation MIT EECS Doctoral Dissertation. August 1979.
+Carl Hewitt, Beppe Attardi, and Henry Lieberman.  Delegation in Message Passing Proceedings of First International Conference on Distributed Systems Huntsville, AL. October 1979.
+Nissim Francez, C.A.R. Hoare, Daniel Lehmann, and Willem-Paul de Roever. Semantics of nondetermiism, concurrency, and communication Journal of Computer and System Sciences.  December 1979.
+George Milne and Robin Milner. Concurrent processes and their syntax JACM. April 1979.
+Daniel Theriault. A Primer for the Act-1 Language MIT AI memo 672. April 1982.
+Daniel Theriault.  Issues in the Design and Implementation of Act 2 MIT AI technical report 728. June 1983.
+Henry Lieberman. An Object-Oriented Simulator for the Apiary Conference of the American Association for Artificial Intelligence, Washington, D. C., August 1983
+Carl Hewitt and Peter de Jong. Analyzing the Roles of Descriptions and Actions in Open Systems Proceedings of the National Conference on Artificial Intelligence. August 1983.
+Carl Hewitt and Henry Lieberman. Design Issues in Parallel Architecture for Artificial Intelligence MIT AI memo 750.  Nov. 1983.
+C.A.R. Hoare. Communicating Sequential Processes Prentice Hall. 1985.
+Carl Hewitt. The Challenge of Open Systems Byte. April 1985.  Reprinted in The foundation of artificial intelligence: a sourcebook Cambridge University Press. 1990.
+Carl Manning. Traveler: the actor observatory ECOOP 1987. Also appears in Lecture Notes in Computer Science, vol. 276.
+William Athas and Charles Seitz Multicomputers: message-passing concurrent computers IEEE Computer August 1988.
+William Athas and Nanette Boden Cantor: An Actor Programming System for Scientific Computing in Proceedings of the NSF Workshop on Object-Based Concurrent Programming.  1988.  Special Issue of SIGPLAN Notices.
+Jean-Pierre Briot.  From objects to actors: Study of a limited symbiosis in Smalltalk-80 Rapport de Recherche 88â58, RXF-LITP, Paris, France, September 1988
+William Dally and Wills, D. Universal mechanisms for concurrency PARLE 1989.
+W. Horwat, A. Chien, and W. Dally. Experience with CST: Programming and Implementation PLDI. 1989.
+Carl Hewitt. Towards Open Information Systems Semantics Proceedings of 10th International Workshop on Distributed Artificial Intelligence. October 23â27, 1990. Bandera, Texas.
+Akinori Yonezawa, Ed. ABCL: An Object-Oriented Concurrent System MIT Press. 1990.
+K. Kahn and Vijay A. Saraswat, "Actors as a special case of concurrent constraint (logic) programming", in SIGPLAN Notices, October 1990. Describes Janus.
+Carl Hewitt. Open Information Systems Semantics Journal of Artificial Intelligence. January 1991.
+Carl Hewitt and Jeff Inman.  DAI Betwixt and Between: From "Intelligent Agents" to Open Systems Science IEEE Transactions on Systems, Man, and Cybernetics. Nov./Dec. 1991.
+Carl Hewitt and Gul Agha. Guarded Horn clause languages: are they deductive and Logical? International Conference on Fifth Generation Computer Systems, Ohmsha 1988. Tokyo.  Also in Artificial Intelligence at MIT, Vol. 2. MIT Press 1991.
+William Dally, et al. The Message-Driven Processor: A Multicomputer Processing Node with Efficient Mechanisms IEEE Micro. April 1992.
+S. Miriyala, G. Agha, and Y.Sami. Visualizing actor programs using predicate transition nets Journal of Visual Programming. 1992.
+Carl Hewitt and Carl Manning.  Negotiation Architecture for Large-Scale Crisis Management AAAI-94 Workshop on Models of Conflict Management in Cooperative Problem Solving. Seattle, WA. Aug. 4, 1994.
+Carl Hewitt and Carl Manning.  Synthetic Infrastructures for Multi-Agency Systems Proceedings of ICMAS '96. Kyoto, Japan. December 8â13, 1996.
+S. Frolund. Coordinating Distributed Objects: An Actor-Based Approach for Synchronization MIT Press. November 1996.
+W. Kim. ThAL: An Actor System for Efficient and Scalable Concurrent Computing PhD thesis. University of Illinois at Urbana Champaign. 1997.
+Jean-Pierre Briot. Acttalk: A framework for object-oriented concurrent programming-design and experience 2nd France-Japan workshop. 1999.
+N. Jamali, P. Thati, and G. Agha. An actor based architecture for customizing and controlling agent ensembles IEEE Intelligent Systems. 14(2). 1999.
+Don Box, David Ehnebuske, Gopal Kakivaya, Andrew Layman, Noah Mendelsohn, Henrik Nielsen, Satish Thatte, Dave Winer. Simple Object Access Protocol (SOAP) 1.1 W3C Note. May 2000.
+M. Astley, D. Sturman, and G. Agha. Customizable middleware for modular distributed software CACM. 44(5) 2001.
+Edward Lee, S. Neuendorffer, and M. Wirthlin. Actor-oriented design of embedded hardware and software systems Journal of Circuits, Systems, and Computers. 2002.
+P. Thati, R. Ziaei, and G. Agha. A Theory of May Testing for Actors Formal Methods for Open Object-based Distributed Systems. March 2002.
+P. Thati, R. Ziaei, and G. Agha. A theory of may testing for asynchronous calculi with locality and no name matching Algebraic Methodology and Software Technology. Springer Verlag. September 2002. LNCS 2422.
+Stephen Neuendorffer.  Actor-Oriented Metaprogramming PhD Thesis. University of California, Berkeley. December, 2004
+Carl Hewitt (2006a)  The repeated demise of logic programming and why it will be reincarnated   What Went Wrong and Why: Lessons from AI Research and Applications.  Technical Report SS-06-08. AAAI Press.  March 2006.
+Carl Hewitt (2006b) What is Commitment? Physical, Organizational, and Social  COIN@AAMAS.  April 27, 2006b.
+Carl Hewitt (2007a) What is Commitment? Physical, Organizational, and Social (Revised) Pablo Noriega .et al. editors. LNAI 4386. Springer-Verlag. 2007.
+Carl Hewitt (2007b) Large-scale Organizational Computing requires Unstratified Paraconsistency and Reflection COIN@AAMAS'07.
+D. Charousset, T. C. Schmidt, R. Hiesgen and M. WÃ¤hlisch. Native actors: a scalable software platform for distributed, heterogeneous environments in AGERE! '13 Proceedings of the 2013 workshop on Programming based on actors, agents, and decentralized control.
+
+External links[edit]
+Hewitt, Meijer and Szyperski: The Actor Model (everything you wanted to know, but were afraid to ask) Microsoft Channel 9. April 9, 2012. Video on YouTube
+Functional Java â a Java library that includes an implementation of concurrent actors with code examples in standard Java and Java 7 BGGA style.
+ActorFoundry â a Java-based library for actor programming. The familiar Java syntax, an ant build file and a bunch of example make the entry barrier very low.
+ActiveJava â a prototype Java language extension for actor programming.
+Akka â actor based library in Scala and Java, from Lightbend Inc..
+GPars â a concurrency library for Apache Groovy and Java
+Asynchronous Agents Library â Microsoft actor library for Visual C++. "The Agents Library is a C++ template library that promotes an actor-based programming model and in-process message passing for coarse-grained dataflow and pipelining tasks. "
+ActorThread in C++11 â base template providing the gist of the actor model over naked threads in standard C++11
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Actor_model&oldid=1062839983"
+		Categories: Actor model (computer science)Concurrent computingHidden categories: CS1 errors: missing periodicalArticles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from March 2018All accuracy disputesArticles with disputed statements from August 2013Articles needing additional references from March 2012All articles needing additional referencesAll Wikipedia articles needing clarificationWikipedia articles needing clarification from November 2013Articles with unsourced statements from October 2013Articles with unsourced statements from March 2012Articles needing additional references from August 2021All articles with specifically marked weasel-worded phrasesArticles with specifically marked weasel-worded phrases from June 2010All articles with dead external linksArticles with dead external links from July 2019Articles with permanently dead external linksArticles with dead external links from September 2019Articles with dead external links from October 2016
+	
