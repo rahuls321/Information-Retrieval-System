@@ -1,0 +1,3920 @@
+
+Title:
+Relational algebra
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Theory of relational databases
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Relation algebra.
+In database theory, relational algebra is a theory that uses algebraic structures with a well-founded semantics for modeling data, and defining queries on it. The theory was introduced by Edgar F. Codd.
+The main application of relational algebra is to provide a theoretical foundation for relational databases, particularly query languages for such databases, chief among which is SQL. Relational databases store tabular data represented as relations. Queries over relational databases often likewise return tabular data represented as relations. 
+The main purpose of the relational algebra is to define operators that transform one or more input relations to an output relation. Given that these operators accept relations as input and produce relations as output, they can be combined and used to express potentially complex queries that transform potentially many input relations (whose data are stored in the database) into a single output relation (the query results). 
+Unary operators accept as input a single relation; examples include operators to filter certain attributes (columns) or tuples (rows) from an input relation. 
+Binary operators accept as input two relations; such operators combine the two input relations into a single output relation by, for example, taking all tuples found in either relation, removing tuples from the first relation found in the second relation, extending the tuples of the first relation with tuples in the second relation matching certain conditions, and so forth. 
+Other more advanced operators can also be included, where the inclusion or exclusion of certain operators gives rise to a family of algebras.
+
+Contents
+
+1 Introduction
+
+1.1 Set operators
+1.2 Projection (Î )
+1.3 Selection (Ï)
+1.4 Rename (Ï)
+
+
+2 Joins and join-like operators
+
+2.1 Natural join (â)
+2.2 Î¸-join and equijoin
+2.3 Semijoin (â)(â)
+2.4 Antijoin (â·)
+2.5 Division (Ã·)
+
+
+3 Common extensions
+
+3.1 Outer joins
+
+3.1.1 Left outer join (â)
+3.1.2 Right outer join (â)
+3.1.3 Full outer join (â)
+
+
+3.2 Operations for domain computations
+
+3.2.1 Aggregation
+
+
+3.3 Transitive closure
+
+
+4 Use of algebraic  properties for query optimization
+
+4.1 Selection
+
+4.1.1 Basic selection properties
+4.1.2 Breaking up selections with complex conditions
+4.1.3 Selection and cross product
+4.1.4 Selection and set operators
+4.1.5 Selection and projection
+
+
+4.2 Projection
+
+4.2.1 Basic projection properties
+4.2.2 Projection and set operators
+
+
+4.3 Rename
+
+4.3.1 Basic rename properties
+4.3.2 Rename and set operators
+
+
+4.4 Product and union
+
+
+5 Implementations
+6 See also
+7 References
+8 Further reading
+9 External links
+
+
+
+Introduction[edit]
+Relational algebra received little attention outside of pure mathematics until the publication of E.F. Codd's relational model of data in 1970. Codd proposed such an algebra as a basis for database query languages. (See section Implementations.)
+Five primitive operators of Codd's algebra are the selection, the projection, the Cartesian product (also called the cross product or cross join), the set union, and the set difference.
+
+Set operators[edit]
+The relational algebra uses set union, set difference, and Cartesian product from set theory, but adds additional constraints to these operators.
+For set union and set difference, the two relations involved must be union-compatibleâthat is, the two relations must have the same set of attributes.  Because set intersection is defined in terms of set union and set difference, the two relations involved in set intersection must also be union-compatible.
+For the Cartesian product to be defined, the two relations involved must have disjoint headersâthat is, they must not have a common attribute name.
+In addition, the Cartesian product is defined differently from the one in set theory in the sense that tuples are considered to be "shallow" for the purposes of the operation.  That is, the Cartesian product of a set of n-tuples with a set of m-tuples yields a set of "flattened" (nÂ +Â m)-tuples (whereas basic set theory would have prescribed a set of 2-tuples, each containing an n-tuple and an m-tuple).   More formally, R Ã S is defined as follows:
+
+  
+    
+      
+        R
+        Ã
+        S
+        :=
+        {
+        (
+        
+          r
+          
+            1
+          
+        
+        ,
+        
+          r
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          r
+          
+            n
+          
+        
+        ,
+        
+          s
+          
+            1
+          
+        
+        ,
+        
+          s
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          s
+          
+            m
+          
+        
+        )
+        
+          |
+        
+        (
+        
+          r
+          
+            1
+          
+        
+        ,
+        
+          r
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          r
+          
+            n
+          
+        
+        )
+        â
+        R
+        ,
+        (
+        
+          s
+          
+            1
+          
+        
+        ,
+        
+          s
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          s
+          
+            m
+          
+        
+        )
+        â
+        S
+        }
+      
+    
+    {\displaystyle R\times S:=\{(r_{1},r_{2},\dots ,r_{n},s_{1},s_{2},\dots ,s_{m})|(r_{1},r_{2},\dots ,r_{n})\in R,(s_{1},s_{2},\dots ,s_{m})\in S\}}
+  
+
+The cardinality of the Cartesian product is the product of the cardinalities of its factors, that is, |R Ã S| = |R| Ã |S|.
+
+Projection (Î )[edit]
+Main article: Projection (relational algebra)
+A projection is a unary operation written as 
+  
+    
+      
+        
+          Î 
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        )
+      
+    
+    {\displaystyle \Pi _{a_{1},\ldots ,a_{n}}(R)}
+  
+ where 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+      
+    
+    {\displaystyle a_{1},\ldots ,a_{n}}
+  
+ is a set of attribute names. The result of such projection is defined as the set that is obtained when all tuples in R are restricted to the set 
+  
+    
+      
+        {
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+        }
+      
+    
+    {\displaystyle \{a_{1},\ldots ,a_{n}\}}
+  
+.
+Note: when implemented in SQL standard the "default projection" returns a multiset instead of a set, and the Î  projection to eliminate duplicate data is obtained by the addition of the DISTINCT keyword.
+
+Selection (Ï)[edit]
+Main article: Selection (relational algebra)
+A generalized selection is a unary operation written as 
+  
+    
+      
+        
+          Ï
+          
+            Ï
+          
+        
+        (
+        R
+        )
+      
+    
+    {\displaystyle \sigma _{\varphi }(R)}
+  
+ where Ï is a propositional formula that consists of atoms as allowed in the normal selection and the logical operators 
+  
+    
+      
+        â§
+      
+    
+    {\displaystyle \wedge }
+  
+ (and), 
+  
+    
+      
+        â¨
+      
+    
+    {\displaystyle \lor }
+  
+ (or) and 
+  
+    
+      
+        Â¬
+      
+    
+    {\displaystyle \neg }
+  
+ (negation). This selection selects all those tuples in R for which Ï holds.
+To obtain a listing of all friends or business associates in an address book, the selection might be written as 
+  
+    
+      
+        
+          Ï
+          
+            
+              isFriend = true
+            
+            
+            â¨
+            
+            
+              isBusinessContact = true
+            
+          
+        
+        (
+        
+          addressBook
+        
+        )
+      
+    
+    {\displaystyle \sigma _{{\text{isFriend = true}}\,\lor \,{\text{isBusinessContact = true}}}({\text{addressBook}})}
+  
+.  The result would be a relation containing every attribute of every unique record where isFriend is true or where isBusinessContact is true.
+
+Rename (Ï)[edit]
+Main article: Rename (relational algebra)
+A rename is a unary operation written as 
+  
+    
+      
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        )
+      
+    
+    {\displaystyle \rho _{a/b}(R)}
+  
+ where the result is identical to R except that the b attribute in all tuples is renamed to an a attribute.  This is simply used to rename the attribute of a relation or the relation itself.
+To rename the 'isFriend' attribute to 'isBusinessContact' in a relation, 
+  
+    
+      
+        
+          Ï
+          
+            isBusinessContact / isFriend
+          
+        
+        (
+        
+          addressBook
+        
+        )
+      
+    
+    {\displaystyle \rho _{\text{isBusinessContact / isFriend}}({\text{addressBook}})}
+  
+ might be used.
+There is also the 
+  
+    
+      
+        
+          Ï
+          
+            x
+            (
+            
+              A
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              A
+              
+                n
+              
+            
+            )
+          
+        
+        (
+        R
+        )
+      
+    
+    {\displaystyle \rho _{x(A_{1},\ldots ,A_{n})}(R)}
+  
+ notation, where R is renamed to x and the attributes 
+  
+    
+      
+        {
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+        }
+      
+    
+    {\displaystyle \{a_{1},\ldots ,a_{n}\}}
+  
+ are renamed to 
+  
+    
+      
+        {
+        
+          A
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          A
+          
+            n
+          
+        
+        }
+      
+    
+    {\displaystyle \{A_{1},\ldots ,A_{n}\}}
+  
+.[1]
+
+Joins and join-like operators[edit]
+.mw-parser-output .vanchor>:target~.vanchor-text{background-color:#b1d2ff}Natural join (â)[edit]
+"Natural join" redirects here. For the SQL implementation, see Natural join (SQL).
+"â" redirects here. For the band sometimes represented by this symbol, see The Armed. 
+Natural join (â) is a binary operator that is written as (R  â S) where R and S are relations.[2] The result of the natural join is the set of all combinations of tuples in R and S that are equal on their common attribute names. For an example consider the tables Employee and Dept and their natural join:
+
+
+
+
+
+
+
+Employee
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+Sally
+2241
+Sales
+
+
+George
+3401
+Finance
+
+
+Harriet
+2202
+Sales
+
+
+Mary
+1257
+Human Resources
+
+
+
+
+Dept
+
+
+DeptName
+Manager
+
+
+Finance
+George
+
+
+Sales
+Harriet
+
+
+Production
+Charles
+
+
+
+
+EmployeeÂ âÂ Dept
+
+
+Name
+EmpId
+DeptName
+Manager
+
+
+Harry
+3415
+Finance
+George
+
+
+Sally
+2241
+Sales
+Harriet
+
+
+George
+3401
+Finance
+George
+
+
+Harriet
+2202
+Sales
+Harriet
+
+ 
+
+
+Note that neither the employee named Mary nor the Human Resources department appear in the result.
+This can also be used to define composition of relations.  For example, the composition of Employee and Dept is their join as shown above, projected on all but the common attribute DeptName.  In category theory, the join is precisely the fiber product.
+The natural join is arguably one of the most important operators since it is the relational counterpart of the logical AND operator. Note that if the same variable appears in each of two predicates that are connected by AND, then that variable stands for the same thing and both appearances must always be substituted by the same value (this is a consequence of the idempotence of the logical AND). In particular, natural join allows the combination of relations that are associated by a foreign key. For example, in the above example a foreign key probably holds from Employee.DeptName to Dept.DeptName and then the natural join of Employee and Dept combines all employees with their departments. This works because the foreign key holds between attributes with the same name. If this is not the case such as in the foreign key from Dept.Manager to Employee.Name then these columns must be renamed before taking the natural join. Such a join is sometimes also referred to as an equijoin (see Î¸-join).
+More formally the semantics of the natural join are defined as follows:
+
+
+
+
+
+  
+    
+      
+        R
+        â
+        S
+        =
+        
+          {
+          
+            r
+            âª
+            s
+            Â 
+            |
+            Â 
+            r
+            â
+            R
+            Â 
+            â§
+            Â 
+            s
+            â
+            S
+            Â 
+            â§
+            Â 
+            
+              
+                F
+                u
+                n
+              
+            
+            (
+            r
+            âª
+            s
+            )
+          
+          }
+        
+      
+    
+    {\displaystyle R\bowtie S=\left\{r\cup s\ \vert \ r\in R\ \land \ s\in S\ \land \ {\mathit {Fun}}(r\cup s)\right\}}
+  
+
+
+
+
+
+
+Â 
+
+Â 
+
+Â 
+
+
+
+Â 
+
+
+
+(1)
+
+where Fun(t) is a predicate that is true for a relation t (in the mathematical sense) iff t is a function. It is usually required that R and S must have at least one common attribute, but if this constraint is omitted, and R and S have no common attributes, then the natural join becomes exactly the Cartesian product.
+The natural join can be simulated with Codd's primitives as follows. Assume that c1,...,cm are the attribute names common to R and S, r1,...,rn are the
+attribute names unique to R and s1,...,sk are the
+attribute names unique to S. Furthermore, assume that the attribute names  x1,...,xm are neither in R nor in S. In a first step the common attribute names in S can be renamed:
+
+
+
+
+
+  
+    
+      
+        T
+        =
+        
+          Ï
+          
+            
+              x
+              
+                1
+              
+            
+            
+              /
+            
+            
+              c
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              x
+              
+                m
+              
+            
+            
+              /
+            
+            
+              c
+              
+                m
+              
+            
+          
+        
+        (
+        S
+        )
+        =
+        
+          Ï
+          
+            
+              x
+              
+                1
+              
+            
+            
+              /
+            
+            
+              c
+              
+                1
+              
+            
+          
+        
+        (
+        
+          Ï
+          
+            
+              x
+              
+                2
+              
+            
+            
+              /
+            
+            
+              c
+              
+                2
+              
+            
+          
+        
+        (
+        â¦
+        
+          Ï
+          
+            
+              x
+              
+                m
+              
+            
+            
+              /
+            
+            
+              c
+              
+                m
+              
+            
+          
+        
+        (
+        S
+        )
+        â¦
+        )
+        )
+      
+    
+    {\displaystyle T=\rho _{x_{1}/c_{1},\ldots ,x_{m}/c_{m}}(S)=\rho _{x_{1}/c_{1}}(\rho _{x_{2}/c_{2}}(\ldots \rho _{x_{m}/c_{m}}(S)\ldots ))}
+  
+
+
+
+
+
+
+Â 
+
+Â 
+
+Â 
+
+
+
+Â 
+
+
+
+(2)
+
+Then we take the Cartesian product and select the tuples that are to be joined:
+
+
+
+
+
+  
+    
+      
+        P
+        =
+        
+          Ï
+          
+            
+              c
+              
+                1
+              
+            
+            =
+            
+              x
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              c
+              
+                m
+              
+            
+            =
+            
+              x
+              
+                m
+              
+            
+          
+        
+        (
+        R
+        Ã
+        T
+        )
+        =
+        
+          Ï
+          
+            
+              c
+              
+                1
+              
+            
+            =
+            
+              x
+              
+                1
+              
+            
+          
+        
+        (
+        
+          Ï
+          
+            
+              c
+              
+                2
+              
+            
+            =
+            
+              x
+              
+                2
+              
+            
+          
+        
+        (
+        â¦
+        
+          Ï
+          
+            
+              c
+              
+                m
+              
+            
+            =
+            
+              x
+              
+                m
+              
+            
+          
+        
+        (
+        R
+        Ã
+        T
+        )
+        â¦
+        )
+        )
+      
+    
+    {\displaystyle P=\sigma _{c_{1}=x_{1},\ldots ,c_{m}=x_{m}}(R\times T)=\sigma _{c_{1}=x_{1}}(\sigma _{c_{2}=x_{2}}(\ldots \sigma _{c_{m}=x_{m}}(R\times T)\ldots ))}
+  
+
+
+
+
+
+
+Â 
+
+Â 
+
+Â 
+
+
+
+Â 
+
+
+
+(3)
+
+Finally we take a projection to get rid of the renamed attributes:
+
+
+
+
+
+  
+    
+      
+        U
+        =
+        
+          Î 
+          
+            
+              r
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              r
+              
+                n
+              
+            
+            ,
+            
+              c
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              c
+              
+                m
+              
+            
+            ,
+            
+              s
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              s
+              
+                k
+              
+            
+          
+        
+        (
+        P
+        )
+      
+    
+    {\displaystyle U=\Pi _{r_{1},\ldots ,r_{n},c_{1},\ldots ,c_{m},s_{1},\ldots ,s_{k}}(P)}
+  
+
+
+
+
+
+
+Â 
+
+Â 
+
+Â 
+
+
+
+Â 
+
+
+
+(4)
+
+Î¸-join and equijoin[edit]
+Consider tables Car and Boat which list models of cars and boats and their respective prices. Suppose a customer wants to buy a car and a boat, but she does not want to spend more money for the boat than for the car. The Î¸-join (âÎ¸) on the predicate CarPrice â¥ BoatPrice produces the flattened pairs of rows which satisfy the predicate. When using a condition where the attributes are equal, for example Price, then the condition may be specified as Price=Price
+or alternatively (Price) itself.
+
+
+
+
+
+
+
+Car
+
+
+CarModel
+CarPrice
+
+
+CarA
+20,000
+
+
+CarB
+30,000
+
+
+CarC
+50,000
+
+
+
+
+Boat
+
+
+BoatModel
+BoatPrice
+
+
+Boat1
+10,000
+
+
+Boat2
+40,000
+
+
+Boat3
+60,000
+
+
+
+
+
+  
+    
+      
+        
+          
+            
+              C
+              a
+              r
+              â
+              B
+              o
+              a
+              t
+            
+            
+              C
+              a
+              r
+              P
+              r
+              i
+              c
+              e
+              â¥
+              B
+              o
+              a
+              t
+              P
+              r
+              i
+              c
+              e
+            
+          
+        
+      
+    
+    {\displaystyle {Car\bowtie Boat \atop \scriptstyle CarPrice\geq BoatPrice}}
+  
+
+
+
+CarModel
+CarPrice
+BoatModel
+BoatPrice
+
+
+CarA
+20,000
+Boat1
+10,000
+
+
+CarB
+30,000
+Boat1
+10,000
+
+
+CarC
+50,000
+Boat1
+10,000
+
+
+CarC
+50,000
+Boat2
+40,000
+
+ 
+
+
+In order to combine tuples from two relations where the combination condition is not simply the equality of shared attributes it is convenient to have a more general form of join operator, which is the Î¸-join (or theta-join). The Î¸-join is a binary operator that is written as 
+  
+    
+      
+        
+          
+            
+              R
+              Â 
+              â
+              Â 
+              S
+            
+            
+              a
+              Â 
+              Î¸
+              Â 
+              b
+            
+          
+        
+      
+    
+    {\displaystyle {R\ \bowtie \ S \atop a\ \theta \ b}}
+  
+ or 
+  
+    
+      
+        
+          
+            
+              R
+              Â 
+              â
+              Â 
+              S
+            
+            
+              a
+              Â 
+              Î¸
+              Â 
+              v
+            
+          
+        
+      
+    
+    {\displaystyle {R\ \bowtie \ S \atop a\ \theta \ v}}
+  
+ where a and b are attribute names, Î¸ is a binary relational operator in the set {<, â¤, =, â , >, â¥}, Ï is a value constant, and R and S are relations.  The result of this operation consists of all combinations of tuples in R and S that satisfy Î¸.  The result of the Î¸-join is defined only if the headers of S and R are disjoint, that is, do not contain a common attribute.
+The simulation of this operation in the fundamental operations is therefore as follows:
+
+R  âÎ¸ S = ÏÎ¸(R Ã S)
+In case the operator Î¸ is the equality operator (=) then this join is also called an equijoin.
+Note, however, that a computer language that supports the natural join and selection operators does not need Î¸-join as well, as this can be achieved by selection from the result of a natural join (which degenerates to Cartesian product when there are no shared attributes).
+In SQL implementations, joining on a predicate is usually called an inner join, and the on keyword allows one to specify the predicate used to filter the rows. It is important to note: forming the flattened Cartesian product then filtering the rows is conceptually correct, but an implementation would use more sophisticated data structures to speed up the join query.
+
+Semijoin (â)(â)[edit]
+The left semijoin is a joining similar to the natural join and written as R
+â S where R and S are relations.[3] The result is the set of all tuples in R for which there is a tuple in S that is equal on their common attribute names. The difference from a natural join is that other columns of S do not appear. For example, consider the tables Employee and Dept and their semijoin:
+
+
+
+
+
+
+
+Employee
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+Sally
+2241
+Sales
+
+
+George
+3401
+Finance
+
+
+Harriet
+2202
+Production
+
+
+
+
+Dept
+
+
+DeptName
+Manager
+
+
+Sales
+Sally
+
+
+Production
+Harriet
+
+
+
+
+Employee â Dept
+
+
+Name
+EmpId
+DeptName
+
+
+Sally
+2241
+Sales
+
+
+Harriet
+2202
+Production
+
+ 
+
+
+More formally the semantics of the semijoin can be defined as
+follows:
+
+R â S = { tÂ : t â R â§ âs â S(Fun (t âª s)) }
+where Fun(r) is as in the definition of natural join.
+The semijoin can be simulated using the natural join as
+follows. If a1, ..., an are the
+attribute names of R, then
+
+R â S = 
+  
+    
+      
+        Î 
+      
+    
+    {\displaystyle \Pi }
+  
+a1,..,an(R  â S).
+Since we can simulate the natural join with the basic operators it follows that this also holds for the semijoin.
+In Codd's 1970 paper, semijoin is called restriction.[4]
+
+Antijoin (â·)[edit]
+The antijoin, written as R â· S where R and S are relations, is similar to the semijoin, but the result of an antijoin is only those tuples in R for which there is no tuple in S that is equal on their common attribute names.[5]
+For an example consider the tables Employee and Dept and their
+antijoin:
+
+
+
+
+
+
+
+Employee
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+Sally
+2241
+Sales
+
+
+George
+3401
+Finance
+
+
+Harriet
+2202
+Production
+
+
+
+
+Dept
+
+
+DeptName
+Manager
+
+
+Sales
+Sally
+
+
+Production
+Harriet
+
+
+
+
+Employee  â· Dept
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+George
+3401
+Finance
+
+ 
+
+
+The antijoin is formally defined as follows:
+
+R â· S = { tÂ : t â R â§ Â¬âs â S(Fun (t âª s)) }
+or
+
+R â· S = { tÂ : t â R, there is no tuple s of S that satisfies Fun (t âª s) }
+where Fun (t âª s) is as in the definition of natural join.
+The antijoin can also be defined as the complement of the semijoin, as follows:
+
+
+
+
+ R â· S = RÂ âÂ R â S 
+
+
+
+
+
+Â 
+
+Â 
+
+Â 
+
+
+
+Â 
+
+
+
+(5)
+
+Given this, the antijoin is sometimes called the anti-semijoin, and the antijoin operator is sometimes written as semijoin symbol with a bar above it, instead of â·.
+
+Division (Ã·)[edit]
+The division is a binary operation that is written as R Ã· S. Division is not implemented directly in SQL. The result consists of the restrictions of tuples in R to the attribute names unique to R, i.e., in the header of R but not in the header of S, for which it holds that all their combinations with tuples in S are present in R. For an example see the tables Completed, DBProject and their division:
+
+
+
+
+
+
+
+Completed
+
+
+Student
+Task
+
+
+Fred
+Database1
+
+
+Fred
+Database2
+
+
+Fred
+Compiler1
+
+
+Eugene
+Database1
+
+
+Eugene
+Compiler1
+
+
+Sarah
+Database1
+
+
+Sarah
+Database2
+
+
+
+
+DBProject
+
+
+Task
+
+
+Database1
+
+
+Database2
+
+
+
+
+Completed Ã· DBProject
+
+
+Student
+
+
+Fred
+
+
+Sarah
+
+ 
+
+If DBProject contains all the tasks of the Database project, then the result of the division above contains exactly the students who have completed both of the tasks in the Database project.
+More formally the semantics of the division is defined as follows:
+
+
+ R Ã· S = { t[a1,...,an]Â : t â R â§ âs â S ( (t[a1,...,an] âª s) â R) }  
+
+
+
+
+
+Â 
+
+Â 
+
+Â 
+
+
+
+Â 
+
+
+
+(6)
+where {a1,...,an} is the set of attribute names unique to R and t[a1,...,an] is the restriction of t to this set. It is usually required that the attribute names in the header of S are a subset of those of R because otherwise the result of the operation will always be empty.
+The simulation of the division with the basic operations is as follows. We assume that a1,...,an are the attribute names unique to R and b1,...,bm are the attribute names of S. In the first step we project R on its unique attribute names and construct all combinations with tuples in S:
+
+TÂ := Ïa1,...,an(R) Ã S
+In the prior example, T would represent a table such that every Student (because Student is the unique key / attribute of the Completed table) is combined with every given Task. So Eugene, for instance, would have two rows, Eugene â Database1 and Eugene â Database2 in T.
+
+EG: First, let's pretend that "Completed" has a third attribute called "grade".  It's unwanted baggage here, so we must project it off always. In fact in this step we can drop 'Task' from R as well; the multiply puts it back on.
+TÂ := ÏStudent(R) Ã S  // This gives us every possible desired combination, including those that don't actually exist in R, and excluding others (eg Fred | compiler1, which is not a desired combination)
+
+
+
+
+
+
+T
+
+
+Student
+Task
+
+
+Fred
+Database1
+
+
+Fred
+Database2
+
+
+Eugene
+Database1
+
+
+Eugene
+Database2
+
+
+Sarah
+Database1
+
+
+Sarah
+Database2
+
+ 
+
+ In the next step we subtract R from T
+relation:
+
+UÂ := T â R
+In U we have the possible
+combinations that "could have" been in R, but weren't. 
+
+EG: Again with projections â T and R need to have identical attribute names/headers.
+UÂ := T â ÏStudent,Task(R) // This gives us a "what's missing" list.
+
+
+
+
+
+
+T
+
+
+Student
+Task
+
+
+Fred
+Database1
+
+
+Fred
+Database2
+
+
+Eugene
+Database1
+
+
+Eugene
+Database2
+
+
+Sarah
+Database1
+
+
+Sarah
+Database2
+
+
+
+
+R a.k.a. Completed
+
+
+Student
+Task
+
+
+Fred
+Database1
+
+
+Fred
+Database2
+
+
+Fred
+Compiler1
+
+
+Eugene
+Database1
+
+
+Eugene
+Compiler1
+
+
+Sarah
+Database1
+
+
+Sarah
+Database2
+
+
+
+
+U
+
+aka
+
+T â R
+
+aka
+
+what's missing
+
+
+Student
+Task
+
+
+Eugene
+Database2
+
+ 
+
+ So if we now take the projection on the attribute names unique to R
+then we have the restrictions of the tuples in R for which not
+all combinations with tuples in S were present in R:
+
+VÂ := Ïa1,...,an(U)
+EG: Project U down  to just the attribute(s) in question (Student)
+VÂ := ÏStudent(U)
+
+
+
+
+
+
+V
+
+
+Student
+
+
+Eugene
+
+ 
+
+
+So what remains to be done is take the projection of R on its
+unique attribute names and subtract those in V:
+
+WÂ := Ïa1,...,an(R) â V
+EG: WÂ := ÏStudent(R) â V.
+
+
+
+
+
+
+ÏStudent(R)
+
+
+Student
+
+
+Fred
+
+
+Eugene
+
+
+Sarah
+
+
+
+
+V
+
+
+Student
+
+
+Eugene
+
+
+
+
+W
+
+aka
+
+(ÏStudent(R) â V)
+
+aka
+
+desired result
+
+
+Student
+
+
+Fred
+
+
+Sarah
+
+ 
+
+
+Common extensions[edit]
+In practice the classical relational algebra described above is extended with various operations such as outer joins, aggregate functions and even transitive closure.[6]
+
+Outer joins[edit]
+Main article: Outer join
+Whereas the result of a join (or inner join) consists of tuples formed by combining matching tuples in the two operands, an outer join contains those tuples and additionally some tuples formed by extending an unmatched tuple in one of the operands by "fill" values for each of the attributes of the other operand. Outer joins are not considered part of the classical relational algebra discussed so far.[7]
+The operators defined in this section assume the existence of a null value, Ï, which we do not define, to be used for the fill values; in practice this corresponds to the NULL in SQL. In order to make subsequent selection operations on the resulting table meaningful, a semantic meaning needs to be assigned to nulls; in Codd's approach the propositional logic used by the selection is extended to a three-valued logic, although we elide those details in this article.
+Three outer join operators are defined: left outer join, right outer join, and full outer join.  (The word "outer" is sometimes omitted.)
+
+Left outer join (â)[edit]
+The left outer join is written as R â S where R and S are relations.[8] The result of the left outer join is the set of all combinations of tuples in R and S that are equal on their common attribute names, in addition (loosely speaking) to tuples in R that have no matching tuples in S.
+For an example consider the tables Employee and Dept and their  left outer join:
+
+
+
+
+
+
+
+Employee
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+Sally
+2241
+Sales
+
+
+George
+3401
+Finance
+
+
+Harriet
+2202
+Sales
+
+
+Tim
+1123
+Executive
+
+
+
+
+Dept
+
+
+DeptName
+Manager
+
+
+Sales
+Harriet
+
+
+Production
+Charles
+
+
+
+
+Employee â  Dept
+
+
+Name
+EmpId
+DeptName
+Manager
+
+
+Harry
+3415
+Finance
+Ï
+
+
+Sally
+2241
+Sales
+Harriet
+
+
+George
+3401
+Finance
+Ï
+
+
+Harriet
+2202
+Sales
+Harriet
+
+
+Tim
+1123
+Executive
+Ï
+
+ 
+
+
+In the resulting relation, tuples in S which have no common values in common attribute names with tuples in R take a null value, Ï.
+Since there are no tuples in Dept with a DeptName of Finance or Executive, Ïs occur in the resulting relation where tuples in Employee have a DeptName of Finance or Executive.
+Let r1, r2, ..., rn be the attributes of the relation R and let {(Ï, ..., Ï)} be the singleton
+relation on the attributes that are unique to the relation S (those that are not attributes of R). Then the left outer join can be described in terms of the natural join (and hence using basic operators) as follows:
+
+
+  
+    
+      
+        (
+        R
+        â
+        S
+        )
+        âª
+        (
+        (
+        R
+        â
+        
+          Ï
+          
+            
+              r
+              
+                1
+              
+            
+            ,
+            
+              r
+              
+                2
+              
+            
+            ,
+            â¦
+            ,
+            
+              r
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        â
+        S
+        )
+        )
+        Ã
+        {
+        (
+        Ï
+        ,
+        â¦
+        Ï
+        )
+        }
+        )
+      
+    
+    {\displaystyle (R\bowtie S)\cup ((R-\pi _{r_{1},r_{2},\dots ,r_{n}}(R\bowtie S))\times \{(\omega ,\dots \omega )\})}
+  
+
+Right outer join (â)[edit]
+The right outer join behaves almost identically to the left outer join, but the roles of the tables are switched.
+The right outer join of relations R and S is written as R â S.[9] The result of the right outer join is the set of all combinations of tuples in R and S that are equal on their common attribute names, in addition to tuples in S that have no matching tuples in R.
+For example, consider the tables Employee and Dept and their
+right outer join:
+
+
+
+
+
+
+
+Employee
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+Sally
+2241
+Sales
+
+
+George
+3401
+Finance
+
+
+Harriet
+2202
+Sales
+
+
+Tim
+1123
+Executive
+
+
+
+
+Dept
+
+
+DeptName
+Manager
+
+
+Sales
+Harriet
+
+
+Production
+Charles
+
+
+
+
+Employee â  Dept
+
+
+Name
+EmpId
+DeptName
+Manager
+
+
+Sally
+2241
+Sales
+Harriet
+
+
+Harriet
+2202
+Sales
+Harriet
+
+
+Ï
+Ï
+Production
+Charles
+
+ 
+
+
+In the resulting relation, tuples in R which have no common values in common attribute names with tuples in S take a null value, Ï.
+Since there are no tuples in Employee with a DeptName of Production, Ïs occur in the Name and EmpId attributes of the resulting relation where tuples in Dept had DeptName of Production.
+Let s1, s2, ..., sn be the attributes of the relation S and let {(Ï, ..., Ï)} be the singleton
+relation on the attributes that are unique to the relation R (those that are not attributes of S). Then, as with the left outer join, the right outer join can be simulated using the natural join as follows:
+
+
+  
+    
+      
+        (
+        R
+        â
+        S
+        )
+        âª
+        (
+        {
+        (
+        Ï
+        ,
+        â¦
+        ,
+        Ï
+        )
+        }
+        Ã
+        (
+        S
+        â
+        
+          Ï
+          
+            
+              s
+              
+                1
+              
+            
+            ,
+            
+              s
+              
+                2
+              
+            
+            ,
+            â¦
+            ,
+            
+              s
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        â
+        S
+        )
+        )
+        )
+      
+    
+    {\displaystyle (R\bowtie S)\cup (\{(\omega ,\dots ,\omega )\}\times (S-\pi _{s_{1},s_{2},\dots ,s_{n}}(R\bowtie S)))}
+  
+
+Full outer join (â)[edit]
+The outer join or full outer join in effect combines the results of the left and right outer joins.
+The full outer join is written as R â S where R and S are relations.[10] The result of the full outer join is the set of all combinations of tuples in R and S that are equal on their common attribute names, in addition to tuples in S that have no matching tuples in R and tuples in R that have no matching tuples in S in their common attribute names.
+For an example consider the tables Employee and Dept and their
+full outer join:
+
+
+
+
+
+
+
+Employee
+
+
+Name
+EmpId
+DeptName
+
+
+Harry
+3415
+Finance
+
+
+Sally
+2241
+Sales
+
+
+George
+3401
+Finance
+
+
+Harriet
+2202
+Sales
+
+
+Tim
+1123
+Executive
+
+
+
+
+Dept
+
+
+DeptName
+Manager
+
+
+Sales
+Harriet
+
+
+Production
+Charles
+
+
+
+
+Employee â  Dept
+
+
+Name
+EmpId
+DeptName
+Manager
+
+
+Harry
+3415
+Finance
+Ï
+
+
+Sally
+2241
+Sales
+Harriet
+
+
+George
+3401
+Finance
+Ï
+
+
+Harriet
+2202
+Sales
+Harriet
+
+
+Tim
+1123
+Executive
+Ï
+
+
+Ï
+Ï
+Production
+Charles
+
+ 
+
+
+In the resulting relation, tuples in R which have no common values in common attribute names with tuples in S take a null value, Ï. Tuples in S which have no common values in common attribute names with tuples in R also take a null value, Ï.
+The full outer join can be simulated using the left and right outer joins (and hence the natural join and set union) as follows:
+
+R â S = (R â S) âª (R â S)
+Operations for domain computations[edit]
+There is nothing in relational algebra introduced so far that would allow computations on the data domains (other than evaluation of propositional expressions involving equality). For example, it is not possible using only the algebra introduced so far to write an expression that would multiply the numbers from two columns, e.g. a unit price with a quantity to obtain a total price. Practical query languages have such facilities, e.g. the SQL SELECT allows arithmetic operations to define new columns in the result SELECT unit_price * quantity AS total_price FROM t, and a similar facility is provided more explicitly by Tutorial D's EXTEND keyword.[11] In database theory, this is called extended projection.[12]:â213â
+
+Aggregation[edit]
+Furthermore, computing various functions on a column, like the summing up of its elements, is also not possible using the relational algebra introduced so far. There are five aggregate functions that are included with most relational database systems. These operations are Sum, Count, Average, Maximum and Minimum. In relational algebra the aggregation operation over a schema (A1, A2, ... An) is written as follows:
+
+
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+        ,
+        
+          G
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          G
+          
+            m
+          
+        
+        Â 
+        
+          g
+          
+            
+              f
+              
+                1
+              
+            
+            (
+            
+              
+                
+                  A
+                  
+                    1
+                  
+                
+              
+              â²
+            
+            )
+            ,
+            
+              f
+              
+                2
+              
+            
+            (
+            
+              
+                
+                  A
+                  
+                    2
+                  
+                
+              
+              â²
+            
+            )
+            ,
+            â¦
+            ,
+            
+              f
+              
+                k
+              
+            
+            (
+            
+              
+                
+                  A
+                  
+                    k
+                  
+                
+              
+              â²
+            
+            )
+          
+        
+        Â 
+        (
+        r
+        )
+      
+    
+    {\displaystyle G_{1},G_{2},\ldots ,G_{m}\ g_{f_{1}({A_{1}}'),f_{2}({A_{2}}'),\ldots ,f_{k}({A_{k}}')}\ (r)}
+  
+
+where each Aj', 1 â¤ j â¤ k, is one of the original attributes Ai, 1 â¤ i â¤ n.
+The attributes preceding the g are grouping attributes, which function like a "group by" clause in SQL. Then there are an arbitrary number of aggregation functions applied to individual attributes. The operation is applied to an arbitrary relation r. The grouping attributes are optional, and if they are not supplied, the aggregation functions are applied across the entire relation to which the operation is applied.
+Let's assume that we have a table named .mw-parser-output .monospaced{font-family:monospace,monospace}Account with three columns, namely Account_Number, Branch_Name and Balance. We wish to find the maximum balance of each branch. This is accomplished by Branch_NameGMax(Balance)(Account). To find the highest balance of all accounts regardless of branch, we could simply write GMax(Balance)(Account).
+Grouping is often written as Branch_NameÉ£Max(Balance)(Account) instead.[13]
+
+Transitive closure[edit]
+Although relational algebra seems powerful enough for most practical purposes, there are some simple and natural operators on relations that cannot be expressed by relational algebra. One of them is the transitive closure of a binary relation. Given a domain D, let binary relation R be a subset of DÃD. The transitive closure R+ of R is the smallest subset of DÃD that contains R and satisfies the following condition:
+
+
+  
+    
+      
+        â
+        x
+        â
+        y
+        â
+        z
+        
+          (
+          
+            (
+            x
+            ,
+            y
+            )
+            â
+            
+              R
+              
+                +
+              
+            
+            â§
+            (
+            y
+            ,
+            z
+            )
+            â
+            
+              R
+              
+                +
+              
+            
+            â
+            (
+            x
+            ,
+            z
+            )
+            â
+            
+              R
+              
+                +
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \forall x\forall y\forall z\left((x,y)\in R^{+}\wedge (y,z)\in R^{+}\Rightarrow (x,z)\in R^{+}\right)}
+  
+
+There is no relational algebra expression E(R) taking R as a variable argument that produces R+. This can be proved using the fact that, given a relational expression E for which it is claimed that E(R) = R+, where R is a variable, we can always find an instance r of R (and a corresponding domain d) such that E(r) â  r+.[14]
+SQL however officially supports such fixpoint queries since 1999, and it had vendor-specific extensions in this direction well before that.
+
+Use of algebraic  properties for query optimization[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (June 2013) (Learn how and when to remove this template message)
+Queries can be  represented as a tree, where
+
+the internal nodes are operators,
+leaves are relations,
+subtrees are subexpressions.
+The primary goal is to transform expression trees into equivalent expression trees, where the average size of the relations yielded by subexpressions in the tree is smaller than it was before the optimization. The secondary goal is to try to form common subexpressions within a single query, or if there is more than one query being evaluated at the same time, in all of those queries. The rationale behind the second goal is that it is enough to compute common subexpressions once, and the results can be used in all queries that contain that subexpression.
+Here are a set of rules that can be used in such transformations.
+
+Selection[edit]
+Rules about selection operators play the most important role in query optimization. Selection is an operator that very effectively decreases the number of rows in its operand, so if the selections in an expression tree are moved towards the leaves, the internal relations (yielded by subexpressions) will likely shrink.
+
+Basic selection properties[edit]
+Selection is idempotent (multiple applications of the same selection have no additional effect beyond the first one), and commutative (the order selections are applied in has no effect on the eventual result).
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        
+        
+      
+    
+    {\displaystyle \sigma _{A}(R)=\sigma _{A}\sigma _{A}(R)\,\!}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        
+          Ï
+          
+            B
+          
+        
+        (
+        R
+        )
+        =
+        
+          Ï
+          
+            B
+          
+        
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        
+        
+      
+    
+    {\displaystyle \sigma _{A}\sigma _{B}(R)=\sigma _{B}\sigma _{A}(R)\,\!}
+  
+
+Breaking up selections with complex conditions[edit]
+A selection whose condition is a conjunction of simpler conditions is equivalent to a sequence of selections with those same individual conditions, and selection whose condition is a disjunction is equivalent to a union of selections.  These identities can be used to merge selections so that fewer selections need to be evaluated, or to split them so that the component selections may be moved or optimized separately.
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+            â§
+            B
+          
+        
+        (
+        R
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        
+          Ï
+          
+            B
+          
+        
+        (
+        R
+        )
+        )
+        =
+        
+          Ï
+          
+            B
+          
+        
+        (
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        )
+      
+    
+    {\displaystyle \sigma _{A\land B}(R)=\sigma _{A}(\sigma _{B}(R))=\sigma _{B}(\sigma _{A}(R))}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+            â¨
+            B
+          
+        
+        (
+        R
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        âª
+        
+          Ï
+          
+            B
+          
+        
+        (
+        R
+        )
+      
+    
+    {\displaystyle \sigma _{A\lor B}(R)=\sigma _{A}(R)\cup \sigma _{B}(R)}
+  
+
+Selection and cross product[edit]
+Cross product is the costliest operator to evaluate. If the input relations have N and M rows, the result will contain 
+  
+    
+      
+        N
+        M
+      
+    
+    {\displaystyle NM}
+  
+ rows. Therefore, it is important to decrease the size of both operands before applying the cross product operator.
+This can be effectively done if the cross product is followed by a selection operator, e.g. 
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        Ã
+        P
+        )
+      
+    
+    {\displaystyle \sigma _{A}(R\times P)}
+  
+. Considering the definition of join, this is the most likely case. If the cross product is not followed by a selection operator, we can try to push down a selection from higher levels of the expression tree using the other selection rules.
+In the above case the condition A is broken up in to conditions B, C and D using the split rules about complex selection conditions, so that 
+  
+    
+      
+        A
+        =
+        B
+        â§
+        C
+        â§
+        D
+      
+    
+    {\displaystyle A=B\wedge C\wedge D}
+  
+ and B contains attributes only from R, C contains attributes only from P, and D contains the part of A that contains attributes from both R and P. Note, that B, C or D are possibly empty. Then the following holds:
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        Ã
+        P
+        )
+        =
+        
+          Ï
+          
+            B
+            â§
+            C
+            â§
+            D
+          
+        
+        (
+        R
+        Ã
+        P
+        )
+        =
+        
+          Ï
+          
+            D
+          
+        
+        (
+        
+          Ï
+          
+            B
+          
+        
+        (
+        R
+        )
+        Ã
+        
+          Ï
+          
+            C
+          
+        
+        (
+        P
+        )
+        )
+      
+    
+    {\displaystyle \sigma _{A}(R\times P)=\sigma _{B\wedge C\wedge D}(R\times P)=\sigma _{D}(\sigma _{B}(R)\times \sigma _{C}(P))}
+  
+
+Selection and set operators[edit]
+Selection is distributive over the set difference, intersection, and union operators.  The following three rules are used to push selection below set operations in the expression tree. For the set difference and the intersection operators, it is possible to apply the selection operator to just one of the operands following the transformation. This can be beneficial where one of the operands is small, and the overhead of evaluating the selection operator outweighs the benefits of using a smaller relation as an operand.
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        â
+        P
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        â
+        
+          Ï
+          
+            A
+          
+        
+        (
+        P
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        â
+        P
+      
+    
+    {\displaystyle \sigma _{A}(R\setminus P)=\sigma _{A}(R)\setminus \sigma _{A}(P)=\sigma _{A}(R)\setminus P}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        âª
+        P
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        âª
+        
+          Ï
+          
+            A
+          
+        
+        (
+        P
+        )
+      
+    
+    {\displaystyle \sigma _{A}(R\cup P)=\sigma _{A}(R)\cup \sigma _{A}(P)}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        â©
+        P
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        â©
+        
+          Ï
+          
+            A
+          
+        
+        (
+        P
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        â©
+        P
+        =
+        R
+        â©
+        
+          Ï
+          
+            A
+          
+        
+        (
+        P
+        )
+      
+    
+    {\displaystyle \sigma _{A}(R\cap P)=\sigma _{A}(R)\cap \sigma _{A}(P)=\sigma _{A}(R)\cap P=R\cap \sigma _{A}(P)}
+  
+
+Selection and projection[edit]
+Selection commutes with projection if and only if the fields referenced in the selection condition are a subset of the fields in the projection.  Performing selection before projection may be useful if the operand is a cross product or join.  In other cases, if the selection condition is relatively expensive to compute, moving selection outside the projection may reduce the number of tuples which must be tested (since projection may produce fewer tuples due to the elimination of duplicates resulting from omitted fields).
+
+
+  
+    
+      
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        
+          Ï
+          
+            A
+          
+        
+        (
+        R
+        )
+        )
+        =
+        
+          Ï
+          
+            A
+          
+        
+        (
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        )
+        )
+        
+          Â where fields inÂ 
+        
+        A
+        â
+        {
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+        }
+      
+    
+    {\displaystyle \pi _{a_{1},\ldots ,a_{n}}(\sigma _{A}(R))=\sigma _{A}(\pi _{a_{1},\ldots ,a_{n}}(R)){\text{ where fields in }}A\subseteq \{a_{1},\ldots ,a_{n}\}}
+  
+
+Projection[edit]
+Basic projection properties[edit]
+Projection is idempotent, so that a series of (valid) projections is equivalent to the outermost projection.
+
+
+  
+    
+      
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        
+          Ï
+          
+            
+              b
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              b
+              
+                m
+              
+            
+          
+        
+        (
+        R
+        )
+        )
+        =
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        )
+        
+          Â whereÂ 
+        
+        {
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+        }
+        â
+        {
+        
+          b
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          b
+          
+            m
+          
+        
+        }
+      
+    
+    {\displaystyle \pi _{a_{1},\ldots ,a_{n}}(\pi _{b_{1},\ldots ,b_{m}}(R))=\pi _{a_{1},\ldots ,a_{n}}(R){\text{ where }}\{a_{1},\ldots ,a_{n}\}\subseteq \{b_{1},\ldots ,b_{m}\}}
+  
+
+Projection and set operators[edit]
+Projection is distributive over set union.
+
+
+  
+    
+      
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        âª
+        P
+        )
+        =
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        R
+        )
+        âª
+        
+          Ï
+          
+            
+              a
+              
+                1
+              
+            
+            ,
+            â¦
+            ,
+            
+              a
+              
+                n
+              
+            
+          
+        
+        (
+        P
+        )
+        .
+        
+      
+    
+    {\displaystyle \pi _{a_{1},\ldots ,a_{n}}(R\cup P)=\pi _{a_{1},\ldots ,a_{n}}(R)\cup \pi _{a_{1},\ldots ,a_{n}}(P).\,}
+  
+
+Projection does not distribute over intersection and set difference. Counterexamples are given by:
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        b
+        â©
+        }
+        â©
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        
+          b
+          â²
+        
+        â©
+        }
+        )
+        =
+        â
+      
+    
+    {\displaystyle \pi _{A}(\{\langle A=a,B=b\rangle \}\cap \{\langle A=a,B=b'\rangle \})=\emptyset }
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        b
+        â©
+        }
+        )
+        â©
+        
+          Ï
+          
+            A
+          
+        
+        (
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        
+          b
+          â²
+        
+        â©
+        }
+        )
+        =
+        {
+        â¨
+        A
+        =
+        a
+        â©
+        }
+      
+    
+    {\displaystyle \pi _{A}(\{\langle A=a,B=b\rangle \})\cap \pi _{A}(\{\langle A=a,B=b'\rangle \})=\{\langle A=a\rangle \}}
+  
+
+and
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        b
+        â©
+        }
+        â
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        
+          b
+          â²
+        
+        â©
+        }
+        )
+        =
+        {
+        â¨
+        A
+        =
+        a
+        â©
+        }
+      
+    
+    {\displaystyle \pi _{A}(\{\langle A=a,B=b\rangle \}\setminus \{\langle A=a,B=b'\rangle \})=\{\langle A=a\rangle \}}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            A
+          
+        
+        (
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        b
+        â©
+        }
+        )
+        â
+        
+          Ï
+          
+            A
+          
+        
+        (
+        {
+        â¨
+        A
+        =
+        a
+        ,
+        B
+        =
+        
+          b
+          â²
+        
+        â©
+        }
+        )
+        =
+        â
+        
+        ,
+      
+    
+    {\displaystyle \pi _{A}(\{\langle A=a,B=b\rangle \})\setminus \pi _{A}(\{\langle A=a,B=b'\rangle \})=\emptyset \,,}
+  
+
+where b is assumed to be distinct from b'.
+
+Rename[edit]
+Basic rename properties[edit]
+Successive renames of a variable can be collapsed into a single rename.  Rename operations which have no variables in common can be arbitrarily reordered with respect to one another, which can be exploited to make successive renames adjacent so that they can be collapsed.
+
+
+  
+    
+      
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        
+          Ï
+          
+            b
+            
+              /
+            
+            c
+          
+        
+        (
+        R
+        )
+        )
+        =
+        
+          Ï
+          
+            a
+            
+              /
+            
+            c
+          
+        
+        (
+        R
+        )
+        
+        
+      
+    
+    {\displaystyle \rho _{a/b}(\rho _{b/c}(R))=\rho _{a/c}(R)\,\!}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        
+          Ï
+          
+            c
+            
+              /
+            
+            d
+          
+        
+        (
+        R
+        )
+        )
+        =
+        
+          Ï
+          
+            c
+            
+              /
+            
+            d
+          
+        
+        (
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        )
+        )
+        
+        
+      
+    
+    {\displaystyle \rho _{a/b}(\rho _{c/d}(R))=\rho _{c/d}(\rho _{a/b}(R))\,\!}
+  
+
+Rename and set operators[edit]
+Rename is distributive over set difference, union, and intersection.
+
+
+  
+    
+      
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        â
+        P
+        )
+        =
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        )
+        â
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        P
+        )
+      
+    
+    {\displaystyle \rho _{a/b}(R\setminus P)=\rho _{a/b}(R)\setminus \rho _{a/b}(P)}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        âª
+        P
+        )
+        =
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        )
+        âª
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        P
+        )
+      
+    
+    {\displaystyle \rho _{a/b}(R\cup P)=\rho _{a/b}(R)\cup \rho _{a/b}(P)}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        â©
+        P
+        )
+        =
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        R
+        )
+        â©
+        
+          Ï
+          
+            a
+            
+              /
+            
+            b
+          
+        
+        (
+        P
+        )
+      
+    
+    {\displaystyle \rho _{a/b}(R\cap P)=\rho _{a/b}(R)\cap \rho _{a/b}(P)}
+  
+
+Product and union[edit]
+Cartesian product is distributive over union.
+
+
+  
+    
+      
+        (
+        A
+        Ã
+        B
+        )
+        âª
+        (
+        A
+        Ã
+        C
+        )
+        =
+        A
+        Ã
+        (
+        B
+        âª
+        C
+        )
+      
+    
+    {\displaystyle (A\times B)\cup (A\times C)=A\times (B\cup C)}
+  
+
+Implementations[edit]
+The first query language to be based on Codd's algebra was Alpha, developed by Dr. Codd himself. Subsequently, ISBL was created, and this pioneering work has been acclaimed by many authorities[15] as having shown the way to make Codd's idea into a useful language. Business System 12 was a short-lived industry-strength relational DBMS that followed the ISBL example.
+In 1998 Chris Date and Hugh Darwen proposed a language called Tutorial D intended for use in teaching relational database theory, and its query language also draws on ISBL's ideas. Rel is an implementation of Tutorial D.
+Even the query language of SQL is loosely based on a relational algebra, though the operands in SQL (tables) are not exactly relations and several useful theorems about the relational algebra do not hold in the SQL counterpart (arguably to the detriment of optimisers and/or users). The SQL table model is a bag (multiset), rather than a set. For example, the expression 
+  
+    
+      
+        (
+        R
+        âª
+        S
+        )
+        â
+        T
+        =
+        (
+        R
+        â
+        T
+        )
+        âª
+        (
+        S
+        â
+        T
+        )
+      
+    
+    {\displaystyle (R\cup S)\setminus T=(R\setminus T)\cup (S\setminus T)}
+  
+ is a theorem for relational algebra on sets, but not for relational algebra on bags; for a treatment of relational algebra on bags see chapter 5 of the "Complete" textbook by Garcia-Molina, Ullman and Widom.[12]
+
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Cartesian product
+D (data language specification)
+D4 (programming language) (an implementation of D)
+Database
+Logic of relatives
+Object-role modeling
+Projection (mathematics)
+Projection (relational algebra)
+Projection (set theory)
+Relation
+Relation (database)
+Relation algebra
+Relation composition
+Relation construction
+Relational calculus
+Relational database
+Relational model
+Theory of relations
+Triadic relation
+Tutorial D
+Tuple relational calculus
+SQL
+Datalog
+Codd's theorem
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Silberschatz, Abraham; Henry F. Korth; S. Sudarshan (2020). Database system concepts (SeventhÂ ed.). New York. p.Â 56. ISBNÂ 978-0-07-802215-9. OCLCÂ 1080554130.
+
+^ In Unicode, the bowtie symbol is â (U+22C8).
+
+^ In Unicode, the ltimes symbol is â (U+22C9). The rtimes symbol is â (U+22CA)
+
+^ Codd, E.F. (June 1970). "A Relational Model of Data for Large Shared Data Banks". Communications of the ACM. 13 (6): 377â387. doi:10.1145/362384.362685.
+
+^ In Unicode, the Antijoin symbol is â· (U+25B7).
+
+^ M. Tamer Ãzsu; Patrick Valduriez (2011). Principles of Distributed Database Systems (3rdÂ ed.). Springer. p.Â 46. ISBNÂ 978-1-4419-8833-1.
+
+^ Patrick O'Neil; Elizabeth O'Neil (2001). Database: Principles, Programming, and Performance, Second Edition. Morgan Kaufmann. p.Â 120. ISBNÂ 978-1-55860-438-4.
+
+^ In Unicode, the Left outer join symbol is â (U+27D5).
+
+^ In Unicode, the Right outer join symbol is â (U+27D6).
+
+^ In Unicode, the Full Outer join symbol is â (U+27D7).
+
+^ C. J. Date (2011). SQL and Relational Theory: How to Write Accurate SQL Code. O'Reilly Media, Inc. pp.Â 133â135. ISBNÂ 978-1-4493-1974-8.
+
+^ Jump up to: a b Hector Garcia-Molina; Jeffrey D. Ullman; Jennifer Widom (2009). Database systems: the complete book (2ndÂ ed.). Pearson Prentice Hall. ISBNÂ 978-0-13-187325-4.
+
+^ Garcia-Molina, Hector; Ullman, Jeffrey D.; Widom, Jennifer (2009). DATABASE SYSTEMS The Complete Book. Upper Saddle River, New Jersey 07458: Pearson Education, Inc. p.Â 218. ISBNÂ 9780136067016.{{cite book}}:  CS1 maint: location (link)
+
+^ Aho, Alfred V.; Jeffrey D. Ullman (1979). "Universality of data retrieval languages". Proceedings of the 6th ACM SIGACT-SIGPLAN Symposium on Principles of Programming Languages: 110â119. doi:10.1145/567752.567763.
+
+^ C. J. Date. "Edgar F. Codd - A.M. Turing Award Laureate". amturing.acm.org. Retrieved 2020-12-27.
+
+
+Further reading[edit]
+Practically any academic textbook on databases has a detailed treatment of the classic relational algebra.
+
+ImieliÅski, T.; Lipski, W. (1984). "The relational model of data and cylindric algebras". Journal of Computer and System Sciences. 28: 80â102. doi:10.1016/0022-0000(84)90077-1. (For relationship with cylindric algebras).
+External links[edit]
+This article's use of external links may not follow Wikipedia's policies or guidelines. Please improve this article by removing excessive or inappropriate external links, and converting useful links where appropriate into footnote references.  (January 2017) (Learn how and when to remove this template message)
+RAT. Software Relational Algebra Translator to SQL
+Lecture Videos: Relational Algebra Processing - An introduction to how database systems process relational algebra
+Lecture Notes: Relational Algebra â A quick tutorial to adapt SQL queries into relational algebra
+Relational â A graphic implementation of the relational algebra
+Query Optimization (Page deleted; Closest alternatives: Standford Query Optimization 2, Microsoft research Query Optimization in relational systems, Stanford paper: Query Optimization)This paper is an introduction into the use of the relational algebra in optimizing queries, and includes numerous citations for more in-depth study.
+Relational Algebra System for Oracle and Microsoft SQL Server
+Pireal â An experimental educational tool for working with Relational Algebra
+DES â An educational tool for working with Relational Algebra and other formal languages
+RelaX - Relational Algebra Calculator (open-source software available as an online service without registration)
+RA: A Relational Algebra Interpreter
+Translating SQL to Relational Algebra
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteDatabase management systemsTypes
+Object-oriented
+comparison
+Relational
+list
+comparison
+Keyâvalue
+Column-oriented
+list
+Document-oriented
+Wide-column store
+Graph
+NoSQL
+NewSQL
+In-memory
+list
+Multi-model
+comparison
+Cloud
+Concepts
+Database
+ACID
+Armstrong's axioms
+Codd's 12 rules
+CAP theorem
+CRUD
+Null
+Candidate key
+Foreign key
+Superkey
+Surrogate key
+Unique key
+Objects
+Relation
+table
+column
+row
+View
+Transaction
+Transaction log
+Trigger
+Index
+Stored procedure
+Cursor
+Partition
+Components
+Concurrency control
+Data dictionary
+JDBC
+XQJ
+ODBC
+Query language
+Query optimizer
+Query rewriting system
+Query plan
+Functions
+Administration
+Query optimization
+Replication
+Sharding
+Related topics
+Database models
+Database normalization
+Database storage
+Distributed database
+Federated database system
+Referential integrity
+Relational algebra
+Relational calculus
+Relational database
+Relational model
+Objectârelational database
+Transaction processing
+
+ Category
+ Outline
+ WikiProject
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Relational_algebra&oldid=1069070305"
+		Categories: Database management systemsRelational algebraRelational modelHidden categories: CS1 maint: locationArticles with short descriptionShort description is different from WikidataArticles needing additional references from June 2013All articles needing additional referencesWikipedia external links cleanup from January 2017Wikipedia spam cleanup from January 2017Pages that use a deprecated format of the math tags
+	

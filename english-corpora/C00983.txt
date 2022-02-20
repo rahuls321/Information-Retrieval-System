@@ -1,0 +1,824 @@
+
+Title:
+CYK algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In computer science, the CockeâYoungerâKasami algorithm (alternatively called CYK, or CKY) is a parsing algorithm for context-free grammars published by Itiroo Sakai in 1961.[1] The algorithm is named after some of its rediscoverers: John Cocke, Daniel Younger, Tadao Kasami, and Jacob T. Schwartz. It employs  bottom-up parsing and dynamic programming.
+The standard version of CYK operates only on context-free grammars given in Chomsky normal form (CNF). However any context-free grammar may be transformed (after convention) to a CNF grammar expressing the same language (Sipser 1997).
+The importance of the CYK algorithm stems from its high efficiency in certain situations. Using Big O notation, the worst case running time of CYK is 
+  
+    
+      
+        
+          
+            O
+          
+        
+        
+          (
+          
+            
+              n
+              
+                3
+              
+            
+            â
+            
+              |
+              G
+              |
+            
+          
+          )
+        
+      
+    
+    {\displaystyle {\mathcal {O}}\left(n^{3}\cdot \left|G\right|\right)}
+  
+, where 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ is the length of the parsed string and 
+  
+    
+      
+        
+          |
+          G
+          |
+        
+      
+    
+    {\displaystyle \left|G\right|}
+  
+ is the size of the CNF grammar 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ (Hopcroft & Ullman 1979, p.Â 140). This makes it one of the most efficient parsing algorithms in terms of worst-case asymptotic complexity, although other algorithms exist with better average running time in many practical scenarios.
+
+Contents
+
+1 Standard form
+2 Algorithm
+
+2.1 As pseudocode
+
+2.1.1 Probabilistic CYK (for finding the most probable parse)
+
+
+2.2 As prose
+
+
+3 Example
+4 Extensions
+
+4.1 Generating a parse tree
+4.2 Parsing non-CNF context-free grammars
+4.3 Parsing weighted context-free grammars
+4.4 Valiant's algorithm
+
+
+5 See also
+6 References
+7 Sources
+8 External links
+
+
+
+Standard form[edit]
+The dynamic programming algorithm requires the context-free grammar to be rendered into Chomsky normal form (CNF), because it tests for possibilities to split the current sequence into two smaller sequences. Any context-free grammar that does not generate the empty string can be represented in CNF using only production rules of the forms 
+  
+    
+      
+        A
+        â
+        Î±
+      
+    
+    {\displaystyle A\rightarrow \alpha }
+  
+ and 
+  
+    
+      
+        A
+        â
+        B
+        C
+      
+    
+    {\displaystyle A\rightarrow BC}
+  
+.[citation needed]
+
+Algorithm[edit]
+As pseudocode[edit]
+The algorithm in pseudocode is as follows:
+
+let the input be a string I consisting of n characters: a1 ... an.
+let the grammar contain r nonterminal symbols R1 ... Rr, with start symbol R1.
+let P[n,n,r] be an array of booleans. Initialize all elements of P to false.
+
+for each s = 1 to n
+    for each unit production Rv â as
+        set P[1,s,v] = true
+
+for each l = 2 to n -- Length of span
+    for each s = 1 to n-l+1 -- Start of span
+        for each p = 1 to l-1 -- Partition of span
+            for each production Ra    â Rb Rc
+                if P[p,s,b] and P[l-p,s+p,c] then set P[l,s,a] = true
+
+if P[n,1,1] is true then
+    I is member of language
+else
+    I is not member of language
+
+show
+Probabilistic CYK (for finding the most probable parse)[edit]
+Allows to recover the most probable parse given the probabilities of all productions.
+
+
+let the input be a string I consisting of n characters: a1 ... an.
+let the grammar contain r nonterminal symbols R1 ... Rr, with start symbol R1.
+let P[n,n,r] be an array of real numbers. Initialize all elements of P to zero.
+let back[n,n,r] be an array of backpointing triples.
+for each s = 1 to n
+  for each unit production Rv âas
+    set P[1,s,v] = Pr(Rv âas)
+for each l = 2 to n -- Length of span
+  for each s = 1 to n-l+1 -- Start of span
+    for each p = 1 to l-1 -- Partition of span       
+      for each production Ra â Rb Rc
+        prob_splitting = Pr(Ra âRb Rc) * P[p,s,b] * P[l-p,s+p,c]
+        if P[p,s,b] > 0 and P[l-p,s+p,c] > 0 and P[l,s,a] <  prob_splitting then 
+          set P[l,s,a] = prob_splitting
+          set back[l,s,a] = <p,b,c>
+
+
+
+As prose[edit]
+In informal terms, this algorithm considers every possible substring of the input string and sets 
+  
+    
+      
+        P
+        [
+        l
+        ,
+        s
+        ,
+        v
+        ]
+      
+    
+    {\displaystyle P[l,s,v]}
+  
+ to be true if the substring of length 
+  
+    
+      
+        l
+      
+    
+    {\displaystyle l}
+  
+ starting from 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ can be generated from the nonterminal 
+  
+    
+      
+        
+          R
+          
+            v
+          
+        
+      
+    
+    {\displaystyle R_{v}}
+  
+. Once it has considered substrings of length 1, it goes on to substrings of length 2, and so on. For substrings of length 2 and greater, it considers every possible partition of the substring into two parts, and checks to see if there is some production 
+  
+    
+      
+        A
+        â
+        B
+        
+        C
+      
+    
+    {\displaystyle A\to B\;C}
+  
+ such that 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ matches the first part and 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ matches the second part. If so, it records 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ as matching the whole substring. Once this process is completed, the input string is generated by the grammar if the substring containing the entire input string is matched by the start symbol.
+
+Example[edit]
+  Sentence parsing using the CYK algorithm
+This is an example grammar:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  S
+                
+              
+              
+                Â 
+                
+                  â¶
+                  NP
+                  Â 
+                  VP
+                
+              
+            
+            
+              
+                
+                  VP
+                
+              
+              
+                Â 
+                
+                  â¶
+                  VP
+                  Â 
+                  PP
+                
+              
+            
+            
+              
+                
+                  VP
+                
+              
+              
+                Â 
+                
+                  â¶
+                  V
+                  Â 
+                  NP
+                
+              
+            
+            
+              
+                
+                  VP
+                
+              
+              
+                Â 
+                
+                  â¶
+                  eats
+                
+              
+            
+            
+              
+                
+                  PP
+                
+              
+              
+                Â 
+                
+                  â¶
+                  P
+                  Â 
+                  NP
+                
+              
+            
+            
+              
+                
+                  NP
+                
+              
+              
+                Â 
+                
+                  â¶
+                  Det
+                  Â 
+                  N
+                
+              
+            
+            
+              
+                
+                  NP
+                
+              
+              
+                Â 
+                
+                  â¶
+                  she
+                
+              
+            
+            
+              
+                
+                  V
+                
+              
+              
+                Â 
+                
+                  â¶
+                  eats
+                
+              
+            
+            
+              
+                
+                  P
+                
+              
+              
+                Â 
+                
+                  â¶
+                  with
+                
+              
+            
+            
+              
+                
+                  N
+                
+              
+              
+                Â 
+                
+                  â¶
+                  fish
+                
+              
+            
+            
+              
+                
+                  N
+                
+              
+              
+                Â 
+                
+                  â¶
+                  fork
+                
+              
+            
+            
+              
+                
+                  Det
+                
+              
+              
+                Â 
+                
+                  â¶
+                  a
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}{\ce {S}}&\ {\ce {->NP\ VP}}\\{\ce {VP}}&\ {\ce {->VP\ PP}}\\{\ce {VP}}&\ {\ce {->V\ NP}}\\{\ce {VP}}&\ {\ce {->eats}}\\{\ce {PP}}&\ {\ce {->P\ NP}}\\{\ce {NP}}&\ {\ce {->Det\ N}}\\{\ce {NP}}&\ {\ce {->she}}\\{\ce {V}}&\ {\ce {->eats}}\\{\ce {P}}&\ {\ce {->with}}\\{\ce {N}}&\ {\ce {->fish}}\\{\ce {N}}&\ {\ce {->fork}}\\{\ce {Det}}&\ {\ce {->a}}\end{aligned}}}
+  
+
+Now the sentence she eats a fish with a fork is analyzed using the CYK algorithm. In the following table, in 
+  
+    
+      
+        P
+        [
+        i
+        ,
+        j
+        ,
+        k
+        ]
+      
+    
+    {\displaystyle P[i,j,k]}
+  
+, i is the number of the row  (starting at the bottom at 1), and j is the number of the column (starting at the left at 1).
+
+
+CYK table
+
+
+S
+
+
+
+VP
+
+
+
+Â 
+
+
+
+S
+
+
+
+
+
+
+VP
+
+
+PP
+
+
+S
+
+NP
+
+
+NP
+
+
+NP
+V, VP
+Det.
+N
+P
+Det
+N
+
+
+she
+eats
+a
+fish
+with
+a
+fork
+
+For readability, the CYK table for P is represented here as a 2-dimensional matrix M containing a set of non-terminal symbols, such that Rk is in 
+  
+    
+      
+        M
+        [
+        i
+        ,
+        j
+        ]
+      
+    
+    {\displaystyle M[i,j]}
+  
+ if, and only if, 
+  
+    
+      
+        P
+        [
+        i
+        ,
+        j
+        ,
+        k
+        ]
+      
+    
+    {\displaystyle P[i,j,k]}
+  
+.
+In the above example, since a start symbol S is in 
+  
+    
+      
+        M
+        [
+        7
+        ,
+        1
+        ]
+      
+    
+    {\displaystyle M[7,1]}
+  
+, the sentence can be generated by the grammar.
+
+Extensions[edit]
+Generating a parse tree[edit]
+The above algorithm is a recognizer that will only determine if a sentence is in the language. It is simple to extend it into a parser that also constructs a parse tree, by storing parse tree nodes as elements of the array, instead of the boolean 1. The node is linked to the array elements that were used to produce it, so as to build the tree structure. Only one such node in each array element is needed if only one parse tree is to be produced. However, if all parse trees of an ambiguous sentence  are to be kept, it is necessary to store in the array element a list of all the ways the corresponding node can be obtained in the parsing process. This is sometimes done with a second table B[n,n,r] of so-called backpointers.
+The end result is then a shared-forest of possible parse trees, where common trees parts are factored between the various parses. This shared forest can conveniently be read as an ambiguous grammar generating only the sentence parsed, but with the same ambiguity as the original grammar, and the same parse trees up to a very simple renaming of non-terminals, as shown by Lang (1994).
+
+Parsing non-CNF context-free grammars[edit]
+As pointed out by Lange & LeiÃ (2009), the drawback of all known transformations into Chomsky normal form is that they can lead to an undesirable bloat in grammar size. The size of a grammar is the sum of the sizes of its production rules, where the size of a rule is one plus the length of its right-hand side. Using 
+  
+    
+      
+        g
+      
+    
+    {\displaystyle g}
+  
+ to denote the size of the original grammar, the size blow-up in the worst case may range from 
+  
+    
+      
+        
+          g
+          
+            2
+          
+        
+      
+    
+    {\displaystyle g^{2}}
+  
+ to 
+  
+    
+      
+        
+          2
+          
+            2
+            g
+          
+        
+      
+    
+    {\displaystyle 2^{2g}}
+  
+, depending on the transformation algorithm used. For the use in teaching, Lange and LeiÃ propose a slight generalization of the CYK algorithm, "without compromising efficiency of the algorithm, clarity of its presentation, or simplicity of proofs" (Lange & LeiÃ 2009).
+
+Parsing weighted context-free grammars[edit]
+It is also possible to extend the CYK algorithm to parse strings using weighted and stochastic context-free grammars. Weights (probabilities) are then stored in the table P instead of booleans, so P[i,j,A] will contain the minimum weight (maximum probability) that the substring from i to j can be derived from A. Further extensions of the algorithm allow all parses of a string to be enumerated from lowest to highest weight (highest to lowest probability).
+
+Valiant's algorithm[edit]
+The worst case running time of CYK is 
+  
+    
+      
+        Î
+        (
+        
+          n
+          
+            3
+          
+        
+        â
+        
+          |
+        
+        G
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle \Theta (n^{3}\cdot |G|)}
+  
+, where n is the length of the parsed string and |G| is the size of the CNF grammar G. This makes it one of the most efficient algorithms for recognizing general context-free languages in practice. Valiant (1975) gave an extension of the CYK algorithm. His algorithm computes the same parsing table
+as the CYK algorithm; yet he showed that algorithms for efficient multiplication of matrices with 0-1-entries can be utilized for performing this computation.
+Using the CoppersmithâWinograd algorithm for multiplying these matrices, this gives an asymptotic worst-case running time of 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2.38
+          
+        
+        â
+        
+          |
+        
+        G
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle O(n^{2.38}\cdot |G|)}
+  
+. However, the constant term hidden by the Big O Notation is so large that the CoppersmithâWinograd algorithm is only worthwhile for matrices that are too large to handle on present-day computers (Knuth 1997), and this approach requires subtraction and so is only suitable for recognition. The dependence on efficient matrix multiplication cannot be avoided altogether: Lee (2002) has proved that any parser for context-free grammars working in time 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            3
+            â
+            Îµ
+          
+        
+        â
+        
+          |
+        
+        G
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle O(n^{3-\varepsilon }\cdot |G|)}
+  
+ can be effectively converted into an algorithm computing the product of 
+  
+    
+      
+        (
+        n
+        Ã
+        n
+        )
+      
+    
+    {\displaystyle (n\times n)}
+  
+-matrices with 0-1-entries in time 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            3
+            â
+            Îµ
+            
+              /
+            
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{3-\varepsilon /3})}
+  
+, and this was extended by Abboud et al.[2] to apply to a constant-size grammar.
+
+See also[edit]
+GLR parser
+Earley parser
+Packrat parser
+Insideâoutside algorithm
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Grune, Dick (2008). Parsing techniquesÂ : a practical guide (2ndÂ ed.). New York: Springer. p.Â 579. ISBNÂ 978-0-387-20248-8.
+
+^ Abboud, Amir; Backurs, Arturs; Williams, Virginia Vassilevska (2015-11-05). "If the Current Clique Algorithms are Optimal, so is Valiant's Parser". arXiv:1504.01431 [cs.CC].
+
+
+Sources[edit]
+Sakai, Itiroo (1962). Syntax in universal translation. 1961 International Conference on Machine Translation of Languages and Applied Language Analysis, Teddington, England. Vol.Â II. London: Her Majestyâs Stationery Office. pp.Â 593â608.
+Cocke, John; Schwartz, Jacob T. (April 1970). Programming languages and their compilers: Preliminary notes (PDF) (Technical report) (2nd revisedÂ ed.). CIMS, NYU.
+Hopcroft, John E.; Ullman, Jeffrey D. (1979). Introduction to Automata Theory, Languages, and Computation. Reading/MA: Addison-Wesley. ISBNÂ 0-201-02988-X.
+Kasami, T. (1965). An efficient recognition and syntax-analysis algorithm for context-free languages (Technical report). AFCRL. 65-758.
+Knuth, Donald E. (November 14, 1997). The Art of Computer Programming Volume 2: Seminumerical Algorithms (3rdÂ ed.). Addison-Wesley Professional. p.Â 501. ISBNÂ 0-201-89684-2.
+Lang, Bernard (1994). "Recognition can be harder than parsing". Comput. Intell. 10 (4): 486â494. CiteSeerXÂ 10.1.1.50.6982. doi:10.1111/j.1467-8640.1994.tb00011.x. S2CIDÂ 5873640.
+Lange, Martin; LeiÃ, Hans (2009). "To CNF or not to CNF? An Efficient Yet Presentable Version of the CYK Algorithm". Informatica Didactica. 8.
+Lee, Lillian (2002). "Fast context-free grammar parsing requires fast Boolean matrix multiplication". J. ACM. 49 (1): 1â15. arXiv:cs/0112018. doi:10.1145/505241.505242. S2CIDÂ 1243491.
+Sipser, Michael (1997). Introduction to the Theory of Computation (1stÂ ed.). IPS. p.Â 99. ISBNÂ 0-534-94728-X.
+Valiant, Leslie G. (1975). "General context-free recognition in less than cubic time". J. Comput. Syst. Sci. 10 (2): 308â314. doi:10.1016/s0022-0000(75)80046-8.
+Younger, Daniel H. (February 1967). "Recognition and parsing of context-free languages in time n3". Inform. Control. 10 (2): 189â208. doi:10.1016/s0019-9958(67)80007-x.
+External links[edit]
+CYK parsing demo in JavaScript
+Exorciser is a Java application to generate exercises in the CYK algorithm as well as Finite State Machines, Markov algorithms etc
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteParsing algorithmsTop-down
+LL
+Recursive descent
+Tail recursive
+Pratt parser
+Bottom-up
+Precedence
+Simple
+Operator
+Shunting-yard
+Bounded-context
+LR
+Simple
+Look-ahead
+Canonical
+Generalized
+CYK
+Recursive ascent
+Shift-reduce
+Mixed, other
+Combinator
+Chart
+Earley
+Related topics
+PEG
+Definite clause grammar
+Deterministic parsing
+Dynamic programming
+Memoization
+Parser generator
+LALR
+Parse tree
+AST
+Scannerless parsing
+History of compiler construction
+Comparison of parser generators
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=CYK_algorithm&oldid=1068609882"
+		Categories: Parsing algorithmsHidden categories: All articles with unsourced statementsArticles with unsourced statements from September 2021Pages that use a deprecated format of the chem tags
+	

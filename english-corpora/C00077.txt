@@ -1,0 +1,1011 @@
+
+Title:
+DiffieâHellman key exchange
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Method of exchanging cryptographic keys
+  In the DiffieâHellman key exchange scheme, each party generates a public/private key pair and distributes the public key. After obtaining an authentic copy of each other's public keys, Alice and Bob can compute a shared secret offline. The shared secret can be used, for instance, as the key for a symmetric cipher.
+DiffieâHellman key exchange[nb 1] is a method of securely exchanging cryptographic keys over a public channel and was one of the first public-key protocols as conceived by Ralph Merkle and named after Whitfield Diffie and Martin Hellman.[1][2] DH is one of the earliest practical examples of public key exchange implemented within the field of cryptography. Published in 1976 by Diffie and Hellman, this is the earliest publicly known work that proposed the idea of a private key and a corresponding public key.
+Traditionally, secure encrypted communication between two parties required that they first exchange keys by some secure physical means, such as paper key lists transported by a trusted courier. The DiffieâHellman key exchange method allows two parties that have no prior knowledge of each other to jointly establish a shared secret key over an insecure channel. This key can then be used to encrypt subsequent communications using a symmetric-key cipher.
+DiffieâHellman is used to secure a variety of Internet services. However, research published in October 2015 suggests that the parameters in use for many DH Internet applications at that time are not strong enough to prevent compromise by very well-funded attackers, such as the security services of some countries.[3]
+The scheme was published by Whitfield Diffie and Martin Hellman in 1976,[2] but in 1997 it was revealed that James H. Ellis,[4] Clifford Cocks, and Malcolm J. Williamson of GCHQ, the British signals intelligence agency, had previously shown in 1969[5] how public-key cryptography could be achieved.[6]
+Although DiffieâHellman key agreement itself is a non-authenticated key-agreement protocol, it provides the basis for a variety of authenticated protocols, and is used to provide forward secrecy in Transport Layer Security's ephemeral modes (referred to as EDH or DHE depending on the cipher suite).
+The method was followed shortly afterwards by RSA, an implementation of public-key cryptography using asymmetric algorithms.
+Expired U.S. Patent 4,200,770 from 1977 describes the now public-domain algorithm. It credits Hellman, Diffie, and Merkle as inventors.
+
+Contents
+
+1 Name
+2 Description
+
+2.1 General overview
+2.2 Cryptographic explanation
+2.3 Secrecy chart
+2.4 Generalization to finite cyclic groups
+
+
+3 Ephemeral and/or Static Keys
+
+3.1 Triple Diffie-Hellman (3-DH)
+
+
+4 Operation with more than two parties
+5 Security
+
+5.1 Practical attacks on Internet traffic
+
+
+6 Other uses
+
+6.1 Encryption
+6.2 Forward secrecy
+6.3 Password-authenticated key agreement
+6.4 Public key
+
+
+7 See also
+8 Notes
+9 References
+
+9.1 General references
+
+
+10 External links
+
+
+
+Name[edit]
+In 2002, Hellman suggested the algorithm be called DiffieâHellmanâMerkle key exchange in recognition of Ralph Merkle's contribution to the invention of public-key cryptography (Hellman, 2002), writing:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}The system...has since become known as DiffieâHellman key exchange. While that system was first described in a paper by Diffie and me, it is a public key distribution system, a concept developed by Merkle, and hence should be called 'DiffieâHellmanâMerkle key exchange' if names are to be associated with it. I hope this small pulpit might help in that endeavor to recognize Merkle's equal contribution to the invention of public key cryptography.[7]
+Description[edit]
+General overview[edit]
+  Illustration of the concept behind DiffieâHellman key exchange
+DiffieâHellman key exchange establishes a shared secret between two parties that can be used for secret communication for exchanging data over a public network. An analogy illustrates the concept of public key exchange by using colors instead of very large numbers:
+The process begins by having the two parties, Alice and Bob, publicly agree on an arbitrary starting color that does not need to be kept secret (but should be different every time[3]). In this example, the color is yellow. Each person also selects a secret color that they keep to themselves â in this case, red and blue-green. The crucial part of the process is that Alice and Bob each mix their own secret color together with their mutually shared color, resulting in orange-tan and light-blue mixtures respectively, and then publicly exchange the two mixed colors. Finally, each of them mixes the color they received from the partner with their own private color. The result is a final color mixture (yellow-brown in this case) that is identical to their partner's final color mixture.
+If a third party listened to the exchange, it would only know the common color (yellow) and the first mixed colors (orange-tan and light-blue), but it would be difficult for this party to determine the final secret color (yellow-brown). Bringing the analogy back to a real-life exchange using large numbers rather than colors, this determination is computationally expensive. It is impossible to compute in a practical amount of time even for modern supercomputers.
+
+Cryptographic explanation[edit]
+The simplest and the original implementation[2] of the protocol uses the multiplicative group of integers modulo p, where p is prime, and g is a primitive root modulo p. These two values are chosen in this way to ensure that the resulting shared secret can take on any value from 1 to pâ1. Here is an example of the protocol, with non-secret values in blue, and secret values in red.
+
+Alice and Bob publicly agree to use a modulus p = 23 and base g = 5 (which is a primitive root modulo 23).
+Alice chooses a secret integer a = 4, then sends Bob A = ga mod p
+A = 54 mod 23 = 4
+Bob chooses a secret integer b = 3, then sends Alice B = gb mod p
+B = 53 mod 23 = 10
+Alice computes s = Ba mod p
+s = 104 mod 23 = 18
+Bob computes s = Ab mod p
+s = 43 mod 23 = 18
+Alice and Bob now share a secret (the number 18).
+Both Alice and Bob have arrived at the same values because under mod p,
+
+
+  
+    
+      
+        
+          
+            
+              A
+            
+          
+          
+            
+              b
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+        =
+        
+          
+            
+              g
+            
+          
+          
+            
+              a
+              b
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+        =
+        
+          
+            
+              g
+            
+          
+          
+            
+              b
+              a
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+        =
+        
+          
+            
+              B
+            
+          
+          
+            
+              a
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+      
+    
+    {\displaystyle {\color {Blue}A}^{\color {Red}b}{\bmod {\color {Blue}p}}={\color {Blue}g}^{\color {Red}ab}{\bmod {\color {Blue}p}}={\color {Blue}g}^{\color {Red}ba}{\bmod {\color {Blue}p}}={\color {Blue}B}^{\color {Red}a}{\bmod {\color {Blue}p}}}
+  
+
+More specifically,
+
+
+  
+    
+      
+        (
+        
+          
+            
+              g
+            
+          
+          
+            
+              a
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+        
+          )
+          
+            
+              b
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+        =
+        (
+        
+          
+            
+              g
+            
+          
+          
+            
+              b
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+        
+          )
+          
+            
+              a
+            
+          
+        
+        
+          mod
+          
+            
+              p
+            
+          
+        
+      
+    
+    {\displaystyle ({\color {Blue}g}^{\color {Red}a}{\bmod {\color {Blue}p}})^{\color {Red}b}{\bmod {\color {Blue}p}}=({\color {Blue}g}^{\color {Red}b}{\bmod {\color {Blue}p}})^{\color {Red}a}{\bmod {\color {Blue}p}}}
+  
+
+Only a and b are kept secret. All the other values â p, g, ga mod p, and gb mod p â are sent in the clear. The strength of the scheme comes from the fact that gab mod p = gba mod p take extremely long times to compute by any known algorithm just from the knowledge of p, g, ga mod p, and gb mod p. Once Alice and Bob compute the shared secret they can use it as an encryption key, known only to them, for sending messages across the same open communications channel.
+Of course, much larger values of a, b, and p would be needed to make this example secure, since there are only 23 possible results of n mod 23. However, if p is a prime of at least 600 digits, then even the fastest modern computers using the fastest known algorithm cannot find a given only g, p and ga mod p. Such a problem is called the discrete logarithm problem.[3] The computation of ga mod p is known as modular exponentiation and can be done efficiently even for large numbers.
+Note that g need not be large at all, and in practice is usually a small integer (like 2, 3, ...).
+
+Secrecy chart[edit]
+The chart below depicts who knows what, again with non-secret values in blue, and secret values in red. Here Eve is an eavesdropper â she watches what is sent between Alice and Bob, but she does not alter the contents of their communications.
+
+g = public (prime) base, known to Alice, Bob, and Eve. g = 5
+p = public (prime) modulus, known to Alice, Bob, and Eve. p = 23
+a = Alice's private key, known only to Alice. a = 6
+b = Bob's private key known only to Bob. b = 15
+A = Alice's public key, known to Alice, Bob, and Eve. A = ga mod p = 8
+B = Bob's public key, known to Alice, Bob, and Eve. B = gb mod p = 19
+
+
+
+
+
+Alice
+
+
+Known
+
+Unknown
+
+
+p = 23
+
+
+
+
+g = 5
+
+
+
+
+a = 6
+
+b
+
+
+A = 5a mod 23
+
+
+
+
+A = 56 mod 23 = 8
+
+
+
+
+B = 19
+
+
+
+
+s = Ba mod 23
+
+
+
+
+s = 196 mod 23 = 2
+
+
+
+
+
+
+Bob
+
+
+Known
+
+Unknown
+
+
+p = 23
+
+
+
+
+g = 5
+
+
+
+
+b = 15
+
+a
+
+
+B = 5b mod 23
+
+
+
+
+B = 515 mod 23 = 19
+
+
+
+
+A = 8
+
+
+
+
+s = Ab mod 23
+
+
+
+
+s = 815 mod 23 = 2
+
+
+
+
+
+
+Eve
+
+
+Known
+
+Unknown
+
+
+p = 23
+
+
+
+
+g = 5
+
+
+
+
+
+
+a, b
+
+
+Â 
+
+Â 
+
+
+Â 
+
+Â 
+
+
+A = 8, B = 19
+
+
+
+
+Â 
+
+Â 
+
+
+
+
+s
+
+
+Now s is the shared secret key and it is known to both Alice and Bob, but not to Eve. Note that it is not helpful for Eve to compute AB, which equals ga + b mod p.
+Note: It should be difficult for Alice to solve for Bob's private key or for Bob to solve for Alice's private key. If it is not difficult for Alice to solve for Bob's private key (or vice versa), Eve may simply substitute her own private / public key pair, plug Bob's public key into her private key, produce a fake shared secret key, and solve for Bob's private key (and use that to solve for the shared secret key. Eve may attempt to choose a public / private key pair that will make it easy for her to solve for Bob's private key).
+Another demonstration of DiffieâHellman (also using numbers too small for practical use) is given here.[8]
+
+Generalization to finite cyclic groups[edit]
+Here is a more general description of the protocol:[9]
+
+Alice and Bob agree on a finite cyclic group G of order n and a generating element g in G. (This is usually done long before the rest of the protocol; g is assumed to be known by all attackers.) The group G is written multiplicatively.
+Alice picks a random natural number a with 1 < a < n, and sends the element ga of G to Bob.
+Bob picks a random natural number b with 1 < b < n, and sends the element gb of G to Alice.
+Alice computes the element (gb)a = gba of G.
+Bob computes the element (ga)b = gab of G.
+Both Alice and Bob are now in possession of the group element gab = gba, which can serve as the shared secret key. The group G satisfies the requisite condition for secure communication if there is not an efficient algorithm for determining gab given g, ga, and gb.
+For example, the elliptic curve DiffieâHellman protocol is a variant that represents an element of G as a point on an elliptic curve instead of as an integer modulo n.Â Variants using hyperelliptic curves have also been proposed. The supersingular isogeny key exchange is a DiffieâHellman variant that has been designed to be secure against quantum computers.
+
+Ephemeral and/or Static Keys[edit]
+The used keys can either be ephemeral or static (long term) key, but could even be mixed, so called semi-static DH. These variants have different properties and hence different use cases. An overview over many variants and some also discussions can for example be found in NIST SP 800-56A. Here just a basic list:
+
+ephemeral, ephemeral: Usually used for key agreement. Provides forward secrecy, but no authenticity.
+static, static: Would generate a long term shared secret. Does not provide forward secrecy, but implicit authenticity. Since the keys are static it would for example not protect against replay-attacks.
+ephemeral, static: For example used in ElGamal encryption or Integrated Encryption Scheme (IES). If used in key agreement it could provide implicit one-sided authenticity (the ephemeral side could verify the authenticity of the static side). No forward secrecy is provided.
+It is possible to use ephemeral and static keys in one key agreement to provide more security as for example shown in NIST SP 800-56A, but it is also possible to combine those in a single DH key exchange, which is then called triple DH (3-DH).
+
+Triple Diffie-Hellman (3-DH)[edit]
+Already 1997 a kind of double DH was proposed by Simon Blake-Wilson, Don Johnson, Alfred Menezes in "Key Agreement Protocols and their Security Analysis (1997)",[10] which was improved by C. Kudla and K. G. Paterson in âModular Security Proofs for Key Agreement Protocols (2005)â[11] and shown to be secure. It's also used or mentioned in other variants e.g. in: 
+
+Extended Triple Diffie-Hellman
+sci.crypt news group (from 18.08.2002)[12]
+Double Ratchet Algorithm
+Signal Protocol
+...
+The way it works is actually rather simple. Let's denote the long term secret keys of Alice and Bob by a and b resp. with public keys A and B, as well as the ephemeral key pairs x, X and y, Y. Then protocol is:
+
+
+Triple Diffie-Hellman (3-DH) Protocol
+
+
+Alice (
+  
+    
+      
+        A
+        =
+        
+          g
+          
+            a
+          
+        
+      
+    
+    {\displaystyle A=g^{a}}
+  
+)
+
+
+
+Bob (
+  
+    
+      
+        B
+        =
+        
+          g
+          
+            b
+          
+        
+      
+    
+    {\displaystyle B=g^{b}}
+  
+)
+
+
+
+  
+    
+      
+        X
+        =
+        
+          g
+          
+            x
+          
+        
+      
+    
+    {\displaystyle X=g^{x}}
+  
+
+
+
+  
+    
+      
+        X
+        â
+      
+    
+    {\displaystyle X\Rightarrow }
+  
+
+
+
+
+
+
+
+
+  
+    
+      
+        â
+        Y
+      
+    
+    {\displaystyle \Leftarrow Y}
+  
+
+
+
+  
+    
+      
+        Y
+        =
+        
+          g
+          
+            y
+          
+        
+      
+    
+    {\displaystyle Y=g^{y}}
+  
+
+
+
+
+  
+    
+      
+        K
+        =
+        K
+        D
+        F
+        (
+        
+          Y
+          
+            x
+          
+        
+        ,
+        
+          B
+          
+            x
+          
+        
+        ,
+        
+          Y
+          
+            a
+          
+        
+        ,
+        X
+        ,
+        Y
+        ,
+        A
+        ,
+        B
+        )
+      
+    
+    {\displaystyle K=KDF(Y^{x},B^{x},Y^{a},X,Y,A,B)}
+  
+
+
+
+
+
+  
+    
+      
+        K
+        =
+        K
+        D
+        F
+        (
+        
+          X
+          
+            y
+          
+        
+        ,
+        
+          X
+          
+            b
+          
+        
+        ,
+        
+          A
+          
+            y
+          
+        
+        ,
+        X
+        ,
+        Y
+        ,
+        A
+        ,
+        B
+        )
+      
+    
+    {\displaystyle K=KDF(X^{y},X^{b},A^{y},X,Y,A,B)}
+  
+
+
+Of course also the long term public keys need to be transferred somehow, but that could be done before or even encrypted using some partial key agreement to preserve anonymity. For more of such details as well as other improvements like side channel protection or explicit key confirmation as well as early messages and additional password authentication one could e.g. have a look at "Advanced modular handshake for key agreement and optional authentication"[13]
+
+Operation with more than two parties[edit]
+DiffieâHellman key agreement is not limited to negotiating a key shared by only two participants. Any number of users can take part in an agreement by performing iterations of the agreement protocol and exchanging intermediate data (which does not itself need to be kept secret). For example, Alice, Bob, and Carol could participate in a DiffieâHellman agreement as follows, with all operations taken to be modulo p:
+
+The parties agree on the algorithm parameters p and g.
+The parties generate their private keys, named a, b, and c.
+Alice computes ga and sends it to Bob.
+Bob computes (ga)b = gab and sends it to Carol.
+Carol computes (gab)c = gabc and uses it as her secret.
+Bob computes gb and sends it to Carol.
+Carol computes (gb)c = gbc and sends it to Alice.
+Alice computes (gbc)a = gbca = gabc and uses it as her secret.
+Carol computes gc and sends it to Alice.
+Alice computes (gc)a = gca and sends it to Bob.
+Bob computes (gca)b = gcab = gabc and uses it as his secret.
+An eavesdropper has been able to see ga, gb, gc, gab, gac, and gbc, but cannot use any combination of these to efficiently reproduce gabc.
+To extend this mechanism to larger groups, two basic principles must be followed:
+
+Starting with an "empty" key consisting only of g, the secret is made by raising the current value to every participant's private exponent once, in any order (the first such exponentiation yields the participant's own public key).
+Any intermediate value (having up to N-1 exponents applied, where N is the number of participants in the group) may be revealed publicly, but the final value (having had all N exponents applied) constitutes the shared secret and hence must never be revealed publicly. Thus, each user must obtain their copy of the secret by applying their own private key last (otherwise there would be no way for the last contributor to communicate the final key to its recipient, as that last contributor would have turned the key into the very secret the group wished to protect).
+These principles leave open various options for choosing in which order participants contribute to keys. The simplest and most obvious solution is to arrange the N participants in a circle and have N keys rotate around the circle, until eventually every key has been contributed to by all N participants (ending with its owner) and each participant has contributed to N keys (ending with their own). However, this requires that every participant perform N modular exponentiations.
+By choosing a more optimal order, and relying on the fact that keys can be duplicated, it is possible to reduce the number of modular exponentiations performed by each participant to log2(N) + 1 using a divide-and-conquer-style approach, given here for eight participants:
+
+Participants A, B, C, and D each perform one exponentiation, yielding gabcd; this value is sent to E, F, G, and H. In return, participants A, B, C, and D receive gefgh.
+Participants A and B each perform one exponentiation, yielding gefghab, which they send to C and D, while C and D do the same, yielding gefghcd, which they send to A and B.
+Participant A performs an exponentiation, yielding gefghcda, which it sends to B; similarly, B sends gefghcdb to A. C and D do similarly.
+Participant A performs one final exponentiation, yielding the secret gefghcdba = gabcdefgh, while B does the same to get gefghcdab = gabcdefgh; again, C and D do similarly.
+Participants E through H simultaneously perform the same operations using gabcd as their starting point.
+Once this operation has been completed all participants will possess the secret gabcdefgh, but each participant will have performed only four modular exponentiations, rather than the eight implied by a simple circular arrangement.
+
+Security[edit]
+The protocol is considered secure against eavesdroppers if G and g are chosen properly. In particular, the order of the group G must be large, particularly if the same group is used for large amounts of traffic. The eavesdropper has to solve the DiffieâHellman problem to obtain gab. This is currently considered difficult for groups whose order is large enough. An efficient algorithm to solve the discrete logarithm problem would make it easy to compute a or b and solve the DiffieâHellman problem, making this and many other public key cryptosystems insecure. Fields of small characteristic may be less secure.[14]
+The order of G should have a large prime factor to prevent use of the PohligâHellman algorithm to obtain a or b. For this reason, a Sophie Germain prime q is sometimes used to calculate p = 2q + 1, called a safe prime, since the order of G is then only divisible by 2 and q. g is then sometimes chosen to generate the order q subgroup of G, rather than G, so that the Legendre symbol of ga never reveals the low order bit of a. A protocol using such a choice is for example IKEv2.[15]
+g is often a small integer such as 2. Because of the random self-reducibility of the discrete logarithm problem a small g is equally secure as any other generator of the same group.
+If Alice and Bob use random number generators whose outputs are not completely random and can be predicted to some extent, then it is much easier to eavesdrop.
+In the original description, the DiffieâHellman exchange by itself does not provide authentication of the communicating parties and is thus vulnerable to a man-in-the-middle attack. Mallory (an active attacker executing the man-in-the-middle attack) may establish two distinct key exchanges, one with Alice and the other with Bob, effectively masquerading as Alice to Bob, and vice versa, allowing her to decrypt, then re-encrypt, the messages passed between them. Note that Mallory must continue to be in the middle, actively decrypting and re-encrypting messages every time Alice and Bob communicate. If she is ever absent, her previous presence is then revealed to Alice and Bob. They will know that all of their private conversations had been intercepted and decoded by someone in the channel. In most cases it will not help them get Mallory's private key, even if she used the same key for both exchanges.
+A method to authenticate the communicating parties to each other is generally needed to prevent this type of attack. Variants of DiffieâHellman, such as STS protocol, may be used instead to avoid these types of attacks.
+
+Practical attacks on Internet traffic[edit]
+The number field sieve algorithm, which is generally the most effective in solving the discrete logarithm problem, consists of four computational steps. The first three steps only depend on the order of the group G, not on the specific number whose finite log is desired.[16] It turns out that much Internet traffic uses one of a handful of groups that are of order 1024Â bits or less.[3] By precomputing the first three steps of the number field sieve for the most common groups, an attacker need only carry out the last step, which is much less computationally expensive than the first three steps, to obtain a specific logarithm. The Logjam attack used this vulnerability to compromise a variety of Internet services that allowed the use of groups whose order was a 512-bit prime number, so called export grade. The authors needed several thousand CPU cores for a week to precompute data for a single 512-bit prime. Once that was done, individual logarithms could be solved in about a minute using two 18-core Intel Xeon CPUs.[3]
+As estimated by the authors behind the Logjam attack, the much more difficult precomputation needed to solve the discrete log problem for a 1024-bit prime would cost on the order of $100 million, well within the budget of a large national intelligence agency such as the U.S. National Security Agency (NSA). The Logjam authors speculate that precomputation against widely reused 1024-bit DH primes is behind claims in leaked NSA documents that NSA is able to break much of current cryptography.[3]
+To avoid these vulnerabilities, the Logjam authors recommend use of elliptic curve cryptography, for which no similar attack is known. Failing that, they recommend that the order, p, of the DiffieâHellman group should be at least 2048Â bits. They estimate that the pre-computation required for a 2048-bit prime is 109 times more difficult than for 1024-bit primes.[3]
+
+Other uses[edit]
+Encryption[edit]
+Public key encryption schemes based on the DiffieâHellman key exchange have been proposed. The first such scheme is the ElGamal encryption. A more modern variant is the Integrated Encryption Scheme.
+
+Forward secrecy[edit]
+Protocols that achieve forward secrecy generate new key pairs for each session and discard them at the end of the session. The DiffieâHellman key exchange is a frequent choice for such protocols, because of its fast key generation.
+
+Password-authenticated key agreement[edit]
+When Alice and Bob share a password, they may use a password-authenticated key agreement (PK) form of DiffieâHellman to prevent man-in-the-middle attacks. One simple scheme is to compare the hash of s concatenated with the password calculated independently on both ends of channel. A feature of these schemes is that an attacker can only test one specific password on each iteration with the other party, and so the system provides good security with relatively weak passwords. This approach is described in ITU-T Recommendation X.1035, which is used by the G.hn home networking standard.
+An example of such a protocol is the Secure Remote Password protocol.
+
+Public key[edit]
+It is also possible to use DiffieâHellman as part of a public key infrastructure, allowing Bob to encrypt a message so that only Alice will be able to decrypt it, with no prior communication between them other than Bob having trusted knowledge of Alice's public key. Alice's public key is 
+  
+    
+      
+        (
+        
+          g
+          
+            a
+          
+        
+        
+          mod
+          
+            p
+          
+        
+        ,
+        g
+        ,
+        p
+        )
+      
+    
+    {\displaystyle (g^{a}{\bmod {p}},g,p)}
+  
+. To send her a message, Bob chooses a random b and then sends Alice 
+  
+    
+      
+        
+          g
+          
+            b
+          
+        
+        
+          mod
+          
+            p
+          
+        
+      
+    
+    {\displaystyle g^{b}{\bmod {p}}}
+  
+ (unencrypted) together with the message encrypted with symmetric key 
+  
+    
+      
+        (
+        
+          g
+          
+            a
+          
+        
+        
+          )
+          
+            b
+          
+        
+        
+          mod
+          
+            p
+          
+        
+      
+    
+    {\displaystyle (g^{a})^{b}{\bmod {p}}}
+  
+. Only Alice can determine the symmetric key and hence decrypt the message because only she has a (the private key). A pre-shared public key also prevents man-in-the-middle attacks.
+In practice, DiffieâHellman is not used in this way, with RSA being the dominant public key algorithm. This is largely for historical and commercial reasons,[citation needed] namely that RSA Security created a certificate authority for key signing that became Verisign. DiffieâHellman, as elaborated above, cannot directly be used to sign certificates. However, the ElGamal and DSA signature algorithms are mathematically related to it, as well as MQV, STS and the IKE component of the IPsec protocol suite for securing Internet Protocol communications.
+
+See also[edit]
+Elliptic-curve DiffieâHellman key exchange
+Supersingular isogeny key exchange
+Forward secrecy
+Notes[edit]
+
+^ Synonyms of DiffieâHellman key exchange include:
+DiffieâHellmanâMerkle key exchange
+DiffieâHellman key agreement
+DiffieâHellman key establishment
+DiffieâHellman key negotiation
+Exponential key exchange
+DiffieâHellman protocol
+DiffieâHellman handshake
+
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Merkle, Ralph C. (April 1978). "Secure Communications Over Insecure Channels". Communications of the ACM. 21 (4): 294â299. CiteSeerXÂ 10.1.1.364.5157. doi:10.1145/359460.359473. S2CIDÂ 6967714. Received August, 1975; revised September 1977
+
+^ Jump up to: a b c Diffie, Whitfield; Hellman, Martin E. (November 1976). "New Directions in Cryptography" (PDF). IEEE Transactions on Information Theory. 22 (6): 644â654. CiteSeerXÂ 10.1.1.37.9720. doi:10.1109/TIT.1976.1055638. Archived (PDF) from the original on 2014-11-29.
+
+^ Jump up to: a b c d e f g Adrian, David;  etÂ al. (October 2015). "Imperfect Forward Secrecy: How DiffieâHellman Fails in Practice" (PDF).
+
+^ Ellis, J. H. (January 1970). "The possibility of Non-Secret digital encryption" (PDF). CESG Research Report. Archived from the original (PDF) on 2014-10-30. Retrieved 2015-08-28.
+
+^ "The Possibility of Secure Non-Secret Digital Encryption" (PDF). Archived (PDF) from the original on 2017-02-16. Retrieved 2017-07-08.
+
+^ "GCHQ trio recognised for key to secure shopping online". BBC News. 5 October 2010. Archived from the original on 10 August 2014. Retrieved 5 August 2014.
+
+^ Hellman, Martin E. (May 2002), "An overview of public key cryptography" (PDF), IEEE Communications Magazine, 40 (5): 42â49, CiteSeerXÂ 10.1.1.127.2652, doi:10.1109/MCOM.2002.1006971, S2CIDÂ 9504647, archived (PDF) from the original on 2016-04-02
+
+^ Buchanan, Bill, "DiffieâHellman Example in ASP.NET", Bill's Security Tips, archived from the original on 2011-08-27, retrieved 2015-08-27
+
+^ Buchmann, Johannes A. (2013). Introduction to Cryptography (SecondÂ ed.). Springer Science+Business Media. pp.Â 190â191. ISBNÂ 978-1-4419-9003-7.
+
+^ Blake-Wilson, Simon; Johnson, Don; Menezes, Alfred (1997), Key Agreement Protocols and their Security Analysis, retrieved 2021-11-25
+
+^ Kudla, Caroline; Paterson, Kenneth G. (2005).  Roy, Bimal (ed.). "Modular Security Proofs for Key Agreement Protocols". Advances in Cryptology - ASIACRYPT 2005. Lecture Notes in Computer Science. Berlin, Heidelberg: Springer: 549â565. doi:10.1007/11593447_30. ISBNÂ 978-3-540-32267-2.
+
+^ "Triple Diffie-Hellman (ECC compatible). Any attacks against it?". groups.google.com. Retrieved 2021-11-25.
+
+^ .mw-parser-output .citation{word-wrap:break-word}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}US11025421B2, Fay, Bjorn, "Advanced modular handshake for key agreement and optional authentication", issued 2021-06-01Â 
+
+^ Barbulescu, Razvan; Gaudry, Pierrick; Joux, Antoine; ThomÃ©, Emmanuel (2014). "A Heuristic Quasi-Polynomial Algorithm for Discrete Logarithm in Finite Fields of Small Characteristic" (PDF). Advances in Cryptology â EUROCRYPT 2014. Proceedings 33rd Annual International Conference on the Theory and Applications of Cryptographic Techniques. Lecture Notes in Computer Science. Vol.Â 8441. Copenhagen, Denmark. pp.Â 1â16. doi:10.1007/978-3-642-55220-5_1. ISBNÂ 978-3-642-55220-5.
+
+^ "RFC 4306 Internet Key Exchange (IKEv2) Protocol". Internet Engineeringrg/web/20150107073645/http://www.ietf.org/rfc/rfc4306.txt.
+
+^ Whitfield Diffie, Paul C. Van Oorschot, and Michael J. Wiener "Authentication and Authenticated Key Exchanges", in Designs, Codes and Cryptography, 2, 107â125 (1992), Section 5.2, available as Appendix B to U.S. Patent 5,724,425
+
+
+General references[edit]
+Gollman, Dieter (2011). Computer Security (2ndÂ ed.). West Sussex, England: John Wiley & Sons, Ltd. ISBNÂ 978-0470741153.
+Williamson, Malcolm J. (January 21, 1974). Non-secret encryption using a finite field (PDF) (Technical report). Communications Electronics Security Group. Retrieved 2017-03-22.
+Williamson, Malcolm J. (August 10, 1976). Thoughts on Cheaper Non-Secret Encryption (PDF) (Technical report). Communications Electronics Security Group. Retrieved 2015-08-25.
+The History of Non-Secret Encryption JH Ellis 1987 (28K PDF file) (HTML version)
+The First Ten Years of Public-Key Cryptography Whitfield Diffie, Proceedings of the IEEE, vol. 76, no. 5, May 1988, pp: 560â577 (1.9MB PDF file)
+Menezes, Alfred; van Oorschot, Paul; Vanstone, Scott (1997). Handbook of Applied Cryptography Boca Raton, Florida: CRC Press. ISBNÂ 0-8493-8523-7. (Available online)
+Singh, Simon (1999) The Code Book: the evolution of secrecy from Mary Queen of Scots to quantum cryptography New York: Doubleday ISBNÂ 0-385-49531-5
+An Overview of Public Key Cryptography Martin E. Hellman, IEEE Communications Magazine, May 2002, pp.Â 42â49. (123kB PDF file)
+External links[edit]
+This article's use of external links may not follow Wikipedia's policies or guidelines. Please improve this article by removing excessive or inappropriate external links, and converting useful links where appropriate into footnote references.  (March 2016) (Learn how and when to remove this template message)
+Oral history interview with Martin Hellman, Charles Babbage Institute, University of Minnesota. Leading cryptography scholar Martin Hellman discusses the circumstances and fundamental insights of his invention of public key cryptography with collaborators Whitfield Diffie and Ralph Merkle at Stanford University in the mid-1970s.
+RFCÂ 2631 â DiffieâHellman Key Agreement Method. E. Rescorla. June 1999.
+RFCÂ 3526 â More Modular Exponential (MODP) DiffieâHellman groups for Internet Key Exchange (IKE). T. Kivinen, M. Kojo, SSH Communications Security. May 2003.
+Summary of ANSI X9.42: Agreement of Symmetric Keys Using Discrete Logarithm Cryptography (64K PDF file) (Description of ANSI 9 Standards)
+Talk by Martin Hellman in 2007, YouTube video
+Crypto dream team Diffie & Hellman wins $1M 2015 Turing Award (a.k.a. "Nobel Prize of Computing")
+A DiffieâHellman demo written in Python3Â â  This demo properly supports very-large key data and enforces the use of prime numbers where required.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vtePublic-key cryptographyAlgorithmsInteger factorization
+Benaloh
+BlumâGoldwasser
+CayleyâPurser
+DamgÃ¥rdâJurik
+GMR
+GoldwasserâMicali
+NaccacheâStern
+Paillier
+Rabin
+RSA
+OkamotoâUchiyama
+SchmidtâSamoa
+Discrete logarithm
+BLS
+CramerâShoup
+DH
+DSA
+Curve25519
+ECDH
+ECDSA
+EdDSA
+ECMQV
+EKE
+ElGamal
+signature scheme
+MQV
+Schnorr
+SPEKE
+SRP
+STS
+Lattice/SVP/CVP/LWE/SIS
+NTRUEncrypt
+NTRUSign
+RLWE-KEX
+RLWE-SIG
+BLISS
+NewHope
+Others
+AE
+CEILIDH
+EPOC
+HFE
+IES
+Lamport
+McEliece
+MerkleâHellman
+NaccacheâStern knapsack cryptosystem
+Three-pass protocol
+XTR
+Theory
+Discrete logarithm
+Elliptic-curve cryptography
+Non-commutative cryptography
+RSA problem
+Trapdoor function
+Standardization
+CRYPTREC
+IEEE P1363
+NESSIE
+NSA Suite B
+Post-Quantum Cryptography
+Topics
+Digital signature
+OAEP
+Fingerprint
+PKI
+Web of trust
+Key size
+Identity-based cryptography
+Post-quantum cryptography
+OpenPGP card
+showvteCryptography
+History of cryptography
+Outline of cryptography
+Cryptographic protocol
+Authentication protocol
+Cryptographic primitive
+Cryptanalysis
+Cryptocurrency
+Cryptosystem
+Cryptographic nonce
+Cryptovirology
+Hash function
+Cryptographic hash function
+Key derivation function
+Digital signature
+Kleptography
+Key (cryptography)
+Key exchange
+Key generator
+Key schedule
+Key stretching
+Keygen
+Cryptojacking malware
+Ransomware
+Random number generation
+Cryptographically secure pseudorandom number generator (CSPRNG)
+Pseudorandom noise (PRN)
+Secure channel
+Insecure channel
+Subliminal channel
+Encryption
+Decryption
+End-to-end encryption
+Information-theoretic security
+Plaintext
+Codetext
+Ciphertext
+Shared secret
+Trapdoor function
+Trusted timestamping
+Key-based routing
+Onion routing
+Garlic routing
+Kademlia
+Mix network
+
+Cryptographic hash function
+Block cipher
+Stream cipher
+Symmetric-key algorithm
+Public-key cryptography
+Quantum key distribution
+Quantum cryptography
+Post-quantum cryptography
+Message authentication code
+Random numbers
+Steganography
+
+ Category
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=DiffieâHellman_key_exchange&oldid=1067420527"
+		Categories: Key-agreement protocolsPublic-key cryptographyHidden categories: Articles with short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from November 2015Wikipedia external links cleanup from March 2016Wikipedia spam cleanup from March 2016
+	

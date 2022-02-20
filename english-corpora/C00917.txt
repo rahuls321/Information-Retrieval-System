@@ -1,0 +1,924 @@
+
+Title:
+IEEE 754-1985
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		First edition of the IEEE 754 floating-point standard
+IEEE 754-1985[1] was an industry standard for representing floating-point numbers in computers, officially adopted in 1985 and superseded in 2008 by IEEE 754-2008, and then again in 2019 by minor revision IEEE 754-2019.[2] During its 23 years, it was the most widely used format for floating-point computation. It was implemented in software, in the form of floating-point libraries, and in hardware, in the instructions of many CPUs and FPUs. The first integrated circuit to implement the draft of what was to become IEEEÂ 754-1985 was the Intel 8087.
+IEEE 754-1985 represents numbers in binary, providing definitions for four levels of precision, of which the two most commonly used are:
+
+
+
+
+Level
+
+Width
+
+Range at full precision
+
+Precision[a]
+
+
+Single precision
+
+32 bits
+
+Â±1.18Ã10â38 to Â±3.4Ã1038
+
+Approximately 7 decimal digits
+
+
+Double precision
+
+64 bits
+
+Â±2.23Ã10â308 to Â±1.80Ã10308
+
+Approximately 16 decimal digits
+
+The standard also defines representations for positive and negative infinity, a "negative zero", five exceptions to handle invalid results like division by zero, special values called NaNs for representing those exceptions, denormal numbers to represent numbers smaller than shown above, and four rounding modes.
+
+Contents
+
+1 Representation of numbers
+
+1.1 Zero
+1.2 Denormalized numbers
+
+
+2 Representation of non-numbers
+
+2.1 Positive and negative infinity
+2.2 NaN
+
+
+3 Range and precision
+
+3.1 Single precision
+3.2 Double precision
+3.3 Extended formats
+
+
+4 Examples
+5 Comparing floating-point numbers
+6 Rounding floating-point numbers
+7 Extending the real numbers
+8 Functions and predicates
+
+8.1 Standard operations
+8.2 Recommended functions and predicates
+
+
+9 History
+10 See also
+11 Notes
+12 References
+13 Further reading
+14 External links
+
+
+
+Representation of numbers[edit]
+  The number 0.15625 represented as a single-precision IEEE 754-1985 floating-point number. See text for explanation.
+  The three fields in a 64bit IEEE 754 float
+Floating-point numbers in IEEEÂ 754 format consist of three fields: a sign bit, a biased exponent, and a fraction. The following example illustrates the meaning of each.
+The decimal number 0.1562510 represented in binary is 0.001012 (that is, 1/8 + 1/32). (Subscripts indicate the number base.) Analogous to scientific notation, where numbers are written to have a single non-zero digit to the left of the decimal point, we rewrite this number so it has a single 1 bit to the left of the "binary point". We simply multiply by the appropriate power of 2 to compensate for shifting the bits left by three positions:
+
+
+  
+    
+      
+        
+          0.00101
+          
+            2
+          
+        
+        =
+        
+          1.01
+          
+            2
+          
+        
+        Ã
+        
+          2
+          
+            â
+            3
+          
+        
+      
+    
+    {\displaystyle 0.00101_{2}=1.01_{2}\times 2^{-3}}
+  
+
+Now we can read off the fraction and the exponent: the fraction is .012 and the exponent is â3.
+As illustrated in the pictures, the three fields in the IEEEÂ 754 representation of this number are:
+
+sign = 0, because the number is positive. (1 indicates negative.)
+biased exponent = â3 + the "bias". In single precision, the bias is 127, so in this example the biased exponent is 124; in double precision, the bias is 1023, so the biased exponent in this example is 1020.
+fraction = .01000â¦2.
+IEEEÂ 754 adds a bias to the exponent so that numbers can in many cases be compared conveniently by the same hardware that compares signed 2's-complement integers. Using a biased exponent, the lesser of two positive floating-point numbers will come out "less than" the greater following the same ordering as for sign and magnitude integers. If two floating-point numbers have different signs, the sign-and-magnitude comparison also works with biased exponents. However, if both biased-exponent floating-point numbers are negative, then the ordering must be reversed. If the exponent were represented as, say, a 2's-complement number, comparison to see which of two numbers is greater would not be as convenient.
+The leading 1 bit is omitted since all numbers except zero start with a leading 1; the leading 1 is implicit and doesn't actually need to be stored which gives an extra bit of precision for "free."
+
+Zero[edit]
+The number zero is represented specially:
+
+sign = 0 for positive zero, 1 for negative zero.
+biased exponent = 0.
+fraction = 0.
+Denormalized numbers[edit]
+The number representations described above are called normalized, meaning that the implicit leading binary digit is a 1. To reduce the loss of precision when an underflow occurs, IEEEÂ 754 includes the ability to represent fractions smaller than are possible in the normalized representation, by making the implicit leading digit a 0. Such numbers are called denormal. They don't include as many significant digits as a normalized number, but they enable a gradual loss of precision when the result of an operation is not exactly zero but is too close to zero to be represented by a normalized number.
+A denormal number is represented with a biased exponent of all 0 bits, which represents an exponent of â126 in single precision (not â127), or â1022 in double precision (not â1023).[3] In contrast, the smallest biased exponent representing a normal number is 1 (see examples below).
+
+Representation of non-numbers[edit]
+The biased-exponent field is filled with all 1 bits to indicate either infinity or an invalid result of a computation.
+
+Positive and negative infinity[edit]
+Positive and negative infinity are represented thus:
+
+sign = 0 for positive infinity, 1 for negative infinity.
+biased exponent = all 1 bits.
+fraction = all 0 bits.
+NaN[edit]
+Some operations of floating-point arithmetic are invalid, such as taking the square root of a negative number. The act of reaching an invalid result is called a floating-point exception. An exceptional result is represented by a special code called a NaN, for "Not a Number". All NaNs in IEEEÂ 754-1985 have this format:
+
+sign = either 0 or 1.
+biased exponent = all 1 bits.
+fraction = anything except all 0 bits (since all 0 bits represents infinity).
+Range and precision[edit]
+  Relative precision of single (binary32) and double precision (binary64) numbers, compared with decimal representations using a fixed number of significant digits. Relative precision is defined here as ulp(x)/x, where ulp(x) is the unit in the last place in the representation of x, i.e. the gap between x and the next representable number.
+Precision is defined as the minimum difference between two successive mantissa representations; thus it is a function only in the mantissa; while the gap is defined as the difference between two successive numbers.[4]
+
+Single precision[edit]
+Single-precision numbers occupy 32 bits. In single precision:
+
+The positive and negative numbers closest to zero (represented by the denormalized value with all 0s in the exponent field and the binary value 1 in the fraction field) are
+Â±2â23 Ã 2â126 â Â±1.40130Ã10â45
+The positive and negative normalized numbers closest to zero (represented with the binary value 1 in the exponent field and 0 in the fraction field) are
+Â±1 Ã 2â126 â Â±1.17549Ã10â38
+The finite positive and finite negative numbers furthest from zero (represented by the value with 254 in the exponent field and all 1s in the fraction field) are
+Â±(2â2â23) Ã 2127[5] â Â±3.40282Ã1038
+Some example range and gap values for given exponents in single precision:
+
+
+
+
+Actual Exponent (unbiased)
+
+Exp (biased)
+
+Minimum
+
+Maximum
+
+Gap
+
+
+â1
+
+126
+
+0.5
+
+â 0.999999940395
+
+â 5.96046e-8
+
+
+0
+
+127
+
+1
+
+â 1.999999880791
+
+â 1.19209e-7
+
+
+1
+
+128
+
+2
+
+â 3.999999761581
+
+â 2.38419e-7
+
+
+2
+
+129
+
+4
+
+â 7.999999523163
+
+â 4.76837e-7
+
+
+10
+
+137
+
+1024
+
+â 2047.999877930
+
+â 1.22070e-4
+
+
+11
+
+138
+
+2048
+
+â 4095.999755859
+
+â 2.44141e-4
+
+
+23
+
+150
+
+8388608
+
+16777215
+
+1
+
+
+24
+
+151
+
+16777216
+
+33554430
+
+2
+
+
+127
+
+254
+
+â 1.70141e38
+
+â 3.40282e38
+
+â 2.02824e31
+
+As an example, 16,777,217 cannot be encoded as a 32-bit float as it will be rounded to 16,777,216. This shows why floating point arithmetic is unsuitable for accounting software.  However, all integers within the representable range that are a power of 2 can be stored in a 32-bit float without rounding.
+
+Double precision[edit]
+Double-precision numbers occupy 64 bits. In double precision:
+
+The positive and negative numbers closest to zero (represented by the denormalized value with all 0s in the Exp field and the binary value 1 in the Fraction field) are
+Â±2â52 Ã 2â1022 â Â±4.94066Ã10â324
+The positive and negative normalized numbers closest to zero (represented with the binary value 1 in the Exp field and 0 in the fraction field) are
+Â±1 Ã 2â1022 â Â±2.22507Ã10â308
+The finite positive and finite negative numbers furthest from zero (represented by the value with 2046 in the Exp field and all 1s in the fraction field) are
+Â±(2â2â52) Ã 21023[5] â Â±1.79769Ã10308
+Some example range and gap values for given exponents in double precision:
+
+
+
+
+Actual Exponent (unbiased)
+
+Exp (biased)
+
+Minimum
+
+Maximum
+
+Gap
+
+
+â1
+
+1022
+
+0.5
+
+â 0.999999999999999888978
+
+â 1.11022e-16
+
+
+0
+
+1023
+
+1
+
+â 1.999999999999999777955
+
+â 2.22045e-16
+
+
+1
+
+1024
+
+2
+
+â 3.999999999999999555911
+
+â 4.44089e-16
+
+
+2
+
+1025
+
+4
+
+â 7.999999999999999111822
+
+â 8.88178e-16
+
+
+10
+
+1033
+
+1024
+
+â 2047.999999999999772626
+
+â 2.27374e-13
+
+
+11
+
+1034
+
+2048
+
+â 4095.999999999999545253
+
+â 4.54747e-13
+
+
+52
+
+1075
+
+4503599627370496
+
+9007199254740991
+
+1
+
+
+53
+
+1076
+
+9007199254740992
+
+18014398509481982
+
+2
+
+
+1023
+
+2046
+
+â 8.98847e307
+
+â 1.79769e308
+
+â 1.99584e292
+
+Extended formats[edit]
+The standard also recommends extended format(s) to be used to perform internal computations at a higher precision than that required for the final result, to minimise round-off errors: the standard only specifies minimum precision and exponent requirements for such formats. The x87 80-bit extended format is the most commonly implemented extended format that meets these requirements.
+
+Examples[edit]
+Here are some examples of single-precision IEEE 754 representations:
+
+
+
+
+Type
+
+Sign
+
+Actual Exponent
+
+Exp (biased)
+
+Exponent field
+
+Fraction field
+
+Value
+
+
+Zero
+
+0
+
+â126
+
+0
+
+0000 0000
+
+000 0000 0000 0000 0000 0000
+
+0.0
+
+
+Negative zero
+
+1
+
+â126
+
+0
+
+0000 0000
+
+000 0000 0000 0000 0000 0000
+
+â0.0
+
+
+One
+
+0
+
+0
+
+127
+
+0111 1111
+
+000 0000 0000 0000 0000 0000
+
+1.0
+
+
+Minus One
+
+1
+
+0
+
+127
+
+0111 1111
+
+000 0000 0000 0000 0000 0000
+
+â1.0
+
+
+Smallest denormalized number
+
+*
+
+â126
+
+0
+
+0000 0000
+
+000 0000 0000 0000 0000 0001
+
+Â±2â23 Ã 2â126 = Â±2â149 â Â±1.4Ã10â45
+
+
+"Middle" denormalized number
+
+*
+
+â126
+
+0
+
+0000 0000
+
+100 0000 0000 0000 0000 0000
+
+Â±2â1 Ã 2â126 = Â±2â127 â Â±5.88Ã10â39
+
+
+Largest denormalized number
+
+*
+
+â126
+
+0
+
+0000 0000
+
+111 1111 1111 1111 1111 1111
+
+Â±(1â2â23) Ã 2â126 â Â±1.18Ã10â38
+
+
+Smallest normalized number
+
+*
+
+â126
+
+1
+
+0000 0001
+
+000 0000 0000 0000 0000 0000
+
+Â±2â126 â Â±1.18Ã10â38
+
+
+Largest normalized number
+
+*
+
+127
+
+254
+
+1111 1110
+
+111 1111 1111 1111 1111 1111
+
+Â±(2â2â23) Ã 2127 â Â±3.4Ã1038
+
+
+Positive infinity
+
+0
+
+128
+
+255
+
+1111 1111
+
+000 0000 0000 0000 0000 0000
+
++â
+
+
+Negative infinity
+
+1
+
+128
+
+255
+
+1111 1111
+
+000 0000 0000 0000 0000 0000
+
+ââ
+
+
+Not a number
+
+*
+
+128
+
+255
+
+1111 1111
+
+non zero
+
+NaN
+
+
+*  Sign bit can be either 0 or 1Â .
+
+Comparing floating-point numbers[edit]
+Every possible bit combination is either a NaN or a number with a unique value in the affinely extended real number system with its associated order, except for the two combinations of bits for negative zero and positive zero, which sometimes require special attention (see below).  The binary representation has the special property that, excluding NaNs, any two numbers can be compared as sign and magnitude integers (endianness issues apply).  When comparing as 2's-complement integers:  If the sign bits differ, the negative number precedes the positive number, so 2's complement gives the correct result (except that negative zero and positive zero should be considered equal).  If both values are positive, the 2's complement comparison again gives the correct result.  Otherwise (two negative numbers), the correct FP ordering is the opposite of the 2's complement ordering.
+Rounding errors inherent to floating point calculations may limit the use of comparisons for checking the exact equality of results.  Choosing an acceptable range is a complex topic.  A common technique is to use a comparison epsilon value to perform approximate comparisons.[6]  Depending on how lenient the comparisons are, common values include 1e-6 or 1e-5 for single-precision, and 1e-14 for double-precision.[7][8]  Another common technique is ULP, which checks what the difference is in the last place digits, effectively checking how many steps away the two values are.[9]
+Although negative zero and positive zero are generally considered equal for comparison purposes, some programming language relational operators and similar constructs treat them as distinct. According to the Java Language Specification,[10] comparison and equality operators treat them as equal, but Math.min() and Math.max() distinguish them (officially starting with Java version 1.1 but actually with 1.1.1), as do the comparison methods equals(), compareTo() and even compare() of classes Float and Double.
+
+Rounding floating-point numbers[edit]
+The IEEE standard has four different rounding modes; the first is the default; the others are called directed roundings.
+
+Round to Nearest â rounds to the nearest value; if the number falls midway it is rounded to the nearest value with an even (zero) least significant bit, which means it is rounded up 50% of the time (in IEEE 754-2008 this mode is called roundTiesToEven to distinguish it from another round-to-nearest mode)
+Round toward 0 â directed rounding towards zero
+Round toward +â â directed rounding towards positive infinity
+Round toward ââ â directed rounding towards negative infinity.
+Extending the real numbers[edit]
+The IEEE standard employs (and extends) the affinely extended real number system, with separate positive and negative infinities. During drafting, there was a proposal for the standard to incorporate the projectively extended real number system, with a single unsigned infinity, by providing programmers with a mode selection option. In the interest of reducing the complexity of the final standard, the projective mode was dropped, however. The Intel 8087 and Intel 80287 floating point co-processors both support this projective mode.[11][12][13]
+
+Functions and predicates[edit]
+Standard operations[edit]
+The following functions must be provided:
+
+Add, subtract, multiply, divide
+Square root
+Floating point remainder. This is not like a normal modulo operation, it can be negative for two positive numbers. It returns the exact value of xâ(round(x/y)Â·y).
+Round to nearest integer. For undirected rounding when halfway between two integers the even integer is chosen.
+Comparison operations. Besides the more obvious results, IEEEÂ 754 defines that ââÂ =Â ââ, +âÂ =Â +â and xÂ â Â NaN for any x (including NaN).
+Recommended functions and predicates[edit]
+copysign(x,y) returns x with the sign of y, so abs(x) equals copysign(x,1.0). This is one of the few operations which operates on a NaN in a way resembling arithmetic. The function copysign is new in the C99 standard.
+âx returns x with the sign reversed. This is different from 0âx in some cases, notably when x is 0. So â(0) is â0, but the sign of 0â0 depends on the rounding mode.
+scalb(y, N)
+logb(x)
+finite(x) a predicate for "x is a finite value", equivalent to âInf < x < Inf
+isnan(x) a predicate for "x is a NaN", equivalent to "x â  x"
+x <> y, which turns out to have different behavior than NOT(x = y) due to NaN.
+unordered(x, y) is true when "x is unordered with y", i.e., either x or y is a NaN.
+class(x)
+nextafter(x,y) returns the next representable value from x in the direction towards y
+History[edit]
+In 1976, Intel was starting the development of a floating-point coprocessor.[14][15] Intel hoped to be able to sell a chip containing good implementations of all the operations found in the widely varying maths software libraries.[14][16]
+John Palmer, who managed the project, believed the effort should be backed by a standard unifying floating point operations across disparate processors. He contacted William Kahan of the University of California, who had helped improve the accuracy of Hewlett-Packard's calculators. Kahan suggested that Intel use the floating point of Digital Equipment Corporation's (DEC) VAX. The first VAX, the VAX-11/780 had just come out in late 1977, and its floating point was highly regarded. However, seeking to market their chip to the broadest possible market, Intel wanted the best floating point possible, and Kahan went on to draw up specifications.[14] Kahan initially recommended that the floating point base be decimal[17][unreliable source?] but the hardware design of the coprocessor was too far along to make that change.
+The work within Intel worried other vendors, who set up a standardization effort to ensure a "level playing field". Kahan attended the second IEEE 754 standards working group meeting, held in November 1977. He subsequently received permission from Intel to put forward a draft proposal based on his work for their coprocessor; he was allowed to explain details of the format and its rationale, but not anything related to Intel's implementation architecture. The draft was co-written with Jerome Coonen and Harold Stone, and was initially known as the "Kahan-Coonen-Stone proposal" or "K-C-S format".[14][15][16][18]
+As an 8-bit exponent was not wide enough for some operations desired for double-precision numbers, e.g. to store the product of two 32-bit numbers,[19] both Kahan's proposal and a counter-proposal by DEC therefore used 11 bits, like the time-tested 60-bit floating-point format of the CDC 6600 from 1965.[15][18][20] Kahan's proposal also provided for infinities, which are useful when dealing with division-by-zero conditions; not-a-number values, which are useful when dealing with invalid operations; denormal numbers, which help mitigate problems caused by underflow;[18][21][22] and a better balanced exponent bias, which can help avoid overflow and underflow when taking the reciprocal of a number.[23][24]
+Even before it was approved, the draft standard had been implemented by a number of manufacturers.[25][26] The Intel 8087, which was announced in 1980, was the first chip to implement the draft standard.
+
+  Intel 8087 floating-point coprocessor
+In 1980, the Intel 8087 chip was already released,[27] but DEC remained opposed, to denormal numbers in particular, because of performance concerns and since it would give DEC a competitive advantage to standardise on DEC's format.
+The arguments over gradual underflow lasted until 1981 when an expert hired by DEC to assess it sided against the dissenters. DEC had the study done in order to demonstrate that gradual underflow was a bad idea, but the study concluded the opposite, and DEC gave in. In 1985, the standard was ratified, but it had already become the de facto standard a year earlier, implemented by many manufacturers.[15][18][28]
+
+
+See also[edit]
+IEEE 754
+Minifloat for simple examples of properties of IEEE 754 floating point numbers
+Fixed-point arithmetic
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Precision: The number of decimal digits precision is calculated via number_of_mantissa_bits * Log10(2). Thus ~7.2 and ~15.9 for single and double precision respectively.
+
+
+References[edit]
+
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}IEEE Standard for Binary Floating-Point Arithmetic. 1985. doi:10.1109/IEEESTD.1985.82928. ISBNÂ 0-7381-1165-1.
+
+^ "ANSI/IEEE Std 754-2019". 754r.ucbtest.org. Retrieved 2019-08-06.
+
+^ Hennessy (2009). Computer Organization and Design. Morgan Kaufmann. p.Â 270.
+
+^ Hossam A. H. Fahmy; Shlomo Waser; Michael J. Flynn, Computer Arithmetic (PDF), archived from the original (PDF) on 2010-10-08, retrieved 2011-01-02
+
+^ Jump up to: a b William Kahan. "Lecture Notes on the Status of IEEE 754" (PDF). October 1, 1997 3:36 am. Elect. Eng. & Computer Science University of California. Retrieved 2007-04-12. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ "Godot math_funcs.h". GitHub.com.
+
+^ "Godot math_defs.h". GitHub.com.
+
+^ "Godot MathfEx.cs". GitHub.com.
+
+^ "Comparing Floating Point Numbers, 2012 Edition". randomascii.wordpress.com.
+
+^ "Java Language and Virtual Machine Specifications". Java Documentation.
+
+^ John R. Hauser (March 1996). "Handling Floating-Point Exceptions in Numeric Programs" (PDF). ACM Transactions on Programming Languages and Systems. 18 (2): 139â174. doi:10.1145/227699.227701. S2CIDÂ 9820157.
+
+^ David Stevenson (March 1981). "IEEE Task P754: A proposed standard for binary floating-point arithmetic". IEEE Computer. 14 (3): 51â62. doi:10.1109/C-M.1981.220377.
+
+^ William Kahan and John Palmer (1979). "On a proposed floating-point standard". SIGNUM Newsletter. 14 (Special): 13â21. doi:10.1145/1057520.1057522. S2CIDÂ 16981715.
+
+^ Jump up to: a b c d "Intel and Floating-Point - Updating One of the Industry's Most Successful Standards - The Technology Vision for the Floating-Point Standard" (PDF). Intel. 2016. Archived from the original (PDF) on 2016-03-04. Retrieved 2016-05-30. (11 pages)
+
+^ Jump up to: a b c d "An Interview with the Old Man of Floating-Point". cs.berkeley.edu. 1998-02-20. Retrieved 2016-05-30.
+
+^ Jump up to: a b Woehr, Jack, ed. (1997-11-01). "A Conversation with William Kahan". Dr. Dobb's. drdobbs.com. Retrieved 2016-05-30.
+
+^ W. Kahan 2003, pers. comm. to Mike Cowlishaw and others after an IEEE 754 meeting
+
+^ Jump up to: a b c d "IEEE 754: An Interview with William Kahan" (PDF). dr-chuck.com. Retrieved 2016-06-02.
+
+^ "IEEE vs. Microsoft Binary Format; Rounding Issues (Complete)". Microsoft Support. Microsoft. 2006-11-21. Article ID KB35826, Q35826. Archived from the original on 2020-08-28. Retrieved 2010-02-24.
+
+^ Thornton, James E. (1970).  Written at Advanced Design Laboratory, Control Data Corporation. Design of a Computer: The Control Data 6600 (PDF) (1Â ed.). Glenview, Illinois, USA: Scott, Foresman and Company. LCCNÂ 74-96462. Archived (PDF) from the original on 2020-08-28. Retrieved 2016-06-02. (1+13+181+2+2 pages)
+
+^ Kahan, William Morton. "Why do we need a floating-point arithmetic standard?" (PDF). cs.berkeley.edu. Retrieved 2016-06-02.
+
+^ Kahan, William Morton; Darcy, Joseph D. "How Java's Floating-Point Hurts Everyone Everywhere" (PDF). cs.berkeley.edu. Retrieved 2016-06-02.
+
+^ Turner, Peter R. (2013-12-21). Numerical Analysis and Parallel Processing: Lectures given at The Lancaster â¦. ISBNÂ 978-3-66239812-8. Retrieved 2016-05-30.
+
+^ "Names for Standardized Floating-Point Formats" (PDF). cs.berkeley.edu. Retrieved 2016-06-02.
+
+^ Charles Severance (20 February 1998). "An Interview with the Old Man of Floating-Point".
+
+^ Charles Severance. "History of IEEE Floating-Point Format". Connexions.
+
+^ "Molecular Expressions: Science, Optics & You - Olympus MIC-D: Integrated Circuit Gallery - Intel 8087 Math Coprocessor". micro.magnet.fsu.edu. Retrieved 2016-05-30.
+
+^ Kahan, William Morton. "IEEE Standard 754 for Binary Floating-Point Arithmetic" (PDF). cs.berkeley.edu. Retrieved 2016-06-02.
+
+
+Further reading[edit]
+Charles Severance (March 1998). "IEEE 754: An Interview with William Kahan" (PDF). IEEE Computer. 31 (3): 114â115. doi:10.1109/MC.1998.660194. S2CIDÂ 33291145. Archived from the original (PDF) on 2009-08-23. Retrieved 2008-04-28.
+David Goldberg (March 1991). "What Every Computer Scientist Should Know About Floating-Point Arithmetic" (PDF). ACM Computing Surveys. 23 (1): 5â48. doi:10.1145/103162.103163. S2CIDÂ 222008826. Retrieved 2008-04-28.
+Chris Hecker (February 1996). "Let's Get To The (Floating) Point" (PDF). Game Developer Magazine: 19â24. ISSNÂ 1073-922X. Archived from the original (PDF) on 2007-02-03.
+David Monniaux (May 2008). "The pitfalls of verifying floating-point computations". ACM Transactions on Programming Languages and Systems. 30 (3): 1â41. arXiv:cs/0701192. doi:10.1145/1353445.1353446. ISSNÂ 0164-0925. S2CIDÂ 218578808.: A compendium of non-intuitive behaviours of floating-point on popular architectures, with implications for program verification and testing.
+External links[edit]
+Comparing floats
+Coprocessor.info: x87 FPU pictures, development and manufacturer information
+IEEE 854-1987 â History and minutes
+IEEE754 (Single and Double precision) Online Converter
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteIEEE standardsCurrent
+488
+730
+754
+Revision
+854
+828
+829
+896
+1003
+1014
+1016
+1076
+1149.1
+1154
+1164
+1275
+1278
+1284
+1355
+1394
+1451
+1497
+1516
+1541
+1547
+1584
+1588
+1596
+1603
+1613
+1666
+1667
+1675
+1685
+1722
+1733
+1800
+1801
+1815
+1850
+1900
+1901
+1902
+1904
+1905
+2030
+2050
+11073
+12207
+14764
+16085
+16326
+29148
+42010
+802 series802.1
+D
+p
+Q
+Qav
+Qat
+Qay
+w
+X
+ab
+ad
+AE
+ag
+ah
+ak
+aq
+AS
+ax
+az
+BA
+802.3
+-1983
+a
+b
+d
+e
+i
+j
+u
+x
+y
+z
+ab
+ac
+ad
+ae
+af
+ah
+ak
+an
+aq
+at
+av
+az
+ba
+bt
+by
+bz
+cg
+802.11
+legacy mode
+a
+b
+c
+d
+e
+f
+g
+h
+i
+j
+k
+n (Wi-Fi 4)
+p
+r
+s
+u
+v
+w
+y
+ac (Wi-Fi 5)
+ad
+af
+ah
+ai
+ax (Wi-Fi 6)
+ay
+be (Wi-Fi 7)
+
+.2
+.4
+.5
+.6
+.7
+.8
+.9
+.10
+.12
+.14
+.15
+.1
+.4
+.4a
+.6
+.16
+Original Â· d Â· e
+.17
+.18
+.20
+.21
+.22Proposed
+P1363
+P1619
+P1699
+P1823
+P1906.1
+Superseded
+754-1985
+830
+1219
+1233
+1362
+1364
+1471
+
+See also
+IEEE Standards Association
+Category:IEEE standards
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=IEEE_754-1985&oldid=1068969557"
+		Categories: Computer arithmeticIEEE standardsFloating pointComputer-related introductions in 1985Hidden categories: CS1 errors: missing periodicalCS1 location testArticles with short descriptionShort description is different from WikidataAll articles lacking reliable referencesArticles lacking reliable references from October 2016
+	

@@ -1,0 +1,422 @@
+
+Title:
+Mutual exclusion
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}For the concept in logic and probability theory, see Mutual exclusivity.
+
+
+  Two nodes, 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ and 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+, being removed simultaneously results in node 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+ not being removed.
+In computer science, mutual exclusion is a property of concurrency control, which is instituted for the purpose of preventing race conditions. It is the requirement that one thread of execution never enters a critical section while a concurrent thread of execution is already accessing critical section, which refers to an interval of time during which a thread of execution accesses a shared resource, such as [Shared data objects, shared resources, shared memory].
+The shared resource is a data object, which two or more concurrent threads are trying to modify (where two concurrent read operations are permitted but, no two concurrent write operations or one read and one write are permitted, since it leads to data inconsistency). Mutual exclusion algorithm ensures that if a process is already performing write operation on a data object [critical section] no other process/thread is allowed to access/modify the same object until the first process has finished writing upon the data object [critical section] and released the object for other processes to read and write upon.
+The requirement of mutual exclusion was first identified and solved by Edsger W. Dijkstra in his seminal 1965 paper "Solution of a problem in concurrent programming control",[1][2] which is credited as the first topic in the study of concurrent algorithms.[3]
+A simple example of why mutual exclusion is important in practice can be visualized using a singly linked list of four items, where the second and third are to be removed. The removal of a node that sits between 2 other nodes is performed by changing the next pointer of the previous node to point to the next node (in other words, if node 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ is being removed, then the next pointer of node 
+  
+    
+      
+        i
+        â
+        1
+      
+    
+    {\displaystyle i-1}
+  
+ is changed to point to node 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+, thereby removing from the linked list any reference to node 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+). When such a linked list is being shared between multiple threads of execution, two threads of execution may attempt to remove two different nodes simultaneously, one thread of execution changing the next pointer of node 
+  
+    
+      
+        i
+        â
+        1
+      
+    
+    {\displaystyle i-1}
+  
+ to point to node 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+, while another thread of execution changes the next pointer of node 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ to point to node 
+  
+    
+      
+        i
+        +
+        2
+      
+    
+    {\displaystyle i+2}
+  
+. Although both removal operations complete successfully, the desired state of the linked list is not achieved: node 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+ remains in the list, because the next pointer of node 
+  
+    
+      
+        i
+        â
+        1
+      
+    
+    {\displaystyle i-1}
+  
+ points to node 
+  
+    
+      
+        i
+        +
+        1
+      
+    
+    {\displaystyle i+1}
+  
+.
+This problem (called a race condition) can be avoided by using the requirement of mutual exclusion to ensure that simultaneous updates to the same part of the list cannot occur.
+The term mutual exclusion is also used in reference to the simultaneous writing of a memory address by one thread while the aforementioned memory address is being manipulated or read by one or more other threads.
+
+Contents
+
+1 Problem description
+2 Enforcing mutual exclusion
+
+2.1 Hardware solutions
+2.2 Software solutions
+
+
+3 Bound on the mutual exclusion problem
+4 Recoverable mutual exclusion
+5 Types of mutual exclusion devices
+6 See also
+7 References
+8 Further reading
+9 External links
+
+
+
+Problem description[edit]
+The problem which mutual exclusion addresses is a problem of resource sharing: how can a software system control multiple processes' access to a shared resource, when each process needs exclusive control of that resource while doing its work? The mutual-exclusion solution to this makes the shared resource available only while the process is in a specific code segment called the critical section. It controls access to the shared resource by controlling each mutual execution of that part of its program where the resource would be used.
+A successful solution to this problem must have at least these two properties:
+
+It must implement mutual exclusion: only one process can be in the critical section at a time.
+It must be free of deadlocks: if processes are trying to enter the critical section, one of them must eventually be able to do so successfully, provided no process stays in the critical section permanently.
+Deadlock freedom can be expanded to implement one or both of these properties:
+
+Lockout-freedom guarantees that any process wishing to enter the critical section will be able to do so eventually. This is distinct from deadlock avoidance, which requires that some waiting process be able to get access to the critical section, but does not require that every process gets a turn. If two processes continually trade a resource between them, a third process could be locked out and experience resource starvation, even though the system is not in deadlock. If a system is free of lockouts, it ensures that every process can get a turn at some point in the future.
+A k-bounded waiting property gives a more precise commitment than lockout-freedom. Lockout-freedom ensures every process can access the critical section eventually: it gives no guarantee about how long the wait will be. In practice, a process could be overtaken an arbitrary or unbounded number of times by other higher-priority processes before it gets its turn. Under a k-bounded waiting property, each process has a finite maximum wait time. This works by setting a limit to the number of times other processes can cut in line, so that no process can enter the critical section more than k times while another is waiting.[4]
+Every process's program can be partitioned into four sections, resulting in four states. Program execution cycles through these four states in order:[5]
+
+  the cycle of sections of a single process
+Non-Critical Section
+Operation is outside the critical section; the process is not using or requesting the shared resource.
+Trying
+The process attempts to enter the critical section.
+Critical Section
+The process is allowed to access the shared resource in this section.
+Exit
+The process leaves the critical section and makes the shared resource available to other processes.
+If a process wishes to enter the critical section, it must first execute the trying section and wait until it acquires access to the critical section. After the process has executed its critical section and is finished with the shared resources, it needs to execute the exit section to release them for other processes' use. The process then returns to its non-critical section.
+
+Enforcing mutual exclusion[edit]
+Hardware solutions[edit]
+On uni-processor systems, the simplest solution to achieve mutual exclusion is to disable interrupts during a process's critical section. This will prevent any interrupt service routines from running (effectively preventing a process from being preempted). Although this solution is effective, it leads to many problems. If a critical section is long, then the system clock will drift every time a critical section is executed because the timer interrupt is no longer serviced, so tracking time is impossible during the critical section. Also, if a process halts during its critical section, control will never be returned to another process, effectively halting the entire system. A more elegant method for achieving mutual exclusion is the busy-wait.
+Busy-waiting is effective for both uniprocessor and multiprocessor systems. The use of shared memory and an atomic test-and-set instruction provide the mutual exclusion. A process can test-and-set on a location in shared memory, and since the operation is atomic, only one process can set the flag at a time. Any process that is unsuccessful in setting the flag can either go on to do other tasks and try again later, release the processor to another process and try again later, or continue to loop while checking the flag until it is successful in acquiring it. Preemption is still possible, so this method allows the system to continue to functionâeven if a process halts while holding the lock.
+Several other atomic operations can be used to provide mutual exclusion of data structures; most notable of these is compare-and-swap (CAS). CAS can be used to achieve wait-free mutual exclusion for any shared data structure by creating a linked list where each node represents the desired operation to be performed. CAS is then used to change the pointers in the linked list[6] during the insertion of a new node. Only one process can be successful in its CAS; all other processes attempting to add a node at the same time will have to try again. Each process can then keep a local copy of the data structure, and upon traversing the linked list, can perform each operation from the list on its local copy.
+
+Software solutions[edit]
+In addition to hardware-supported solutions, some software solutions exist that use busy waiting to achieve mutual exclusion. Examples include:
+
+Dekker's algorithm
+Peterson's algorithm
+Lamport's bakery algorithm[7]
+SzymaÅski's algorithm
+Taubenfeld's black-white bakery algorithm[2]
+Maekawa's algorithm
+These algorithms do not work if out-of-order execution is used on the platform that executes them. Programmers have to specify strict ordering on the memory operations within a thread.[8]
+It is often preferable to use synchronization facilities provided by an operating system's multithreading library, which will take advantage of hardware solutions if possible but will use software solutions if no hardware solutions exist. For example, when the operating system's lock library is used and a thread tries to acquire an already acquired lock, the operating system could suspend the thread using a context switch and swap it out with another thread that is ready to be run, or could put that processor into a low power state if there is no other thread that can be run. Therefore, most modern mutual exclusion methods attempt to reduce latency and busy-waits by using queuing and context switches. However, if the time that is spent suspending a thread and then restoring it can be proven to be always more than the time that must be waited for a thread to become ready to run after being blocked in a particular situation, then spinlocks are an acceptable solution (for that situation only).[citation needed]
+
+Bound on the mutual exclusion problem[edit]
+One binary test&set register is sufficient to provide the deadlock-free solution to the mutual exclusion problem. But a solution built with a test&set register can possibly lead to the starvation of some processes which become caught in the trying section.[4] In fact, 
+  
+    
+      
+        Î©
+        (
+        
+          
+            n
+          
+        
+        )
+      
+    
+    {\displaystyle \Omega ({\sqrt {n}})}
+  
+ distinct memory states are required to avoid lockout. To avoid unbounded waiting, n distinct memory states are required.[9]
+
+Recoverable mutual exclusion[edit]
+Most algorithms for mutual exclusion are designed with the assumption that no failure occurs while a process is running inside the critical section. However, in reality such failures may be commonplace. For example, a sudden loss of power or faulty interconnect might cause a process in a critical section to experience an unrecoverable error or otherwise be unable to continue. If such a failure occurs, conventional, non-failure-tolerant mutual exclusion algorithms may deadlock or otherwise fail key liveness properties. To deal with this problem, several solutions using crash-recovery mechanisms have been proposed.[10]
+
+Types of mutual exclusion devices[edit]
+The solutions explained above can be used to build the synchronization primitives below:
+
+Locks (mutexes)
+Readersâwriter locks
+Recursive locks
+Semaphores
+Monitors
+Message passing
+Tuple space
+Many forms of mutual exclusion have side-effects. For example, classic semaphores permit deadlocks, in which one process gets a semaphore, another process gets a second semaphore, and then both wait till the other semaphore to be released. Other common side-effects include starvation, in which a process never gets sufficient resources to run to completion; priority inversion, in which a higher-priority thread waits for a lower-priority thread; and high latency, in which response to interrupts is not prompt.
+Much research is aimed at eliminating the above effects, often with the goal of guaranteeing non-blocking progress. No perfect scheme is known. Blocking system calls used to sleep an entire process. Until such calls became threadsafe, there was no proper mechanism for sleeping a single thread within a process (see polling).[citation needed]
+
+See also[edit]
+Atomicity (programming)
+Concurrency control
+Dining philosophers problem
+Exclusive or
+Mutually exclusive events
+Reentrant mutex
+Semaphore
+Spinlock
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Dijkstra, E. W. (1965). "Solution of a problem in concurrent programming control". Communications of the ACM. 8 (9): 569. doi:10.1145/365559.365617. S2CIDÂ 19357737.
+
+^ Jump up to: a b Taubenfeld, "The Black-White Bakery Algorithm". In Proc. Distributed Computing, 18th international conference, DISC 2004. Vol 18, 56-70, 2004
+
+^ "PODC Influential Paper Award: 2002", ACM Symposium on Principles of Distributed Computing, retrieved 24 August 2009
+
+^ Jump up to: a b Attiya, Hagit; Welch, Jennifer (25 March 2004). Distributed computing: fundamentals, simulations, and advanced topics. John Wiley & Sons, Inc. ISBNÂ 978-0-471-45324-6.
+
+^ Lamport, Leslie (26 June 2000), The Mutual Exclusion Problem Part II: Statement and Solutions (PDF)
+
+^ https://timharris.uk/papers/2001-disc.pdf
+
+^ Lamport, Leslie (August 1974). "A new solution of Dijkstra's concurrent programming problem". Communications of the ACM. 17 (8): 453â455. doi:10.1145/361082.361093. S2CIDÂ 8736023.
+
+^ Holzmann, Gerard J.; Bosnacki, Dragan (1 October 2007). "The Design of a Multicore Extension of the SPIN Model Checker" (PDF). IEEE Transactions on Software Engineering. 33 (10): 659â674. doi:10.1109/TSE.2007.70724. S2CIDÂ 9080331.
+
+^ Burns, James E.; Paul Jackson, Nancy A. Lynch (January 1982), Data Requirements for Implementation of N-Process Mutual Exclusion Using a Single Shared Variable (PDF)
+
+^ Golab, Wojciech; Ramaraju, Aditya (July 2016), Recoverable Mutual Exclusion
+
+
+Further reading[edit]
+Michel Raynal: Algorithms for Mutual Exclusion, MIT Press, ISBNÂ 0-262-18119-3
+Sunil R. Das, Pradip K. Srimani: Distributed Mutual Exclusion Algorithms, IEEE Computer Society, ISBNÂ 0-8186-3380-8
+Thomas W. Christopher, George K. Thiruvathukal: High-Performance Java Platform Computing, Prentice Hall, ISBNÂ 0-13-016164-0
+Gadi Taubenfeld, Synchronization Algorithms and Concurrent Programming, Pearson/Prentice Hall, ISBNÂ 0-13-197259-6
+External links[edit]
+Common threads: POSIX threads explained â The little things called mutexes" by Daniel Robbins
+Mutual Exclusion Petri Net at the Wayback Machine (archived 2016-06-02)
+Mutual Exclusion with Locks â an Introduction
+Mutual exclusion variants in OpenMP
+The Black-White Bakery Algorithm
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteEdsger DijkstraNotableworks
+A Primer of ALGOL 60 Programming (book)
+Structured Programming (book)
+A Discipline of Programming (book)
+A Method of Programming (book)
+Predicate Calculus and Program Semantics (book)
+Selected Writings on Computing: A Personal Perspective (book)
+A Note on Two Problems in Connexion with Graphs
+Cooperating Sequential Processes
+Solution of a Problem in Concurrent Programming Control
+The Structure of the 'THE'-Multiprogramming System
+Go To Statement Considered Harmful
+Notes on Structured Programming
+The Humble Programmer
+Programming Considered as a Human Activity
+How Do We Tell Truths That Might Hurt?
+On the Role of Scientific Thought
+Self-stabilizing Systems in Spite of Distributed Control
+On the Cruelty of Really Teaching Computer Science
+Selected papers
+EWD manuscripts
+Main researchareas
+Theoretical computing science
+Software engineering
+Systems science
+Algorithm design
+Concurrent computing
+Distributed computing
+Formal methods
+Programming methodology
+Programming language research
+Program design and development
+Software architecture
+Philosophy of computer programming and computing science
+ScientificcontributionsConcepts,methods,principlesand theories
+DijkstraâZonneveld ALGOL 60 compiler (first complete working ALGOL 60 compiler)
+Call stack
+Concurrency
+Concurrent programming
+Cooperating sequential processes
+Critical section
+Deadly embrace (deadlock)
+Dining philosophers problem
+Dutch national flag problem
+Fault-tolerant system
+Goto-less programming
+Guarded Command Language
+Layered structure in software architecture
+Levels of abstraction
+Multithreaded programming
+Mutual exclusion (mutex)
+Producerâconsumer problem (bounded buffer problem)
+Program families
+Predicate transformer semantics
+Process synchronization
+Self-stabilizing distributed system
+Semaphore (programming)
+Separation of concerns
+Sleeping barber problem
+Software crisis
+Structured analysis
+Structured programming
+THE multiprogramming system
+Unbounded nondeterminism
+Weakest precondition calculus
+Algorithms
+Banker's algorithm
+Dijkstra's algorithm
+DJP algorithm (Prim's algorithm)
+Dijkstra-Scholten algorithm
+Dekker's algorithm (generalization)
+Smoothsort
+Shunting-yard algorithm
+Tri-color marking algorithm
+Concurrent algorithms
+Distributed algorithms
+Deadlock prevention algorithms
+Mutual exclusion algorithms
+Self-stabilizing algorithms
+Relatedpeople
+Shlomi Dolev
+Per Brinch Hansen
+Tony Hoare
+Ole-Johan Dahl
+Leslie Lamport
+David Parnas
+Jaap Zonneveld
+Carel S. Scholten 
+Adriaan van Wijngaarden
+Niklaus Wirth
+Othertopics
+Centrum Wiskunde & Informatica (CWI Amsterdam)
+Electrologica X1
+Electrologica X8
+Dijkstra Prize (Edsger W. Dijkstra Prize in Distributed Computing)
+Dijkstra Fellowship
+International Symposium on Stabilization, Safety, and Security of Distributed Systems
+E.W. Dijkstra Archive (University of Texas at Austin)
+List of important publications in computer science
+List of important publications in theoretical computer science
+List of important publications in concurrent, parallel, and distributed computing
+List of pioneers in computer science
+List of people considered father or mother of a technical field
+
+ Wikiquote
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Mutual_exclusion&oldid=1040906827"
+		Categories: Concurrency controlEdsger W. DijkstraHidden categories: Use dmy dates from December 2019All articles with unsourced statementsArticles with unsourced statements from August 2015Articles with unsourced statements from May 2016Webarchive template wayback links
+	

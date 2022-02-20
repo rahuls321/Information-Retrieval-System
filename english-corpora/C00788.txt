@@ -1,0 +1,2031 @@
+
+Title:
+CurryâHoward correspondence
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Isomorphism between computer programs and constructive mathematical proofs
+.mw-parser-output .sidebar{width:22em;float:right;clear:right;margin:0.5em 0 1em 1em;background:#f8f9fa;border:1px solid #aaa;padding:0.2em;text-align:center;line-height:1.4em;font-size:88%;border-collapse:collapse;display:table}body.skin-minerva .mw-parser-output .sidebar{display:table!important;float:right!important;margin:0.5em 0 1em 1em!important}.mw-parser-output .sidebar-subgroup{width:100%;margin:0;border-spacing:0}.mw-parser-output .sidebar-left{float:left;clear:left;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-none{float:none;clear:both;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-outer-title{padding:0 0.4em 0.2em;font-size:125%;line-height:1.2em;font-weight:bold}.mw-parser-output .sidebar-top-image{padding:0.4em}.mw-parser-output .sidebar-top-caption,.mw-parser-output .sidebar-pretitle-with-top-image,.mw-parser-output .sidebar-caption{padding:0.2em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-pretitle{padding:0.4em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-title,.mw-parser-output .sidebar-title-with-pretitle{padding:0.2em 0.8em;font-size:145%;line-height:1.2em}.mw-parser-output .sidebar-title-with-pretitle{padding:0.1em 0.4em}.mw-parser-output .sidebar-image{padding:0.2em 0.4em 0.4em}.mw-parser-output .sidebar-heading{padding:0.1em 0.4em}.mw-parser-output .sidebar-content{padding:0 0.5em 0.4em}.mw-parser-output .sidebar-content-with-subgroup{padding:0.1em 0.4em 0.2em}.mw-parser-output .sidebar-above,.mw-parser-output .sidebar-below{padding:0.3em 0.8em;font-weight:bold}.mw-parser-output .sidebar-collapse .sidebar-above,.mw-parser-output .sidebar-collapse .sidebar-below{border-top:1px solid #aaa;border-bottom:1px solid #aaa}.mw-parser-output .sidebar-navbar{text-align:right;font-size:115%;padding:0 0.4em 0.4em}.mw-parser-output .sidebar-list-title{padding:0 0.4em;text-align:left;font-weight:bold;line-height:1.6em;font-size:105%}.mw-parser-output .sidebar-list-title-c{padding:0 0.4em;text-align:center;margin:0 3.3em}@media(max-width:720px){body.mediawiki .mw-parser-output .sidebar{width:100%!important;clear:both;float:none!important;margin-left:0!important;margin-right:0!important}}A proof written as a functional program
+plus_comm =
+fun n m : nat =>
+nat_ind (fun n0 : nat => n0 + m = m + n0)
+  (plus_n_0 m)
+  (fun (y : nat) (H : y + m = m + y) =>
+   eq_ind (S (m + y))
+     (fun n0 : nat => S (y + m) = n0)
+     (f_equal S H)
+     (m + S y)
+     (plus_n_Sm m y)) n
+     : forall n m : nat, n + m = m + n
+
+
+A proof of commutativity of addition on natural numbers in the proof assistant Coq.  nat_ind stands for mathematical induction, eq_ind for substitution of equals, and f_equal for taking the same function on both sides of the equality.  Earlier theorems are referenced showing 
+  
+    
+      
+        m
+        =
+        m
+        +
+        0
+      
+    
+    {\displaystyle m=m+0}
+  
+ and 
+  
+    
+      
+        S
+        (
+        m
+        +
+        y
+        )
+        =
+        m
+        +
+        S
+        y
+      
+    
+    {\displaystyle S(m+y)=m+Sy}
+  
+.
+
+In programming language theory and proof theory, the CurryâHoward correspondence (also known as the CurryâHoward isomorphism or equivalence, or the proofs-as-programs and propositions- or formulae-as-types interpretation) is the direct relationship between computer programs and mathematical proofs. 
+It is a generalization of a syntactic analogy between systems of formal logic and computational calculi that was first discovered by the American mathematician Haskell Curry and logician William Alvin Howard.[1] It is the link between logic and computation that is usually attributed to Curry and Howard, although the idea is related to the operational interpretation of intuitionistic logic given in various formulations by  L. E. J. Brouwer, Arend Heyting and Andrey Kolmogorov (see BrouwerâHeytingâKolmogorov interpretation)[2] and Stephen Kleene (see Realizability). The relationship has been extended to include category theory as the three-way CurryâHowardâLambek correspondence.
+
+Contents
+
+1 Origin, scope, and consequences
+2 General formulation
+3 Corresponding systems
+
+3.1 Hilbert-style deduction systems and combinatory logic
+3.2 Natural deduction and lambda calculus
+3.3 Classical logic and control operators
+3.4 Sequent calculus
+
+
+4 Related proofs-as-programs correspondences
+
+4.1 The role of de Bruijn
+4.2 BHK interpretation
+4.3 Realizability
+4.4 CurryâHowardâLambek correspondence
+
+
+5 Examples
+
+5.1 The identity combinator seen as a proof of Î± â Î± in Hilbert-style logic
+5.2 The composition combinator seen as a proof of (Î² â Î±) â (Î³ â Î²) â Î³ â Î± in Hilbert-style logic
+5.3 The normal proof of (Î² â Î±) â (Î³ â Î²) â Î³ â Î± in natural deduction seen as a Î»-term
+
+
+6 Other applications
+7 Generalizations
+8 References
+
+8.1 Seminal references
+8.2 Extensions of the correspondence
+8.3 Philosophical interpretations
+8.4 Synthetic papers
+8.5 Books
+
+
+9 Further reading
+10 External links
+
+
+
+Origin, scope, and consequences[edit]
+The beginnings of the CurryâHoward correspondence lie in several observations:
+
+In 1934 Curry observes that the types of the combinators could be seen as axiom-schemes for intuitionistic implicational logic.[3]
+In 1958 he observes that a certain kind of proof system, referred to as Hilbert-style deduction systems, coincides on some fragment to the typed fragment of a standard model of computation known as combinatory logic.[4]
+In 1969 Howard observes that another, more "high-level" proof system, referred to as natural deduction, can be directly interpreted in its intuitionistic version as a typed variant of the model of computation known as lambda calculus.[5]
+In other words, the CurryâHoward correspondence is the observation that two families of seemingly unrelated formalismsânamely, the proof systems on one hand, and the models of computation on the otherâare in fact the same kind of mathematical objects.
+If one abstracts on the peculiarities of either formalism, the following generalization arises: a proof is a program, and the formula it proves is the type for the program.  More informally, this can be seen as an analogy that states that the return type of a function (i.e., the type of values returned by a function) is analogous to a logical theorem, subject to hypotheses corresponding to the types of the argument values passed to the function; and that the program to compute that function is analogous to a proof of that theorem.  This sets a form of logic programming on a rigorous foundation: proofs can be represented as programs, and especially as lambda terms, or proofs can be run.
+The correspondence has been the starting point of a large spectrum of new research after its discovery, leading in particular to a new class of formal systems designed to act both as a proof system and as a typed functional programming language. This includes Martin-LÃ¶f's intuitionistic type theory and Coquand's Calculus of Constructions, two calculi in which proofs are regular objects of the discourse and in which one can state properties of proofs the same way as of any program. This field of research is usually referred to as modern type theory.
+Such typed lambda calculi derived from the CurryâHoward paradigm led to software like Coq in which proofs seen as programs can be formalized, checked, and run.
+A converse direction is to use a program to extract a proof, given its correctnessâan area of research closely related to proof-carrying code.  This is only feasible if the programming language the program is written for is very richly typed:  the development of such type systems has been partly motivated by the wish to make the CurryâHoward correspondence practically relevant.
+The CurryâHoward correspondence also raised new questions regarding the computational content of proof concepts that were not covered by the original works of Curry and Howard. In particular, classical logic has been shown to correspond to the ability to manipulate the continuation of programs and the symmetry of sequent calculus to express the duality between the two evaluation strategies known as call-by-name and call-by-value.
+Speculatively, the CurryâHoward correspondence might be expected to lead to a substantial unification between mathematical logic and foundational computer science:
+Hilbert-style logic and natural deduction are but two kinds of proof systems among a large family of formalisms. Alternative syntaxes include sequent calculus, proof nets, calculus of structures, etc. If one admits the CurryâHoward correspondence as the general principle that any proof system hides a model of computation, a theory of the underlying untyped computational structure of these kinds of proof system should be possible. Then, a natural question is whether something mathematically interesting can be said about these underlying computational calculi.
+Conversely, combinatory logic and simply typed lambda calculus are not the only models of computation, either.  Girard's linear logic was developed from the fine analysis of the use of resources in some models of lambda calculus; is there typed version of Turing's machine that would behave as a proof system? Typed assembly languages are such an instance of "low-level" models of computation that carry types.
+Because of the possibility of writing non-terminating programs, Turing-complete models of computation (such as languages with arbitrary recursive functions) must be interpreted with care, as naive application of the correspondence leads to an inconsistent logic.  The best way of dealing with arbitrary computation from a logical point of view is still an actively debated research question, but one popular approach is based on using monads to segregate provably terminating from potentially non-terminating code (an approach that also generalizes to much richer models of computation,[6] and is itself related to modal logic by a natural extension of the CurryâHoward isomorphism[ext 1]).  A more radical approach, advocated by total functional programming, is to eliminate unrestricted recursion (and forgo Turing completeness, although still retaining high computational complexity), using more controlled corecursion wherever non-terminating behavior is actually desired.
+
+General formulation[edit]
+In its more general formulation, the CurryâHoward correspondence is a correspondence between formal proof calculi and type systems for models of computation. In particular, it splits into two correspondences. One at the level of formulas and types that is independent of which particular proof system or model of computation is considered, and one at the level of proofs and programs which, this time, is specific to the particular choice of proof system and model of computation considered.
+At the level of formulas and types, the correspondence says that implication behaves the same as a function type, conjunction as a "product" type (this may be called a tuple, a struct, a list, or some other term depending on the language), disjunction as a sum type (this type may be called a union), the false formula as the empty type and the true formula as the singleton type (whose sole member is the null object). Quantifiers correspond to dependent function space or products (as appropriate). 
+This is summarized in the following table:
+
+
+
+Logic side
+
+Programming side
+
+
+universal quantification
+generalised product type (Î  type)
+
+
+existential quantification
+generalised sum type (Î£ type)
+
+
+implication
+function type
+
+
+conjunction
+product type
+
+
+disjunction
+sum type
+
+
+true formula
+unit type
+
+
+false formula
+bottom type
+
+
+At the level of proof systems and models of computations, the correspondence mainly shows the identity of structure, first, between some particular formulations of systems known as Hilbert-style deduction system and combinatory logic, and, secondly, between some particular formulations of systems known as natural deduction and lambda calculus.
+
+
+
+Logic side
+
+Programming side
+
+
+Hilbert-style deduction system
+type system for combinatory logic
+
+
+natural deduction
+type system for lambda calculus
+
+Between the natural deduction system and the lambda calculus there are the following correspondences:
+
+
+
+Logic side
+
+Programming side
+
+
+hypotheses
+free variables
+
+
+implication elimination (modus ponens)
+application
+
+
+implication introduction
+abstraction
+
+Corresponding systems[edit]
+Hilbert-style deduction systems and combinatory logic[edit]
+It was at the beginning a simple remark in Curry and Feys's 1958 book on combinatory logic: the simplest types for the basic combinators K and S of combinatory logic surprisingly corresponded to the respective axiom schemes Î± â (Î² â Î±) and (Î± â (Î² â Î³)) â ((Î± â Î²) â (Î± â Î³)) used in Hilbert-style deduction systems. For this reason, these schemes are now often called axioms K and S. Examples of programs seen as proofs in a Hilbert-style logic are given below.
+If one restricts to the implicational intuitionistic fragment, a simple way to formalize logic in Hilbert's style is as follows. Let Î be a finite collection of formulas, considered as hypotheses. Then Î´ is derivable from Î, denoted Î â¢ Î´, in the following cases:
+
+Î´ is an hypothesis, i.e. it is a formula of Î,
+Î´ is an instance of an axiom scheme; i.e., under the most common axiom system:
+Î´ has the form Î± â (Î² â Î±), or
+Î´ has the form (Î± â (Î² â Î³)) â ((Î± â Î²) â (Î± â Î³)),
+Î´ follows by deduction, i.e., for some Î±, both Î± â Î´ and Î± are already derivable from Î (this is the rule of modus ponens)
+This can be formalized using inference rules, as in the left column of the following table.
+Typed combinatory logic can be formulated using a similar syntax: let Î be a finite collection of variables, annotated with their types. A term T (also annotated with its type) will depend on these variables [Î â¢ T:Î´] when:
+
+T is one of the variables in Î,
+T is a basic combinator; i.e., under the most common combinator basis:
+T is K:Î± â (Î² â Î±) [where Î± and Î² denote the types of its arguments], or
+T is S:(Î± â (Î² â Î³)) â ((Î± â Î²) â (Î± â Î³)),
+T is the composition of two subterms which depend on the variables in Î.
+The generation rules defined here are given in the right-column below. Curry's remark simply states that both columns are in one-to-one correspondence. The restriction of the correspondence to intuitionistic logic means that some classical tautologies, such as Peirce's law ((Î± â Î²) â Î±) â Î±, are excluded from the correspondence.
+
+
+
+Hilbert-style intuitionistic implicational logic
+
+Simply typed combinatory logic
+
+
+
+  
+    
+      
+        
+          
+            
+              Î±
+              â
+              Î
+            
+            
+              Î
+              â¢
+              Î±
+            
+          
+        
+        
+        
+        
+          Assum
+        
+      
+    
+    {\displaystyle {\frac {\alpha \in \Gamma }{\Gamma \vdash \alpha }}\qquad \qquad {\text{Assum}}}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              x
+              :
+              Î±
+              â
+              Î
+            
+            
+              Î
+              â¢
+              x
+              :
+              Î±
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {x:\alpha \in \Gamma }{\Gamma \vdash x:\alpha }}}
+  
+
+
+
+
+  
+    
+      
+        
+          
+            
+            
+              Î
+              â¢
+              Î±
+              â
+              (
+              Î²
+              â
+              Î±
+              )
+            
+          
+        
+        
+        
+          
+            Ax
+          
+          
+            K
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\Gamma \vdash \alpha \rightarrow (\beta \rightarrow \alpha )}}\qquad {\text{Ax}}_{K}}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+            
+              Î
+              â¢
+              K
+              :
+              Î±
+              â
+              (
+              Î²
+              â
+              Î±
+              )
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\Gamma \vdash K:\alpha \rightarrow (\beta \rightarrow \alpha )}}}
+  
+
+
+
+
+  
+    
+      
+        
+          
+            
+            
+              Î
+              â¢
+              (
+              Î±
+              
+              â
+              
+              (
+              Î²
+              
+              â
+              
+              Î³
+              )
+              )
+              
+              â
+              
+              (
+              (
+              Î±
+              
+              â
+              
+              Î²
+              )
+              
+              â
+              
+              (
+              Î±
+              
+              â
+              
+              Î³
+              )
+              )
+            
+          
+        
+        
+        
+          
+            Ax
+          
+          
+            S
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\Gamma \vdash (\alpha \!\rightarrow \!(\beta \!\rightarrow \!\gamma ))\!\rightarrow \!((\alpha \!\rightarrow \!\beta )\!\rightarrow \!(\alpha \!\rightarrow \!\gamma ))}}\;{\text{Ax}}_{S}}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+            
+              Î
+              â¢
+              S
+              :
+              (
+              Î±
+              
+              â
+              
+              (
+              Î²
+              
+              â
+              
+              Î³
+              )
+              )
+              
+              â
+              
+              (
+              (
+              Î±
+              
+              â
+              
+              Î²
+              )
+              
+              â
+              
+              (
+              Î±
+              
+              â
+              
+              Î³
+              )
+              )
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\Gamma \vdash S:(\alpha \!\rightarrow \!(\beta \!\rightarrow \!\gamma ))\!\rightarrow \!((\alpha \!\rightarrow \!\beta )\!\rightarrow \!(\alpha \!\rightarrow \!\gamma ))}}}
+  
+
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              â¢
+              Î±
+              â
+              Î²
+              
+              Î
+              â¢
+              Î±
+            
+            
+              Î
+              â¢
+              Î²
+            
+          
+        
+        
+        
+          Modus Ponens
+        
+      
+    
+    {\displaystyle {\frac {\Gamma \vdash \alpha \rightarrow \beta \qquad \Gamma \vdash \alpha }{\Gamma \vdash \beta }}\quad {\text{Modus Ponens}}}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              â¢
+              
+                E
+                
+                  1
+                
+              
+              :
+              Î±
+              â
+              Î²
+              
+              Î
+              â¢
+              
+                E
+                
+                  2
+                
+              
+              :
+              Î±
+            
+            
+              Î
+              â¢
+              
+                E
+                
+                  1
+                
+              
+              
+              
+                E
+                
+                  2
+                
+              
+              :
+              Î²
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {\Gamma \vdash E_{1}:\alpha \rightarrow \beta \qquad \Gamma \vdash E_{2}:\alpha }{\Gamma \vdash E_{1}\;E_{2}:\beta }}}
+  
+
+
+Seen at a more abstract level, the correspondence can be restated as shown in the following table. Especially, the deduction theorem specific to Hilbert-style logic matches the process of abstraction elimination of combinatory logic.
+
+
+
+Logic side
+
+Programming side
+
+
+assumption
+variable
+
+
+axioms
+combinators
+
+
+modus ponens
+application
+
+
+deduction theorem
+abstraction elimination
+
+Thanks to the correspondence, results from combinatory logic can be transferred to Hilbert-style logic and vice versa. For instance, the notion of reduction of terms in combinatory logic can be transferred to Hilbert-style logic and it provides a way to canonically transform proofs into other proofs of the same statement. One can also transfer the notion of normal terms to a notion of normal proofs, expressing that the hypotheses of the axioms never need to be all detached (since otherwise a simplification can happen).
+Conversely, the non provability in intuitionistic logic of Peirce's law can be transferred back to combinatory logic: there is no typed term of combinatory logic that is typable with type 
+
+((Î± â Î²) â Î±) â Î±.
+Results on the completeness of some sets of combinators or axioms can also be transferred. For instance, the fact that the combinator X constitutes a one-point basis of (extensional) combinatory logic implies that the single axiom scheme
+
+(((Î± â (Î² â Î³)) â ((Î± â Î²) â (Î± â Î³))) â ((Î´ â (Îµ â Î´)) â Î¶)) â Î¶,
+which is the principal type of X, is an adequate replacement to the combination of the axiom schemes 
+
+Î± â (Î² â Î±) and
+(Î± â (Î² â Î³)) â ((Î± â Î²) â (Î± â Î³)).
+Natural deduction and lambda calculus[edit]
+After Curry emphasized the syntactic correspondence between Hilbert-style deduction and combinatory logic, Howard made explicit in 1969 a syntactic analogy between the programs of simply typed lambda calculus and the proofs of natural deduction. Below, the left-hand side formalizes intuitionistic implicational natural deduction as a calculus of sequents (the use of sequents is standard in discussions of the CurryâHoward isomorphism as it allows the deduction rules to be stated more cleanly) with implicit weakening and the right-hand side shows the typing rules of lambda calculus. In the left-hand side, Î, Î1 and Î2 denote ordered sequences of formulas while in the right-hand side, they denote sequences of named (i.e., typed) formulas with all names different.
+
+
+
+Intuitionistic implicational natural deduction
+
+Lambda calculus type assignment rules
+
+
+
+  
+    
+      
+        
+          
+            
+            
+              
+                Î
+                
+                  1
+                
+              
+              ,
+              Î±
+              ,
+              
+                Î
+                
+                  2
+                
+              
+              â¢
+              Î±
+            
+          
+        
+        
+          Ax
+        
+      
+    
+    {\displaystyle {\frac {}{\Gamma _{1},\alpha ,\Gamma _{2}\vdash \alpha }}{\text{Ax}}}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+            
+              
+                Î
+                
+                  1
+                
+              
+              ,
+              x
+              :
+              Î±
+              ,
+              
+                Î
+                
+                  2
+                
+              
+              â¢
+              x
+              :
+              Î±
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\Gamma _{1},x:\alpha ,\Gamma _{2}\vdash x:\alpha }}}
+  
+
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              ,
+              Î±
+              â¢
+              Î²
+            
+            
+              Î
+              â¢
+              Î±
+              â
+              Î²
+            
+          
+        
+        â
+        I
+      
+    
+    {\displaystyle {\frac {\Gamma ,\alpha \vdash \beta }{\Gamma \vdash \alpha \rightarrow \beta }}\rightarrow I}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              ,
+              x
+              :
+              Î±
+              â¢
+              t
+              :
+              Î²
+            
+            
+              Î
+              â¢
+              (
+              Î»
+              x
+              
+              :
+              
+              Î±
+              .
+              Â 
+              t
+              )
+              :
+              Î±
+              â
+              Î²
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {\Gamma ,x:\alpha \vdash t:\beta }{\Gamma \vdash (\lambda x\!:\!\alpha .~t):\alpha \rightarrow \beta }}}
+  
+
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              â¢
+              Î±
+              â
+              Î²
+              
+              Î
+              â¢
+              Î±
+            
+            
+              Î
+              â¢
+              Î²
+            
+          
+        
+        â
+        E
+      
+    
+    {\displaystyle {\frac {\Gamma \vdash \alpha \rightarrow \beta \qquad \Gamma \vdash \alpha }{\Gamma \vdash \beta }}\rightarrow E}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              â¢
+              t
+              :
+              Î±
+              â
+              Î²
+              
+              Î
+              â¢
+              u
+              :
+              Î±
+            
+            
+              Î
+              â¢
+              t
+              
+              u
+              :
+              Î²
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {\Gamma \vdash t:\alpha \rightarrow \beta \qquad \Gamma \vdash u:\alpha }{\Gamma \vdash t\;u:\beta }}}
+  
+
+
+To paraphrase the correspondence, proving Î â¢ Î± means having a program that, given values with the types listed in Î, manufactures an object of type Î±. An axiom corresponds to the introduction of a new variable with a new, unconstrained type, the âÂ I rule corresponds to function abstraction and the âÂ E rule corresponds to function application. Observe that the correspondence is not exact if the context Î is taken to be a set of formulas as, e.g., the Î»-terms Î»x.Î»y.x and Î»x.Î»y.y of type Î± â Î± â Î± would not be distinguished in the correspondence. Examples are given below.
+Howard showed that the correspondence extends to other connectives of the logic and other constructions of simply typed lambda calculus. Seen at an abstract level, the correspondence can then be summarized as shown in the following table. Especially, it also shows that the notion of normal forms in lambda calculus matches Prawitz's notion of normal deduction in natural deduction, from which it follows that the algorithms for the type inhabitation problem can be turned into algorithms for deciding intuitionistic provability.
+
+
+
+Logic side
+
+Programming side
+
+
+axiom
+variable
+
+
+introduction rule
+constructor
+
+
+elimination rule
+destructor
+
+
+normal deduction
+normal form
+
+
+normalisation of deductions
+weak normalisation
+
+
+provability
+type inhabitation problem
+
+
+intuitionistic tautology
+inhabited type
+
+Howard's correspondence naturally extends to other extensions of natural deduction and simply typed lambda calculus. Here is a non-exhaustive list:
+
+Girard-Reynolds System F as a common language for both second-order propositional logic and polymorphic lambda calculus,
+higher-order logic and Girard's System FÏ
+inductive types as algebraic data type
+necessity 
+  
+    
+      
+        â»
+      
+    
+    {\displaystyle \Box }
+  
+ in modal logic and staged computation[ext 2]
+possibility 
+  
+    
+      
+        â
+      
+    
+    {\displaystyle \Diamond }
+  
+ in modal logic and monadic types for effects[ext 1]
+The Î»I calculus corresponds to relevant logic.[7]
+The local truth (â) modality in Grothendieck topology or the equivalent "lax" modality (â¯) of Benton, Bierman, and de Paiva (1998) correspond to CL-logic describing "computation types".[8]
+Classical logic and control operators[edit]
+At the time of Curry, and also at the time of Howard, the proofs-as-programs correspondence concerned only intuitionistic logic, i.e. a logic in which, in particular, Peirce's law was not deducible. The extension of the correspondence to Peirce's law and hence to classical logic became clear from the work of Griffin on typing operators that capture the evaluation context of a given program execution so that this evaluation context can be later on reinstalled. The basic CurryâHoward-style correspondence for classical logic is given below. Note the correspondence between the double-negation translation used to map classical proofs to intuitionistic logic and the continuation-passing-style translation used to map lambda terms involving control to pure lambda terms. More particularly, call-by-name continuation-passing-style translations relates to Kolmogorov's double negation translation and call-by-value continuation-passing-style translations relates to a kind of double-negation translation due to Kuroda.
+
+
+
+Logic side
+
+Programming side
+
+
+Peirce's law: ((Î± â Î²) â Î±) â Î±
+call-with-current-continuation
+
+
+double-negation translation
+continuation-passing-style translation
+
+A finer CurryâHoward correspondence exists for classical logic if one defines classical logic not by adding an axiom such as Peirce's law, but by allowing several conclusions in sequents. In the case of classical natural deduction, there exists a proofs-as-programs correspondence with the typed programs of Parigot's Î»Î¼-calculus.
+
+Sequent calculus[edit]
+A proofs-as-programs correspondence can be settled for the formalism known as Gentzen's sequent calculus but it is not a correspondence with a well-defined pre-existing model of computation as it was for Hilbert-style and natural deductions.
+Sequent calculus is characterized by the presence of left introduction rules, right introduction rule and a cut rule that can be eliminated. The structure of sequent calculus relates to a calculus whose structure is close to the one of some abstract machines. The informal correspondence is as follows:
+
+
+
+Logic side
+
+Programming side
+
+
+cut elimination
+reduction in a form of abstract machine
+
+
+right introduction rules
+constructors of code
+
+
+left introduction rules
+constructors of evaluation stacks
+
+
+priority to right-hand side in cut-elimination
+
+call-by-name reduction
+
+
+priority to left-hand side in cut-elimination
+
+call-by-value reduction
+
+Related proofs-as-programs correspondences[edit]
+The role of de Bruijn[edit]
+N. G. de Bruijn used the lambda notation for representing proofs of the theorem checker Automath, and represented propositions as "categories" of their proofs.  It was in the late 1960s at the same period of time Howard wrote his manuscript; de Bruijn was likely unaware of Howard's work, and stated the correspondence independently (SÃ¸rensen & Urzyczyn [1998] 2006, pp 98â99).  Some researchers tend to use the term CurryâHowardâde Bruijn correspondence in place of CurryâHoward correspondence.
+
+BHK interpretation[edit]
+The BHK interpretation interprets intuitionistic proofs as functions but it does not specify the class of functions relevant for the interpretation. If one takes lambda calculus for this class of function, then the BHK interpretation tells the same as Howard's correspondence between natural deduction and lambda calculus.
+
+Realizability[edit]
+Kleene's recursive realizability splits proofs of intuitionistic arithmetic into the pair of a recursive function and of
+a proof of a formula expressing that the recursive function "realizes", i.e. correctly instantiates the disjunctions and existential quantifiers of the initial formula so that the formula gets true.
+Kreisel's modified realizability applies to intuitionistic higher-order predicate logic and shows that the simply typed lambda term inductively extracted from the proof realizes the initial formula. In the case of propositional logic, it coincides with Howard's statement: the extracted lambda term is the proof itself (seen as an untyped lambda term) and the realizability statement is a paraphrase of the fact that the extracted lambda term has the type that the formula means (seen as a type).
+GÃ¶del's dialectica interpretation realizes (an extension of) intuitionistic arithmetic with computable functions. The connection with lambda calculus is unclear, even in the case of natural deduction.
+
+CurryâHowardâLambek correspondence[edit]
+Joachim Lambek showed in the early 1970s that the proofs of intuitionistic propositional logic and the combinators of typed combinatory logic share a common equational theory which is the one of cartesian closed categories. The expression CurryâHowardâLambek correspondence is now used by some people to refer to the three way isomorphism between intuitionistic logic, typed lambda calculus and cartesian closed categories, with objects being interpreted as types or propositions and morphisms as terms or proofs. The correspondence works at the equational level and is not the expression of a syntactic identity of structures as it is the case for each of Curry's and Howard's correspondences: i.e. the structure of a well-defined morphism in a cartesian-closed category is not comparable to the structure of a proof of the corresponding judgment in either Hilbert-style logic or natural deduction.  To clarify this distinction, the underlying syntactic structure of cartesian closed categories is rephrased below.
+Objects (types) are defined by
+
+
+  
+    
+      
+        â¤
+      
+    
+    {\displaystyle \top }
+  
+ is an object
+if Î± and Î² are objects then 
+  
+    
+      
+        Î±
+        Ã
+        Î²
+      
+    
+    {\displaystyle \alpha \times \beta }
+  
+ and 
+  
+    
+      
+        Î±
+        â
+        Î²
+      
+    
+    {\displaystyle \alpha \rightarrow \beta }
+  
+ are objects.
+Morphisms (terms) are defined by
+
+
+  
+    
+      
+        i
+        d
+      
+    
+    {\displaystyle id}
+  
+, 
+  
+    
+      
+        â
+      
+    
+    {\displaystyle \star }
+  
+, 
+  
+    
+      
+        eval
+      
+    
+    {\displaystyle \operatorname {eval} }
+  
+, 
+  
+    
+      
+        
+          Ï
+          
+            1
+          
+        
+      
+    
+    {\displaystyle \pi _{1}}
+  
+ and 
+  
+    
+      
+        
+          Ï
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \pi _{2}}
+  
+ are morphisms
+if t is a morphism,  Î»t is a morphism
+if t and u are morphisms, 
+  
+    
+      
+        (
+        t
+        ,
+        u
+        )
+      
+    
+    {\displaystyle (t,u)}
+  
+ and 
+  
+    
+      
+        u
+        â
+        t
+      
+    
+    {\displaystyle u\circ t}
+  
+ are morphisms.
+Well-defined morphisms (typed terms) are defined by the following typing rules (in which the usual categorical morphism notation 
+  
+    
+      
+        f
+        :
+        Î±
+        â
+        Î²
+      
+    
+    {\displaystyle f:\alpha \to \beta }
+  
+ is replaced with sequent calculus notation 
+  
+    
+      
+        f
+        :
+        
+        
+        â
+        Â 
+        Â 
+        Î±
+        Â 
+        â¢
+        Â 
+        Î²
+      
+    
+    {\displaystyle f:\!\!-~~\alpha ~\vdash ~\beta }
+  
+).
+Identity:
+
+
+  
+    
+      
+        
+          
+            
+            
+              i
+              d
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î±
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{id:\!\!-~~\alpha ~\vdash ~\alpha }}}
+  
+
+Composition:
+
+
+  
+    
+      
+        
+          
+            
+              t
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î²
+              
+              u
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î²
+              Â 
+              â¢
+              Â 
+              Î³
+            
+            
+              u
+              â
+              t
+              :
+              
+              
+              â
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î³
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {t:\!\!-~~\alpha ~\vdash ~\beta \qquad u:\!\!-~~\beta ~\vdash ~\gamma }{u\circ t:\!\!-~\alpha ~\vdash ~\gamma }}}
+  
+
+Unit type (terminal object):
+
+
+  
+    
+      
+        
+          
+            
+            
+              â
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              â¤
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\star :\!\!-~~\alpha ~\vdash ~\top }}}
+  
+
+Cartesian product:
+
+
+  
+    
+      
+        
+          
+            
+              t
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î²
+              
+              u
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î³
+            
+            
+              (
+              t
+              ,
+              u
+              )
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î²
+              Ã
+              Î³
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {t:\!\!-~~\alpha ~\vdash ~\beta \qquad u:\!\!-~~\alpha ~\vdash ~\gamma }{(t,u):\!\!-~~\alpha ~\vdash ~\beta \times \gamma }}}
+  
+
+Left and right projection:
+
+
+  
+    
+      
+        
+          
+            
+            
+              
+                Ï
+                
+                  1
+                
+              
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Ã
+              Î²
+              Â 
+              â¢
+              Â 
+              Î±
+            
+          
+        
+        
+        
+          
+            
+            
+              
+                Ï
+                
+                  2
+                
+              
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Ã
+              Î²
+              Â 
+              â¢
+              Â 
+              Î²
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{\pi _{1}:\!\!-~~\alpha \times \beta ~\vdash ~\alpha }}\qquad {\frac {}{\pi _{2}:\!\!-~~\alpha \times \beta ~\vdash ~\beta }}}
+  
+
+Currying:
+
+
+  
+    
+      
+        
+          
+            
+              t
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Ã
+              Î²
+              Â 
+              â¢
+              Â 
+              Î³
+            
+            
+              Î»
+              t
+              :
+              
+              
+              â
+              Â 
+              Â 
+              Î±
+              Â 
+              â¢
+              Â 
+              Î²
+              â
+              Î³
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {t:\!\!-~~\alpha \times \beta ~\vdash ~\gamma }{\lambda t:\!\!-~~\alpha ~\vdash ~\beta \rightarrow \gamma }}}
+  
+
+Application:
+
+
+  
+    
+      
+        
+          
+            
+            
+              e
+              v
+              a
+              l
+              :
+              
+              
+              â
+              Â 
+              Â 
+              (
+              Î±
+              â
+              Î²
+              )
+              Ã
+              Î±
+              Â 
+              â¢
+              Â 
+              Î²
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {}{eval:\!\!-~~(\alpha \rightarrow \beta )\times \alpha ~\vdash ~\beta }}}
+  
+
+Finally, the equations of the category are
+
+
+  
+    
+      
+        i
+        d
+        â
+        t
+        =
+        t
+      
+    
+    {\displaystyle id\circ t=t}
+  
+
+
+  
+    
+      
+        t
+        â
+        i
+        d
+        =
+        t
+      
+    
+    {\displaystyle t\circ id=t}
+  
+
+
+  
+    
+      
+        (
+        v
+        â
+        u
+        )
+        â
+        t
+        =
+        v
+        â
+        (
+        u
+        â
+        t
+        )
+      
+    
+    {\displaystyle (v\circ u)\circ t=v\circ (u\circ t)}
+  
+
+
+  
+    
+      
+        â
+        =
+        i
+        d
+      
+    
+    {\displaystyle \star =id}
+  
+  (if well-typed)
+
+  
+    
+      
+        â
+        â
+        u
+        =
+        â
+      
+    
+    {\displaystyle \star \circ u=\star }
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            1
+          
+        
+        â
+        (
+        t
+        ,
+        u
+        )
+        =
+        t
+      
+    
+    {\displaystyle \pi _{1}\circ (t,u)=t}
+  
+
+
+  
+    
+      
+        
+          Ï
+          
+            2
+          
+        
+        â
+        (
+        t
+        ,
+        u
+        )
+        =
+        u
+      
+    
+    {\displaystyle \pi _{2}\circ (t,u)=u}
+  
+
+
+  
+    
+      
+        (
+        
+          Ï
+          
+            1
+          
+        
+        ,
+        
+          Ï
+          
+            2
+          
+        
+        )
+        =
+        i
+        d
+      
+    
+    {\displaystyle (\pi _{1},\pi _{2})=id}
+  
+
+
+  
+    
+      
+        (
+        
+          t
+          
+            1
+          
+        
+        ,
+        
+          t
+          
+            2
+          
+        
+        )
+        â
+        u
+        =
+        (
+        
+          t
+          
+            1
+          
+        
+        â
+        u
+        ,
+        
+          t
+          
+            2
+          
+        
+        â
+        u
+        )
+      
+    
+    {\displaystyle (t_{1},t_{2})\circ u=(t_{1}\circ u,t_{2}\circ u)}
+  
+
+
+  
+    
+      
+        e
+        v
+        a
+        l
+        â
+        (
+        Î»
+        t
+        â
+        
+          Ï
+          
+            1
+          
+        
+        ,
+        
+          Ï
+          
+            2
+          
+        
+        )
+        =
+        t
+      
+    
+    {\displaystyle eval\circ (\lambda t\circ \pi _{1},\pi _{2})=t}
+  
+
+
+  
+    
+      
+        Î»
+        e
+        v
+        a
+        l
+        =
+        i
+        d
+      
+    
+    {\displaystyle \lambda eval=id}
+  
+
+
+  
+    
+      
+        Î»
+        t
+        â
+        u
+        =
+        Î»
+        (
+        t
+        â
+        (
+        u
+        â
+        
+          Ï
+          
+            1
+          
+        
+        ,
+        
+          Ï
+          
+            2
+          
+        
+        )
+        )
+      
+    
+    {\displaystyle \lambda t\circ u=\lambda (t\circ (u\circ \pi _{1},\pi _{2}))}
+  
+
+These equations imply the following 
+  
+    
+      
+        Î·
+      
+    
+    {\displaystyle \eta }
+  
+-laws:
+
+
+  
+    
+      
+        (
+        
+          Ï
+          
+            1
+          
+        
+        â
+        t
+        ,
+        
+          Ï
+          
+            2
+          
+        
+        â
+        t
+        )
+        =
+        t
+      
+    
+    {\displaystyle (\pi _{1}\circ t,\pi _{2}\circ t)=t}
+  
+
+
+  
+    
+      
+        Î»
+        (
+        e
+        v
+        a
+        l
+        â
+        (
+        t
+        â
+        
+          Ï
+          
+            1
+          
+        
+        ,
+        
+          Ï
+          
+            2
+          
+        
+        )
+        )
+        =
+        t
+      
+    
+    {\displaystyle \lambda (eval\circ (t\circ \pi _{1},\pi _{2}))=t}
+  
+
+Now, there exists t such that 
+  
+    
+      
+        t
+        :
+        
+        
+        â
+        Â 
+        
+          Î±
+          
+            1
+          
+        
+        Ã
+        â¦
+        Ã
+        
+          Î±
+          
+            n
+          
+        
+        â¢
+        Î²
+      
+    
+    {\displaystyle t:\!\!-~\alpha _{1}\times \ldots \times \alpha _{n}\vdash \beta }
+  
+ iff 
+  
+    
+      
+        
+          Î±
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          Î±
+          
+            n
+          
+        
+        â¢
+        Î²
+      
+    
+    {\displaystyle \alpha _{1},\ldots ,\alpha _{n}\vdash \beta }
+  
+ is provable in implicational intuitionistic logic,.
+
+Examples[edit]
+Thanks to the CurryâHoward correspondence, a typed expression whose type corresponds to a logical formula is analogous to a proof of that formula. Here are examples.
+
+The identity combinator seen as a proof of Î± â Î± in Hilbert-style logic[edit]
+As an example, consider a proof of the theorem Î± â Î±. In lambda calculus, this is the type of the identity function I = Î»x.x and in combinatory logic, the identity function is obtained by applying S = Î»fgx.fx(gx) twice to K = Î»xy.x.  That is, I = ((S K) K). As a description of a proof, this says that the following steps can be used to prove Î± â Î±:
+
+instantiate the second axiom scheme with the formulas Î±, Î² â Î± and Î± to obtain a proof of (Î± â ((Î² â Î±) â Î±)) â ((Î± â (Î² â Î±)) â (Î± â Î±)),
+instantiate the first axiom scheme once with Î± and Î² â Î± to obtain a proof of Î± â ((Î² â Î±) â Î±),
+instantiate the first axiom scheme a second time with Î± and Î² to obtain a proof of Î± â (Î² â Î±),
+apply modus ponens twice to obtain a proof of Î± â Î±
+In general, the procedure is that whenever the program contains an application of the form (P Q), these steps should be followed:
+
+First prove theorems corresponding to the types of P and Q.
+Since P is being applied to Q, the type of P must have the form Î± â Î² and the type of Q must have the form Î± for some Î± and Î². Therefore, it is possible to detach the conclusion, Î², via the modus ponens rule.
+The composition combinator seen as a proof of (Î² â Î±) â (Î³ â Î²) â Î³ â Î± in Hilbert-style logic[edit]
+As a more complicated example, let's look at the theorem that corresponds to the B function. The type of B is (Î² â Î±) â (Î³ â Î²) â Î³ â Î±. B is equivalent to (S (K S) K). This is our roadmap for the proof of the theorem (Î² â Î±) â (Î³ â Î²) â Î³ â Î±.
+The first step is to construct (K S). To make the antecedent of the K axiom look like the S axiom, set Î± equal to (Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³, and Î² equal to Î´ (to avoid variable collisions):
+
+KÂ : Î± â Î² â Î±
+K[Î± = (Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³, Î² = Î´]Â : ((Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³) â Î´ â (Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³
+Since the antecedent here is just S, the consequent can be detached using Modus Ponens:
+
+K SÂ : Î´ â (Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³
+This is the theorem that corresponds to the type of (K S). Now apply S to this expression. Taking S as follows
+
+SÂ : (Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³,
+put Î± = Î´, Î² = Î± â Î² â Î³, and Î³ = (Î± â Î²) â Î± â Î³, yielding
+
+S[Î± = Î´, Î² = Î± â Î² â Î³, Î³ = (Î± â Î²) â Î± â Î³]Â : (Î´ â (Î± â Î² â Î³) â (Î± â Î²) â Î± â Î³) â (Î´ â (Î± â Î² â Î³)) â Î´ â (Î± â Î²) â Î± â Î³
+and then detach the consequent:
+
+S (K S)Â : (Î´ â Î± â Î² â Î³) â Î´ â (Î± â Î²) â Î± â Î³
+This is the formula for the type of (S (K S)). A special case of this theorem has Î´ = (Î² â Î³):
+
+S (K S)[Î´ = Î² â Î³]Â : ((Î² â Î³) â Î± â Î² â Î³) â (Î² â Î³) â (Î± â Î²) â Î± â Î³
+This last formula must be applied to K. Specialize K again, this time by replacing Î± with (Î² â Î³) and Î² with Î±:
+
+KÂ : Î± â Î² â Î±
+K[Î± = Î² â Î³, Î² = Î±]Â : (Î² â Î³) â Î± â (Î² â Î³)
+This is the same as the antecedent of the prior formula so, detaching the consequent:
+
+S (K S) KÂ : (Î² â Î³) â (Î± â Î²) â Î± â Î³
+Switching the names of the variables Î± and Î³ gives us
+
+(Î² â Î±) â (Î³ â Î²) â Î³ â Î±
+which was what remained to prove.
+
+The normal proof of (Î² â Î±) â (Î³ â Î²) â Î³ â Î± in natural deduction seen as a Î»-term[edit]
+The diagram below gives proof of (Î² â Î±) â (Î³ â Î²) â Î³ â Î± in natural deduction and shows how it can be interpreted as the Î»-expression Î»a.Î»b.Î»g.(a (b g)) of type (Î² â Î±) â (Î³ â Î²) â Î³ â Î±.
+
+                                     a:Î² â Î±, b:Î³ â Î², g:Î³ â¢ bÂ : Î³ â Î²    a:Î² â Î±, b:Î³ â Î², g:Î³ â¢ gÂ : Î³
+âââââââââââââââââââââââââââââââââââ  ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+a:Î² â Î±, b:Î³ â Î², g:Î³ â¢ aÂ : Î² â Î±      a:Î² â Î±, b:Î³ â Î², g:Î³ â¢ b gÂ : Î²
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+               a:Î² â Î±, b:Î³ â Î², g:Î³ â¢ a (b g)Â : Î±
+               ââââââââââââââââââââââââââââââââââââ
+               a:Î² â Î±, b:Î³ â Î² â¢ Î» g. a (b g)Â : Î³ â Î±
+               ââââââââââââââââââââââââââââââââââââââââ
+                        a:Î² â Î± â¢ Î» b. Î» g. a (b g)Â : (Î³ â Î²) -> Î³ â Î±
+                        ââââââââââââââââââââââââââââââââââââ
+                                â¢ Î» a. Î» b. Î» g. a (b g)Â : (Î² â Î±) -> (Î³ â Î²) -> Î³ â Î±
+
+Other applications[edit]
+Recently, the isomorphism has been proposed as a way to define search space partition in genetic programming.[9] The method indexes sets of genotypes (the program trees evolved by the GP system) by their CurryâHoward isomorphic proof (referred to as a species).
+As noted by INRIA research director Bernard Lang,[10] the Curry-Howard correspondence constitutes an argument against the patentability of software: since algorithms are mathematical proofs, patentability of the former would imply patentability of the latter. A theorem could be private property; a mathematician would have to pay for using it, and to trust the company that sells it but keeps its proof secret and rejects responsibility for any errors.
+
+Generalizations[edit]
+The correspondences listed here go much farther and deeper. For example, cartesian closed categories are generalized by closed monoidal categories. The internal language of these categories is the linear type system (corresponding to linear logic), which generalizes simply-typed lambda calculus as the internal language of cartesian closed categories. Moreover, these can be shown to correspond to cobordisms,[11] which play a vital role in string theory.
+An extended set of equivalences is also explored in homotopy type theory, which became a very active area of research around 2013 and as of 2018[update] still is.[12] Here, type theory is extended by the univalence axiom ("equivalence is equivalent to equality") which permits homotopy type theory to be used as a foundation for all of mathematics (including set theory and classical logic, providing new ways to discuss the axiom of choice and many other things). That is, the CurryâHoward correspondence that proofs are elements of inhabited types is generalized to the notion of homotopic equivalence of proofs (as paths in space, the identity type or equality type of type theory being interpreted as a path).[13]
+
+References[edit]
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (April 2010) (Learn how and when to remove this template message)
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ The correspondence was first made explicit in Howard 1980. See, for example section 4.6, p.53 Gert Smolka and Jan Schwinghammer (2007-8), Lecture Notes in Semantics
+
+^ The BrouwerâHeytingâKolmogorov interpretation  is also called the 'proof interpretation': p. 161 of Juliette Kennedy, Roman Kossak, eds. 2011. Set Theory, Arithmetic, and Foundations of Mathematics: Theorems, Philosophies .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}ISBNÂ 978-1-107-00804-5
+
+^ Curry 1934.
+
+^ Curry & Feys 1958.
+
+^ Howard 1980.
+
+^ Moggi, Eugenio (1991), "Notions of Computation and Monads" (PDF), Information and Computation, 93 (1): 55â92, doi:10.1016/0890-5401(91)90052-4
+
+^ SÃ¸renson, Morten; Urzyczyn, PaweÅ (1998), Lectures on the Curry-Howard Isomorphism, CiteSeerXÂ 10.1.1.17.7385
+
+^ Goldblatt, "7.6 Grothendieck Topology as Intuitionistic Modality" (PDF), Mathematical Modal Logic: A Model of its Evolution, pp.Â 76â81. The "lax" modality referred to is from Benton; Bierman; de Paiva (1998), "Computational types from a logical perspective", Journal of Functional Programming, 8 (2): 177â193, CiteSeerXÂ 10.1.1.258.6004, doi:10.1017/s0956796898002998
+
+^ F. Binard and A. Felty, "Genetic programming with polymorphic types and higher-order functions." In Proceedings of the 10th annual conference on Genetic and evolutionary computation, pages 1187 1194, 2008.[1]
+
+^ "Article". bat8.inria.fr. Retrieved 2020-01-31.
+
+^ John c. Baez and Mike Stay, "Physics, Topology, Logic and Computation: A Rosetta Stone", (2009) ArXiv 0903.0340 in New Structures for Physics, ed. Bob Coecke, Lecture Notes in Physics vol. 813, Springer, Berlin, 2011, pp. 95â174.
+
+^ "homotopy type theory - Google Trends". trends.google.com. Retrieved 2018-01-26.
+
+^ Homotopy Type Theory: Univalent Foundations of Mathematics. (2013) The Univalent Foundations Program. Institute for Advanced Study.
+
+
+Seminal references[edit]
+Curry, H B (1934-09-20). "Functionality in Combinatory Logic". Proceedings of the National Academy of Sciences of the United States of America. 20 (11): 584â90. Bibcode:1934PNAS...20..584C. doi:10.1073/pnas.20.11.584. ISSNÂ 0027-8424. PMCÂ 1076489. PMIDÂ 16577644.
+Curry, Haskell B; Feys, Robert (1958).  Craig, William (ed.). Combinatory Logic. Studies in Logic and the Foundations of Mathematics. Vol.Â 1. North-Holland Publishing Company. LCCNÂ a59001593; with two sections by Craig, William; see paragraph 9E{{cite book}}:  CS1 maint: postscript (link)
+De Bruijn, Nicolaas (1968), Automath, a language for mathematics, Department of Mathematics, Eindhoven University of Technology, TH-report 68-WSK-05. Reprinted in revised form, with two pages commentary, in: Automation and Reasoning, vol 2, Classical papers on computational logic 1967â1970, Springer Verlag, 1983, pp.Â 159â200.
+Howard, William A. (September 1980) [original paper manuscript from 1969], "The formulae-as-types notion of construction",  in Seldin, Jonathan P.; Hindley, J. Roger (eds.), To H.B. Curry: Essays on Combinatory Logic, Lambda Calculus and Formalism, Academic Press, pp.Â 479â490, ISBNÂ 978-0-12-349050-6.
+Extensions of the correspondence[edit]
+
+^ Jump up to: a b Pfenning, Frank; Davies, Rowan (2001), "A Judgmental Reconstruction of Modal Logic" (PDF), Mathematical Structures in Computer Science, 11 (4): 511â540, CiteSeerXÂ 10.1.1.43.1611, doi:10.1017/S0960129501003322, S2CIDÂ 16467268
+
+^ Davies, Rowan; Pfenning, Frank (2001), "A Modal Analysis of Staged Computation" (PDF), Journal of the ACM, 48 (3): 555â604, CiteSeerXÂ 10.1.1.3.5442, doi:10.1145/382780.382785, S2CIDÂ 52148006
+
+
+Griffin, Timothy G. (1990), "The Formulae-as-Types Notion of Control", Conf. Record 17th Annual ACM Symp. on Principles of Programming Languages, POPL '90, San Francisco, CA, USA, 17â19 Jan 1990, pp.Â 47â57, doi:10.1145/96709.96714, ISBNÂ 978-0-89791-343-0, S2CIDÂ 3005134.
+Parigot, Michel (1992), "Lambda-mu-calculus: An algorithmic interpretation of classical natural deduction", International Conference on Logic Programming and Automated Reasoning: LPAR '92 Proceedings, St. Petersburg, Russia, Lecture Notes in Computer Science, vol.Â 624, Springer-Verlag, pp.Â 190â201, ISBNÂ 978-3-540-55727-2.
+Herbelin, Hugo (1995), "A Lambda-Calculus Structure Isomorphic to Gentzen-Style Sequent Calculus Structure",  in Pacholski, Leszek; Tiuryn, Jerzy (eds.), Computer Science Logic, 8th International Workshop, CSL '94, Kazimierz, Poland, September 25â30, 1994, Selected Papers, Lecture Notes in Computer Science, vol.Â 933, Springer-Verlag, pp.Â 61â75, ISBNÂ 978-3-540-60017-6.
+Gabbay, Dov; de Queiroz, Ruy (1992). "Extending the CurryâHoward interpretation to linear, relevant and other resource logics". Journal of Symbolic Logic. The Journal of Symbolic Logic. Vol.Â 57. pp.Â 1319â1365. doi:10.2307/2275370. JSTORÂ 2275370.. (Full version of the paper presented at Logic Colloquium '90, Helsinki. Abstract in JSL 56(3):1139â1140, 1991.)
+de Queiroz, Ruy; Gabbay, Dov (1994), "Equality in Labelled Deductive Systems and the Functional Interpretation of Propositional Equality",  in Dekker, Paul; Stokhof, Martin (eds.), Proceedings of the Ninth Amsterdam Colloquium, ILLC/Department of Philosophy, University of Amsterdam, pp.Â 547â565, ISBNÂ 978-90-74795-07-4.
+de Queiroz, Ruy; Gabbay, Dov (1995), "The Functional Interpretation of the Existential Quantifier", Bulletin of the Interest Group in Pure and Applied Logics, vol.Â 3, pp.Â 243â290. (Full version of a paper presented at Logic Colloquium '91, Uppsala. Abstract in JSL 58(2):753â754, 1993.)
+de Queiroz, Ruy; Gabbay, Dov (1997), "The Functional Interpretation of Modal Necessity",  in de Rijke, Maarten (ed.), Advances in Intensional Logic, Applied Logic Series, vol.Â 7, Springer-Verlag, pp.Â 61â91, ISBNÂ 978-0-7923-4711-8.
+de Queiroz, Ruy; Gabbay, Dov (1999), "Labelled Natural Deduction",  in Ohlbach, Hans-Juergen; Reyle, Uwe (eds.), Logic, Language and Reasoning. Essays in Honor of Dov Gabbay, Trends in Logic, vol.Â 7, Kluwer, pp.Â 173â250, ISBNÂ 978-0-7923-5687-5.
+de Oliveira, Anjolina; de Queiroz, Ruy (1999), "A Normalization Procedure for the Equational Fragment of Labelled Natural Deduction", Logic Journal of the Interest Group in Pure and Applied Logics, vol.Â 7, Oxford University Press, pp.Â 173â215. (Full version of a paper presented at 2nd WoLLIC'95, Recife. Abstract in Journal of the Interest Group in Pure and Applied Logics 4(2):330â332, 1996.)
+Poernomo, Iman; Crossley, John; Wirsing; Martin (2005), Adapting Proofs-as-Programs: The CurryâHoward Protocol, Monographs in Computer Science, Springer, ISBNÂ 978-0-387-23759-6, concerns the adaptation of proofs-as-programs program synthesis to coarse-grain and imperative program development problems, via a method the authors call the CurryâHoward protocol. Includes a discussion of the CurryâHoward correspondence from a Computer Science perspective.
+de Queiroz, Ruy J.G.B.; de Oliveira, Anjolina (2011), "The Functional Interpretation of Direct Computations", Electronic Notes in Theoretical Computer Science, Elsevier, 269: 19â40, doi:10.1016/j.entcs.2011.03.003. (Full version of a paper presented at LSFA 2010, Natal, Brazil.)
+Philosophical interpretations[edit]
+de Queiroz, Ruy J.G.B. (1994), "Normalisation and language-games", Dialectica, vol.Â 48, pp.Â 83â123. (Early version presented at Logic Colloquium '88, Padova. Abstract in JSL 55:425, 1990.)
+de Queiroz, Ruy J.G.B. (2001), "Meaning, function, purpose, usefulness, consequences â interconnected concepts", Logic Journal of the Interest Group in Pure and Applied Logics, vol.Â 9, pp.Â 693â734. (Early version presented at Fourteenth International Wittgenstein Symposium (Centenary Celebration) held in Kirchberg/Wechsel, August 13â20, 1989.)
+de Queiroz, Ruy J.G.B. (2008), "On Reduction Rules, Meaning-as-use, and Proof-theoretic Semantics", Studia Logica, 90 (2): 211â247, doi:10.1007/s11225-008-9150-5, S2CIDÂ 11321602.
+Synthetic papers[edit]
+De Bruijn, Nicolaas Govert (1995), "On the roles of types in mathematics" (PDF),  in Groote, Philippe de (ed.), De Groote 1995, pp.Â 27â54, the contribution of de Bruijn by himself.
+Geuvers, Herman (1995), "The Calculus of Constructions and Higher Order Logic", De Groote 1995, pp.Â 139â191, contains a synthetic introduction to the CurryâHoward correspondence.
+Gallier, Jean H. (1995), "On the Correspondence between Proofs and Lambda-Terms" (PDF), De Groote 1995, pp.Â 55â138, contains a synthetic introduction to the CurryâHoward correspondence.
+Wadler, Philip (2014), "Propositions as Types" (PDF), Communications of the ACM, 58 (12): 75â84, doi:10.1145/2699407, S2CIDÂ 11957500
+Books[edit]
+De Groote, Philippe, ed. (1995), The CurryâHoward Isomorphism, Cahiers du Centre de Logique (UniversitÃ© catholique de Louvain), vol.Â 8, Academia-Bruylant, ISBNÂ 978-2-87209-363-2, reproduces the seminal papers of Curry-Feys and Howard, a paper by de Bruijn and a few other papers.
+SÃ¸rensen, Morten Heine; Urzyczyn, PaweÅ (2006) [1998], Lectures on the CurryâHoward isomorphism, Studies in Logic and the Foundations of Mathematics, vol.Â 149, Elsevier Science, CiteSeerXÂ 10.1.1.17.7385, ISBNÂ 978-0-444-52077-7, notes on proof theory and type theory, that includes a presentation of the CurryâHoward correspondence, with a focus on the formulae-as-types correspondence
+Girard, Jean-Yves (1987â1990), Proof and Types, Cambridge Tracts in Theoretical Computer Science, vol.Â 7, Translated by and with appendices by Lafont, Yves and Taylor, Paul, Cambridge University Press, ISBNÂ 0-521-37181-3, archived from the original on 2008-04-18, notes on proof theory with a presentation of the CurryâHoward correspondence.
+Thompson, Simon (1991), Type Theory and Functional Programming, AddisonâWesley, ISBNÂ 0-201-41667-0.
+Poernomo, Iman; Crossley, John; Wirsing; Martin (2005), Adapting Proofs-as-Programs: The CurryâHoward Protocol, Monographs in Computer Science, Springer, ISBNÂ 978-0-387-23759-6, concerns the adaptation of proofs-as-programs program synthesis to coarse-grain and imperative program development problems, via a method the authors call the CurryâHoward protocol. Includes a discussion of the CurryâHoward correspondence from a Computer Science perspective.
+Binard, F.; Felty, A. (2008), "Genetic programming with polymorphic types and higher-order functions" (PDF), Proceedings of the 10th annual conference on Genetic and evolutionary computation, Association for Computing Machinery, pp.Â 1187â94, doi:10.1145/1389095.1389330, ISBNÂ 9781605581309, S2CIDÂ 3669630
+de Queiroz, Ruy J.G.B.; de Oliveira, Anjolina G.; Gabbay, Dov M. (2011), The Functional Interpretation of Logical Deduction, Advances in Logic, vol.Â 5, Imperial College Press/World Scientific, ISBNÂ 978-981-4360-95-1.
+Mimram, Samuel (2020), Program = proof, Independently published, ISBNÂ 979-8615591839
+Further reading[edit]
+Johnstone, P.T. (2002), "D4.2 Î»-Calculus and cartesian closed categories", Sketches of an Elephant, A Topos Theory Compendium, vol.Â 2, Clarendon Press, pp.Â 951â962, ISBNÂ 978-0-19-851598-2 â gives a categorical view of "what happens" in the CurryâHoward correspondence.
+External links[edit]
+
+
+
+The Wikibook Haskell has a page on the topic of: The CurryâHoward isomorphism
+
+Howard on Curry-Howard
+The CurryâHoward Correspondence in Haskell
+The Monad Reader 6: Adventures in Classical-Land: CurryâHoward in Haskell, Pierce's law.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}Authority control: National libraries  
+France (data)
+United States
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=CurryâHoward_correspondence&oldid=1066091624"
+		Categories: 1934 in computing1958 in computing1969 in computingDependently typed programmingProof theoryLogic in computer scienceType theoryPhilosophy of computer scienceHidden categories: Articles with short descriptionShort description is different from WikidataArticles containing potentially dated statements from 2018All articles containing potentially dated statementsArticles lacking in-text citations from April 2010All articles lacking in-text citationsCS1 maint: postscriptArticles with BNF identifiersArticles with LCCN identifiers
+	

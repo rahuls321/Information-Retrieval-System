@@ -1,0 +1,846 @@
+
+Title:
+C string handling
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"C string" redirects here. For other uses, see C string (disambiguation).
+Handling of strings in the C programming language
+
+
+.mw-parser-output .sidebar{width:22em;float:right;clear:right;margin:0.5em 0 1em 1em;background:#f8f9fa;border:1px solid #aaa;padding:0.2em;text-align:center;line-height:1.4em;font-size:88%;border-collapse:collapse;display:table}body.skin-minerva .mw-parser-output .sidebar{display:table!important;float:right!important;margin:0.5em 0 1em 1em!important}.mw-parser-output .sidebar-subgroup{width:100%;margin:0;border-spacing:0}.mw-parser-output .sidebar-left{float:left;clear:left;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-none{float:none;clear:both;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-outer-title{padding:0 0.4em 0.2em;font-size:125%;line-height:1.2em;font-weight:bold}.mw-parser-output .sidebar-top-image{padding:0.4em}.mw-parser-output .sidebar-top-caption,.mw-parser-output .sidebar-pretitle-with-top-image,.mw-parser-output .sidebar-caption{padding:0.2em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-pretitle{padding:0.4em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-title,.mw-parser-output .sidebar-title-with-pretitle{padding:0.2em 0.8em;font-size:145%;line-height:1.2em}.mw-parser-output .sidebar-title-with-pretitle{padding:0.1em 0.4em}.mw-parser-output .sidebar-image{padding:0.2em 0.4em 0.4em}.mw-parser-output .sidebar-heading{padding:0.1em 0.4em}.mw-parser-output .sidebar-content{padding:0 0.5em 0.4em}.mw-parser-output .sidebar-content-with-subgroup{padding:0.1em 0.4em 0.2em}.mw-parser-output .sidebar-above,.mw-parser-output .sidebar-below{padding:0.3em 0.8em;font-weight:bold}.mw-parser-output .sidebar-collapse .sidebar-above,.mw-parser-output .sidebar-collapse .sidebar-below{border-top:1px solid #aaa;border-bottom:1px solid #aaa}.mw-parser-output .sidebar-navbar{text-align:right;font-size:115%;padding:0 0.4em 0.4em}.mw-parser-output .sidebar-list-title{padding:0 0.4em;text-align:left;font-weight:bold;line-height:1.6em;font-size:105%}.mw-parser-output .sidebar-list-title-c{padding:0 0.4em;text-align:center;margin:0 3.3em}@media(max-width:720px){body.mediawiki .mw-parser-output .sidebar{width:100%!important;clear:both;float:none!important;margin-left:0!important;margin-right:0!important}}C standard library
+General topics
+Data types
+Character classification
+Strings
+Mathematics
+File input/output
+Date/time
+Localization
+Memory allocation
+Process control
+Signals
+Alternative tokens
+
+Miscellaneous headers
+.mw-parser-output .monospaced{font-family:monospace,monospace}<assert.h>
+<errno.h>
+<setjmp.h>
+<stdarg.h>
+.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vte
+The C programming language has a set of functions implementing operations on strings (character strings and byte strings) in its standard library. Various operations, such as copying, concatenation, tokenization and searching are supported. For character strings, the standard library uses the convention that strings are null-terminated: a string of n characters is represented as an array of n + 1 elements, the last of which is a NUL character (with numeric value 0).
+The only support for strings in the programming language proper is that the compiler translates quoted string constants into null-terminated strings.
+
+Contents
+
+1 Definitions
+2 Character encodings
+3 Overview of functions
+
+3.1 Constants and types
+3.2 Functions
+
+3.2.1 Multibyte functions
+
+
+3.3 Numeric conversions
+
+
+4 Popular extensions
+5 Replacements
+6 See also
+7 Notes
+8 References
+9 External links
+
+
+
+Definitions[edit]
+A string is defined as a contiguous sequence of code units terminated by the first zero code unit (often called the NUL code unit).[1] This means a string cannot contain the zero code unit, as the first one seen marks the end of the string. The length of a string is the number of code units before the zero code unit.[1] The memory occupied by a string is always one more code unit than the length, as space is needed to store the zero terminator.
+Generally, the term string means a string where the code unit is of type char, which is exactly 8 bits on all modern machines. C90 defines wide strings[1] which use a code unit of type wchar_t, which is 16 or 32 bits on modern machines. This was intended for Unicode but it is increasingly common to use UTF-8 in normal strings for Unicode instead.
+Strings are passed to functions by passing a pointer to the first code unit. Since char* and wchar_t* are different types, the functions that process wide strings are different than the ones processing normal strings and have different names.
+String literals ("text" in the C source code) are converted to arrays during compilation.[2] The result is an array of code units containing all the characters plus a trailing zero code unit. In C90 L"text" produces a wide string. A string literal can contain the zero code unit (one way is to put \0 into the source), but this will cause the string to end at that point. The rest of the literal will be placed in memory (with another zero code unit added to the end) but it is impossible to know those code units were translated from the string literal, therefore such source code is not a string literal.[3]
+
+Character encodings[edit]
+Each string ends at the first occurrence of the zero code unit of the appropriate kind (char or wchar_t). Consequently, a byte string (char*) can contain non-NUL characters in ASCII or any ASCII extension, but not characters in encodings such as UTF-16 (even though a 16-bit code unit might be nonzero, its high or low byte might be zero). The encodings that can be stored in wide strings are defined by the width of wchar_t. In most implementations, wchar_t is at least 16 bits, and so all 16-bit encodings, such as UCS-2, can be stored. If wchar_t is 32-bits, then 32-bit encodings, such as UTF-32, can be stored. (The standard requires a "type that holds any wide character", which on Windows no longer holds true since the UCS-2 to UTF-16 shift.) C++11 and C11 add two types with explicit widths char16_t and char32_t.[4]
+Variable-width encodings can be used in both byte strings and wide strings. String length and offsets are measured in bytes or wchar_t, not in "characters", which can be confusing to beginning programmers. UTF-8 and Shift JIS are often used in C byte strings, while UTF-16 is often used in C wide strings when wchar_t is 16 bits. Truncating strings with variable length characters using functions like strncpy can produce invalid sequences at the end of the string. This can be unsafe if the truncated parts are interpreted by code that assumes the input is valid.
+Support for Unicode literals such as char foo[512] = "ÏÏÏÎ²Î±Ï"; (UTF-8) or wchar_t foo[512] = L"ÏÏÏÎ²Î±Ï"; (UTF-16 or UTF-32, depends on wchar_t) is implementation defined,[5] and may require that the source code be in the same encoding, especially for char where compilers might just copy whatever is between the quotes. Some compilers or editors will require entering all non-ASCII characters as \xNN sequences for each byte of UTF-8, and/or \uNNNN for each word of UTF-16. Since C11 (and C++11), a new char foo[512] = u8"ÏÏÏÎ²Î±Ï"; literal syntax is available that guarantees UTF-8 for a bytestring literal.[6]
+
+Overview of functions[edit]
+Most of the functions that operate on C strings are declared in the string.h header (cstring in C++), while functions that operate on C wide strings are declared in the wchar.h header (cwchar in C++). These headers also contain declarations of functions used for handling memory buffers; the name is thus something of a misnomer.
+Functions declared in string.h are extremely popular since, as a part of the C standard library, they are guaranteed to work on any platform which supports C. However, some security issues exist with these functions, such as potential buffer overflows when not used carefully and properly, causing the programmers to prefer safer and possibly less portable variants, out of which some popular ones are listed below. Some of these functions also violate const-correctness by accepting a const string pointer and returning a non-const pointer within the string. To correct this, some have been separated into two overloaded functions in the C++ version of the standard library.
+In historical documentation the term "character" was often used instead of "byte" for C strings, which leads many[who?] to believe that these functions somehow do not work for UTF-8. In fact all lengths are defined as being in bytes and this is true in all implementations, and these functions work as well with UTF-8 as with single-byte encodings. The BSD documentation has been fixed to make this clear, but POSIX, Linux, and Windows documentation still uses "character" in many places where "byte" or "wchar_t" is the correct term.
+Functions for handling memory buffers can process sequences of bytes that include null-byte as part of the data. Names of these functions typically start with mem, as opposite to the str prefix.
+
+Constants and types[edit]
+
+
+
+Name
+Notes
+
+
+NULL
+Macro expanding to the null pointer constant; that is, a constant representing a pointer value which is guaranteed not to be a valid address of an object in memory.
+
+
+wchar_t
+Type used for a code unit in wide strings, usually an unsigned 16 bit or 32 bit value. No specific interpretation is specified for these code units; the C standard only requires that wchar_t be wide enough to hold the widest character set among the supported system locales.[7] Theoretically, wchar_t can be the same size as char, and thus not capable of holding UTF-32 or UTF-16 code units.[8]
+
+
+wint_t
+Integer type that can hold any value of a wchar_t as well as the value of the macro WEOF. This type is unchanged by integral promotions. Usually a 32 bit signed value.
+
+
+mbstate_t
+Contains all the information about the conversion state required from one call to a function to the other.
+
+Functions[edit]
+
+
+
+
+
+Bytestring
+
+Widestring
+
+Description[note 1]
+
+
+Stringmanipulation
+
+strcpy[9]
+
+wcscpy[10]
+
+Copies one string to another
+
+
+strncpy[11]
+
+wcsncpy[12]
+
+Writes exactly n bytes, copying from source or adding nulls
+
+
+strcat[13]
+
+wcscat[14]
+
+Appends one string to another
+
+
+strncat[15]
+
+wcsncat[16]
+
+Appends no more than n bytes from one string to another
+
+
+strxfrm[17]
+
+wcsxfrm[18]
+
+Transforms a string according to the current locale
+
+
+String examination
+
+strlen[19]
+
+wcslen[20]
+
+Returns the length of the string
+
+
+strcmp[21]
+
+wcscmp[22]
+
+Compares two strings (three-way comparison)
+
+
+strncmp[23]
+
+wcsncmp[24]
+
+Compares a specific number of bytes in two strings
+
+
+strcoll[25]
+
+wcscoll[26]
+
+Compares two strings according to the current locale
+
+
+strchr[27]
+
+wcschr[28]
+
+Finds the first occurrence of a byte in a string
+
+
+strrchr[29]
+
+wcsrchr[30]
+
+Finds the last occurrence of a byte in a string
+
+
+strspn[31]
+
+wcsspn[32]
+
+Returns the number of initial bytes in a string that are in a second string
+
+
+strcspn[33]
+
+wcscspn[34]
+
+Returns the number of initial bytes in a string that are not in a second string
+
+
+strpbrk[35]
+
+wcspbrk[36]
+
+Finds in a string the first occurrence of a byte in a set
+
+
+strstr[37]
+
+wcsstr[38]
+
+Finds the first occurrence of a substring in a string
+
+
+strtok[39]
+
+wcstok[40]
+
+Splits a string into tokens
+
+
+Miscellaneous
+
+strerror[41]
+
+N/A
+
+Returns a string containing a message derived from an error code
+
+
+Memorymanipulation
+
+memset[42]
+
+wmemset[43]
+
+Fills a buffer with a repeated byte
+
+
+memcpy[44]
+
+wmemcpy[45]
+
+Copies one buffer to another
+
+
+memmove[46]
+
+wmemmove[47]
+
+Copies one buffer to another, possibly overlapping, buffer
+
+
+memcmp[48]
+
+wmemcmp[49]
+
+Compares two buffers (three-way comparison)
+
+
+memchr[50]
+
+wmemchr[51]
+
+Finds the first occurrence of a byte in a buffer
+
+
+
+^ For wide string functions substitute wchar_t for "byte" in the description
+
+
+
+Multibyte functions[edit]
+
+
+
+Name
+
+Description
+
+
+mblen[52]
+
+Returns the number of bytes in the next multibyte character
+
+
+mbtowc[53]
+
+Converts the next multibyte character to a wide character
+
+
+wctomb[54]
+
+Converts a wide character to its multibyte representation
+
+
+mbstowcs[55]
+
+Converts a multibyte string to a wide string
+
+
+wcstombs[56]
+
+Converts a wide string to a multibyte string
+
+
+btowc[57]
+
+Convert a single-byte character to wide character, if possible
+
+
+wctob[58]
+
+Convert a wide character to a single-byte character, if possible
+
+
+mbsinit[59]
+
+Checks if a state object represents initial state
+
+
+mbrlen[60]
+
+Returns the number of bytes in the next multibyte character, given state
+
+
+mbrtowc[61]
+
+Converts the next multibyte character to a wide character, given state
+
+
+wcrtomb[62]
+
+Converts a wide character to its multibyte representation, given state
+
+
+mbsrtowcs[63]
+
+Converts a multibyte string to a wide string, given state
+
+
+wcsrtombs[64]
+
+Converts a wide string to a multibyte string, given state
+
+These functions all take a pointer to a mbstate_t object that the caller must maintain. This was originally intended to track shift states in the mb encodings, but modern ones such as UTF-8 do not need this. However these functions were designed on the assumption that the wc encoding is not a variable-width encoding and thus are designed to deal with exactly one wchar_t at a time, passing it by value rather than using a string pointer. As UTF-16 is a variable-width encoding, the mbstate_t has been reused to keep track of surrogate pairs in the wide encoding, though the caller must still detect and call mbtowc twice for a single character.[65][66][67]
+
+
+Numeric conversions[edit]
+
+
+
+Bytestring
+
+Widestring
+
+Description[note 1]
+
+
+atof[68]
+
+N/A
+
+converts a string to a floating-point value ('atof' means 'ASCII to float')
+
+
+atoiatolatoll[69]
+
+N/A
+
+converts a string to an integer (C99) ('atoi' means 'ASCII to integer')
+
+
+strtof (C99)[70]strtod[71]strtold (C99)[72]
+
+wcstof (C99)[73]wcstod[74]wcstold (C99)[75]
+
+converts a string to a floating-point value
+
+
+strtolstrtoll[76]
+
+wcstolwcstoll[77]
+
+converts a string to a signed integer
+
+
+strtoulstrtoull[78]
+
+wcstoulwcstoull[79]
+
+converts a string to an unsigned integer
+
+
+
+^ Here string refers either to byte string or wide string
+
+
+
+The C standard library contains several functions for numeric conversions. The functions that deal with byte strings are defined in the stdlib.h header (cstdlib header in C++). The functions that deal with wide strings are defined in the wchar.h header (cwchar header in C++).
+The strtoxxx functions are not const-correct, since they accept a const string pointer and return a non-const pointer within the string.
+
+Also, since the Normative Amendment 1 (C95), atoxx functions are considered subsumed by strtoxxx functions, for which reason neither C95 nor any later standard provides wide-character versions of these functions. The argument against atoxx is that they do not differentiate between an error and a 0.[80]
+Popular extensions[edit]
+
+
+
+Name
+Platform
+Description
+
+
+bzero[81][82]
+
+POSIX, BSD
+
+Fills a buffer with zero bytes, deprecated by memset
+
+
+memccpy[83]
+
+SVID, POSIX
+
+copies up to specified number of bytes between two memory areas, which must not overlap, stopping when a given byte is found.
+
+
+mempcpy[84]
+
+GNU
+
+a variant of memcpy returning a pointer to the byte following the last written byte
+
+
+strcasecmp[85]
+
+POSIX, BSD
+
+case-insensitive versions of strcmp
+
+
+strcat_s[86]
+
+Windows
+
+a variant of strcat that checks the destination buffer size before copying
+
+
+strcpy_s[86]
+
+Windows
+
+a variant of strcpy that checks the destination buffer size before copying
+
+
+strdup[87]
+
+POSIX
+
+allocates and duplicates a string
+
+
+strerror_r[88]
+
+POSIX 1, GNU
+
+a variant of strerror that is thread-safe. The GNU version is incompatible with the POSIX one.
+
+
+stricmp[89]
+
+Windows
+
+case-insensitive versions of strcmp
+
+
+strlcpy[90]
+
+BSD, Solaris
+
+a variant of strcpy that truncates the result to fit in the destination buffer[91]
+
+
+strlcat[90]
+
+BSD, Solaris
+
+a variant of strcat that truncates the result to fit in the destination buffer[91]
+
+
+strsignal[92]
+
+POSIX:2008
+
+returns string representation of a signal code. Not thread safe.
+
+
+strtok_r[93]
+
+POSIX
+
+a variant of strtok that is thread-safe
+
+Replacements[edit]
+Despite the well-established need to replace strcat[13] and strcpy[9] with functions that do not allow buffer overflows, no accepted standard has arisen. This is partly due to the mistaken belief by many C programmers that strncat and strncpy have the desired behavior; however, neither function was designed for this (they were intended to manipulate null-padded fixed-size string buffers, a data format less commonly used in modern software), and the behavior and arguments are non-intuitive and often written incorrectly even by expert programmers.[91]
+The most popular[a] replacement are the strlcat and strlcpy functions, which appeared in OpenBSD 2.4 in December, 1998.[91] These functions always write one NUL to the destination buffer, truncating the result if necessary, and return the size of buffer that would be needed, which allows detection of the truncation and provides a size for creating a new buffer that will not truncate. They have been criticized on the basis of allegedly being inefficient,[94] encouraging the use of C strings (instead of some superior alternative form of string),[95][96] and hiding other potential errors.[97][98] Consequently, they have not been included in the GNU C library (used by software on Linux), although they are implemented in the C libraries for OpenBSD, FreeBSD, NetBSD, Solaris, OS X, and QNX, as well as in alternative C libraries for Linux, such as musl introduced in 2011.[99][100] The lack of GNU C library support has not stopped various software authors from using it and bundling a replacement, among other SDL, GLib, ffmpeg, rsync, and even internally in the Linux kernel. Open source implementations for these functions are available.[101][102]
+Sometimes memcpy[44] or memmove[46] are used, as they may be more efficient than strcpy as they do not repeatedly check for NUL (this is less true on modern processors). Since they need a buffer length as a parameter, correct setting of this parameter can avoid buffer overflows.
+As part of its 2004 Security Development Lifecycle, Microsoft introduced a family of "secure" functions including strcpy_s and strcat_s (along with many others).[103] These functions were standardized with some minor changes as part of the optional C11 (Annex K) proposed by ISO/IEC WDTR 24731. These functions perform various checks including whether the string is too long to fit in the buffer. If the checks fail, a user-specified "runtime-constraint handler" function is called,[104] which usually aborts the program.[105][106] Some functions perform destructive operations before calling the runtime-constraint handler; for example, strcat_s sets the destination to the empty string,[107] which can make it difficult to recover from error conditions or debug them. These functions attracted considerable criticism because initially they were implemented only on Windows and at the same time warning messages started to be produced by Microsoft Visual C++ suggesting the programmers to use these functions instead of standard ones. This has been speculated by some to be an attempt by Microsoft to lock developers into its platform.[108] Although open-source implementations of these functions are available, these functions are not present in common Unix C libraries.[109] Experience with these functions has shown significant problems with their adoption and errors in usage, so the removal of Annex K is proposed for the next revision of the C standard.[110] Usage of memset_s has also been suggested as a way to avoid unwanted compiler optimizations.[111][112]
+
+See also[edit]
+C syntax Â§Â StringsÂ â  source code syntax, including backslash escape sequences
+String functions
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ On GitHub, there are 7,813,206 uses of strlcpy, versus 38,644 uses of strcpy_s (and 15,286,150 uses of strcpy).[citation needed]
+
+
+References[edit]
+
+
+^ Jump up to: a b c .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"The C99 standard draft + TC3" (PDF). Â§7.1.1p1. Retrieved 7 January 2011.{{cite web}}:  CS1 maint: location (link)
+
+^ "The C99 standard draft + TC3" (PDF). Â§6.4.5p7. Retrieved 7 January 2011.{{cite web}}:  CS1 maint: location (link)
+
+^ "The C99 standard draft + TC3" (PDF). Section 6.4.5 footnote 66. Retrieved 7 January 2011.{{cite web}}:  CS1 maint: location (link)
+
+^ "Fundamental types". en.cppreference.com.
+
+^ "The C99 standard draft + TC3" (PDF). Â§5.1.1.2 Translation phases, p1. Retrieved 23 December 2011.{{cite web}}:  CS1 maint: location (link)
+
+^ "string literals". en.cppreference.com. Retrieved 23 December 2019.
+
+^ "stddef.h - standard type definitions". The Open Group. Retrieved 28 January 2017.
+
+^ Gillam, Richard (2003). Unicode Demystified: A Practical Programmer's Guide to the Encoding Standard. Addison-Wesley Professional. p.Â 714. ISBNÂ 9780201700527.
+
+^ Jump up to: a b "strcpy - cppreference.com". En.cppreference.com. 2 January 2014. Retrieved 6 March 2014.
+
+^ "wcscpy - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strncpy - cppreference.com". En.cppreference.com. 4 October 2013. Retrieved 6 March 2014.
+
+^ "wcsncpy - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ Jump up to: a b "strcat - cppreference.com". En.cppreference.com. 8 October 2013. Retrieved 6 March 2014.
+
+^ "wcscat - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strncat - cppreference.com". En.cppreference.com. 1 July 2013. Retrieved 6 March 2014.
+
+^ "wcsncat - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strxfrm - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcsxfrm - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strlen - cppreference.com". En.cppreference.com. 27 December 2013. Retrieved 6 March 2014.
+
+^ "wcslen - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strcmp - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcscmp - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strncmp - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcsncmp - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strcoll - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcscoll - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strchr - cppreference.com". En.cppreference.com. 23 February 2014. Retrieved 6 March 2014.
+
+^ "wcschr - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strrchr - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcsrchr - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strspn - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcsspn - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strcspn - cppreference.com". En.cppreference.com. 31 May 2013. Retrieved 6 March 2014.
+
+^ "wcscspn - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strpbrk - cppreference.com". En.cppreference.com. 31 May 2013. Retrieved 6 March 2014.
+
+^ "wcspbrk - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strstr - cppreference.com". En.cppreference.com. 16 October 2013. Retrieved 6 March 2014.
+
+^ "wcsstr - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strtok - cppreference.com". En.cppreference.com. 3 September 2013. Retrieved 6 March 2014.
+
+^ "wcstok - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strerror - cppreference.com". En.cppreference.com. 31 May 2013. Retrieved 6 March 2014.
+
+^ "memset - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wmemset - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ Jump up to: a b "memcpy - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wmemcpy - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ Jump up to: a b "memmove - cppreference.com". En.cppreference.com. 25 January 2014. Retrieved 6 March 2014.
+
+^ "wmemmove - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "memcmp - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wmemcmp - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "memchr - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wmemchr - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "mblen - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "mbtowc - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wctomb - cppreference.com". En.cppreference.com. 4 February 2014. Retrieved 6 March 2014.
+
+^ "mbstowcs - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcstombs - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "btowc - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wctob - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "mbsinit - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "mbrlen - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "mbrtowc - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcrtomb - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "mbsrtowcs - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcsrtombs - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "6.3.2 Representing the state of the conversion". The GNU C Library. Retrieved 31 January 2017.
+
+^ "root/src/multibyte/c16rtomb.c". Retrieved 31 January 2017.
+
+^ "Contents of /stable/11/lib/libc/locale/c16rtomb.c". Retrieved 31 January 2017.
+
+^ "atof - cppreference.com". En.cppreference.com. 31 May 2013. Retrieved 6 March 2014.
+
+^ "atoi, atol, atoll - cppreference.com". En.cppreference.com. 18 January 2014. Retrieved 6 March 2014.
+
+^ "strtof, strtod, strtold - cppreference.com". En.cppreference.com. 4 February 2014. Retrieved 6 March 2014.
+
+^ "strtof, strtod, strtold - cppreference.com". En.cppreference.com. 4 February 2014. Retrieved 6 March 2014.
+
+^ "strtof, strtod, strtold - cppreference.com". En.cppreference.com. 4 February 2014. Retrieved 6 March 2014.
+
+^ "wcstof, wcstod, wcstold - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcstof, wcstod, wcstold - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "wcstof, wcstod, wcstold - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strtol, strtoll - cppreference.com". En.cppreference.com. 4 February 2014. Retrieved 6 March 2014.
+
+^ "wcstol, wcstoll - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ "strtoul, strtoull - cppreference.com". En.cppreference.com. 4 February 2014. Retrieved 6 March 2014.
+
+^ "wcstoul, wcstoull - cppreference.com". En.cppreference.com. Retrieved 6 March 2014.
+
+^ C99 Rationale, 7.20.1.1
+
+^ "bzero". The Open Group. Retrieved 27 November 2017.
+
+^ "bzero(3)". OpenBSD. Retrieved 27 November 2017.
+
+^ "memccpy". Pubs.opengroup.org. Retrieved 6 March 2014.
+
+^ "mempcpy(3) - Linux manual page". Kernel.org. Retrieved 6 March 2014.
+
+^ "strcasecmp(3) - Linux manual page". Kernel.org. Retrieved 6 March 2014.
+
+^ Jump up to: a b "strcat_s, wcscat_s, _mbscat_s". Msdn.microsoft.com. Retrieved 6 March 2014.
+
+^ "strdup". Pubs.opengroup.org. Retrieved 6 March 2014.
+
+^ "strerror(3) - Linux manual page". man7.org. Retrieved 3 November 2019.
+
+^ "String | stricmp()". C Programming Expert.com. Retrieved 6 March 2014.
+
+^ Jump up to: a b "strlcpy, strlcat â size-bounded string copying and concatenation". OpenBSD. Retrieved 26 May 2016.
+
+^ Jump up to: a b c d Todd C. Miller; Theo de Raadt (1999). "strlcpy and strlcat â consistent, safe, string copy and concatenation". USENIX '99.
+
+^ "strsignal". Pubs.opengroup.org. Retrieved 6 March 2014.
+
+^ "strtok". Pubs.opengroup.org. Retrieved 6 March 2014.
+
+^ Miller, Damien (October 2005). "Secure Portability" (PDF). Retrieved 26 June 2016. This [strlcpy and strlcat] API has been adopted by most modern operating systems and many standalone software packages [...]. The notable exception is the GNU standard C library, glibc, whose maintainer steadfastly refuses to include these improved APIs, labelling them "horribly inefficient BSD crap", despite prior evidence that they are faster is most cases than the APIs they replace.
+
+^ libc-alpha mailing list, selected messages from 8 August 2000 thread: 53, 60, 61
+
+^ The ups and downs of strlcpy(); LWN.net
+
+^ "Adding strlcpy() to glibc". lwn.net. Correct string handling means that you always know how long your strings are and therefore you can you memcpy (instead of strcpy).
+
+^ strlcpy(3)Â âÂ Linux Library Functions Manual  "However, one may question the validity of such optimizations, as they defeat the whole purpose of strlcpy() and strlcat(). As a matter of fact, the first version of this manual page got it wrong."
+
+^ "root/src/string/strlcpy.c". Retrieved 28 January 2017.
+
+^ "root/src/string/strlcat.c". Retrieved 28 January 2017.
+
+^ Todd C. Miller. "strlcpy.c". BSD Cross Reference.
+
+^ Todd C. Miller. "strlcat.c". BSD Cross Reference.
+
+^ Lovell, Martyn. "Repel Attacks on Your Code with the Visual Studio 2005 Safe C and C++ Libraries". Retrieved 13 February 2015.
+
+^ "The C11 standard draft" (PDF). Â§K.3.1.4p2. Retrieved 13 February 2013.{{cite web}}:  CS1 maint: location (link)
+
+^ "The C11 standard draft" (PDF). Â§K.3.6.1.1p4. Retrieved 13 February 2013.{{cite web}}:  CS1 maint: location (link)
+
+^ "Parameter Validation".
+
+^ "The C11 standard draft" (PDF). Â§K.3.7.2.1p4. Retrieved 13 February 2013.{{cite web}}:  CS1 maint: location (link)
+
+^ Danny Kalev. "They're at it again". InformIT. Archived from the original on 15 January 2012. Retrieved 10 November 2011.
+
+^ Safe C Library. "The Safe C Library provides bound checking memory and string functions per ISO/IEC TR24731". Sourceforge. Retrieved 6 March 2013.
+
+^ "Field Experience With Annex K â Bounds Checking Interfaces". Retrieved 5 November 2015.
+
+^ "MSC06-C. Beware of compiler optimizations". SEI CERT C Coding Standard.
+
+^ memset_s(3)Â âÂ FreeBSD Library Functions Manual
+
+
+External links[edit]
+
+
+
+The Wikibook C Programming has a page on the topic of: C Programming/Strings
+
+Fast memcpy in C, multiple C coding examples to target different types of CPU instruction architectures
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}vteC programming language
+ANSI C
+C99
+C11
+C17
+C2x
+Embedded C
+MISRA C
+Features
+Functions
+Header files
+Operators
+String
+Syntax
+Preprocessor
+Data types
+Standard library
+Char
+File I/O
+Math
+Dynamic memory
+String
+Time
+Variadic
+POSIX
+Standard libraryimplementations
+Bionic
+libhybris
+dietlibc
+glibc
+EGLIBC
+klibc
+Windows CRT
+musl
+Newlib
+uClibc
+Compilers
+ACK
+Borland Turbo C
+Clang
+GCC
+ICC
+LCC
+Norcroft C
+PCC
+SDCC
+TCC
+Microsoft Visual Studio / Express / C++
+Watcom C/C++
+IDEs
+Anjuta
+CLion
+Code::Blocks
+CodeLite
+Eclipse
+Geany
+GNOME Builder
+KDevelop
+Microsoft Visual Studio
+NetBeans
+Comparison withother languages
+Compatibility of C and C++
+Comparison with Pascal
+Descendantlanguages
+C++
+C#
+D
+Objective-C
+Alef
+Limbo
+Go
+Vala
+
+ Category
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=C_string_handling&oldid=1065704329"
+		Categories: C (programming language)C standard libraryString (computer science)Hidden categories: All articles with unsourced statementsArticles with unsourced statements from February 2015CS1 maint: locationArticles with short descriptionShort description matches WikidataUse dmy dates from July 2020All articles with specifically marked weasel-worded phrasesArticles with specifically marked weasel-worded phrases from January 2017
+	

@@ -1,0 +1,1023 @@
+
+Title:
+Boolean satisfiability problem
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"3SAT" redirects here. For the Central European television network, see 3sat.
+Problem of determining if a Boolean formula could be made true
+In logic and computer science, the Boolean satisfiability problem (sometimes called propositional satisfiability problem and abbreviated SATISFIABILITY, SAT or B-SAT) is the problem of determining if there exists an interpretation that satisfies a given Boolean formula. In other words, it asks whether the variables of a given Boolean formula can be consistently replaced by the values TRUE or FALSE in such a way that the formula evaluates to TRUE. If this is the case, the formula is called satisfiable. On the other hand, if no such assignment exists, the function expressed by the formula is FALSE for all possible variable assignments and the formula is unsatisfiable. For example, the formula "a AND NOT b" is satisfiable because one can find the values aÂ =Â TRUE and bÂ =Â FALSE, which make (a AND NOT b)Â =Â TRUE. In contrast, "a AND NOT a" is unsatisfiable.
+SAT is the first problem that was proven to be NP-complete; see CookâLevin theorem. This means that all problems in the complexity class NP, which includes a wide range of natural decision and optimization problems, are at most as difficult to solve as SAT. There is no known algorithm that efficiently solves each SAT problem, and it is generally believed that no such algorithm exists; yet this belief has not been proven mathematically, and resolving the question of whether SAT has a polynomial-time algorithm is equivalent to the P versus NP problem, which is a famous open problem in the theory of computing.
+Nevertheless, as of 2007, heuristic SAT-algorithms are able to solve problem instances involving tens of thousands of variables and formulas consisting of millions of symbols,[1] which is sufficient for many practical SAT problems from, e.g., artificial intelligence, circuit design,[2] and automatic theorem proving.
+
+Contents
+
+1 Definitions
+
+1.1 Conjunctive normal form
+
+
+2 Complexity
+
+2.1 3-satisfiability
+
+
+3 Special cases of SAT
+
+3.1 Conjunctive normal form
+3.2 Disjunctive normal form
+3.3 Exactly-1 3-satisfiability
+3.4 Not-all-equal 3-satisfiability
+3.5 Linear SAT
+3.6 2-satisfiability
+3.7 Horn-satisfiability
+3.8 XOR-satisfiability
+3.9 Schaefer's dichotomy theorem
+
+
+4 Extensions of SAT
+5 Finding a satisfying assignment
+6 Algorithms for solving SAT
+7 See also
+8 Notes
+9 External links
+10 References
+
+
+
+Definitions[edit]
+A propositional logic formula, also called Boolean expression, is built from variables, operators AND (conjunction, also denoted by â§), OR (disjunction, â¨), NOT (negation, Â¬), and parentheses.
+A formula is said to be satisfiable if it can be made TRUE by assigning appropriate logical values (i.e. TRUE, FALSE) to its variables.
+The Boolean satisfiability problem (SAT) is, given a formula, to check whether it is satisfiable.
+This decision problem is of central importance in many areas of computer science, including theoretical computer science, complexity theory,[3][4] algorithmics, cryptography[5][6] and artificial intelligence.[7][additional citation(s) needed]
+
+Conjunctive normal form[edit]
+A literal is either a variable, called positive literal, or the negation of a variable, called negative literal.
+A clause is a disjunction of literals (or a single literal). A clause is called a Horn clause if it contains at most one positive literal.
+A formula is in conjunctive normal form (CNF) if it is a conjunction of clauses (or a single clause).
+For example, x1 is a positive literal, Â¬x2 is a negative literal, x1 â¨ Â¬x2 is a clause. The formula (x1 â¨ Â¬x2) â§ (Â¬x1 â¨ x2 â¨ x3) â§ Â¬x1 is  in conjunctive normal form; its first and third clauses are Horn clauses, but its second clause is not. The formula is satisfiable, by choosing x1Â =Â FALSE, x2Â =Â FALSE, and x3 arbitrarily, since (FALSE â¨ Â¬FALSE) â§ (Â¬FALSE â¨ FALSE â¨ x3) â§ Â¬FALSE evaluates to (FALSE â¨ TRUE) â§ (TRUE â¨ FALSE â¨ x3) â§ TRUE, and in turn to TRUE â§ TRUE â§ TRUE (i.e. to TRUE). In contrast, the CNF formula a â§ Â¬a, consisting of two clauses of one literal, is unsatisfiable, since for a=TRUE or a=FALSE it evaluates to TRUE â§ Â¬TRUE (i.e., FALSE) or FALSE â§ Â¬FALSE (i.e., again FALSE), respectively.
+For some versions of the SAT problem, it is useful to define the notion of a generalized conjunctive normal form formula, viz. as a conjunction of arbitrarily many generalized clauses, the latter being of the form R(l1,...,ln) for some Boolean function R and (ordinary) literals li. Different sets of allowed boolean functions lead to different problem versions. As an example, R(Â¬x,a,b) is a generalized clause, and R(Â¬x,a,b) â§ R(b,y,c) â§ R(c,d,Â¬z) is a generalized conjunctive normal form. This formula is used below, with R being the ternary operator that is TRUE just when exactly one of its arguments is.
+Using the laws of Boolean algebra, every propositional logic formula can be transformed into an equivalent conjunctive normal form, which may, however, be exponentially longer. For example, transforming the formula
+(x1â§y1) â¨ (x2â§y2) â¨ ... â¨ (xnâ§yn)
+into conjunctive normal form yields
+
+(x1Â â¨Â x2Â â¨Â â¦Â â¨Â xn) â§
+(y1Â â¨Â x2Â â¨Â â¦Â â¨Â xn) â§
+(x1Â â¨Â y2Â â¨Â â¦Â â¨Â xn) â§
+(y1Â â¨Â y2Â â¨Â â¦Â â¨Â xn) â§ ... â§
+(x1Â â¨Â x2Â â¨Â â¦Â â¨Â yn) â§
+(y1Â â¨Â x2Â â¨Â â¦Â â¨Â yn) â§
+(x1Â â¨Â y2Â â¨Â â¦Â â¨Â yn) â§
+(y1Â â¨Â y2Â â¨Â â¦Â â¨Â yn);
+while the former is a disjunction of n conjunctions of 2 variables, the latter consists of 2n clauses of n variables.
+
+Complexity[edit]
+Main article: CookâLevin theorem
+SAT was the first known NP-complete problem, as proved by Stephen Cook at the University of Toronto in 1971[8] and independently by Leonid Levin at the National Academy of Sciences in 1973.[9] Until that time, the concept of an NP-complete problem did not even exist.
+The proof shows how every decision problem in the complexity class NP can be reduced to the SAT problem for CNF[note 1] formulas, sometimes called CNFSAT.
+A useful property of Cook's reduction is that it preserves the number of accepting answers. For example, deciding whether a given graph has a 3-coloring is another problem in NP; if a graph has 17 valid 3-colorings, the SAT formula produced by the CookâLevin reduction will have 17 satisfying assignments.
+NP-completeness only refers to the run-time of the worst case instances.  Many of the instances that occur in practical applications can be solved much more quickly.  See Algorithms for solving SAT below.
+
+3-satisfiability[edit]
+  The 3-SAT instance (x â¨ x â¨ y) â§ (Â¬x â¨ Â¬y â¨ Â¬y) â§ (Â¬x â¨ y â¨ y) reduced to a clique problem. The green vertices form a 3-clique and correspond to the satisfying assignment x=FALSE, y=TRUE.
+Like the satisfiability problem for arbitrary formulas, determining the satisfiability of a formula in conjunctive normal form where each clause is limited to at most three literals is NP-complete also; this problem is called 3-SAT, 3CNFSAT, or 3-satisfiability.
+To reduce the unrestricted SAT problem to 3-SAT, transform each clause l1 â¨ â¯ â¨ ln to a conjunction of n - 2 clauses
+
+(l1 â¨ l2 â¨ x2) â§ 
+(Â¬x2 â¨ l3 â¨ x3) â§ 
+(Â¬x3 â¨ l4 â¨ x4) â§ â¯ â§ 
+(Â¬xn â 3 â¨ ln â 2 â¨ xn â 2) â§ 
+(Â¬xn â 2 â¨ ln â 1 â¨ ln)
+where x2,ââ¯â,âxn â 2 are fresh variables not occurring elsewhere.
+Although the two formulas are not logically equivalent, they are equisatisfiable. The formula resulting from transforming all clauses is at most 3 times as long as its original, i.e. the length growth is polynomial.[10]
+3-SAT is one of Karp's 21 NP-complete problems, and it is used as a starting point for proving that other problems are also NP-hard.[note 2] This is done by polynomial-time reduction from 3-SAT to the other problem. An example of a problem where this method has been used is the clique problem: given a CNF formula consisting of c clauses, the corresponding graph consists of a vertex for each literal, and an edge between each two non-contradicting[note 3] literals from different clauses, cf. picture. The graph has a c-clique if and only if the formula is satisfiable.[11]
+There is a simple randomized algorithm due to SchÃ¶ning (1999) that runs in time (4/3)n where n is the number of variables in the 3-SAT proposition, and succeeds with high probability to correctly decide 3-SAT.[12]
+The exponential time hypothesis asserts that no algorithm can solve 3-SAT (or indeed k-SAT for any 
+  
+    
+      
+        k
+        >
+        2
+      
+    
+    {\displaystyle k>2}
+  
+) in exp(o(n)) time (i.e., fundamentally faster than exponential in n).
+Selman, Mitchell, and Levesque (1996) give empirical data on the difficulty of randomly generated 3-SAT formulas, depending on their size parameters.
+Difficulty is measured in number recursive calls made by a DPLL algorithm.[13]
+3-satisfiability can be generalized to k-satisfiability (k-SAT, also k-CNF-SAT), when formulas in CNF are considered with each clause containing up to k literals.[citation needed]
+However, since for any k â¥ 3, this problem can neither be easier than 3-SAT nor harder than SAT, and the latter two are NP-complete, so must be k-SAT.
+Some authors restrict k-SAT to CNF formulas with exactly k literals.[citation needed] This doesn't lead to a different complexity class either, as each clause l1 â¨ â¯ â¨ lj with j < k literals can be padded with fixed dummy variables to
+l1 â¨ â¯ â¨ lj â¨ dj+1 â¨ â¯ â¨ dk.
+After padding all clauses, 2k-1 extra clauses[note 4] have to be appended to ensure that only d1 = â¯ = dk=FALSE can lead to a satisfying assignment. Since k doesn't depend on the formula length, the extra clauses lead to a constant increase in length. For the same reason, it does not matter whether duplicate literals are allowed in clauses, as in Â¬x â¨ Â¬y â¨ Â¬y.
+
+Special cases of SAT[edit]
+Conjunctive normal form[edit]
+Conjunctive normal form (in particular with 3 literals per clause) is often considered the canonical representation for SAT formulas. As shown above, the general SAT problem reduces to 3-SAT, the problem of determining satisfiability for formulas in this form.
+
+Disjunctive normal form[edit]
+SAT is trivial if the formulas are restricted to those in disjunctive normal form, that is, they are a disjunction of conjunctions of literals. Such a formula is indeed satisfiable if and only if at least one of its conjunctions is satisfiable, and a conjunction is satisfiable if and only if it does not contain both x and NOT x for some variable x. This can be checked in linear time. Furthermore, if they are restricted to being in full disjunctive normal form, in which every variable appears exactly once in every conjunction, they can be checked in constant time (each conjunction represents one satisfying assignment).  But it can take exponential time and space to convert a general SAT problem to disjunctive normal form; for an example exchange "â§" and "â¨" in the above exponential blow-up example for conjunctive normal forms.
+
+Exactly-1 3-satisfiability[edit]
+  Left: Schaefer's reduction of a 3-SAT clause x â¨ y â¨ z. The result of R is TRUE (1) if exactly one of its arguments is TRUE, and FALSE (0) otherwise. All 8 combinations of values for x,y,z are examined, one per line. The fresh variables a,...,f can be chosen to satisfy all clauses (exactly one green argument for each R) in all lines except the first, where x â¨ y â¨ z is FALSE. Right: A simpler reduction with the same properties.
+A variant of the 3-satisfiability problem is the one-in-three 3-SAT (also known variously as 1-in-3-SAT and exactly-1 3-SAT).
+Given a conjunctive normal form with three literals per clause, the problem is to determine whether there exists a truth assignment to the variables so that each clause has exactly one TRUE literal (and thus exactly two FALSE literals). In contrast, ordinary 3-SAT requires that every clause has at least one TRUE literal.
+Formally, a one-in-three 3-SAT problem is given as a generalized conjunctive normal form with all generalized clauses using a ternary operator R that is TRUE just if exactly one of its arguments is. When all literals of a one-in-three 3-SAT formula are positive, the satisfiability problem is called one-in-three positive 3-SAT.
+One-in-three 3-SAT, together with its positive case, is listed as NP-complete problem "LO4" in the standard reference, Computers and Intractability: A Guide to the Theory of NP-Completeness
+by Michael R. Garey and David S. Johnson.  One-in-three 3-SAT was proved to be NP-complete by Thomas Jerome Schaefer as a special case of Schaefer's dichotomy theorem, which asserts that any problem generalizing Boolean satisfiability in a certain way is either in the class P or is NP-complete.[14]
+Schaefer gives a construction allowing an easy polynomial-time reduction from 3-SAT to one-in-three 3-SAT.  Let "(x or y or z)" be a clause in a 3CNF formula.  Add six fresh boolean variables a, b, c, d, e, and f, to be used to simulate this clause and no other.
+Then the formula R(x,a,d) â§ R(y,b,d) â§ R(a,b,e) â§ R(c,d,f) â§ R(z,c,FALSE) is satisfiable by some setting of the fresh variables if and only if at least one of x, y, or z is TRUE, see picture (left).  Thus any 3-SAT instance with m clauses and n variables may be converted into an equisatisfiable one-in-three 3-SAT instance with 5m clauses and n+6m variables.[15]
+Another reduction involves only four fresh variables and three clauses: R(Â¬x,a,b) â§ R(b,y,c) â§ R(c,d,Â¬z), see picture (right).
+
+Not-all-equal 3-satisfiability[edit]
+Main article: Not-all-equal 3-satisfiability
+Another variant is the not-all-equal 3-satisfiability problem (also called NAE3SAT).
+Given a conjunctive normal form with three literals per clause, the problem is to determine if an assignment to the variables exists such that in no clause all three literals have the same truth value. This problem is NP-complete, too, even if no negation symbols are admitted, by Schaefer's dichotomy theorem.[14]
+
+Linear SAT[edit]
+A 3-SAT formula is Linear SAT (LSAT) if each clause (viewed as a set of literals) intersects at most one other clause, and, moreover, if two clauses intersect, then they have exactly one literal in common. An LSAT formula can be depicted as a set of disjoint semi-closed intervals on a line. Deciding whether an LSAT formula is satisfiable or not is NP-complete.[16]
+
+2-satisfiability[edit]
+Main article: 2-satisfiability
+SAT is easier if the number of literals in a clause is limited to at most 2, in which case the problem is called 2-SAT. This problem can be solved in polynomial time, and in fact is complete for the complexity class NL. If additionally all OR operations in literals are changed to XOR operations, the result is called exclusive-or 2-satisfiability, which is a problem complete for the complexity class SL = L.
+
+Horn-satisfiability[edit]
+Main article: Horn-satisfiability
+The problem of deciding the satisfiability of a given conjunction of Horn clauses is called Horn-satisfiability, or HORN-SAT.
+It can be solved in polynomial time by a single step of the Unit propagation algorithm, which produces the single minimal model of the set of Horn clauses (w.r.t. the set of literals assigned to TRUE).
+Horn-satisfiability is P-complete. It can be seen as P's version of the Boolean satisfiability problem.
+Also, deciding the truth of quantified Horn formulas can be done in polynomial time.
+[17]
+Horn clauses are of interest because they are able to express implication of one variable from a set of other variables. Indeed, one such clause Â¬x1 â¨ ... â¨ Â¬xn â¨ y can be rewritten as x1 â§ ... â§ xn â y, that is, if x1,...,xn are all TRUE, then y needs to be TRUE as well.
+A generalization of the class of Horn formulae is that of renameable-Horn formulae, which is the set of formulae that can be placed in Horn form by replacing some variables with their respective negation.
+For example, (x1 â¨ Â¬x2) â§ (Â¬x1 â¨ x2 â¨ x3) â§ Â¬x1 is not a Horn formula, but can be renamed to the Horn formula (x1 â¨ Â¬x2) â§ (Â¬x1 â¨ x2 â¨ Â¬y3) â§ Â¬x1 by introducing y3 as negation of x3.
+In contrast, no renaming of (x1 â¨ Â¬x2 â¨ Â¬x3) â§ (Â¬x1 â¨ x2 â¨ x3) â§ Â¬x1 leads to a Horn formula.
+Checking the existence of such a replacement can be done in linear time; therefore, the satisfiability of such formulae is in P as it can be solved by first performing this replacement and then checking the satisfiability of the resulting Horn formula.
+
+
+
+  A formula with 2 clauses may be unsatisfied (red), 3-satisfied (green), xor-3-satisfied (blue), or/and 1-in-3-satisfied (yellow), depending on the TRUE-literal count in the 1st (hor) and 2nd (vert) clause.
+
+XOR-satisfiability[edit]
+
+
+
+Solving an XOR-SAT exampleby Gaussian elimination
+
+
+
+
+
+
+Given formula
+
+
+("â" means XOR, the red clause is optional)
+
+
+(aâcâd) â§ (bâÂ¬câd) â§ (aâbâÂ¬d) â§ (aâÂ¬bâÂ¬c) â§ (Â¬aâbâc)
+
+
+
+
+
+
+
+Equation system
+
+
+("1" means TRUE, "0" means FALSE)
+
+
+Each clause leads to one equation.
+
+
+
+a
+â
+
+c
+â
+
+d
+= 1
+
+
+
+b
+â
+Â¬
+c
+â
+
+d
+= 1
+
+
+
+a
+â
+
+b
+â
+Â¬
+d
+= 1
+
+
+
+a
+â
+Â¬
+b
+â
+Â¬
+c
+= 1
+
+
+Â¬
+a
+â
+
+b
+â
+
+c
+ â 1
+
+
+
+
+
+
+
+Normalized equation system
+
+
+using properties of Boolean rings (Â¬x=1âx, xâx=0)
+
+
+a
+â
+c
+â
+d
+= 1
+
+
+b
+â
+c
+â
+d
+= 0
+
+
+a
+â
+b
+â
+d
+= 0
+
+
+a
+â
+b
+â
+c
+= 1
+
+
+a
+â
+b
+â
+c
+ â 0
+
+
+(If the red equation is present, it contradicts
+
+
+the last black one, so the system is unsolvable.
+
+
+Therefore, Gauss' algorithm is
+
+
+used only for the black equations.)
+
+
+
+
+
+
+
+Associated coefficient matrix
+
+
+Â 
+
+
+a
+b
+c
+d
+
+line
+
+
+Â 
+
+
+1
+0
+1
+1
+
+1
+
+A
+
+
+0
+1
+1
+1
+
+0
+
+B
+
+
+1
+1
+0
+1
+
+0
+
+C
+
+
+1
+1
+1
+0
+
+1
+
+D
+
+
+
+
+
+
+
+Transforming to echelon form
+
+
+Â 
+
+
+a
+b
+c
+d
+
+operation
+
+
+Â 
+
+
+1
+0
+1
+1
+
+1
+
+A
+
+
+1
+1
+0
+1
+
+0
+
+C
+
+
+1
+1
+1
+0
+
+1
+
+D
+
+
+0
+1
+1
+1
+
+0
+
+B (swapped)
+
+
+Â 
+
+
+1
+0
+1
+1
+
+1
+
+A
+
+
+0
+1
+1
+0
+
+1
+
+E = CâA
+
+
+0
+1
+0
+1
+
+0
+
+F = DâA
+
+
+0
+1
+1
+1
+
+0
+
+B
+
+
+Â 
+
+
+1
+0
+1
+1
+
+1
+
+A
+
+
+0
+1
+1
+0
+
+1
+
+E
+
+
+0
+0
+1
+1
+
+1
+
+G = FâE
+
+
+0
+0
+0
+1
+
+1
+
+H = BâE
+
+
+
+
+
+
+
+Transforming to diagonal form
+
+
+Â 
+
+
+a
+b
+c
+d
+
+operation
+
+
+Â 
+
+
+1
+0
+1
+0
+
+0
+
+I = AâH
+
+
+0
+1
+1
+0
+
+1
+
+E
+
+
+0
+0
+1
+0
+
+0
+
+J = GâH
+
+
+0
+0
+0
+1
+
+1
+
+H
+
+
+Â 
+
+
+1
+0
+0
+0
+
+0
+
+K = IâJ
+
+
+0
+1
+0
+0
+
+1
+
+L = EâJ
+
+
+0
+0
+1
+0
+
+0
+
+J
+
+
+0
+0
+0
+1
+
+1
+
+H
+
+
+
+
+
+
+
+
+Solution:
+
+
+If the red clause is present:
+Unsolvable
+
+
+Else:
+a = 0 = FALSE
+
+
+
+b = 1 = TRUE
+
+
+
+c = 0 = FALSE
+
+
+
+d = 1 = TRUE
+
+
+As a consequence:
+
+
+R(a,c,d) â§ R(b,Â¬c,d) â§ R(a,b,Â¬d) â§ R(a,Â¬b,Â¬c) â§ R(Â¬a,b,c)
+
+
+is not 1-in-3-satisfiable,
+
+
+while (a â¨ c â¨ d) â§ (b â¨ Â¬c â¨ d) â§ (a â¨ b â¨ Â¬d) â§ (a â¨ Â¬b â¨ Â¬c)
+
+
+is 3-satisfiable with a=c=FALSE and b=d=TRUE.
+
+
+Another special case is the class of problems where each clause contains XOR (i.e. exclusive or) rather than (plain) OR operators.[note 5]
+This is in P, since an XOR-SAT formula can also be viewed as a system of linear equations mod 2, and can be solved in cubic time by Gaussian elimination;[18] see the box for an example. This recast is based on the kinship between Boolean algebras and Boolean rings, and the fact that arithmetic modulo two forms a finite field. Since a XOR b XOR c evaluates to TRUE if and only if exactly 1 or 3 members of {a,b,c} are TRUE, each solution of the 1-in-3-SAT problem for a given CNF formula is also a solution of the XOR-3-SAT problem, and in turn each solution of XOR-3-SAT is a solution of 3-SAT, cf. picture. As a consequence, for each CNF formula, it is possible to solve the XOR-3-SAT problem defined by the formula, and based on the result infer either that the 3-SAT problem is solvable or that the 1-in-3-SAT problem is unsolvable.
+Provided that the complexity classes P and NP are not equal, neither 2-, nor Horn-, nor XOR-satisfiability is NP-complete, unlike SAT.
+
+Schaefer's dichotomy theorem[edit]
+Main article: Schaefer's dichotomy theorem
+The restrictions above (CNF, 2CNF, 3CNF, Horn, XOR-SAT) bound the considered formulae to be conjunctions of subformulae; each restriction states a specific form for all subformulae: for example, only binary clauses can be subformulae in 2CNF.
+Schaefer's dichotomy theorem states that, for any restriction to Boolean functions that can be used to form these subformulae, the corresponding satisfiability problem is in P or NP-complete.  The membership in P of the satisfiability of 2CNF, Horn, and XOR-SAT formulae are special cases of this theorem.[14]
+The following table summarizes some common variants of SAT.
+
+
+
+
+
+Code
+
+Name
+
+Restrictions
+
+Requirements
+
+Class
+
+
+3SAT
+
+3-satisfiability
+
+Each clause contains 3 literals.
+
+At least one literal must be true.
+
+NPC
+
+
+2SAT
+
+2-satisfiability
+
+Each clause contains 2 literals.
+
+At least one literal must be true.
+
+P
+
+
+1-in-3-SAT
+
+Exactly-1 3-SAT
+
+Each clause contains 3 literals.
+
+Exactly one literal must be true.
+
+NPC
+
+
+1-in-3-SAT+
+
+Exactly-1 Positive 3-SAT
+
+Each clause contains 3 positive literals.
+
+Exactly one literal must be true.
+
+NPC
+
+
+NAE3SAT
+
+Not-all-equal 3-satisfiability
+
+Each clause contains 3 literals.
+
+Either one or two literals must be true.
+
+NPC
+
+
+NAE3SAT+
+
+Not-all-equal positive 3-SAT
+
+Each clause contains 3 positive literals.
+
+Either one or two literals must be true.
+
+NPC
+
+
+PL-SAT
+
+Planar SAT
+
+The incidence graph (clause-variable graph) is planar.
+
+At least one literal must be true.
+
+NPC
+
+
+L3SAT
+
+Linear 3-SAT
+
+Each clause intersects at most one other clause, and the intersection is exactly one literal.
+
+At least one literal must be true.
+
+NPC
+
+
+HORN-SAT
+
+Horn satisfiability
+
+Horn clauses (at most one positive literal).
+
+At least one literal must be true.
+
+P
+
+
+XOR-SAT
+
+Xor satisfiability
+
+Each clause contains XOR operations rather than OR.
+
+The XOR of all literals must be true.
+
+P
+
+Extensions of SAT[edit]
+An extension that has gained significant popularity since 2003 is satisfiability modulo theories (SMT) that can enrich CNF formulas with linear constraints, arrays, all-different constraints, uninterpreted functions,[19] etc. Such extensions typically remain NP-complete, but very efficient solvers are now available that can handle many such kinds of constraints.
+The satisfiability problem becomes more difficult if both "for all" (â) and "there exists" (â) quantifiers are allowed to bind the Boolean variables.
+An example of such an expression would be âx ây âz (x â¨ y â¨ z) â§ (Â¬x â¨ Â¬y â¨ Â¬z); it is valid, since for all values of x and y, an appropriate value of z can be found, viz. z=TRUE if both x and y are FALSE, and z=FALSE else.
+SAT itself (tacitly) uses only â quantifiers.
+If only â quantifiers are allowed instead, the so-called tautology problem is obtained, which is co-NP-complete.
+If both quantifiers are allowed, the problem is called the quantified Boolean formula problem (QBF), which can be shown to be PSPACE-complete. It is widely believed that PSPACE-complete problems are strictly harder than any problem in NP, although this has not yet been proved. Using highly parallel P systems, QBF-SAT problems can be solved in linear time.[20]
+Ordinary SAT asks if there is at least one variable assignment that makes the formula true. A variety of variants deal with the number of such assignments:
+
+MAJ-SAT asks if the majority of all assignments make the formula TRUE. It is known to be complete for PP, a probabilistic class.
+#SAT, the problem of counting how many variable assignments satisfy a formula, is a counting problem, not a decision problem, and is #P-complete.
+UNIQUE SAT[21] is the problem of determining whether a formula has exactly one assignment. It is complete for US,[22] the complexity class describing problems solvable by a non-deterministic polynomial time Turing machine that accepts when there is exactly one nondeterministic accepting path and rejects otherwise.
+UNAMBIGUOUS-SAT is the name given to the satisfiability problem when the input is restricted to formulas having at most one satisfying assignment. The problem is also called USAT.[23] A solving algorithm for UNAMBIGUOUS-SAT is allowed to exhibit any behavior, including endless looping, on a formula having several satisfying assignments. Although this problem seems easier, Valiant and Vazirani have shown[24] that if there is a practical (i.e. randomized polynomial-time) algorithm to solve it, then all problems in NP can be solved just as easily.
+MAX-SAT, the maximum satisfiability problem, is an FNP generalization of SAT. It asks for the maximum number of clauses which can be satisfied by any assignment. It has efficient approximation algorithms, but is NP-hard to solve exactly. Worse still, it is APX-complete, meaning there is no polynomial-time approximation scheme (PTAS) for this problem unless P=NP.
+WMSAT is the problem of finding an assignment of minimum weight that satisfy a monotone Boolean formula (i.e. a formula without any negation). Weights of propositional variables are given in the input of the problem. The weight of an assignment is the sum of weights of true variables. That problem is NP-complete (see Th. 1 of [25]).
+Other generalizations include satisfiability for first- and second-order logic, constraint satisfaction problems, 0-1 integer programming.
+
+Finding a satisfying assignment[edit]
+While SAT is a decision problem, the search problem of finding a satisfying assignment reduces to SAT. That is, each algorithm which correctly answers if an instance of SAT is solvable can be used to find a satisfying assignment. First, the question is asked on the given formula Î¦. If the answer is "no", the formula is unsatisfiable. Otherwise, the question is asked on the partly instantiated formula Î¦{x1=TRUE}, i.e. Î¦ with the first variable x1 replaced by TRUE, and simplified accordingly. If the answer is "yes", then x1=TRUE, otherwise x1=FALSE. Values of other variables can be found subsequently in the same way. In total, n+1 runs of the algorithm are required, where n is the number of distinct variables in Î¦.
+This property is used in several theorems in complexity theory:
+
+NP â P/poly â PH = Î£2 Â  (KarpâLipton theorem)
+NP â BPP â NP = RP
+P = NP â FP = FNP
+Algorithms for solving SAT[edit]
+Main article: SAT solver
+Since the SAT problem is NP-complete, only algorithms with exponential worst-case complexity are known for it. In spite of this, efficient and scalable algorithms for SAT were developed during the 2000s and have contributed to dramatic advances in our ability to automatically solve problem instances involving tens of thousands of variables and millions of constraints (i.e. clauses).[1] Examples of such problems in electronic design automation (EDA) include formal equivalence checking, model checking, formal verification of pipelined microprocessors,[19] automatic test pattern generation, routing of FPGAs,[26] planning, and scheduling problems, and so on. A SAT-solving engine is also considered to be an essential component in the electronic design automation toolbox.
+Major techniques used by modern SAT solvers include the DavisâPutnamâLogemannâLoveland algorithm (or DPLL), conflict-driven clause learning (CDCL), and stochastic local search algorithms such as WalkSAT. Almost all SAT solvers include time-outs, so they will terminate in reasonable time even if they cannot find a solution.
+Different SAT solvers will find different instances easy or hard, and some excel at proving unsatisfiability, and others at finding solutions.
+SAT solvers are developed and compared in SAT-solving contests.[27] Modern SAT solvers are also having significant impact on the fields of software verification, constraint solving in artificial intelligence, and operations research, among others.
+
+See also[edit]
+Unsatisfiable core
+Satisfiability modulo theories
+Counting SAT
+Planar SAT
+KarloffâZwick algorithm
+Circuit satisfiability
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ The SAT problem for arbitrary formulas is NP-complete, too, since it is easily shown to be in NP, and it cannot be easier than SAT for CNF formulas.
+
+^ i.e. at least as hard as every other problem in NP. A decision problem is NP-complete if and only if it is in NP and is NP-hard.
+
+^ i.e. such that one literal is not the negation of the other
+
+^ viz. all maxterms that can be built with d1,â¯,dk, except d1â¨â¯â¨dk
+
+^ Formally, generalized conjunctive normal forms with a ternary boolean function R are employed, which is TRUE just if 1 or 3 of its arguments is. An input clause with more than 3 literals can be transformed into an equisatisfiable conjunction of clauses Ã¡ 3 literals similar to above; i.e. XOR-SAT can be reduced to XOR-3-SAT.
+
+
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Boolean satisfiability problem.
+
+SAT Game: try solving a Boolean satisfiability problem yourself
+The international SAT competition website
+International Conference on Theory and Applications of Satisfiability Testing
+Journal on Satisfiability, Boolean Modeling and Computation
+SAT Live, an aggregate website for research on the satisfiability problem
+Yearly evaluation of MaxSAT solvers
+References[edit]
+
+
+^ a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Ohrimenko, Olga; Stuckey, Peter J.; Codish, Michael (2007), "Propagation = Lazy Clause Generation", Principles and Practice of Constraint Programming â CP 2007, Lecture Notes in Computer Science, vol.Â 4741, pp.Â 544â558, CiteSeerXÂ 10.1.1.70.5471, doi:10.1007/978-3-540-74970-7_39, modern SAT solvers can often handle problems with millions of constraints and hundreds of thousands of variables.
+
+^ Hong, Ted; Li, Yanjing; Park, Sung-Boem; Mui, Diana; Lin, David; Kaleq, Ziyad Abdel; Hakim, Nagib; Naeimi, Helia; Gardner, Donald S.; Mitra, Subhasish (November 2010). "QED: Quick Error Detection tests for effective post-silicon validation". 2010 IEEE International Test Conference: 1â10. doi:10.1109/TEST.2010.5699215. ISBNÂ 978-1-4244-7206-2. S2CIDÂ 7909084.
+
+^ Karp, Richard M. (1972). "Reducibility Among Combinatorial Problems" (PDF).  In Raymond E. Miller; James W. Thatcher (eds.). Complexity of Computer Computations. New York: Plenum. pp.Â 85â103. ISBNÂ 0-306-30707-3. Archived from the original (PDF) on 2011-06-29. Retrieved 2020-05-07. Here: p.86
+
+^ Alfred V. Aho and John E. Hopcroft and Jeffrey D. Ullman (1974). The Design and Analysis of Computer Algorithms. Reading/MA: Addison-Wesley. ISBNÂ 0-201-00029-6. Here: p.403
+
+^ Massacci, Fabio; Marraro, Laura (2000-02-01). "Logical Cryptanalysis as a SAT Problem". Journal of Automated Reasoning. 24 (1): 165â203. doi:10.1023/A:1006326723002. ISSNÂ 1573-0670. S2CIDÂ 3114247.
+
+^ Mironov, Ilya; Zhang, Lintao (2006).  Biere, Armin; Gomes, Carla P. (eds.). "Applications of SAT Solvers to Cryptanalysis of Hash Functions". Theory and Applications of Satisfiability Testing - SAT 2006. Lecture Notes in Computer Science. Berlin, Heidelberg: Springer. 4121: 102â115. doi:10.1007/11814948_13. ISBNÂ 978-3-540-37207-3.
+
+^ Vizel, Y.; Weissenbacher, G.; Malik, S. (2015). "Boolean Satisfiability Solvers and Their Applications in Model Checking". Proceedings of the IEEE. 103 (11): 2021â2035. doi:10.1109/JPROC.2015.2455034. S2CIDÂ 10190144.
+
+^ Cook, Stephen A. (1971). "The Complexity of Theorem-Proving Procedures" (PDF). Proceedings of the 3rd Annual ACM Symposium on Theory of Computing: 151â158. CiteSeerXÂ 10.1.1.406.395. doi:10.1145/800157.805047. S2CIDÂ 7573663.
+
+^ Levin, Leonid (1973). "Universal search problems (Russian: Ð£Ð½Ð¸Ð²ÐµÑÑÐ°Ð»ÑÐ½ÑÐµ Ð·Ð°Ð´Ð°ÑÐ¸ Ð¿ÐµÑÐµÐ±Ð¾ÑÐ°, Universal'nye perebornye zadachi)". Problems of Information Transmission (Russian: ÐÑÐ¾Ð±Ð»ÐµÐ¼Ñ Ð¿ÐµÑÐµÐ´Ð°ÑÐ¸ Ð¸Ð½ÑÐ¾ÑÐ¼Ð°ÌÑÐ¸Ð¸, Problemy Peredachi Informatsii). 9 (3): 115â116. (pdf) (in Russian), translated into English by Trakhtenbrot, B. A. (1984). "A survey of Russian approaches to perebor (brute-force searches) algorithms". Annals of the History of Computing. 6 (4): 384â400. doi:10.1109/MAHC.1984.10036. S2CIDÂ 950581.
+
+^ a b Alfred V. Aho; John E. Hopcroft; Jeffrey D. Ullman (1974). The Design and Analysis of Computer Algorithms. Addison-Wesley. ISBNÂ 9780201000290.; here: Thm.10.4
+
+^ Aho, Hopcroft, Ullman[10] (1974); Thm.10.5
+
+^ SchÃ¶ning, Uwe (Oct 1999). "A Probabilistic Algorithm for k-SAT and Constraint Satisfaction Problems" (PDF). Proc. 40th Ann. Symp. Foundations of Computer Science. pp.Â 410â414. doi:10.1109/SFFCS.1999.814612. ISBNÂ 0-7695-0409-4. S2CIDÂ 123177576.
+
+^ Bart Selman; David Mitchell; Hector Levesque (1996). "Generating Hard Satisfiability Problems". Artificial Intelligence. 81 (1â2): 17â29. CiteSeerXÂ 10.1.1.37.7362. doi:10.1016/0004-3702(95)00045-3.
+
+^ a b c Schaefer, Thomas J. (1978). "The complexity of satisfiability problems" (PDF). Proceedings of the 10th Annual ACM Symposium on Theory of Computing. San Diego, California. pp.Â 216â226.
+
+^ (Schaefer, 1978), p.222, Lemma 3.5
+
+^ Arkin, Esther M.; Banik, Aritra; Carmi, Paz; Citovsky, Gui; Katz, Matthew J.; Mitchell, Joseph S. B.; Simakov, Marina (2018-12-11). "Selecting and covering colored points". Discrete Applied Mathematics. 250: 75â86. doi:10.1016/j.dam.2018.05.011. ISSNÂ 0166-218X.
+
+^ Buning, H.K.; Karpinski, Marek; Flogel, A. (1995). "Resolution for Quantified Boolean Formulas". Information and Computation. Elsevier. 117 (1): 12â18. doi:10.1006/inco.1995.1025.
+
+^ Moore, Cristopher; Mertens, Stephan (2011), The Nature of Computation, Oxford University Press, p.Â 366, ISBNÂ 9780199233212.
+
+^ a b R. E. Bryant, S. M. German, and M. N. Velev, Microprocessor Verification Using Efficient Decision Procedures for a Logic of Equality with Uninterpreted Functions, in Analytic Tableaux and Related Methods, pp.Â 1â13, 1999.
+
+^ Alhazov, Artiom; MartÃ­n-Vide, Carlos; Pan, Linqiang (2003). "Solving a PSPACE-Complete Problem by Recognizing P Systems with Restricted Active Membranes". Fundamenta Informaticae. 58: 67â77. Here: Sect.3, Thm.3.1
+
+^ Blass, Andreas; Gurevich, Yuri (1982-10-01). "On the unique satisfiability problem". Information and Control. 55 (1): 80â88. doi:10.1016/S0019-9958(82)90439-9. ISSNÂ 0019-9958.
+
+^ "Complexity Zoo:U - Complexity Zoo". complexityzoo.uwaterloo.ca. Archived from the original on 2019-07-09. Retrieved 2019-12-05.
+
+^ Kozen, Dexter C. (2006). "Supplementary Lecture F: Unique Satisfiability". Theory of Computation. Texts in Computer Science. London: Springer-Verlag. p.Â 180. ISBNÂ 9781846282973.
+
+^ Valiant, L.; Vazirani, V. (1986). "NP is as easy as detecting unique solutions" (PDF). Theoretical Computer Science. 47: 85â93. doi:10.1016/0304-3975(86)90135-0.
+
+^ Buldas, Ahto; Lenin, Aleksandr; Willemson, Jan; Charnamord, Anton (2017).  Obana, Satoshi; Chida, Koji (eds.). "Simple Infeasibility Certificates for Attack Trees". Advances in Information and Computer Security. Lecture Notes in Computer Science. Springer International Publishing. 10418: 39â55. doi:10.1007/978-3-319-64200-0_3. ISBNÂ 9783319642000.
+
+^ Gi-Joon Nam; Sakallah, K. A.; Rutenbar, R. A. (2002). "A new FPGA detailed routing approach via search-based Boolean satisfiability" (PDF). IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems. 21 (6): 674. doi:10.1109/TCAD.2002.1004311.
+
+^ "The international SAT Competitions web page". Retrieved 2007-11-15.
+
+
+Additional references by date of publication:
+
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Michael R. Garey & David S. Johnson (1979). Computers and Intractability: A Guide to the Theory of NP-Completeness. W.H. Freeman. ISBNÂ 0-7167-1045-5. A9.1: LO1 â LO7, pp.Â 259 â 260.
+Marques-Silva, J.; Glass, T. (1999). "Combinational equivalence checking using satisfiability and recursive learning" (PDF). Design, Automation and Test in Europe Conference and Exhibition, 1999. Proceedings (Cat. No. PR00078) (PDF). p.Â 145. doi:10.1109/DATE.1999.761110. ISBNÂ 0-7695-0078-1.
+Clarke, E.; Biere, A.; Raimi, R.; Zhu, Y. (2001). "Bounded Model Checking Using Satisfiability Solving". Formal Methods in System Design. 19: 7â34. doi:10.1023/A:1011276507260. S2CIDÂ 2484208.
+Giunchiglia, E.; Tacchella, A. (2004).  Giunchiglia, Enrico; Tacchella, Armando (eds.). Theory and Applications of Satisfiability Testing. Lecture Notes in Computer Science. Vol.Â 2919. doi:10.1007/b95238. ISBNÂ 978-3-540-20851-8. S2CIDÂ 31129008.
+Babic, D.; Bingham, J.; Hu, A. J. (2006). "B-Cubing: New Possibilities for Efficient SAT-Solving" (PDF). IEEE Transactions on Computers. 55 (11): 1315. doi:10.1109/TC.2006.175. S2CIDÂ 14819050.
+Rodriguez, C.; Villagra, M.; Baran, B. (2007). "Asynchronous team algorithms for Boolean Satisfiability" (PDF). 2007 2nd Bio-Inspired Models of Network, Information and Computing Systems. pp.Â 66â69. doi:10.1109/BIMNICS.2007.4610083. S2CIDÂ 15185219.
+Carla P. Gomes; Henry Kautz; Ashish Sabharwal; Bart Selman (2008). "Satisfiability Solvers".  In Frank Van Harmelen; Vladimir Lifschitz; Bruce Porter (eds.). Handbook of knowledge representation. Foundations of Artificial Intelligence. Vol.Â 3. Elsevier. pp.Â 89â134. doi:10.1016/S1574-6526(07)03002-7. ISBNÂ 978-0-444-52211-5.
+Vizel, Y.; Weissenbacher, G.; Malik, S. (2015). "Boolean Satisfiability Solvers and Their Applications in Model Checking". Proceedings of the IEEE. 103 (11): 2021â2035. doi:10.1109/JPROC.2015.2455034. S2CIDÂ 10190144.
+
+
+This article includes material from a column in the ACM SIGDA e-newsletter by Prof. Karem Sakallah 
+Original text is available here
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteLogic
+Outline
+History
+Fields
+Computer science
+Formal semantics (natural language)
+Inference
+Philosophy of logic
+Proof
+Semantics of logic
+Syntax
+Logics
+Classical
+Informal
+Critical thinking
+Reason
+Mathematical
+Non-classical
+Philosophical
+Theories
+Argumentation
+Metalogic
+Metamathematics
+Set
+
+Foundations
+Abduction
+Analytic and synthetic propositions
+Contradiction
+Paradox
+Antinomy
+Deduction
+Deductive closure
+Definition
+Description
+Entailment
+Linguistic
+Form
+Induction
+Logical truth
+Name
+Necessity and sufficiency
+Premise
+Probability
+Reference
+Statement
+Substitution
+Truth
+Validity
+Liststopics
+Mathematical logic
+Boolean algebra
+Set theory
+other
+Logicians
+Rules of inference
+Paradoxes
+Fallacies
+Logic symbols
+
+Â Philosophy portal
+Category
+WikiProjectÂ (talk)
+changes
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Boolean_satisfiability_problem&oldid=1064645537"
+		Categories: Boolean algebraElectronic design automationFormal methodsLogic in computer scienceNP-complete problemsSatisfiability problemsHidden categories: Articles with Russian-language sources (ru)Articles with short descriptionShort description matches WikidataAll articles needing additional referencesArticles needing additional references from May 2020All articles with unsourced statementsArticles with unsourced statements from May 2020Commons category link from Wikidata
+	

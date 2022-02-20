@@ -1,0 +1,458 @@
+
+Title:
+Algebraic data type
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Kind of composite data type
+hideThis article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Algebraic data type"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (October 2015) (Learn how and when to remove this template message)
+This article may be too technical for most readers to understand. Please help improve it to make it understandable to non-experts, without removing the technical details.  (September 2017) (Learn how and when to remove this template message)
+    
+ (Learn how and when to remove this template message)
+In computer programming, especially functional programming and type theory, an algebraic data type is a kind of composite type, i.e., a type formed by combining other types.
+Two common classes of algebraic types are product types (i.e., tuples and records) and sum types (i.e., tagged or disjoint unions, coproduct types or variant types).[1]
+The values of a product type typically contain several values, called fields.  All values of that type have the same combination of field types.  The set of all possible values of a product type is the set-theoretic product, i.e., the Cartesian product, of the sets of all possible values of its field types.
+The values of a sum type are typically grouped into several classes, called variants.  A value of a variant type is usually created with a quasi-functional entity called a constructor.  Each variant has its own constructor, which takes a specified number of arguments with specified types.  The set of all possible values of a sum type is the set-theoretic sum, i.e., the disjoint union, of the sets of all possible values of its variants. Enumerated types are a special case of sum types in which the constructors take no arguments, as exactly one value is defined for each constructor.
+Values of algebraic types are analyzed with pattern matching, which identifies a value by its constructor or field names and extracts the data it contains.
+Algebraic data types were introduced in Hope, a small functional programming language developed in the 1970s at the University of Edinburgh.[2]
+
+Contents
+
+1 Examples
+2 Explanation
+3 Theory
+4 Programming languages with algebraic data types
+5 See also
+6 References
+
+
+
+Examples[edit]
+One of the most common examples of  an algebraic data type is the singly linked list. A list type is a sum type with two variants, Nil for an empty list and Cons x xs for the combination of a new element x with a list xs to create a new list. Here is an example of how a singly linked list would be declared in Haskell:
+
+data List a = Nil | Cons a (List a)
+
+Cons is an abbreviation of construct. Many languages have special syntax for lists defined in this way. For example, Haskell and ML use [] for Nil, : or :: for Cons, respectively, and square brackets for entire lists. So Cons 1 (Cons 2 (Cons 3 Nil)) would normally be written as 1:2:3:[] or [1,2,3] in Haskell, or as 1::2::3::[] or [1;2;3] in ML.
+For a slightly more complex example, binary trees may be implemented in Haskell as follows:
+
+data Tree = Empty
+          | Leaf Int
+          | Node Tree Tree
+
+Here, Empty represents an empty tree, Leaf contains a piece of data, and Node organizes the data into branches.
+In most languages that support algebraic data types, it is possible to define parametric types. Examples are given later in this article.
+Somewhat similar to a function, a data constructor is applied to arguments of an appropriate type, yielding an instance of the data type to which the type constructor belongs. For example, the data constructor Leaf is logically a function Int -> Tree, meaning that giving an integer as an argument to Leaf produces a value of the type Tree. As Node takes two arguments of the type Tree itself, the datatype is recursive.
+Operations on algebraic data types can be defined by using pattern matching to retrieve the arguments. For example, consider a function to find the depth of a Tree, given here in Haskell:
+
+ depth :: Tree -> Int
+ depth Empty = 0
+ depth (Leaf n) = 1
+ depth (Node l r) = 1 + max (depth l) (depth r)
+
+Thus, a Tree given to depth can be constructed using any of Empty, Leaf, or Node and must be matched for any of them respectively to deal with all cases. In case of Node, the pattern extracts the subtrees l and r for further processing.
+Algebraic data types are highly suited to implementing abstract syntax.  For example, the following algebraic data type describes a simple language representing numerical expressions:
+
+data Expression = Number Int
+                | Add Expression Expression
+                | Minus Expression Expression
+                | Mult Expression Expression
+                | Divide Expression Expression
+
+An element of such a data type would have a form such as Mult (Add (Number 4) (Minus (Number 0) (Number 1))) (Number 2).
+Writing an evaluation function for this language is a simple exercise; however, more complex transformations also become feasible.  For example, an optimization pass in a compiler might be written as a function taking an abstract expression as input and returning an optimized form.
+
+Explanation[edit]
+What is happening is that there is a datatype which can be one of several types of things. Each type of thing is associated with an identifier called a constructor, which can be viewed as a kind of tag for that kind of data. Each constructor can carry with it a different type of data. A constructor could carry no data (e.g., "Empty" in the example above), or one piece of data (e.g., âLeafâ has one Int value), or multiple pieces of data (e.g., âNodeâ has two Tree values).
+To do something with a value of this Tree algebraic data type, it is deconstructed using a process termed pattern matching. It involves matching the data with a series of patterns. The example function "depth" above pattern-matches its argument with three patterns. When the function is called, it finds the first pattern that matches its argument, performs any variable bindings that are found in the pattern, and evaluates the expression corresponding to the pattern.
+Each pattern above has a form that resembles the structure of some possible value of this datatype. The first pattern simply matches values of the constructor Empty. The second pattern matches values of the constructor Leaf. Patterns are recursive, so then the data that is associated with that constructor is matched with the pattern "n". In this case, a lowercase identifier represents a pattern that matches any value, which then is bound to a variable of that name â in this case, a variable ânâ is bound to the integer value stored in the data type â to be used in the expression to evaluate.
+The recursion in patterns in this example are trivial, but a possible more complex recursive pattern would be something like Node (Node (Leaf 4) x) (Node y (Node Empty z)). Recursive patterns several layers deep are used for example in balancing redâblack trees, which involve cases that require looking at colors several layers deep.
+The example above is operationally equivalent to the following pseudocode:
+
+ switch on (data.constructor)
+   case Empty:
+     return 0
+   case Leaf:
+     let n = data.field1
+     return 1
+   case Node:
+     let l = data.field1
+     let r = data.field2
+     return 1 + max (depth l) (depth r)
+
+The comparison of this with pattern matching will point out some of the advantages of algebraic data types and pattern matching. The first advantage is type safety. The pseudocode above relies on the diligence of the programmer to not access field2 when the constructor is a Leaf, for example. Also, the type of field1 is different for Leaf and Node (for Leaf it is Int; for Node it is Tree), so the type system would have difficulties assigning a static type to it in a safe way in a traditional record data structure. However, in pattern matching, the type of each extracted value is checked based on the types declared by the relevant constructor, and how many values can be extracted is known based on the constructor, so it does not face these problems.
+Second, in pattern matching, the compiler statically checks that all cases are handled. If one of the cases of the depth function above were missing, the compiler would issue a warning, indicating that a case is not handled. This task may seem easy for the simple patterns above, but with many complex recursive patterns, the task becomes difficult for the average human (or compiler, if it must check arbitrary nested if-else constructs) to handle. Similarly, there may be patterns which never match (i.e., are already covered by prior patterns), and the compiler can also check and issue warnings for these, as they may indicate an error in reasoning.
+Do not confuse these patterns with regular expression patterns used in string pattern matching. The purpose is similar: to check whether a piece of data matches certain constraints, and if so, extract relevant parts of it for processing. However, the mechanism is very different. This kind of pattern matching on algebraic data types matches on the structural properties of an object rather than on the character sequence of strings.
+
+Theory[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Recursive data type
+A general algebraic data type is a possibly recursive sum type of product types. Each constructor tags a product type to separate it from others, or if there is only one constructor, the data type is a product type. Further, the parameter types of a constructor are the factors of the product type. A parameterless constructor corresponds to the empty product. If a datatype is recursive, the entire sum of products is wrapped in a recursive type, and each constructor also rolls the datatype into the recursive type.
+For example, the Haskell datatype:
+
+ data List a = Nil | Cons a (List a)
+
+is represented in type theory as
+
+  
+    
+      
+        Î»
+        Î±
+        .
+        Î¼
+        Î²
+        .1
+        +
+        Î±
+        Ã
+        Î²
+      
+    
+    {\displaystyle \lambda \alpha .\mu \beta .1+\alpha \times \beta }
+  
+
+with constructors 
+  
+    
+      
+        
+          
+            n
+            i
+            l
+          
+          
+            Î±
+          
+        
+        =
+        
+          r
+          o
+          l
+          l
+        
+        Â 
+        (
+        
+          i
+          n
+          l
+        
+        Â 
+        â¨
+        â©
+        )
+      
+    
+    {\displaystyle \mathrm {nil} _{\alpha }=\mathrm {roll} \ (\mathrm {inl} \ \langle \rangle )}
+  
+ and 
+  
+    
+      
+        
+          
+            c
+            o
+            n
+            s
+          
+          
+            Î±
+          
+        
+        Â 
+        x
+        Â 
+        l
+        =
+        
+          r
+          o
+          l
+          l
+        
+        Â 
+        (
+        
+          i
+          n
+          r
+        
+        Â 
+        â¨
+        x
+        ,
+        l
+        â©
+        )
+      
+    
+    {\displaystyle \mathrm {cons} _{\alpha }\ x\ l=\mathrm {roll} \ (\mathrm {inr} \ \langle x,l\rangle )}
+  
+.
+The Haskell List datatype can also be represented in type theory in a slightly different form, thus:
+
+  
+    
+      
+        Î¼
+        Ï
+        .
+        Î»
+        Î±
+        .1
+        +
+        Î±
+        Ã
+        Ï
+        Â 
+        Î±
+      
+    
+    {\displaystyle \mu \phi .\lambda \alpha .1+\alpha \times \phi \ \alpha }
+  
+.
+(Note how the 
+  
+    
+      
+        Î¼
+      
+    
+    {\displaystyle \mu }
+  
+ and 
+  
+    
+      
+        Î»
+      
+    
+    {\displaystyle \lambda }
+  
+ constructs are reversed relative to the original.) The original formation specified a type function whose body was a recursive type. The revised version specifies a recursive function on types. (The type variable 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \phi }
+  
+ is used to suggest a function rather than a base type like 
+  
+    
+      
+        Î²
+      
+    
+    {\displaystyle \beta }
+  
+, since 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \phi }
+  
+ is like a Greek f.) The function must also now be applied 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \phi }
+  
+ to its argument type 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ in the body of the type.
+For the purposes of the List example, these two formulations are not significantly different; but the second form allows expressing so-called nested data types, i.e., those where the recursive type differs parametrically from the original. (For more information on nested data types, see the works of Richard Bird, Lambert Meertens, and Ross Paterson.)
+In set theory the equivalent of a sum type is a disjoint union, a set whose elements are pairs consisting of a tag (equivalent to a constructor) and an object of a type corresponding to the tag (equivalent to the constructor arguments).
+
+Programming languages with algebraic data types[edit]
+Main article: Comparison of programming languages (algebraic data type)
+Many programming languages incorporate algebraic data types as a first class notion, including:
+
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Ceylon
+Clean
+Coq[3]
+C++[4]
+Elm
+Flow
+F#
+F*
+Free Pascal
+Haskell
+Haxe[5]
+Hope
+Idris
+Java 15[6] (preview)
+Julia
+Kotlin[7]
+Limbo
+Language Of Temporal Ordering Specification (LOTOS)
+Mercury
+Miranda
+Nemerle
+Nim
+OCaml
+Opa
+OpenCog
+Perl
+PureScript
+Racket
+Reason[8]
+Rust[9]
+Scala
+Standard ML
+Swift
+Tom
+TypeScript
+Visual Prolog
+See also[edit]
+Disjoint union
+Generalized algebraic data type
+Initial algebra
+Quotient type
+Tagged union
+Type theory
+Visitor pattern
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Records and variants- OCaml manual section 1.4 Archived 2020-04-28 at the Wayback Machine
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Paul Hudak; John Hughes; Simon Peyton Jones; Philip Wadler. "A history of Haskell: being lazy with class". Proceedings of the third ACM SIGPLAN conference on History of programming languages. Presentations included Rod Burstall, Dave MacQueen, and Don Sannella on Hope, the language that introduced algebraic data types
+
+^ Calculus of Inductive Constructions, and basic standard librariesÂ : Datatypes and Logic.
+
+^ "CppCon 2016: Ben Deane "Using Types Effectively"". Archived from the original on 2021-12-12 â via www.youtube.com.
+
+^ "Enum Instance". Haxe - The Cross-platform Toolkit.
+
+^ "JEP 360: Sealed Classes (Preview)". OpenJDK.
+
+^ "Sealed Classes - Kotlin Programming Language". Kotlin.
+
+^ "Reason Â· Reason lets you write simple, fast and quality type safe code while leveraging both the JavaScript & OCaml ecosystems". reasonml.github.io.
+
+^ "Enums and Pattern Matching - The Rust Programming Language". doc.rust-lang.org. Retrieved 31 August 2021.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Algebraic_data_type&oldid=1065858836"
+		Categories: Functional programmingType theoryData typesComposite data typesHidden categories: Webarchive template wayback linksArticles with short descriptionShort description is different from WikidataArticles needing additional references from October 2015All articles needing additional referencesWikipedia articles that are too technical from September 2017All articles that are too technicalArticles with multiple maintenance issuesArticles with example Haskell code
+	

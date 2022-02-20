@@ -1,0 +1,381 @@
+
+Title:
+Memento pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		The memento pattern is a software design pattern that provides the ability to restore an object to its previous state (undo via rollback).
+The memento pattern is implemented with three objects: the originator, a caretaker and a memento. The originator is some object that has an internal state. The caretaker is going to do something to the originator, but wants to be able to undo the change. The caretaker first asks the originator for a memento object. Then it does whatever operation (or sequence of operations) it was going to do. To roll back to the state before the operations, it returns the memento object to the originator. The memento object itself is an opaque object (one which the caretaker cannot, or should not, change). When using this pattern, care should be taken if the originator may change other objects or resourcesâthe memento pattern operates on a single object.
+Classic examples of the memento pattern include a pseudorandom number generator (each consumer of the PRNG serves as a caretaker who can initialize the PRNG (the originator) with the same seed (the memento) to produce an identical sequence of pseudorandom numbers) and the state in a finite state machine.
+
+Contents
+
+1 Overview
+
+1.1 What problems can the Memento design pattern solve?
+1.2 What solution does the Memento design pattern describe?
+
+
+2 Structure
+
+2.1 UML class and sequence diagram
+
+
+3 Java example
+4 C# example
+5 Python example
+6 References
+7 External links
+
+
+
+Overview[edit]
+The Memento
+[1]
+design pattern is one of the twenty-three well-known 
+GoF design patterns 
+that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse. The Memento Pattern was created by Noah Thompson, David Espiritu, and Dr. Drew Clinkenbeard for early HP products.
+
+What problems can the Memento design pattern solve?[edit]
+[2]
+
+The internal state of an object should be saved externally so that the object can be restored to this state later.
+The object's encapsulation must not be violated.
+The problem is that a well designed object is encapsulated so that its representation (data structure)  
+is hidden inside the object and can't be accessed from outside the object.
+
+What solution does the Memento design pattern describe?[edit]
+Make an object (originator) itself responsible for 
+
+saving its internal state to a (memento) object and
+restoring to a previous state from a (memento) object.
+Only the originator that created a memento is allowed to access it.
+A client (caretaker) can request a memento from the originator (to save the internal state of the originator) and pass a memento back to the originator (to restore to a previous state).
+This enables to save and restore the internal state of an originator without violating its encapsulation.
+See also the UML class and sequence diagram below.
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Memento design pattern. [3]
+In the above UML class diagram, 
+the Caretaker class refers to the Originator class 
+for saving (createMemento()) and restoring (restore(memento)) originator's internal state.
+
+The Originator class implements 
+
+(1) createMemento() by creating and returning a Memento object that stores originator's current internal state
+and 
+
+(2) restore(memento) by restoring state from the passed in Memento object.
+
+The UML sequence diagram
+shows the run-time interactions: 
+
+(1) Saving originator's internal state: The Caretaker object calls createMemento() on the Originator object,
+which creates a Memento object, saves 
+its current internal state (setState()), and returns the Memento to the Caretaker.
+
+(2) Restoring originator's internal state: The Caretaker calls restore(memento) on the Originator object and specifies the Memento object that stores the state that should be restored. The Originator gets the state (getState()) from the Memento to set its own state.
+
+Java example[edit]
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Memento implementations in various languages
+
+The following Java program illustrates the "undo" usage of the memento pattern.
+
+import java.util.List;
+import java.util.ArrayList;
+class Originator {
+    private String state;
+    // The class could also contain additional data that is not part of the
+    // state saved in the memento..
+ 
+    public void set(String state) {
+        this.state = state;
+        System.out.println("Originator: Setting state to " + state);
+    }
+ 
+    public Memento saveToMemento() {
+        System.out.println("Originator: Saving to Memento.");
+        return new Memento(this.state);
+    }
+ 
+    public void restoreFromMemento(Memento memento) {
+        this.state = memento.getSavedState();
+        System.out.println("Originator: State after restoring from Memento: " + state);
+    }
+ 
+    public static class Memento {
+        private final String state;
+
+        public Memento(String stateToSave) {
+            state = stateToSave;
+        }
+ 
+        // accessible by outer class only
+        private String getSavedState() {
+            return state;
+        }
+    }
+}
+ 
+class Caretaker {
+    public static void main(String[] args) {
+        List<Originator.Memento> savedStates = new ArrayList<Originator.Memento>();
+ 
+        Originator originator = new Originator();
+        originator.set("State1");
+        originator.set("State2");
+        savedStates.add(originator.saveToMemento());
+        originator.set("State3");
+        // We can request multiple mementos, and choose which one to roll back to.
+        savedStates.add(originator.saveToMemento());
+        originator.set("State4");
+ 
+        originator.restoreFromMemento(savedStates.get(1));   
+    }
+}
+
+The output is:
+
+Originator: Setting state to State1
+Originator: Setting state to State2
+Originator: Saving to Memento.
+Originator: Setting state to State3
+Originator: Saving to Memento.
+Originator: Setting state to State4
+Originator: State after restoring from Memento: State3
+
+This example uses a String as the state, which is an immutable object in Java. In real-life scenarios the state will
+almost always be a mutable object, in which case a copy of the state must be made.
+It must be said that the implementation shown has a drawback: it declares an internal class. It would be better if this memento strategy could apply to more than one originator.
+There are mainly three other ways to achieve Memento:
+
+Serialization.
+A class declared in the same package.
+The object can also be accessed via a proxy, which can achieve any save/restore operation on the object.
+C# example[edit]
+The memento pattern allows one to capture the internal state of an object without violating encapsulation such that later one can undo/revert the changes if required. Here one can see that the memento object is actually used to revert the changes made in the object.
+
+class Memento
+{
+    private readonly string savedState;
+
+    private Memento(string stateToSave)
+    {
+        savedState = stateToSave;
+    }
+
+    public class Originator
+    {
+        private string state;
+        // The class could also contain additional data that is not part of the
+        // state saved in the memento.
+
+        public void Set(string state)
+        {
+            Console.WriteLine("Originator: Setting state to " + state);
+            this.state = state;
+        }
+
+        public Memento SaveToMemento()
+        {
+            Console.WriteLine("Originator: Saving to Memento.");
+            return new Memento(state);
+        }
+
+        public void RestoreFromMemento(Memento memento)
+        {
+            state = memento.savedState;
+            Console.WriteLine("Originator: State after restoring from Memento: " + state);
+        }
+    }
+}
+
+class Caretaker
+{
+    static void Main(string[] args)
+    {
+        List<Memento> savedStates = new List<Memento>();
+
+        Memento.Originator originator = new Memento.Originator();
+        originator.Set("State1");
+        originator.Set("State2");
+        savedStates.Add(originator.SaveToMemento());
+        originator.Set("State3");
+        // We can request multiple mementos, and choose which one to roll back to.
+        savedStates.Add(originator.SaveToMemento());
+        originator.Set("State4");
+
+        originator.RestoreFromMemento(savedStates[1]);
+    }
+}
+
+Python example[edit]
+"""
+Memento pattern example.
+"""
+
+
+class Memento:
+    def __init__(self, state) -> None:
+        self._state = state
+
+    def get_saved_state(self):
+        return self._state
+
+
+class Originator:
+    _state = ""
+
+    def set(self, state) -> None:
+        print("Originator: Setting state to", state)
+        self._state = state
+
+    def save_to_memento(self) -> Memento:
+        print("Originator: Saving to Memento.")
+        return Memento(self._state)
+
+    def restore_from_memento(self, memento) -> None:
+        self._state = memento.get_saved_state()
+        print("Originator: State after restoring from Memento:", self._state)
+
+
+saved_states = []
+originator = Originator()
+originator.set("State1")
+originator.set("State2")
+saved_states.append(originator.save_to_memento())
+
+originator.set("State3")
+saved_states.append(originator.save_to_memento())
+
+originator.set("State4")
+
+originator.restore_from_memento(saved_states[1])
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 283ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Memento design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "The Memento design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+
+External links[edit]
+Description of Memento Pattern in Ada
+Memento UML Class Diagram with C# and .NET code samples
+SourceMaking Tutorial
+Memento Design Pattern using Java
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Memento_pattern&oldid=1057777372"
+		Categories: Software design patternsHidden categories: CS1 maint: multiple names: authors listArticles with example Java codeArticles with example C Sharp codeArticles with example Python (programming language) code
+	

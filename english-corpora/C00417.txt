@@ -1,0 +1,843 @@
+
+Title:
+Visitor pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Visitor pattern"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (January 2022) (Learn how and when to remove this template message)
+
+
+Software design pattern
+In object-oriented programming and software engineering, the visitor design pattern is a way of separating an algorithm from an object structure on which it operates. A practical result of this separation is the ability to add new operations to existing object structures without modifying the structures. It is one way to follow the open/closed principle.
+In essence, the visitor allows adding new virtual functions to a family of classes, without modifying the classes. Instead, a visitor class is created that implements all of the appropriate specializations of the virtual function. The visitor takes the instance reference as input, and implements the goal through double dispatch.
+
+Contents
+
+1 Overview
+
+1.1 What problems can the Visitor design pattern solve?
+1.2 What solution does the Visitor design pattern describe?
+
+
+2 Definition
+3 Advantages
+4 Application
+
+4.1 Iteration loops
+
+
+5 Structure
+
+5.1 UML class and sequence diagram
+5.2 Class diagram
+
+
+6 Details
+7 C# example
+8 Smalltalk example
+9 Go
+10 Java example
+
+10.1 Diagram
+10.2 Sources
+10.3 Output
+
+
+11 Common Lisp example
+
+11.1 Sources
+11.2 Output
+11.3 Notes
+
+
+12 Python example
+
+12.1 Sources
+12.2 Output
+12.3 Abstraction
+
+
+13 Related design patterns
+14 See also
+15 References
+16 External links
+
+
+
+Overview
+The Visitor  
+[1]
+design pattern is one of the twenty-three well-known GoF design patterns 
+that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, 
+objects that are easier to implement, change, test, and reuse.
+
+What problems can the Visitor design pattern solve?
+It should be possible to define a new operation for (some) classes of an object structure without changing the classes.
+When new operations are needed frequently and the object structure consists of many unrelated classes,
+it's inflexible to add new subclasses each time a new operation is required
+because "[..] distributing all these operations across the various node classes leads to a system that's hard to understand, maintain, and change."[1]
+
+What solution does the Visitor design pattern describe?
+Define a separate (visitor) object that implements an operation to be performed on elements of an object structure.
+Clients traverse the object structure and call a dispatching operation accept (visitor) on an element â that "dispatches" (delegates) the request to the "accepted visitor object". The visitor object then performs the operation on the element ("visits the element").
+This makes it possible to create new operations independently from the classes of an object structure
+by adding new visitor objects.
+See also the UML class and sequence diagram below.
+
+Definition
+The Gang of Four defines the Visitor as:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}Represent[ing] an operation to be performed on elements of an object structure. Visitor lets you define a new operation without changing the classes of the elements on which it operates.
+The nature of the Visitor makes it an ideal pattern to plug into public APIs, thus allowing its clients to perform operations on a class using a "visiting" class without having to modify the source.[2]
+
+Advantages
+Moving operations into visitor classes is beneficial when
+
+many unrelated operations on an object structure are required,
+the classes that make up the object structure are known and not expected to change,
+new operations need to be added frequently,
+an algorithm involves several classes of the object structure, but it is desired to manage it in one single location,
+an algorithm needs to work across several independent class hierarchies.
+A drawback to this pattern, however, is that it makes extensions to the class hierarchy more difficult, as new classes typically require a new visit method to be added to each visitor.
+
+Application
+Consider the design of a 2D computer-aided design (CAD) system. At its core, there are several types to represent basic geometric shapes like circles, lines, and arcs. The entities are ordered into layers, and at the top of the type hierarchy is the drawing, which is simply a list of layers, plus some added properties.
+A fundamental operation on this type hierarchy is saving a drawing to the system's native file format. At first glance, it may seem acceptable to add local save methods to all types in the hierarchy. But it is also useful to be able to save drawings to other file formats. Adding ever more methods for saving into many different file formats soon clutters the relatively pure original geometric data structure.
+A naive way to solve this would be to maintain separate functions for each file format. Such a save function would take a drawing as input, traverse it, and encode into that specific file format. As this is done for each added different format, duplication between the functions accumulates. For example, saving a circle shape in a raster format requires very similar code no matter what specific raster form is used, and is different from other primitive shapes. The case for other primitive shapes like lines and polygons is similar. Thus, the code becomes a large outer loop traversing through the objects, with a large decision tree inside the loop querying the type of the object. Another problem with this approach is that it is very easy to miss a shape in one or more savers, or a new primitive shape is introduced, but the save routine is implemented only for one file type and not others, leading to code extension and maintenance problems. As the versions of the same file grows it becomes more complicated to maintain it.
+Instead, the visitor pattern can be applied. It encodes a logical operation on the whole hierarchy into one class containing one method per type. In the CAD example, each save function would be implemented as a separate Visitor subclass. This would remove all duplication of type checks and traversal steps. It would also make the compiler complain if a shape is omitted.
+
+Iteration loops
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}See also: Iterator pattern
+Visitor pattern may be used for iteration over container-like data structures just like Iterator pattern but with limited functionality.[3]:â288â For example, iteration over a directory structure could be implemented by a function class instead of more conventional loop pattern. This would allow deriving various useful information from directories content by implementing a visitor functionality for every item while reusing the iteration code. It's widely employed in Smalltalk systems and can be found in C++ as well.[3]:â289â A drawback of this approach, however, is that you can't break out of the loop easily or iterate concurrently (in parallel i.e. traversing two containers at the same time by a single i variable).[3]:â289â The latter would require writing additional functionality for a visitor to support these features.[3]:â289â
+
+Structure
+UML class and sequence diagram
+  A sample UML class diagram and sequence diagram for the Visitor design pattern.[4]
+In the UML class diagram above, the ElementA class doesn't implement a new operation directly.
+Instead, ElementA implements a dispatching operation  accept(visitor) that "dispatches" (delegates) a request to the "accepted visitor object" (visitor.visitElementA(this)). The Visitor1 class implements the operation (visitElementA(e:ElementA)).
+
+ElementB then implements accept(visitor) by dispatching to visitor.visitElementB(this). The Visitor1 class implements the operation (visitElementB(e:ElementB)).
+The UML sequence diagram
+shows the run-time interactions: The Client object traverses the elements of an object structure (ElementA,ElementB) and calls accept(visitor) on each element.
+
+First, the Client calls accept(visitor) on
+ElementA, which calls visitElementA(this) on the accepted visitor object.
+The element itself (this) is passed to the visitor so that 
+it can "visit" ElementA (call operationA()).
+
+Thereafter, the Client calls accept(visitor) on
+ElementB, which calls visitElementB(this) on the visitor that "visits" ElementB (calls operationB()).
+
+Class diagram
+  Visitor in Unified Modeling Language (UML).[5]:â381â
+  Visitor in LePUS3 (legend)
+Details
+The visitor pattern requires a programming language that supports single dispatch, as common object-oriented languages (such as C++, Java, Smalltalk, Objective-C, Swift, JavaScript, Python and C#) do. Under this condition, consider two objects, each of some class type; one is termed the element, and the other is visitor.
+The visitor declares a visit method, which takes the element as an argument, for each class of element. Concrete visitors are derived from the visitor class and implement these visit methods, each of which implements part of the algorithm operating on the object structure. The state of the algorithm is maintained locally by the concrete visitor class.
+The element declares an accept method to accept a visitor, taking the visitor as an argument. Concrete elements, derived from the element class, implement the accept method. In its simplest form, this is no more than a call to the visitor's visit method. Composite elements, which maintain a list of child objects, typically iterate over these, calling each child's accept method.
+The client creates the object structure, directly or indirectly, and instantiates the concrete visitors. When an operation is to be performed which is implemented using the Visitor pattern, it calls the accept method of the top-level element(s).
+When the accept method is called in the program, its implementation is chosen based on both the dynamic type of the element and the static type of the visitor. When the associated visit method is called, its implementation is chosen based on both the dynamic type of the visitor and the static type of the element, as known from within the implementation of the accept method, which is the same as the dynamic type of the element. (As a bonus, if the visitor can't handle an argument of the given element's type, then the compiler will catch the error.)
+Thus, the implementation of the visit method is chosen based on both the dynamic type of the element and the dynamic type of the visitor. This effectively implements double dispatch. For languages whose object systems support multiple dispatch, not only single dispatch, such as Common Lisp or C# via the Dynamic Language Runtime (DLR), implementation of the visitor pattern is greatly simplified (a.k.a. Dynamic Visitor) by allowing use of simple function overloading to cover all the cases being visited. A dynamic visitor, provided it operates on public data only, conforms to the open/closed principle (since it does not modify extant structures) and to the single responsibility principle (since it implements the Visitor pattern in a separate component).
+In this way, one algorithm can be written to traverse a graph of elements, and many different kinds of operations can be performed during that traversal by supplying different kinds of visitors to interact with the elements based on the dynamic types of both the elements and the visitors.
+
+C# example
+This example declares a separate ExpressionPrintingVisitor class that takes care of the printing.
+
+namespace Wikipedia;
+
+public class ExpressionPrintingVisitor
+{
+    public void PrintLiteral(Literal literal)
+    {
+        Console.WriteLine(literal.Value);
+    }
+    
+    public void PrintAddition(Addition addition)
+    {
+        double leftValue = addition.Left.GetValue();
+        double rightValue = addition.Right.GetValue();
+        var sum = addition.GetValue();
+        Console.WriteLine("{0} + {1} = {2}", leftValue, rightValue, sum);
+    }
+}
+
+public abstract class Expression
+{    
+    public abstract void Accept(ExpressionPrintingVisitor v);
+    
+    public abstract double GetValue();
+}
+
+public class Literal : Expression
+{
+    public double Value { get; set; }
+
+    public Literal(double value)
+    {
+        this.Value = value;
+    }
+    
+    public override void Accept(ExpressionPrintingVisitor v)
+    {
+        v.PrintLiteral(this);
+    }
+    
+    public override double GetValue()
+    {
+        return Value;
+    }
+}
+
+public class Addition : Expression
+{
+    public Expression Left { get; set; }
+    public Expression Right { get; set; }
+
+    public Addition(Expression left, Expression right)
+    {
+        Left = left;
+        Right = right;
+    }
+    
+    public override void Accept(ExpressionPrintingVisitor v)
+    {
+        Left.Accept(v);
+        Right.Accept(v);
+        v.PrintAddition(this);
+    }
+    
+    public override double GetValue()
+    {
+        return Left.GetValue() + Right.GetValue();    
+    }
+}
+
+public static class Program
+{
+    public static void Main(string[] args)
+    {
+        // Emulate 1 + 2 + 3
+        var e = new Addition(
+            new Addition(
+                new Literal(1),
+                new Literal(2)
+            ),
+            new Literal(3)
+        );
+        
+        var printingVisitor = new ExpressionPrintingVisitor();
+        e.Accept(printingVisitor);
+    }
+}
+
+Smalltalk example
+In this case, it is the object's responsibility to know how to print itself on a stream. The visitor here is then the object, not the stream.
+
+"There's no syntax for creating a class. Classes are created by sending messages to other classes."
+WriteStream subclass: #ExpressionPrinter
+    instanceVariableNames: ''
+    classVariableNames: ''
+    package: 'Wikipedia'.
+
+ExpressionPrinter>>write: anObject
+    "Delegates the action to the object. The object doesn't need to be of any special
+    class; it only needs to be able to understand the message #putOn:"
+    anObject putOn: self.
+    ^ anObject.
+
+Object subclass: #Expression
+    instanceVariableNames: ''
+    classVariableNames: ''
+    package: 'Wikipedia'.
+
+Expression subclass: #Literal
+    instanceVariableNames: 'value'
+    classVariableNames: ''
+    package: 'Wikipedia'.
+
+Literal class>>with: aValue
+    "Class method for building an instance of the Literal class"
+    ^ self new
+        value: aValue;
+        yourself.
+
+Literal>>value: aValue
+  "Setter for value"
+  value := aValue.
+
+Literal>>putOn: aStream
+    "A Literal object knows how to print itself"
+    aStream nextPutAll: value asString.
+
+Expression subclass: #Addition
+    instanceVariableNames: 'left right'
+    classVariableNames: ''
+    package: 'Wikipedia'.
+
+Addition class>>left: a right: b
+    "Class method for building an instance of the Addition class"
+    ^ self new
+        left: a;
+        right: b;
+        yourself.
+
+Addition>>left: anExpression
+    "Setter for left"
+    left := anExpression.
+
+Addition>>right: anExpression
+    "Setter for right"
+    right := anExpression.
+
+Addition>>putOn: aStream
+    "An Addition object knows how to print itself"
+    aStream nextPut: $(.
+    left putOn: aStream.
+    aStream nextPut: $+.
+    right putOn: aStream.
+    aStream nextPut: $).
+
+Object subclass: #Program
+    instanceVariableNames: ''
+    classVariableNames: ''
+    package: 'Wikipedia'.
+
+Program>>main
+    | expression stream |
+    expression := Addition
+                    left: (Addition
+                            left: (Literal with: 1)
+                            right: (Literal with: 2))
+                    right: (Literal with: 3).
+    stream := ExpressionPrinter on: (String new: 100).
+    stream write: expression.
+    Transcript show: stream contents.
+    Transcript flush.
+
+
+
+Go
+Go does not support overloading, so the visit methods need different names. A typical visitor interface might be
+
+type Visitor interface {
+	visitWheel(wheel Wheel) string
+	visitEngine(engine Engine) string
+	visitBody(body Body) string
+	visitCar(car Car) string
+}
+
+Java example
+The following example is in the language Java, and shows how the contents of a tree of nodes (in this case describing the components of a car) can be printed. Instead of creating print methods for each node subclass (Wheel, Engine, Body, and Car), one visitor class (CarElementPrintVisitor) performs the required printing action. Because different node subclasses require slightly different actions to print properly, CarElementPrintVisitor dispatches actions based on the class of the argument passed to its visit method. CarElementDoVisitor, which is analogous to a save operation for a different file format, does likewise.
+
+Diagram
+
+
+Sources
+import java.util.List;
+
+interface CarElement {
+    void accept(CarElementVisitor visitor);
+}
+
+interface CarElementVisitor {
+    void visit(Body body);
+    void visit(Car car);
+    void visit(Engine engine);
+    void visit(Wheel wheel);
+}
+
+class Wheel implements CarElement {
+  private final String name;
+
+  public Wheel(final String name) {
+      this.name = name;
+  }
+
+  public String getName() {
+      return name;
+  }
+
+  @Override
+  public void accept(CarElementVisitor visitor) {
+      /*
+       * accept(CarElementVisitor) in Wheel implements
+       * accept(CarElementVisitor) in CarElement, so the call
+       * to accept is bound at run time. This can be considered
+       * the *first* dispatch. However, the decision to call
+       * visit(Wheel) (as opposed to visit(Engine) etc.) can be
+       * made during compile time since 'this' is known at compile
+       * time to be a Wheel. Moreover, each implementation of
+       * CarElementVisitor implements the visit(Wheel), which is
+       * another decision that is made at run time. This can be
+       * considered the *second* dispatch.
+       */
+      visitor.visit(this);
+  }
+}
+
+class Body implements CarElement {
+  @Override
+  public void accept(CarElementVisitor visitor) {
+      visitor.visit(this);
+  }
+}
+
+class Engine implements CarElement {
+  @Override
+  public void accept(CarElementVisitor visitor) {
+      visitor.visit(this);
+  }
+}
+
+class Car implements CarElement {
+    private final List<CarElement> elements;
+
+    public Car() {
+        this.elements = List.of(
+            new Wheel("front left"), new Wheel("front right"),
+            new Wheel("back left"), new Wheel("back right"),
+            new Body(), new Engine()
+        );
+    }
+
+    @Override
+    public void accept(CarElementVisitor visitor) {
+        for (CarElement element : elements) {
+            element.accept(visitor);
+        }
+        visitor.visit(this);
+    }
+}
+
+class CarElementDoVisitor implements CarElementVisitor {
+    @Override
+    public void visit(Body body) {
+        System.out.println("Moving my body");
+    }
+
+    @Override
+    public void visit(Car car) {
+        System.out.println("Starting my car");
+    }
+
+    @Override
+    public void visit(Wheel wheel) {
+        System.out.println("Kicking my " + wheel.getName() + " wheel");
+    }
+
+    @Override
+    public void visit(Engine engine) {
+        System.out.println("Starting my engine");
+    }
+}
+
+class CarElementPrintVisitor implements CarElementVisitor {
+    @Override
+    public void visit(Body body) {
+        System.out.println("Visiting body");
+    }
+
+    @Override
+    public void visit(Car car) {
+        System.out.println("Visiting car");
+    }
+
+    @Override
+    public void visit(Engine engine) {
+        System.out.println("Visiting engine");
+    }
+
+    @Override
+    public void visit(Wheel wheel) {
+        System.out.println("Visiting " + wheel.getName() + " wheel");
+    }
+}
+
+public class VisitorDemo {
+    public static void main(final String[] args) {
+        Car car = new Car();
+
+        car.accept(new CarElementPrintVisitor());
+        car.accept(new CarElementDoVisitor());
+    }
+}
+
+
+
+Output
+Visiting front left wheel
+Visiting front right wheel
+Visiting back left wheel
+Visiting back right wheel
+Visiting body
+Visiting engine
+Visiting car
+Kicking my front left wheel
+Kicking my front right wheel
+Kicking my back left wheel
+Kicking my back right wheel
+Moving my body
+Starting my engine
+Starting my car
+
+Common Lisp example
+Sources
+(defclass auto ()
+  ((elements :initarg :elements)))
+
+(defclass auto-part ()
+  ((name :initarg :name :initform "<unnamed-car-part>")))
+
+(defmethod print-object ((p auto-part) stream)
+  (print-object (slot-value p 'name) stream))
+
+(defclass wheel (auto-part) ())
+
+(defclass body (auto-part) ())
+
+(defclass engine (auto-part) ())
+
+(defgeneric traverse (function object other-object))
+
+(defmethod traverse (function (a auto) other-object)
+  (with-slots (elements) a
+    (dolist (e elements)
+      (funcall function e other-object))))
+
+;; do-something visitations
+
+;; catch all
+(defmethod do-something (object other-object)
+  (format t "don't know how ~s and ~s should interact~%" object other-object))
+
+;; visitation involving wheel and integer
+(defmethod do-something ((object wheel) (other-object integer))
+  (format t "kicking wheel ~s ~s times~%" object other-object))
+
+;; visitation involving wheel and symbol
+(defmethod do-something ((object wheel) (other-object symbol))
+  (format t "kicking wheel ~s symbolically using symbol ~s~%" object other-object))
+
+(defmethod do-something ((object engine) (other-object integer))
+  (format t "starting engine ~s ~s times~%" object other-object))
+
+(defmethod do-something ((object engine) (other-object symbol))
+  (format t "starting engine ~s symbolically using symbol ~s~%" object other-object))
+
+(let ((a (make-instance 'auto
+                        :elements `(,(make-instance 'wheel :name "front-left-wheel")
+                                    ,(make-instance 'wheel :name "front-right-wheel")
+                                    ,(make-instance 'wheel :name "rear-left-wheel")
+                                    ,(make-instance 'wheel :name "rear-right-wheel")
+                                    ,(make-instance 'body :name "body")
+                                    ,(make-instance 'engine :name "engine")))))
+  ;; traverse to print elements
+  ;; stream *standard-output* plays the role of other-object here
+  (traverse #'print a *standard-output*)
+
+  (terpri) ;; print newline
+
+  ;; traverse with arbitrary context from other object
+  (traverse #'do-something a 42)
+
+  ;; traverse with arbitrary context from other object
+  (traverse #'do-something a 'abc))
+
+Output
+"front-left-wheel"
+"front-right-wheel"
+"rear-left-wheel"
+"rear-right-wheel"
+"body"
+"engine"
+kicking wheel "front-left-wheel" 42 times
+kicking wheel "front-right-wheel" 42 times
+kicking wheel "rear-left-wheel" 42 times
+kicking wheel "rear-right-wheel" 42 times
+don't know how "body" and 42 should interact
+starting engine "engine" 42 times
+kicking wheel "front-left-wheel" symbolically using symbol ABC
+kicking wheel "front-right-wheel" symbolically using symbol ABC
+kicking wheel "rear-left-wheel" symbolically using symbol ABC
+kicking wheel "rear-right-wheel" symbolically using symbol ABC
+don't know how "body" and ABC should interact
+starting engine "engine" symbolically using symbol ABC
+Notes
+The other-object parameter is superfluous in traverse. The reason is that it is possible to use an anonymous function that calls the desired target method with a lexically captured object:
+
+(defmethod traverse (function (a auto)) ;; other-object removed
+  (with-slots (elements) a
+    (dolist (e elements)
+      (funcall function e)))) ;; from here too
+
+  ;; ...
+
+  ;; alternative way to print-traverse
+  (traverse (lambda (o) (print o *standard-output*)) a)
+
+  ;; alternative way to do-something with
+  ;; elements of a and integer 42
+  (traverse (lambda (o) (do-something o 42)) a)
+
+Now, the multiple dispatch occurs in the call issued from the body of the anonymous function, and so traverse is just a mapping function that distributes a function application over the elements of an object. Thus all traces of the Visitor Pattern disappear, except for the mapping function, in which there is no evidence of two objects being involved. All knowledge of there being two objects and a dispatch on their types is in the lambda function.
+
+Python example
+Python does not support method overloading in the classical sense (polymorphic behavior according to type of passed parameters), so the "visit" methods for the different model types need to have different names.
+
+Sources
+"""
+Visitor pattern example.
+"""
+
+from abc import ABCMeta, abstractmethod
+
+NOT_IMPLEMENTED = "You should implement this."
+
+class CarElement:
+    __metaclass__ = ABCMeta
+    @abstractmethod
+    def accept(self, visitor):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+class Body(CarElement):
+    def accept(self, visitor):
+        visitor.visitBody(self)
+
+class Engine(CarElement):
+    def accept(self, visitor):
+        visitor.visitEngine(self)
+
+class Wheel(CarElement):
+    def __init__(self, name):
+        self.name = name
+    def accept(self, visitor):
+        visitor.visitWheel(self)
+
+class Car(CarElement):
+    def __init__(self):
+        self.elements = [
+            Wheel("front left"), Wheel("front right"),
+            Wheel("back left"), Wheel("back right"),
+            Body(), Engine()
+        ]
+
+    def accept(self, visitor):
+        for element in self.elements:
+            element.accept(visitor)
+        visitor.visitCar(self)
+
+class CarElementVisitor:
+    __metaclass__ = ABCMeta
+    @abstractmethod
+    def visitBody(self, element):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+    @abstractmethod
+    def visitEngine(self, element):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+    @abstractmethod
+    def visitWheel(self, element):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+    @abstractmethod
+    def visitCar(self, element):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+class CarElementDoVisitor(CarElementVisitor):
+    def visitBody(self, body):
+        print("Moving my body.")
+    def visitCar(self, car):
+        print("Starting my car.")
+    def visitWheel(self, wheel):
+        print("Kicking my {} wheel.".format(wheel.name))
+    def visitEngine(self, engine):
+        print("Starting my engine.")
+
+class CarElementPrintVisitor(CarElementVisitor):
+    def visitBody(self, body):
+        print("Visiting body.")
+    def visitCar(self, car):
+        print("Visiting car.")
+    def visitWheel(self, wheel):
+        print("Visiting {} wheel.".format(wheel.name))
+    def visitEngine(self, engine):
+        print("Visiting engine.")
+
+car = Car()
+car.accept(CarElementPrintVisitor())
+car.accept(CarElementDoVisitor())
+
+Output
+Visiting front left wheel.
+Visiting front right wheel.
+Visiting back left wheel.
+Visiting back right wheel.
+Visiting body.
+Visiting engine.
+Visiting car.
+Kicking my front left wheel.
+Kicking my front right wheel.
+Kicking my back left wheel.
+Kicking my back right wheel.
+Moving my body.
+Starting my engine.
+Starting my car.
+
+Abstraction
+If one is using Python 3 or above, they can make a general implementation of the accept method:
+
+class Visitable:
+    def accept(self, visitor):
+        lookup = "visit_" + type(self).__qualname__.replace(".", "_")
+        return getattr(visitor, lookup)(self)
+
+One could extend this to iterate over the class's method resolution order if they would like to fall back on already-implemented classes. They could also use the subclass hook feature to define the lookup in advance.
+
+Related design patterns
+Iterator pattern â defines a traversal principle like the visitor pattern, without making a type differentiation within the traversed objects
+Church encoding â a related concept from functional programming, in which tagged union/sum types may be modeled using the behaviors of "visitors" on such types, and which enables the visitor pattern to emulate variants and patterns.
+See also
+Algebraic data type
+Double dispatch
+Multiple dispatch
+Function object
+References
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 331ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ Visitor pattern real-world example
+
+^ Jump up to: a b c d Budd, Timothy (1997). An introduction to object-oriented programming (2ndÂ ed.). Reading, Mass.: Addison-Wesley. ISBNÂ 0-201-82419-1. OCLCÂ 34788238.
+
+^ "The Visitor design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Reddy, Martin (2011). API design for C++. Boston: Morgan Kaufmann. ISBNÂ 978-0-12-385004-1. OCLCÂ 704559821.
+
+
+External links
+
+
+
+Wikimedia Commons has media related to Visitor pattern.
+
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Visitor implementations in various languages
+
+The Visitor Family of Design Patterns at the Wayback Machine (archived October 22, 2015). Additional archives: April 12, 2004, March 5, 2002. A rough chapter from The Principles, Patterns, and Practices of Agile Software Development, Robert C. Martin, Prentice Hall
+Visitor pattern in UML and in LePUS3 (a Design Description Language)
+Article "Componentization: the Visitor Example by Bertrand Meyer and Karine Arnout, Computer (IEEE), vol. 39, no. 7, July 2006, pages 23-30.
+Article A Type-theoretic Reconstruction of the Visitor Pattern
+Article "The Essence of the Visitor Pattern" by Jens Palsberg and C. Barry Jay. 1997 IEEE-CS COMPSAC paper showing that accept() methods are unnecessary when reflection is available; introduces term 'Walkabout' for the technique.
+Article "A Time for Reflection" by Bruce Wallace â subtitled "Java 1.2's reflection capabilities eliminate burdensome accept() methods from your Visitor pattern"
+Visitor Pattern using reflection(java).
+PerfectJPattern Open Source Project, Provides a context-free and type-safe implementation of the Visitor Pattern in Java based on Delegates.
+Visitor Design Pattern
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Visitor_pattern&oldid=1068263900"
+		Categories: Articles with example Lisp (programming language) codeSoftware design patternsHidden categories: CS1 maint: multiple names: authors listArticles needing additional references from January 2022All articles needing additional referencesWikipedia semi-protected pagesArticles with short descriptionShort description is different from WikidataCommons category link from WikidataWebarchive template wayback linksArticles with example C++ codeArticles with example Java codeArticles with example Python (programming language) code
+	

@@ -1,0 +1,421 @@
+
+Title:
+Online analytical processing
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Online analytical processing, or OLAP (/ËoÊlÃ¦p/), is an approach to answer multi-dimensional analytical (MDA) queries swiftly in computing.[1] OLAP is part of the broader category of business intelligence, which also encompasses relational databases, report writing and data mining.[2]  Typical applications of OLAP include business reporting for sales, marketing, management reporting, business process management (BPM),[3] budgeting and forecasting, financial reporting and similar areas, with new applications emerging, such as agriculture.[4] 
+The term OLAP was created as a slight modification of the traditional database term online transaction processing (OLTP).[5]
+OLAP tools enable users to analyze multidimensional data interactively from multiple perspectives. OLAP consists of three basic analytical operations: consolidation (roll-up), drill-down, and slicing and dicing.[6]:â402â403â Consolidation involves the aggregation of data that can be accumulated and computed in one or more dimensions. For example, all sales offices are rolled up to the sales department or sales division to anticipate sales trends. By contrast, the drill-down is a technique that allows users to navigate through the details. For instance, users can view the sales by individual products that make up a region's sales. Slicing and dicing is a feature whereby users can take out (slicing) a specific set of data of the OLAP cube and view (dicing) the slices from different viewpoints.  These viewpoints are sometimes called dimensions (such as looking at the same sales by salesperson, or by date, or by customer, or by product, or by region, etc.).
+Databases configured for OLAP use a multidimensional data model, allowing for complex analytical and ad hoc queries with a rapid execution time.[7]  They borrow aspects of navigational databases, hierarchical databases and relational databases.
+OLAP is typically contrasted to OLTP (online transaction processing), which is generally characterized by much less complex queries, in a larger volume, to process transactions rather than for the purpose of business intelligence or reporting. Whereas OLAP systems are mostly optimized for read, OLTP has to process all kinds of queries (read, insert, update and delete).
+
+Contents
+
+1 Overview of OLAP systems
+
+1.1 Multidimensional databases
+1.2 Aggregations
+
+
+2 Types
+
+2.1 Multidimensional OLAP (MOLAP)
+
+2.1.1 Products
+
+
+2.2 Relational OLAP (ROLAP)
+
+2.2.1 Advantages of ROLAP
+2.2.2 Disadvantages of ROLAP
+2.2.3 Performance of ROLAP
+2.2.4 Downside of flexibility
+
+
+2.3 Hybrid OLAP (HOLAP)
+
+2.3.1 Vertical partitioning
+2.3.2 Horizontal partitioning
+2.3.3 Products
+
+
+2.4 Comparison
+2.5 Other types
+
+
+3 APIs and query languages
+4 Products
+
+4.1 History
+4.2 Product comparison
+4.3 OLAP clients
+4.4 Market structure
+4.5 Open-source
+
+
+5 See also
+6 Bibliography
+7 References
+
+7.1 Citations
+7.2 Sources
+
+
+
+
+
+Overview of OLAP systems[edit]
+At the core of any OLAP system is an OLAP cube (also called a 'multidimensional cube' or a hypercube). It consists of numeric facts called measures that are categorized by dimensions. The measures are placed at the intersections of the hypercube, which is spanned by the dimensions as a vector space. The usual interface to manipulate an OLAP cube is a matrix interface, like Pivot tables in a spreadsheet program, which performs projection operations along the dimensions, such as aggregation or averaging.
+The cube metadata is typically created from a star schema or snowflake schema or fact constellation of tables in a relational database. Measures are derived from the records in the fact table and dimensions are derived from the dimension tables.
+Each measure can be thought of as having a set of labels, or meta-data associated with it. A dimension is what describes these labels; it provides information about the measure.
+A simple example would be a cube that contains a store's sales as a measure, and Date/Time as a dimension. Each Sale has a Date/Time label that describes more about that sale.
+For example:
+
+ Sales Fact Table
++-------------+----------+
+| sale_amount | time_id  |
++-------------+----------+            Time Dimension
+|      2008.10|     1234 |----+     +---------+-------------------+
++-------------+----------+    |     | time_id | timestamp         |
+                              |     +---------+-------------------+
+                              +---->|   1234  | 20080902 12:35:43 |
+                                    +---------+-------------------+
+
+Multidimensional databases[edit]
+Multidimensional structure is defined as "a variation of the relational model that uses multidimensional structures to organize data and express the relationships between data".[6]:â177â  The structure is broken into cubes and the cubes are able to store and access data within the confines of each cube. "Each cell within a multidimensional structure contains aggregated data related to elements along each of its dimensions".[6]:â178â  Even when data is manipulated it remains easy to access and continues to constitute a compact database format.  The data still remains interrelated.
+Multidimensional structure is quite popular for analytical databases that use online analytical processing (OLAP) applications.[6]  Analytical databases use these databases because of their ability to deliver answers to complex business queries swiftly.  Data can be viewed from different angles, which gives a broader perspective of a problem unlike other models.[8]
+
+Aggregations[edit]
+It has been claimed that for complex queries OLAP cubes can produce an answer in around 0.1% of the time required for the same query on OLTP relational data.[9][10]  The most important mechanism in OLAP which allows it to achieve such performance is the use of aggregations. Aggregations are built from the fact table by changing the granularity on specific dimensions and aggregating up data along these dimensions, using an aggregate function (or aggregation function). The number of possible aggregations is determined by every possible combination of dimension granularities.
+The combination of all possible aggregations and the base data contains the answers to every query which can be answered from the data.[11]
+Because usually there are many aggregations that can be calculated, often only a predetermined number are fully calculated; the remainder are solved on demand.  The problem of deciding which aggregations (views) to calculate is known as the view selection problem.  View selection can be constrained by the total size of the selected set of aggregations, the time to update them from changes in the base data, or both.  The objective of view selection is typically to minimize the average time to answer OLAP queries, although some studies also minimize the update time.  View selection is NP-Complete. Many approaches to the problem have been explored, including greedy algorithms, randomized search, genetic algorithms and A* search algorithm.
+Some aggregation functions can be computed for the entire OLAP cube by precomputing values for each cell, and then computing the aggregation for a roll-up of cells by aggregating these aggregates, applying a divide and conquer algorithm to the multidimensional problem to compute them efficiently.[12] For example, the overall sum of a roll-up is just the sum of the sub-sums in each cell. Functions that can be decomposed in this way are called decomposable aggregation functions, and include COUNT, MAX, MIN, and SUM, which can be computed for each cell and then directly aggregated; these are known as self-decomposable aggregation functions.[13] In other cases the aggregate function can be computed by computing auxiliary numbers for cells, aggregating these auxiliary numbers, and finally computing the overall number at the end; examples include AVERAGE (tracking sum and count, dividing at the end) and RANGE (tracking max and min, subtracting at the end). In other cases the aggregate function cannot be computed without analyzing the entire set at once, though in some cases approximations can be computed; examples include DISTINCT COUNT, MEDIAN, and MODE; for example, the median of a set is not the median of medians of subsets. These latter are difficult to implement efficiently in OLAP, as they require computing the aggregate function on the base data, either computing them online (slow) or precomputing them for possible rollouts (large space).
+
+Types[edit]
+OLAP systems have been traditionally categorized using the following taxonomy.[14]
+
+Multidimensional OLAP (MOLAP)[edit]
+MOLAP (multi-dimensional online analytical processing) is the classic form of OLAP and is sometimes referred to as just OLAP. MOLAP stores this data in an optimized multi-dimensional array storage, rather than in a relational database.
+Some MOLAP tools require the pre-computation and storage of derived data, such as consolidations â the operation known as processing. Such MOLAP tools generally utilize a pre-calculated data set referred to as a data cube. The data cube contains all the possible answers to a given range of questions. As a result, they  have a very fast response to queries. On the other hand, updating can take a long time depending on the degree of pre-computation. Pre-computation can also lead to what is known as data explosion.
+Other MOLAP tools, particularly those that implement the functional database model do not pre-compute derived data but make all calculations on demand other than those that were previously requested and stored in a cache.
+Advantages of MOLAP
+
+Fast query performance due to optimized storage, multidimensional indexing and caching.
+Smaller on-disk size of data compared to data stored in relational database due to compression techniques.
+Automated computation of higher level aggregates of the data.
+It is very compact for low dimension data sets.
+Array models provide natural indexing.
+Effective data extraction achieved through the pre-structuring of aggregated data.
+Disadvantages of MOLAP
+
+Within some MOLAP systems the processing step (data load) can be quite lengthy, especially on large data volumes. This is usually remedied by doing only incremental processing, i.e., processing only the data which have changed (usually new data) instead of reprocessing the entire data set.
+Some MOLAP methodologies introduce data redundancy.
+Products[edit]
+Examples of commercial products that use MOLAP are Cognos Powerplay, Oracle Database OLAP Option, MicroStrategy, Microsoft Analysis Services, Essbase, TM1, Jedox, and icCube.
+
+Relational OLAP (ROLAP)[edit]
+ROLAP works directly with relational databases and does not require pre-computation. The base data and the dimension tables are stored as relational tables and new tables are created to hold the aggregated information. It depends on a specialized schema design. This methodology relies on manipulating the data stored in the relational database to give the appearance of traditional OLAP's slicing and dicing functionality. In essence, each action of slicing and dicing is equivalent to adding a "WHERE" clause in the SQL statement. ROLAP tools do not use pre-calculated data cubes but instead pose the query to the standard relational database and its tables in order to bring back the data required to answer the question. ROLAP tools feature the ability to ask any question because the methodology is not limited to the contents of a cube.  ROLAP also has the ability to drill down to the lowest level of detail in the database.
+While ROLAP uses a relational database source, generally the database must be carefully designed for ROLAP use.  A database which was designed for OLTP will not function well as a ROLAP database.  Therefore, ROLAP still involves creating an additional copy of the data.  However, since it is a database, a variety of technologies can be used to populate the database.
+
+Advantages of ROLAP[edit]
+ROLAP is considered to be more scalable in handling large data volumes, especially models with dimensions with very high cardinality (i.e., millions of members).
+With a variety of data loading tools available, and the ability to fine-tune the extract, transform, load (ETL) code to the particular data model, load times are generally much shorter than with the automated MOLAP loads.
+The data are stored in a standard relational database and can be accessed by any SQL reporting tool (the tool does not have to be an OLAP tool).
+ROLAP tools are better at handling non-aggregatable facts (e.g., textual descriptions).  MOLAP tools tend to suffer from slow performance when querying these elements.
+By decoupling the data storage from the multi-dimensional model, it is possible to successfully model data that would not otherwise fit into a strict dimensional model.
+The ROLAP approach can leverage database authorization controls such as row-level security, whereby the query results are filtered depending on preset criteria applied, for example, to a given user or group of users (SQL WHERE clause).
+Disadvantages of ROLAP[edit]
+There is a consensus in the industry that ROLAP tools have slower performance than MOLAP tools. However, see the discussion below about ROLAP performance.
+The loading of aggregate tables must be managed by custom ETL code.  The ROLAP tools do not help with this task.  This means additional development time and more code to support.
+When the step of creating aggregate tables is skipped, the query performance then suffers because the larger detailed tables must be queried. This can be partially remedied by adding additional aggregate tables, however it is still not practical to create aggregate tables for all combinations of dimensions/attributes.
+ROLAP relies on the general purpose database for querying and caching, and therefore several special techniques employed by MOLAP tools are not available (such as special hierarchical indexing).  However, modern ROLAP tools take advantage of latest improvements in SQL language such as CUBE and ROLLUP operators, DB2 Cube Views, as well as other SQL OLAP extensions.  These SQL improvements can mitigate the benefits of the MOLAP tools.
+Since ROLAP tools rely on SQL for all of the computations, they are not suitable when the model is heavy on calculations which don't translate well into SQL. Examples of such models include budgeting, allocations, financial reporting and other scenarios.
+Performance of ROLAP[edit]
+In the OLAP industry ROLAP is usually perceived as being able to scale for large data volumes, but suffering from slower query performance as opposed to MOLAP. The OLAP Survey, the largest independent survey across all major OLAP products, being conducted for 6 years (2001 to 2006) have consistently found that companies using ROLAP report slower performance than those using MOLAP even when data volumes were taken into consideration.
+However, as with any survey there are a number of subtle issues that must be taken into account when interpreting the results.
+
+The survey shows that ROLAP tools have 7 times more users than MOLAP tools within each company.  Systems with more users will tend to suffer more performance problems at peak usage times.
+There is also a question about complexity of the model, measured both in number of dimensions and richness of calculations. The survey does not offer a good way to control for these variations in the data being analyzed.
+Downside of flexibility[edit]
+Some companies select ROLAP because they intend to re-use existing relational database tablesâthese tables will frequently not be optimally designed for OLAP use.  The superior flexibility of ROLAP tools allows this less than optimal design to work, but performance suffers.  MOLAP tools in contrast would force the data to be re-loaded into an optimal OLAP design.
+
+Hybrid OLAP (HOLAP)[edit]
+The undesirable trade-off between additional ETL cost and slow query performance has ensured that most commercial OLAP tools now use a "Hybrid OLAP" (HOLAP) approach, which allows the model designer to decide which portion of the data will be stored in MOLAP and which portion in ROLAP.
+There is no clear agreement across the industry as to what constitutes "Hybrid OLAP", except that a database will divide data between relational and specialized storage.[15] For example, for some vendors, a HOLAP database will use relational tables to hold the larger quantities of detailed data, and use specialized storage for at least some aspects of the smaller quantities of more-aggregate or less-detailed data. HOLAP addresses the shortcomings of MOLAP and ROLAP by combining the capabilities of both approaches. HOLAP tools can utilize both pre-calculated cubes and relational data sources.
+
+Vertical partitioning[edit]
+In this mode HOLAP stores aggregations in MOLAP for fast query performance, and detailed data in ROLAP to optimize time of cube processing.
+
+Horizontal partitioning[edit]
+In this mode HOLAP stores some slice of data, usually the more recent one (i.e. sliced by Time dimension) in MOLAP for fast query performance, and older data in ROLAP. Moreover, we can store some dices in MOLAP and others in ROLAP, leveraging the fact that in a large cuboid, there will be dense and sparse subregions.[16]
+
+Products[edit]
+The first product to provide HOLAP storage was Holos, but the technology also became available in other commercial products such as Microsoft Analysis Services, Oracle Database OLAP Option, MicroStrategy and SAP AG BI Accelerator. The hybrid OLAP approach combines ROLAP and MOLAP technology, benefiting from the greater scalability of ROLAP and the faster computation of MOLAP. For example, a HOLAP server may store large volumes of detailed data in a relational database, while aggregations are kept in a separate MOLAP store. The Microsoft SQL Server 7.0 OLAP Services supports a hybrid OLAP server
+
+Comparison[edit]
+Each type has certain benefits, although there is disagreement about the specifics of the benefits between providers.
+
+Some MOLAP implementations are prone to database explosion, a phenomenon causing vast amounts of storage space to be used by MOLAP databases when certain common conditions are met: high number of dimensions, pre-calculated results and sparse multidimensional data.
+MOLAP generally delivers better performance due to specialized indexing and storage optimizations. MOLAP also needs less storage space compared to ROLAP because the specialized storage typically includes compression techniques.[15]
+ROLAP is generally more scalable.[15] However, large volume pre-processing is difficult to implement efficiently so it is frequently skipped.  ROLAP query performance can therefore suffer tremendously.
+Since ROLAP relies more on the database to perform calculations, it has more limitations in the specialized functions it can use.
+HOLAP attempts to mix the best of ROLAP and MOLAP.  It can generally pre-process swiftly, scale well, and offer good function support.
+Other types[edit]
+The following acronyms are also sometimes used, although they are not as widespread as the ones above:
+
+WOLAP â Web-based OLAP
+DOLAP â Desktop OLAP
+RTOLAP â Real-Time OLAP
+GOLAP  â Graph OLAP[17][18]
+CaseOLAP â Context-aware Semantic OLAP,[19] developed for biomedical applications.[20] The CaseOLAP platform includes data preprocessing (e.g., downloading, extraction, and parsing text documents), indexing and searching with Elasticsearch, creating a functional document structure called Text-Cube,[21][22][23][24][25] and quantifying user-defined phrase-category relationships using the core CaseOLAP algorithm.
+APIs and query languages[edit]
+Unlike relational databases, which had SQL as the standard query language, and widespread APIs such as ODBC, JDBC and OLEDB, there was no such unification in the OLAP world for a long time. The first real standard API was OLE DB for OLAP specification from Microsoft which appeared in 1997 and introduced the MDX query language. Several OLAP vendors â both server and client â adopted it. In 2001 Microsoft and Hyperion announced the XML for Analysis specification, which was endorsed by most of the OLAP vendors. Since this also used MDX as a query language, MDX became the de facto standard.[26]
+Since September-2011 LINQ can be used to query SSAS OLAP cubes from Microsoft .NET.[27]
+
+Products[edit]
+History[edit]
+The first product that performed OLAP queries was Express, which was released in 1970 (and acquired by Oracle in 1995 from Information Resources).[28] However, the term did not appear until 1993 when it was coined by Edgar F. Codd, who has been described as "the father of the relational database". Codd's paper[1] resulted from a short consulting assignment which Codd undertook for former Arbor Software (later Hyperion Solutions, and in 2007 acquired by Oracle), as a sort of marketing coup.  The company had released its own OLAP product, Essbase, a year earlier. As a result, Codd's "twelve laws of online analytical processing" were explicit in their reference to Essbase. There was some ensuing controversy and when Computerworld learned that Codd was paid by Arbor, it retracted the article. OLAP market experienced strong growth in late 1990s with dozens of commercial products going into market. In 1998, Microsoft released its first OLAP ServerÂ â  Microsoft Analysis Services, which drove wide adoption of OLAP technology and moved it into mainstream.
+
+Product comparison[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Comparison of OLAP servers
+OLAP clients[edit]
+OLAP clients include many spreadsheet programs like Excel, web application, SQL, dashboard tools, etc. Many clients support interactive data exploration where users select dimensions and measures of interest. Some dimensions are used as filters (for slicing and dicing the data) while others are selected as the axes of a pivot table or pivot chart. Users can also vary aggregation level (for drilling-down or rolling-up) the displayed view. Clients can also offer a variety of graphical widgets such as sliders, geographic maps, heatmaps and more which can be grouped and coordinated as dashboards. An extensive list of clients appears in the visualization column of the comparison of OLAP servers table.
+
+Market structure[edit]
+Below is a list of top OLAP vendors in 2006, with figures in millions of US Dollars.[29]
+
+
+
+
+Vendor
+Global Revenue
+Consolidated company
+
+
+Microsoft Corporation
+1,806
+Microsoft
+
+
+Hyperion Solutions Corporation
+1,077
+Oracle
+
+
+Cognos
+735
+IBM
+
+
+Business Objects
+416
+SAP
+
+
+MicroStrategy
+416
+MicroStrategy
+
+
+SAP AG
+330
+SAP
+
+
+Cartesis (SAP)
+210
+SAP
+
+
+Applix
+205
+IBM
+
+
+Infor
+199
+Infor
+
+
+Oracle Corporation
+159
+Oracle
+
+
+Others
+152
+Others
+
+
+Total
+5,700
+
+Open-source[edit]
+Mondrian OLAP server is an open-source OLAP server written in Java. It supports the MDX query language, the XML for Analysis and the olap4j interface specifications.
+Apache Druid is a popular open-source distributed data store for OLAP queries that is used at scale in production by various organizations.
+Apache Kylin is a distributed data store for OLAP queries originally developed by eBay.
+Cubes (OLAP server) is another light-weight open-source toolkit implementation of OLAP functionality in the Python programming language with built-in ROLAP.
+Apache Pinot (incubating) is used at LinkedIn, Uber, Slack and Microsoft to deliver scalable real time analytics with low latency.[30] It can ingest data from offline data sources (such as Hadoop and flat files) as well as online sources (such as Kafka). Pinot is designed to scale horizontally.
+ClickHouse is a fairly new column orientated DBMS focusing on fast processing and response times.
+See also[edit]
+Comparison of OLAP servers
+Functional Database Model
+Bibliography[edit]
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Daniel Lemire (December 2007). "Data Warehousing and OLAP-A Research-Oriented Bibliography".
+Erik Thomsen. (1997). OLAP Solutions: Building Multidimensional Information Systems, 2nd Edition. John Wiley & Sons. ISBNÂ 978-0-471-14931-6.
+Ling Liu and Tamer M. Ãzsu (Eds.) (2009).  "Encyclopedia of Database Systems, 4100 p.Â 60 illus. ISBNÂ 978-0-387-49616-0.
+References[edit]
+Citations[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b Codd E.F.; Codd S.B. & Salley C.T. (1993). "Providing OLAP (On-line Analytical Processing) to User-Analysts: An IT Mandate" (PDF). Codd & Date, Inc. Retrieved 2008-03-05.[permanent dead link]
+
+^ Deepak Pareek (2007). Business Intelligence for Telecommunications. CRC Press. pp.Â 294 pp. ISBNÂ 978-0-8493-8792-0. Retrieved 2008-03-18.
+
+^ Apostolos Benisis (2010). Business Process Management:A Data Cube To Analyze Business Process Simulation Data For Decision Making. VDM Verlag Dr. MÃ¼ller e.K. pp.Â 204 pp. ISBNÂ 978-3-639-22216-6.
+
+^ 
+Abdullah, Ahsan (November 2009). "Analysis of mealybug incidence on the cotton crop using ADSS-OLAP (Online Analytical Processing) tool". Computers and Electronics in Agriculture. 69 (1): 59â72. doi:10.1016/j.compag.2009.07.003.
+
+^ "OLAP Council White Paper" (PDF). OLAP Council. 1997. Retrieved 2008-03-18.
+
+^ Jump up to: a b c d O'Brien, J. A., & Marakas, G. M. (2009). Management information systems (9th ed.). Boston, MA: McGraw-Hill/Irwin.
+
+^ Hari Mailvaganam (2007). "Introduction to OLAP â Slice, Dice and Drill!". Data Warehousing Review. Retrieved 2008-03-18.
+
+^ Williams, C., Garza, V.R., Tucker, S, Marcus, A.M. (1994, January 24). Multidimensional models boost viewing options. InfoWorld, 16(4)
+
+^ MicroStrategy, Incorporated (1995). "The Case for Relational OLAP" (PDF). Retrieved 2008-03-20.
+
+^ Surajit Chaudhuri & Umeshwar Dayal (1997). "An overview of data warehousing and OLAP technology". SIGMOD Rec. 26 (1): 65. CiteSeerXÂ 10.1.1.211.7178. doi:10.1145/248603.248616. S2CIDÂ 8125630.
+
+^ Gray, Jim; Chaudhuri, Surajit; Layman, Andrew; Reichart, Don; Venkatrao, Murali; Pellow, Frank; Pirahesh, Hamid (1997). "Data Cube: {A} Relational Aggregation Operator Generalizing Group-By, Cross-Tab, and Sub-Totals". J. Data Mining and Knowledge Discovery. 1 (1): 29â53. arXiv:cs/0701155. doi:10.1023/A:1009726021843. S2CIDÂ 12502175. Retrieved 2008-03-20.
+
+^ Zhang 2017, p.Â 1.
+
+^ Jesus, Baquero & Almeida 2011, 2.1 Decomposable functions, pp. 3â4. sfn error: no target: CITEREFJesusBaqueroAlmeida2011 (help)
+
+^ Nigel Pendse (2006-06-27). "OLAP architectures". OLAP Report. Archived from the original on January 24, 2008. Retrieved 2008-03-17.
+
+^ Jump up to: a b c Bach Pedersen, Torben; S. Jensen, Christian (December 2001). "Multidimensional Database Technology". Distributed Systems Online. 34 (12): 40â46. doi:10.1109/2.970558. ISSNÂ 0018-9162.
+
+^ Owen Kaser and Daniel Lemire, Attribute Value Reordering for Efficient Hybrid OLAP, Information Sciences, Volume 176, Issue 16, pages 2279-2438, 2006.
+
+^ "This Week in Graph and Entity Analytics". Datanami. 2016-12-07. Retrieved 2018-03-08.
+
+^ "Cambridge Semantics Announces AnzoGraph Support for Amazon Neptune and Graph Databases". Database Trends and Applications. 2018-02-15. Retrieved 2018-03-08.
+
+^ Tao, Fangbo; Zhuang, Honglei; Yu, Chi Wang; Wang, Qi; Cassidy, Taylor; Kaplan, Lance; Voss, Clare; Han, Jiawei (2016). "Multi-Dimensional, Phrase-Based Summarization in Text Cubes" (PDF).
+
+^ Liem, David A.; Murali, Sanjana; Sigdel, Dibakar; Shi, Yu; Wang, Xuan; Shen, Jiaming; Choi, Howard; Caufield, John H.; Wang, Wei; Ping, Peipei; Han, Jiawei (2018-10-01). "Phrase mining of textual data to analyze extracellular matrix protein patterns across cardiovascular disease". American Journal of Physiology. Heart and Circulatory Physiology. 315 (4): H910âH924. doi:10.1152/ajpheart.00175.2018. ISSNÂ 1522-1539. PMCÂ 6230912. PMIDÂ 29775406.
+
+^ Lee, S.; Kim, N.; Kim, J. (2014). A Multi-dimensional Analysis and Data Cube for Unstructured Text and Social Media. 2014 IEEE Fourth International Conference on Big Data and Cloud Computing, Sydney, NSW. pp.Â 761â764. doi:10.1109/BDCloud.2014.117. ISBNÂ 978-1-4799-6719-3. S2CIDÂ 229585.
+
+^ Ding, B.; Lin, X.C.; Han, J.; Zhai, C.; Srivastava, A.; Oza, N.C. (December 2011). "Efficient Keyword-Based Search for Top-K Cells in Text Cube". IEEE Transactions on Knowledge and Data Engineering. 23 (12): 1795â1810. doi:10.1109/TKDE.2011.34. S2CIDÂ 13960227.
+
+^ Ding, B.; Zhao, B.; Lin, C.X.; Han, J.; Zhai, C. (2010). TopCells: Keyword-based search of top-k aggregated documents in text cube. 2010 IEEE 26th International Conference on Data Engineering (ICDE 2010), Long Beach, CA. pp.Â 381â384. CiteSeerXÂ 10.1.1.215.7504. doi:10.1109/ICDE.2010.5447838. ISBNÂ 978-1-4244-5445-7. S2CIDÂ 14649087.
+
+^ Lin, C.X.; Ding, B.; Han, K.; Zhu, F.; Zhao, B. (2008). "Text Cube: Computing IR Measures for Multidimensional Text Database Analysis". IEEE Data Mining: 905â910.
+
+^ Liu, X.; Tang, K.; Hancock, J.; Han, J.; Song, M.; Xu, R.; Pokorny, B. (2013-03-21). "Social Computing, Behavioral-Cultural Modeling and Prediction. SBP 2013. Lecture Notes in Computer Science".  In Greenberg, A.M.; Kennedy, W.G.; Bos, N.D. (eds.). A Text Cube Approach to Human, Social and Cultural Behavior in the Twitter Stream (7812Â ed.). Berlin, Heidelberg: Springer. pp.Â 321â330. ISBNÂ 978-3-642-37209-4.
+
+^ Nigel Pendse (2007-08-23). "Commentary: OLAP API wars". OLAP Report. Archived from the original on May 28, 2008. Retrieved 2008-03-18.
+
+^ "SSAS Entity Framework Provider for LINQ to SSAS OLAP".
+
+^ Nigel Pendse (2007-08-23). "The origins of today's OLAP products". OLAP Report. Archived from the original on December 21, 2007. Retrieved November 27, 2007.
+
+^ Nigel Pendse (2006). "OLAP Market". OLAP Report. Retrieved 2008-03-17.
+
+^ Yegulalp, Serdar (2015-06-11). "LinkedIn fills another SQL-on-Hadoop niche". InfoWorld. Retrieved 2016-11-19.
+
+
+Sources[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Jesus, Paulo; Baquero, Carlos; Paulo SÃ©rgio Almeida (2011). "A Survey of Distributed Data Aggregation Algorithms". arXiv:1110.0725 [cs.DC].
+Zhang, Chao (2017). Symmetric and Asymmetric Aggregate Function in Massively Parallel Computing (Technical report).
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData warehousesCreating a data warehouseConcepts
+Database
+Dimension
+Dimensional modeling
+Fact
+OLAP
+Star schema
+Snowflake schema
+Reverse star schema
+Aggregate
+Variants
+Anchor modeling
+Column-oriented DBMS
+Data vault modeling
+HOLAP
+MOLAP
+ROLAP
+Operational data store
+Elements
+Data dictionary/Metadata
+Data mart
+Sixth normal form
+Surrogate key
+Fact
+Fact table
+Early-arriving fact
+Measure
+Dimension
+Dimension table
+Degenerate
+Slowly changing
+Filling
+Extract-Transform-Load (ETL)
+Extract
+Transform
+Load
+Using a data warehouseConcepts
+Business intelligence
+Dashboard
+Data mining
+Decision support system (DSS)
+OLAP cube
+Data warehouse automation
+Languages
+Data Mining Extensions (DMX)
+MultiDimensional eXpressions (MDX)
+XML for Analysis (XMLA)
+Tools
+Business intelligence software
+Reporting software
+Spreadsheet
+RelatedPeople
+Bill Inmon
+Ralph Kimball
+Products
+Comparison of OLAP servers
+Data warehousing products and their producers
+
+Authority control General
+Integrated Authority File (Germany)
+National libraries
+France (data)
+United States
+Other
+Faceted Application of Subject Terminology
+SUDOC (France)
+1
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Online_analytical_processing&oldid=1068811370"
+		Categories: Online analytical processingData managementInformation technology managementHidden categories: All articles with dead external linksArticles with dead external links from April 2020Articles with permanently dead external linksHarv and Sfn no-target errorsArticles with GND identifiersArticles with BNF identifiersArticles with LCCN identifiersArticles with FAST identifiersArticles with SUDOC identifiers
+	

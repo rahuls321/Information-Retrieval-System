@@ -1,0 +1,282 @@
+
+Title:
+Named-entity recognition
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Extraction of named entity mentions in unstructured text into pre-defined categories
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"Named entities" redirects here. For HTML, XML, and SGML named entities, see List of XML and HTML character entity references.
+Named-entity recognition (NER) (also known as (named) entity identification, entity chunking, and entity extraction) is a subtask of information extraction that seeks to locate and classify named entities mentioned in unstructured text into pre-defined categories such as person names, organizations, locations, medical codes, time expressions, quantities, monetary values, percentages, etc.
+Most research on NER/NEE systems has been structured as taking an unannotated block of text, such as this one:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}Jim bought 300 shares of Acme Corp. in 2006.
+And producing an annotated block of text that highlights the names of entities:
+
+[Jim]Person bought 300 shares of [Acme Corp.]Organization in [2006]Time.
+In this example, a person name consisting of one token, a two-token company name and a temporal expression have been detected and classified.
+State-of-the-art NER systems for English produce near-human performance. For example, the best system entering MUC-7 scored 93.39% of F-measure while human annotators scored 97.60% and 96.95%.[1][2]
+
+Contents
+
+1 Named-entity recognition platforms
+2 Problem definition
+
+2.1 Formal evaluation
+
+
+3 Approaches
+4 Problem domains
+5 Current challenges and research
+6 See also
+7 References
+
+
+
+Named-entity recognition platforms[edit]
+Notable NER platforms include:
+
+GATE supports NER across many languages and domains out of the box, usable via a graphical interface and a Java API.
+OpenNLP includes rule-based and statistical named-entity recognition.
+SpaCy features fast statistical NER as well as an open-source named-entity visualizer.
+Problem definition[edit]
+In the expression named entity, the word named restricts the task to those entities for which one or many strings, such as words or phrases, stands (fairly) consistently for some referent. This is closely related to rigid designators, as defined by Kripke,[3][4] although in practice NER deals with many names and referents that are not philosophically "rigid". For instance, the automotive company created by Henry Ford in 1903 can be referred to as Ford or Ford Motor Company, although "Ford" can refer to many other entities as well (see Ford). Rigid designators include proper names as well as terms for certain biological species and substances,[5] but exclude pronouns (such as "it"; see coreference resolution), descriptions that pick out a referent by its properties (see also De dicto and de re), and names for kinds of things as opposed to individuals (for example "Bank").
+Full named-entity recognition is often broken down, conceptually and possibly also in implementations,[6] as two distinct problems: detection of names, and classification of the names by the type of entity they refer to (e.g. person, organization, or location).[7]
+The first phase is typically simplified to a segmentation problem: names are defined to be contiguous spans of tokens, with no nesting, so that "Bank of America" is a single name, disregarding the fact that inside this name, the substring "America" is itself a name. This segmentation problem is formally similar to chunking. The second phase requires choosing an ontology by which to organize categories of things.
+Temporal expressions and some numerical expressions (e.g., money, percentages, etc.) may also be considered as named entities in the context of the NER task. While some instances of these types are good examples of rigid designators (e.g., the year 2001) there are also many invalid ones (e.g., I take my vacations in âJuneâ). In the first case, the year 2001 refers to the 2001st year of the Gregorian calendar. In the second case, the month June may refer to the month of an undefined year (past June, next June, every June, etc.). It is arguable that the definition of named entity is loosened in such cases for practical reasons. The definition of the term named entity is therefore not strict and often has to be explained in the context in which it is used.[8]
+Certain hierarchies of named entity types have been proposed in the literature. BBN categories, proposed in 2002, is used for question answering and consists of 29 types and 64 subtypes.[9] Sekine's extended hierarchy, proposed in 2002, is made of 200 subtypes.[10] More recently, in 2011 Ritter used a hierarchy based on common Freebase entity types in ground-breaking experiments on NER over social media text.[11]
+
+Formal evaluation[edit]
+To evaluate the quality of an NER system's output, several measures have been defined. The usual measures are called precision, recall, and F1 score. However, several issues remain in just how to calculate those values.
+These statistical measures work reasonably well for the obvious cases of finding or missing a real entity exactly; and for finding a non-entity. However, NER can fail in many other ways, many of which are arguably "partially correct", and should not be counted as complete success or failures. For example, identifying a real entity, but: 
+
+with fewer tokens than desired (for example, missing the last token of "John Smith, M.D.")
+with more tokens than desired (for example, including the first word of "The University of MD")
+partitioning adjacent entities differently (for example, treating "Smith, Jones Robinson" as 2 vs. 3 entities)
+assigning it a completely wrong type (for example, calling a personal name an organization)
+assigning it a related but inexact type (for example, "substance" vs. "drug", or "school" vs. "organization")
+correctly identifying an entity, when what the user wanted was a smaller- or larger-scope entity (for example, identifying "James Madison" as a personal name, when it's part of "James Madison University"). Some NER systems impose the restriction that entities may never overlap or nest, which means that in some cases one must make arbitrary or task-specific choices.
+One overly simple method of measuring accuracy is merely to count what fraction of all tokens in the text were correctly or incorrectly identified as part of entity references (or as being entities of the correct type). This suffers from at least two problems: first, the vast majority of tokens in real-world text are not part of entity names, so the baseline accuracy (always predict "not an entity") is extravagantly high, typically >90%; and second, mispredicting the full span of an entity name is not properly penalized (finding only a person's first name when his last name follows might be scored as Â½ accuracy).
+In academic conferences such as CoNLL, a variant of the F1 score has been defined as follows:[7]
+
+Precision is the number of predicted entity name spans that line up exactly with spans in the gold standard evaluation data. I.e. when [Person Hans] [Person Blick] is predicted but [Person Hans Blick] was required, precision for the predicted name is zero. Precision is then averaged over all predicted entity names.
+Recall is similarly the number of names in the gold standard that appear at exactly the same location in the predictions.
+F1 score is the harmonic mean of these two.
+It follows from the above definition that any prediction that misses a single token, includes a spurious token, or has the wrong class, is a hard error and does not contribute positively to either precision or recall. Thus, this measure may be said to be pessimistic: it can be the case that many "errors" are close to correct, and might be adequate for a given purpose. For example, one system might always omit titles such as "Ms." or "Ph.D.", but be compared to a system or ground-truth data that expects titles to be included. In that case, every such name is treated as an error. Because of such issues, it is important actually to examine the kinds of errors, and decide how important they are given one's goals and requirements.
+Evaluation models based on a token-by-token matching have been proposed.[12] Such models may given partial credit for overlapping matches (such as using the Intersection over Union criterion). They allow a finer grained evaluation and comparison of extraction systems.
+
+Approaches[edit]
+NER systems have been created that use linguistic grammar-based techniques as well as statistical models such as machine learning. Hand-crafted grammar-based systems typically obtain better precision, but at the cost of lower recall and months of work by experienced computational linguists.[13] Statistical NER systems typically require a large amount of manually annotated training data. Semisupervised approaches have been suggested to avoid part of the annotation effort.[14][15]
+Many different classifier types have been used to perform machine-learned NER, with conditional random fields being a typical choice.[16]
+
+Problem domains[edit]
+In 2001, research indicated that even state-of-the-art NER systems were brittle, meaning that NER systems developed for one domain did not typically perform well on other domains.[17] Considerable effort is involved in tuning NER systems to perform well in a new domain; this is true for both rule-based and trainable statistical systems.
+Early work in NER systems in the 1990s was aimed primarily at extraction from journalistic articles. Attention then turned to processing of military dispatches and reports. Later stages of the automatic content extraction (ACE) evaluation also included several types of informal text styles, such as weblogs and text transcripts from conversational telephone speech conversations. Since about 1998, there has been a great deal of interest in entity identification in the molecular biology, bioinformatics, and medical natural language processing communities.  The most common entity of interest in that domain has been names of genes and gene products. There has been also considerable interest in the recognition of chemical entities and drugs in the context of the CHEMDNER
+competition, with 27 teams participating in this task.[18]
+
+Current challenges and research[edit]
+This section needs to be updated. Please help update this article to reflect recent events or newly available information.  (July 2021)
+Despite the high F1 numbers reported on the MUC-7 dataset, the problem of named-entity recognition is far from being solved. The main efforts are directed to reducing the annotation labor by employing semi-supervised learning,[14][19] robust performance across domains[20][21] and scaling up to fine-grained entity types.[10][22] In recent years, many projects have turned to crowdsourcing, which is a promising solution to obtain high-quality aggregate human judgments for supervised and semi-supervised machine learning approaches to NER.[23] Another challenging task is devising models to deal with linguistically complex contexts such as Twitter and search queries.[24]
+There are some researchers who did some comparisons about the NER performances from different statistical models such as HMM (hidden Markov model), ME (maximum entropy), and CRF (conditional random fields), and feature sets.[25] And some researchers recently proposed graph-based semi-supervised learning model for language specific NER tasks.[26]
+A recently emerging task of identifying "important expressions" in text and cross-linking them to Wikipedia[27][28][29] can be seen as an instance of extremely fine-grained named-entity recognition, where the types are the actual Wikipedia pages describing the (potentially ambiguous) concepts. Below is an example output of a Wikification system:
+
+<ENTITY url="https://en.wikipedia.org/wiki/Michael_I._Jordan"> Michael Jordan </ENTITY> is a professor at <ENTITY url="https://en.wikipedia.org/wiki/University_of_California,_Berkeley"> Berkeley </ENTITY>
+
+Another field that has seen progress but remains challenging is the application of NER to Twitter and other microblogs.[30][vague]
+
+See also[edit]
+Controlled vocabulary
+Coreference resolution
+Entity linking (aka named entity normalization, entity disambiguation)
+Information extraction
+Knowledge extraction
+Onomastics
+Record linkage
+Smart tag (Microsoft)
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ 
+Elaine Marsh, Dennis Perzanowski, "MUC-7 Evaluation of IE Technology: Overview of Results", 29 April 1998 PDF
+
+^ MUC-07 Proceedings (Named Entity Tasks)
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Kripke, Saul (1971). "Identity and Necessity".  In M.K. Munitz (ed.). Identity and Individuation. New York: New York University Press. pp.Â 135â64.
+
+^ LaPorte, Joseph (2018). "Rigid Designators". The Stanford Encyclopedia of Philosophy.
+
+^ Nadeau, David; Sekine, Satoshi (2007). A survey of named entity recognition and classification (PDF). Lingvisticae Investigationes.
+
+^ Carreras, Xavier; MÃ rquez, LluÃ­s; PadrÃ³, LluÃ­s (2003). A simple named entity extractor using AdaBoost (PDF). CoNLL.
+
+^ Jump up to: a b Tjong Kim Sang, Erik F.; De Meulder, Fien (2003). Introduction to the CoNLL-2003 shared task: Language-independent named entity recognition. CoNLL.
+
+^ Named Entity Definition. Webknox.com. Retrieved on 2013-07-21.
+
+^ Brunstein, Ada. "Annotation Guidelines for Answer Types". LDC Catalog. Linguistic Data Consortium. Retrieved 21 July 2013.
+
+^ Jump up to: a b Sekine's Extended Named Entity Hierarchy. Nlp.cs.nyu.edu. Retrieved on 2013-07-21.
+
+^ Ritter, A.; Clark, S.; Mausam; Etzioni., O. (2011). Named Entity Recognition in Tweets: An Experimental Study (PDF). Proc. Empirical Methods in Natural Language Processing.
+
+^ Esuli, Andrea; Sebastiani, Fabrizio (2010). Evaluating Information Extraction (PDF). Cross-Language Evaluation Forum (CLEF). pp.Â 100â111.
+
+^ Kapetanios, Epaminondas; Tatar, Doina; Sacarea, Christian (2013-11-14). Natural Language Processing: Semantic Aspects. CRC Press. p.Â 298. ISBNÂ 9781466584969.
+
+^ Jump up to: a b Lin, Dekang; Wu, Xiaoyun (2009). Phrase clustering for discriminative learning (PDF). Annual Meeting of the ACL and IJCNLP. pp.Â 1030â1038.
+
+^ Nothman, Joel;  etÂ al. (2013). "Learning multilingual named entity recognition from Wikipedia". Artificial Intelligence. 194: 151â175. doi:10.1016/j.artint.2012.03.006.
+
+^ Jenny Rose Finkel; Trond Grenager; Christopher Manning (2005). Incorporating Non-local Information into Information Extraction Systems by Gibbs Sampling (PDF). 43rd Annual Meeting of the Association for Computational Linguistics. pp.Â 363â370.
+
+^ Poibeau, Thierry; Kosseim, Leila (2001). "Proper Name Extraction from Non-Journalistic Texts" (PDF). Language and Computers. 37 (1): 144â157. doi:10.1163/9789004333901_011. S2CIDÂ 12591786. Archived from the original (PDF) on 2019-07-30.
+
+^ Krallinger, M; Leitner, F; Rabal, O; Vazquez, M; Oyarzabal, J; Valencia, A (2013). "Overview of the chemical compound and drug name recognition (CHEMDNER) task". Proceedings of the Fourth BioCreative Challenge Evaluation Workshop vol. 2. pp.Â 6â37. CiteSeerXÂ 10.1.1.684.4118.
+
+^ Turian, J., Ratinov, L., & Bengio, Y. (2010, July). Word representations: a simple and general method for semi-supervised learning. In Proceedings of the 48th Annual Meeting of the Association for Computational Linguistics (pp. 384â394). Association for Computational Linguistics. PDF
+
+^ Ratinov, L., & Roth, D. (2009, June). Design challenges and misconceptions in named entity recognition. In Proceedings of the Thirteenth Conference on Computational Natural Language Learning (pp. 147â155). Association for Computational Linguistics.
+
+^ "Frustratingly Easy Domain Adaptation" (PDF). Archived from the original (PDF) on 2010-06-13. Retrieved 2012-04-05.
+
+^ Fine-Grained Named Entity Recognition Using Conditional Random Fields for Question Answering.
+
+^ Web 2.0-based crowdsourcing for high-quality gold standard development in clinical Natural Language Processing
+
+^ Eiselt, Andreas; Figueroa, Alejandro (2013). A Two-Step Named Entity Recognizer for Open-Domain Search Queries. IJCNLP. pp.Â 829â833.
+
+^ Han, Li-Feng Aaron, Wong, Fai, Chao, Lidia Sam. (2013). Chinese Named Entity Recognition with Conditional Random Fields in the Light of Chinese Characteristics. Proceeding of International Conference of Language Processing and Intelligent Information Systems. M.A. Klopotek et al. (Eds.): IIS 2013, LNCS Vol. 7912, pp. 57â68 [1]
+
+^ Han, Li-Feng Aaron, Wong, Zeng, Xiaodong, Derek Fai, Chao, Lidia Sam. (2015). Chinese Named Entity Recognition with Graph-based Semi-supervised Learning Model. In Proceedings of SIGHAN workshop in ACL-IJCNLP. 2015. [2]
+
+^ Linking Documents to Encyclopedic Knowledge.
+
+^ "Learning to link with Wikipedia" (PDF). Archived from the original (PDF) on 2019-01-25. Retrieved 2014-07-21.
+
+^ Local and Global Algorithms for Disambiguation to Wikipedia.
+
+^ Derczynski, Leon and Diana Maynard, Giuseppe Rizzo, Marieke van Erp, Genevieve Gorrell, Raphael Troncy, Johann Petrak, and Kalian Botcheva (2014). âAnalysis of named entity recognition and linking for tweetsâ. Information Processing and Management 51(2)Â : pages 32â49.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteNatural language processingGeneral terms
+AI-complete
+Bag-of-words
+n-gram
+Bigram
+Trigram
+Computational linguistics
+Natural-language understanding
+Stop words
+Text processing
+Text analysis
+Collocation extraction
+Concept mining
+Coreference resolution
+Deep linguistic processing
+Distant reading
+Information extraction
+Named-entity recognition
+Ontology learning
+Parsing
+Part-of-speech tagging
+Semantic role labeling
+Semantic similarity
+Sentiment analysis
+Terminology extraction
+Text mining
+Textual entailment
+Truecasing
+Word-sense disambiguation
+Word-sense induction
+Text segmentation
+Compound-term processing
+Lemmatisation
+Lexical analysis
+Text chunking
+Stemming
+Sentence segmentation
+Word segmentation
+
+Automatic summarization
+Multi-document summarization
+Sentence extraction
+Text simplification
+Machine translation
+Computer-assisted
+Example-based
+Rule-based
+Statistical
+Transfer-based
+Neural
+Distributional semantics models
+BERT
+Document-term matrix
+Explicit semantic analysis
+fastText
+GloVe
+Latent semantic analysis
+Word embedding
+Word2vec
+Language resources, datasets and corporaTypes and standards
+Corpus linguistics
+Lexical resource
+Linguistic Linked Open Data
+Machine-readable dictionary
+Parallel text
+PropBank
+Semantic network
+Simple Knowledge Organization System
+Speech corpus
+Text corpus
+Thesaurus (information retrieval)
+Treebank
+Universal Dependencies
+Data
+BabelNet
+Bank of English
+DBpedia
+FrameNet
+Google Ngram Viewer
+ThoughtTreasure
+UBY
+WordNet
+Automatic identificationand data capture
+Speech recognition
+Speech segmentation
+Speech synthesis
+Natural language generation
+Optical character recognition
+Topic model
+Document classification
+Latent Dirichlet allocation
+Pachinko allocation
+Computer-assistedreviewing
+Automated essay scoring
+Concordancer
+Grammar checker
+Predictive text
+Spell checker
+Syntax guessing
+Natural languageuser interface
+Chatbot
+Interactive fiction
+Question answering
+Virtual assistant
+Voice user interface
+Other software
+Natural Language Toolkit
+spaCy
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Named-entity_recognition&oldid=1057669220"
+		Categories: Computational linguisticsTasks of natural language processingHidden categories: Articles with short descriptionShort description matches WikidataWikipedia articles in need of updating from July 2021All Wikipedia articles in need of updatingAll Wikipedia articles needing clarificationWikipedia articles needing clarification from December 2018
+	

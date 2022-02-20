@@ -1,0 +1,8816 @@
+
+Title:
+ReedâSolomon error correction
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Error-correcting codes
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}ReedâSolomon codesNamed afterIrving S. Reed and Gustave SolomonClassificationHierarchyLinear block codePolynomial codeReedâSolomon codeBlock lengthnMessage lengthkDistancen â k + 1Alphabet sizeq = pm â¥ nÂ  (p prime)Often n = q â 1.Notation[n, k, n â k + 1]q-codeAlgorithmsBerlekampâMasseyEuclideanet al.PropertiesMaximum-distance separable code.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vte
+ReedâSolomon codes are a group of error-correcting codes that were introduced by Irving S. Reed and Gustave Solomon in 1960.[1]
+They have many applications, the most prominent of which include consumer technologies such as MiniDiscs, CDs, DVDs, Blu-ray discs, QR codes, data transmission technologies such as DSL and WiMAX, broadcast systems such as satellite communications, DVB and ATSC, and storage systems such as RAID 6.
+ReedâSolomon codes operate on a block of data treated as a set of finite-field elements called symbols. ReedâSolomon codes are able to detect and correct multiple symbol errors. By adding t = nÂ âÂ k check symbols to the data, a ReedâSolomon code can detect (but not correct) any combination of up to t erroneous symbols, or locate and correct up to ât/2â erroneous symbols at unknown locations. As an erasure code, it can correct up to t erasures at locations that are known and provided to the algorithm, or it can detect and correct combinations of errors and erasures. ReedâSolomon codes are also suitable as multiple-burst bit-error correcting codes, since a sequence of bÂ +Â 1 consecutive bit errors can affect at most two symbols of size b. The choice of t is up to the designer of the code and may be selected within wide limits.
+There are two basic types of ReedâSolomon codesÂ â  original view and BCH viewÂ â  with BCH view being the most common, as BCH view decoders are faster and require less working storage than original view decoders.
+
+Contents
+
+1 History
+2 Applications
+
+2.1 Data storage
+2.2 Bar code
+2.3 Data transmission
+2.4 Space transmission
+
+
+3 Constructions (encoding)
+
+3.1 Reed & Solomon's original view: The codeword as a sequence of values
+
+3.1.1 Simple encoding procedure: The message as a sequence of coefficients
+3.1.2 Systematic encoding procedure: The message as an initial sequence of values
+3.1.3 Discrete Fourier transform and its inverse
+
+
+3.2 The BCH view: The codeword as a sequence of coefficients
+
+3.2.1 Systematic encoding procedure
+
+
+
+
+4 Properties
+
+4.1 Remarks
+
+
+5 BCH view decoders
+
+5.1 PetersonâGorensteinâZierler decoder
+
+5.1.1 Formulation
+5.1.2 Syndrome decoding
+5.1.3 Error locators and error values
+5.1.4 Error locator polynomial
+5.1.5 Find the roots of the error locator polynomial
+5.1.6 Calculate the error values
+5.1.7 Calculate the error locations
+5.1.8 Fix the errors
+5.1.9 Example
+
+
+5.2 BerlekampâMassey decoder
+
+5.2.1 Example
+
+
+5.3 Euclidean decoder
+
+5.3.1 Example
+
+
+5.4 Decoder using discrete Fourier transform
+5.5 Decoding beyond the error-correction bound
+5.6 Soft-decoding
+5.7 Matlab example
+
+5.7.1 Encoder
+5.7.2 Decoder
+
+
+
+
+6 Reed Solomon original view decoders
+
+6.1 Theoretical decoder
+6.2 Berlekamp Welch decoder
+
+6.2.1 Example
+
+
+6.3 Gao decoder
+
+6.3.1 Example
+
+
+
+
+7 See also
+8 Notes
+9 References
+10 Further reading
+11 External links
+
+11.1 Information and tutorials
+11.2 Implementations
+
+
+
+
+
+History[edit]
+ReedâSolomon codes were developed in 1960 by Irving S. Reed and Gustave Solomon, who were then staff members of MIT Lincoln Laboratory. Their seminal article was titled "Polynomial Codes over Certain Finite Fields". (Reed & Solomon 1960). The original encoding scheme described in the Reed & Solomon article used a variable polynomial based on the message to be encoded where only a fixed set of values (evaluation points) to be encoded are known to encoder and decoder. The original theoretical decoder generated potential polynomials based on subsets of k (unencoded message length) out of n (encoded message length) values of a received message, choosing the most popular polynomial as the correct one, which was impractical for all but the simplest of cases. This was initially resolved by changing the original scheme to a BCH code like scheme based on a fixed polynomial known to both encoder and decoder, but later, practical decoders based on the original scheme were developed, although slower than the BCH schemes. The result of this is that there are two main types of Reed Solomon codes, ones that use the original encoding scheme, and ones that use the BCH encoding scheme.
+Also in 1960, a practical fixed polynomial decoder for BCH codes developed by Daniel Gorenstein and Neal Zierler was described in an MIT Lincoln Laboratory report by Zierler in January 1960 and later in a paper in June 1961.[2] The GorensteinâZierler decoder and the related work on BCH codes are described in a book Error Correcting Codes by W. Wesley Peterson (1961).[3] By 1963 (or possibly earlier), J. J. Stone (and others) recognized that Reed Solomon codes could use the BCH scheme of using a fixed generator polynomial, making such codes a special class of BCH codes,[4] but Reed Solomon codes based on the original encoding scheme, are not a class of BCH codes, and depending on the set of evaluation points, they are not even cyclic codes.
+In 1969, an improved BCH scheme decoder was developed by Elwyn Berlekamp and James Massey, and has since been known as the BerlekampâMassey decoding algorithm.
+In 1975, another improved BCH scheme decoder was developed by Yasuo Sugiyama, based on the extended Euclidean algorithm.[5]
+
+  
+In 1977, ReedâSolomon codes were implemented in the Voyager program in the form of concatenated error correction codes. The first commercial application in mass-produced consumer products appeared in 1982 with the compact disc, where two interleaved ReedâSolomon codes are used. Today, ReedâSolomon codes are widely implemented in digital storage devices and digital communication standards, though they are being slowly replaced by BoseâChaudhuriâHocquenghem (BCH) codes. For example, ReedâSolomon codes are used in the Digital Video Broadcasting (DVB) standard DVB-S, in conjunction with a convolutional inner code, but BCH codes are used with LDPC in its successor, DVB-S2.
+In 1986, an original scheme decoder known as the BerlekampâWelch algorithm was developed.
+In 1996, variations of original scheme decoders called list decoders or soft decoders were developed by Madhu Sudan and others, and work continues on these types of decoders â see GuruswamiâSudan list decoding algorithm.
+In 2002, another original scheme decoder was developed by Shuhong Gao, based on the extended Euclidean algorithm.[6]
+
+Applications[edit]
+Data storage[edit]
+ReedâSolomon coding is very widely used in mass storage systems to correct
+the burst errors associated with media defects.
+ReedâSolomon coding is a key component of the compact disc. It was the first use of strong error correction coding in a mass-produced consumer product, and DAT and DVD use similar schemes. In the CD, two layers of ReedâSolomon coding separated by a 28-way convolutional interleaver yields a scheme called Cross-Interleaved ReedâSolomon Coding (CIRC). The first element of a CIRC decoder is a relatively weak inner (32,28) ReedâSolomon code, shortened from a (255,251) code with 8-bit symbols. This code can correct up to 2 byte errors per 32-byte block. More importantly, it flags as erasures any uncorrectable blocks, i.e., blocks with more than 2 byte errors. The decoded 28-byte blocks, with erasure indications, are then spread by the deinterleaver to different blocks of the (28,24) outer code. Thanks to the deinterleaving, an erased 28-byte block from the inner code becomes a single erased byte in each of 28 outer code blocks. The outer code easily corrects this, since it can handle up to 4 such erasures per block.
+The result is a CIRC that can completely correct error bursts up to 4000 bits, or about 2.5Â mm on the disc surface. This code is so strong that most CD playback errors are almost certainly caused by tracking errors that cause the laser to jump track, not by uncorrectable error bursts.[7]
+DVDs use a similar scheme, but with much larger blocks, a (208,192) inner code, and a (182,172) outer code.
+ReedâSolomon error correction is also used in parchive files which are commonly posted accompanying multimedia files on USENET. The Distributed online storage service Wuala (discontinued in 2015) also used ReedâSolomon when breaking up files.
+
+Bar code[edit]
+Almost all two-dimensional bar codes such as PDF-417, MaxiCode, Datamatrix, QR Code, and Aztec Code use ReedâSolomon error correction to allow correct reading even if a portion of the bar code is damaged. When the bar code scanner cannot recognize a bar code symbol, it will treat it as an erasure.
+ReedâSolomon coding is less common in one-dimensional bar codes, but is used by the PostBar symbology.
+
+Data transmission[edit]
+Specialized forms of ReedâSolomon codes, specifically Cauchy-RS and Vandermonde-RS, can be used to overcome the unreliable nature of data transmission over erasure channels. The encoding process assumes a code of RS(N,Â K) which results in N codewords of length N symbols each storing K symbols of data, being generated, that are then sent over an erasure channel.
+Any combination of K codewords received at the other end is enough to reconstruct all of the N codewords. The code rate is generally set to 1/2 unless the channel's erasure likelihood can be adequately modelled and is seen to be less. In conclusion, N is usually 2K, meaning that at least half of all the codewords sent must be received in order to reconstruct all of the codewords sent.
+ReedâSolomon codes are also used in xDSL systems and CCSDS's Space Communications Protocol Specifications as a form of forward error correction.
+
+Space transmission[edit]
+  Deep-space concatenated coding system.[8] Notation: RS(255, 223) + CC ("constraint length" = 7, code rate = 1/2).
+One significant application of ReedâSolomon coding was to encode the digital pictures sent back by the Voyager program.
+Voyager introduced ReedâSolomon coding concatenated with convolutional codes, a practice that has since become very widespread in deep space and satellite (e.g., direct digital broadcasting) communications.
+Viterbi decoders tend to produce errors in short bursts. Correcting these burst errors is a job best done by short or simplified ReedâSolomon codes.
+Modern versions of concatenated ReedâSolomon/Viterbi-decoded convolutional coding were and are used on the Mars Pathfinder, Galileo, Mars Exploration Rover and Cassini missions, where they perform within about 1â1.5 dB of the ultimate limit, the Shannon capacity.
+These concatenated codes are now being replaced by more powerful turbo codes:
+
+
+Channel coding schemes used by NASA missions[9]
+
+
+Years
+Code
+Mission(s)
+
+
+1958âpresent
+Uncoded
+Explorer, Mariner, many others
+
+
+1968â1978
+convolutional codes (CC) (25, 1/2)
+Pioneer, Venus
+
+
+1969â1975
+Reed-Muller code (32, 6)
+Mariner, Viking
+
+
+1977âpresent
+Binary Golay code
+Voyager
+
+
+1977âpresent
+RS(255, 223) + CC(7, 1/2)
+Voyager, Galileo, many others
+
+
+1989â2003
+RS(255, 223) + CC(7, 1/3)
+Voyager
+
+
+1989â2003
+RS(255, 223) + CC(14, 1/4)
+Galileo
+
+
+1996âpresent
+RS + CC (15, 1/6)
+Cassini, Mars Pathfinder, others
+
+
+2004âpresent
+Turbo codes[nb 1]
+
+Messenger, Stereo, MRO, others
+
+
+est. 2009
+LDPC codes
+Constellation, MSL
+
+Constructions (encoding)[edit]
+The ReedâSolomon code is actually a family of codes, where every code is characterised by three parameters: an alphabet size q, a block length n, and a message length k, with k < n â¤ q. The set of alphabet symbols is interpreted as the finite field of order q, and thus, q has to be a prime power. In the most useful parameterizations of the ReedâSolomon code, the block length is usually some constant multiple of the message length, that is, the rate R = k/n is some constant, and furthermore, the block length is equal to or one less than the alphabet size, that is, n = q or n = q â 1.[citation needed]
+
+Reed & Solomon's original view: The codeword as a sequence of values[edit]
+There are different encoding procedures for the ReedâSolomon code, and thus, there are different ways to describe the set of all codewords.
+In the original view of Reed & Solomon (1960), every codeword of the ReedâSolomon code is a sequence of function values of a polynomial of degree less than k. In order to obtain a codeword of the ReedâSolomon code, the message symbols (each within the q-sized alphabet) are treated as the coefficients of a polynomial p of degree less than k, over the finite field F with q elements.
+In turn, the polynomial p is evaluated at n â¤ q distinct points 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+      
+    
+    {\displaystyle a_{1},\dots ,a_{n}}
+  
+ of the field F, and the sequence of values is the corresponding codeword. Common choices for a set of evaluation points include {0, 1, 2, ..., n â 1}, {0, 1, Î±, Î±2, ..., Î±nâ2}, or for n < q, {1, Î±, Î±2, ..., Î±nâ1}, ... , where Î± is a primitive element of F.
+Formally, the set 
+  
+    
+      
+        
+          C
+        
+      
+    
+    {\displaystyle \mathbf {C} }
+  
+ of codewords of the ReedâSolomon code is defined as follows:
+
+
+  
+    
+      
+        
+          C
+        
+        =
+        
+          
+            {
+          
+        
+        
+        
+          
+            (
+          
+        
+        p
+        (
+        
+          a
+          
+            1
+          
+        
+        )
+        ,
+        p
+        (
+        
+          a
+          
+            2
+          
+        
+        )
+        ,
+        â¦
+        ,
+        p
+        (
+        
+          a
+          
+            n
+          
+        
+        )
+        
+          
+            )
+          
+        
+        
+        
+          
+            |
+          
+        
+        
+        p
+        
+          Â is a polynomial overÂ 
+        
+        F
+        
+          Â of degreeÂ 
+        
+        <
+        k
+        
+        
+          
+            }
+          
+        
+        
+        .
+      
+    
+    {\displaystyle \mathbf {C} ={\Big \{}\;{\big (}p(a_{1}),p(a_{2}),\dots ,p(a_{n}){\big )}\;{\Big |}\;p{\text{ is a polynomial over }}F{\text{ of degree }}<k\;{\Big \}}\,.}
+  
+
+Since any two distinct polynomials of degree less than 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ agree in at most 
+  
+    
+      
+        k
+        â
+        1
+      
+    
+    {\displaystyle k-1}
+  
+ points, this means that any two codewords of the ReedâSolomon code disagree in at least 
+  
+    
+      
+        n
+        â
+        (
+        k
+        â
+        1
+        )
+        =
+        n
+        â
+        k
+        +
+        1
+      
+    
+    {\displaystyle n-(k-1)=n-k+1}
+  
+ positions.
+Furthermore, there are two polynomials that do agree in 
+  
+    
+      
+        k
+        â
+        1
+      
+    
+    {\displaystyle k-1}
+  
+ points but are not equal, and thus, the distance of the ReedâSolomon code is exactly 
+  
+    
+      
+        d
+        =
+        n
+        â
+        k
+        +
+        1
+      
+    
+    {\displaystyle d=n-k+1}
+  
+.
+Then the relative distance is 
+  
+    
+      
+        Î´
+        =
+        d
+        
+          /
+        
+        n
+        =
+        1
+        â
+        k
+        
+          /
+        
+        n
+        +
+        1
+        
+          /
+        
+        n
+        =
+        1
+        â
+        R
+        +
+        1
+        
+          /
+        
+        n
+        â¼
+        1
+        â
+        R
+      
+    
+    {\displaystyle \delta =d/n=1-k/n+1/n=1-R+1/n\sim 1-R}
+  
+, where 
+  
+    
+      
+        R
+        =
+        k
+        
+          /
+        
+        n
+      
+    
+    {\displaystyle R=k/n}
+  
+ is the rate.
+This trade-off between the relative distance and the rate is asymptotically optimal since, by the Singleton bound, every code satisfies 
+  
+    
+      
+        Î´
+        +
+        R
+        â¤
+        1
+        +
+        1
+        
+          /
+        
+        n
+      
+    
+    {\displaystyle \delta +R\leq 1+1/n}
+  
+.
+Being a code that achieves this optimal trade-off, the ReedâSolomon code belongs to the class of maximum distance separable codes.
+While the number of different polynomials of degree less than k and the number of different messages are both equal to 
+  
+    
+      
+        
+          q
+          
+            k
+          
+        
+      
+    
+    {\displaystyle q^{k}}
+  
+, and thus every message can be uniquely mapped to such a polynomial, there are different ways of doing this encoding.
+The original construction of Reed & Solomon (1960) interprets the message x as the coefficients of the polynomial p, whereas subsequent constructions interpret the message as the values of the polynomial at the first k points 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            k
+          
+        
+      
+    
+    {\displaystyle a_{1},\dots ,a_{k}}
+  
+ and obtain the polynomial p by interpolating these values with a polynomial of degree less than k.
+The latter encoding procedure, while being slightly less efficient, has the advantage that it gives rise to a systematic code, that is, the original message is always contained as a subsequence of the codeword.
+
+Simple encoding procedure: The message as a sequence of coefficients[edit]
+In the original construction of Reed & Solomon (1960), the message 
+  
+    
+      
+        x
+        =
+        (
+        
+          x
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          x
+          
+            k
+          
+        
+        )
+        â
+        
+          F
+          
+            k
+          
+        
+      
+    
+    {\displaystyle x=(x_{1},\dots ,x_{k})\in F^{k}}
+  
+ is mapped to the polynomial 
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+      
+    
+    {\displaystyle p_{x}}
+  
+ with
+
+
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+        (
+        a
+        )
+        =
+        
+          â
+          
+            i
+            =
+            1
+          
+          
+            k
+          
+        
+        
+          x
+          
+            i
+          
+        
+        
+          a
+          
+            i
+            â
+            1
+          
+        
+        
+        .
+      
+    
+    {\displaystyle p_{x}(a)=\sum _{i=1}^{k}x_{i}a^{i-1}\,.}
+  
+
+The codeword of 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ is obtained by evaluating 
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+      
+    
+    {\displaystyle p_{x}}
+  
+ at 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ different points 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+      
+    
+    {\displaystyle a_{1},\dots ,a_{n}}
+  
+ of the field 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+.
+Thus the classical encoding function 
+  
+    
+      
+        C
+        :
+        
+          F
+          
+            k
+          
+        
+        â
+        
+          F
+          
+            n
+          
+        
+      
+    
+    {\displaystyle C:F^{k}\to F^{n}}
+  
+ for the ReedâSolomon code is defined as follows: 
+
+
+  
+    
+      
+        C
+        (
+        x
+        )
+        =
+        
+          
+            (
+          
+        
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            1
+          
+        
+        )
+        ,
+        â¦
+        ,
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            n
+          
+        
+        )
+        
+          
+            )
+          
+        
+        
+        .
+      
+    
+    {\displaystyle C(x)={\big (}p_{x}(a_{1}),\dots ,p_{x}(a_{n}){\big )}\,.}
+  
+
+This function 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ is a linear mapping, that is, it satisfies 
+  
+    
+      
+        C
+        (
+        x
+        )
+        =
+        
+          x
+          
+            T
+          
+        
+        â
+        A
+      
+    
+    {\displaystyle C(x)=x^{T}\cdot A}
+  
+ for the following 
+  
+    
+      
+        (
+        k
+        Ã
+        n
+        )
+      
+    
+    {\displaystyle (k\times n)}
+  
+-matrix 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ with elements from 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+:
+
+
+  
+    
+      
+        A
+        =
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  â¦
+                
+                
+                  1
+                
+                
+                  â¦
+                
+                
+                  1
+                
+              
+              
+                
+                  
+                    a
+                    
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    a
+                    
+                      k
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    a
+                    
+                      n
+                    
+                  
+                
+              
+              
+                
+                  
+                    a
+                    
+                      1
+                    
+                    
+                      2
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    a
+                    
+                      k
+                    
+                    
+                      2
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    a
+                    
+                      n
+                    
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+                
+                
+                  â®
+                
+                
+                
+                  â®
+                
+              
+              
+                
+                  
+                    a
+                    
+                      1
+                    
+                    
+                      k
+                      â
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    a
+                    
+                      k
+                    
+                    
+                      k
+                      â
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    a
+                    
+                      n
+                    
+                    
+                      k
+                      â
+                      1
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle A={\begin{bmatrix}1&\dots &1&\dots &1\\a_{1}&\dots &a_{k}&\dots &a_{n}\\a_{1}^{2}&\dots &a_{k}^{2}&\dots &a_{n}^{2}\\\vdots &&\vdots &&\vdots \\a_{1}^{k-1}&\dots &a_{k}^{k-1}&\dots &a_{n}^{k-1}\end{bmatrix}}}
+  
+
+This matrix is the transpose of a Vandermonde matrix over 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+. In other words, the ReedâSolomon code is a linear code, and in the classical encoding procedure, its generator matrix is 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+.
+
+Systematic encoding procedure: The message as an initial sequence of values[edit]
+There is an alternative encoding procedure that also produces the ReedâSolomon code, but that does so in a systematic way. Here, the mapping from the message 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ to the polynomial 
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+      
+    
+    {\displaystyle p_{x}}
+  
+ works differently: the polynomial 
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+      
+    
+    {\displaystyle p_{x}}
+  
+ is now defined as the unique polynomial of degree less than 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ such that
+
+
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            i
+          
+        
+        )
+        =
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle p_{x}(a_{i})=x_{i}}
+  
+ holds for all 
+  
+    
+      
+        i
+        â
+        {
+        1
+        ,
+        â¦
+        ,
+        k
+        }
+      
+    
+    {\displaystyle i\in \{1,\dots ,k\}}
+  
+.
+To compute this polynomial 
+  
+    
+      
+        
+          p
+          
+            x
+          
+        
+      
+    
+    {\displaystyle p_{x}}
+  
+ from 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+, one can use Lagrange interpolation.
+Once it has been found, it is evaluated at the other points 
+  
+    
+      
+        
+          a
+          
+            k
+            +
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+      
+    
+    {\displaystyle a_{k+1},\dots ,a_{n}}
+  
+ of the field.
+The alternative encoding function 
+  
+    
+      
+        C
+        :
+        
+          F
+          
+            k
+          
+        
+        â
+        
+          F
+          
+            n
+          
+        
+      
+    
+    {\displaystyle C:F^{k}\to F^{n}}
+  
+ for the ReedâSolomon code is then again just the sequence of values: 
+
+
+  
+    
+      
+        C
+        (
+        x
+        )
+        =
+        
+          
+            (
+          
+        
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            1
+          
+        
+        )
+        ,
+        â¦
+        ,
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            n
+          
+        
+        )
+        
+          
+            )
+          
+        
+        
+        .
+      
+    
+    {\displaystyle C(x)={\big (}p_{x}(a_{1}),\dots ,p_{x}(a_{n}){\big )}\,.}
+  
+
+Since the first 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ entries of each codeword 
+  
+    
+      
+        C
+        (
+        x
+        )
+      
+    
+    {\displaystyle C(x)}
+  
+ coincide with 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+, this encoding procedure is indeed systematic.
+Since Lagrange interpolation is a linear transformation, 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ is a linear mapping. In fact, we have 
+  
+    
+      
+        C
+        (
+        x
+        )
+        =
+        x
+        â
+        G
+      
+    
+    {\displaystyle C(x)=x\cdot G}
+  
+, where
+
+
+  
+    
+      
+        G
+        =
+        (
+        A
+        
+          's left square submatrix
+        
+        
+          )
+          
+            â
+            1
+          
+        
+        â
+        A
+        =
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  0
+                
+                
+                  0
+                
+                
+                  â¦
+                
+                
+                  0
+                
+                
+                  
+                    g
+                    
+                      1
+                      ,
+                      k
+                      +
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    g
+                    
+                      1
+                      ,
+                      n
+                    
+                  
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+                
+                  0
+                
+                
+                  â¦
+                
+                
+                  0
+                
+                
+                  
+                    g
+                    
+                      2
+                      ,
+                      k
+                      +
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    g
+                    
+                      2
+                      ,
+                      n
+                    
+                  
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  1
+                
+                
+                  â¦
+                
+                
+                  0
+                
+                
+                  
+                    g
+                    
+                      3
+                      ,
+                      k
+                      +
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    g
+                    
+                      3
+                      ,
+                      n
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+                
+                  â®
+                
+                
+                  â®
+                
+                
+                
+                  â®
+                
+                
+                  â®
+                
+                
+                
+                  â®
+                
+              
+              
+                
+                  0
+                
+                
+                  â¦
+                
+                
+                  0
+                
+                
+                  â¦
+                
+                
+                  1
+                
+                
+                  
+                    g
+                    
+                      k
+                      ,
+                      k
+                      +
+                      1
+                    
+                  
+                
+                
+                  â¦
+                
+                
+                  
+                    g
+                    
+                      k
+                      ,
+                      n
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle G=(A{\text{'s left square submatrix}})^{-1}\cdot A={\begin{bmatrix}1&0&0&\dots &0&g_{1,k+1}&\dots &g_{1,n}\\0&1&0&\dots &0&g_{2,k+1}&\dots &g_{2,n}\\0&0&1&\dots &0&g_{3,k+1}&\dots &g_{3,n}\\\vdots &\vdots &\vdots &&\vdots &\vdots &&\vdots \\0&\dots &0&\dots &1&g_{k,k+1}&\dots &g_{k,n}\end{bmatrix}}}
+  
+
+Discrete Fourier transform and its inverse[edit]
+A discrete Fourier transform is essentially the same as the encoding procedure; it uses the generator polynomial p(x) to map a set of evaluation points into the message values as shown above:
+
+
+  
+    
+      
+        C
+        (
+        x
+        )
+        =
+        
+          
+            (
+          
+        
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            1
+          
+        
+        )
+        ,
+        â¦
+        ,
+        
+          p
+          
+            x
+          
+        
+        (
+        
+          a
+          
+            n
+          
+        
+        )
+        
+          
+            )
+          
+        
+        
+        .
+      
+    
+    {\displaystyle C(x)={\big (}p_{x}(a_{1}),\dots ,p_{x}(a_{n}){\big )}\,.}
+  
+
+The inverse Fourier transform could be used to convert an error free set of n < q message values back into the encoding polynomial of k coefficients, with the constraint that in order for this to work, the set of evaluation points used to encode the message must be a set of increasing powers of Î±:
+
+
+  
+    
+      
+        
+          a
+          
+            i
+          
+        
+        =
+        
+          Î±
+          
+            i
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle a_{i}=\alpha ^{i-1}}
+  
+
+
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            n
+          
+        
+        =
+        {
+        1
+        ,
+        Î±
+        ,
+        
+          Î±
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          Î±
+          
+            n
+            â
+            1
+          
+        
+        }
+      
+    
+    {\displaystyle a_{1},\dots ,a_{n}=\{1,\alpha ,\alpha ^{2},\dots ,\alpha ^{n-1}\}}
+  
+
+However, Lagrange interpolation performs the same conversion without the constraint on the set of evaluation points or the requirement of an error free set of message values and is used for systematic encoding, and in one of the steps of the Gao decoder.
+
+The BCH view: The codeword as a sequence of coefficients[edit]
+In this view, the message is interpreted as the coefficients of a polynomial 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+. The sender computes a related polynomial 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ of degree 
+  
+    
+      
+        n
+        â
+        1
+      
+    
+    {\displaystyle n-1}
+  
+ where 
+  
+    
+      
+        n
+        â¤
+        q
+        â
+        1
+      
+    
+    {\displaystyle n\leq q-1}
+  
+ and sends the polynomial 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+. The polynomial 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ is constructed by multiplying the message polynomial 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+, which has degree 
+  
+    
+      
+        k
+        â
+        1
+      
+    
+    {\displaystyle k-1}
+  
+, with a generator polynomial 
+  
+    
+      
+        g
+        (
+        x
+        )
+      
+    
+    {\displaystyle g(x)}
+  
+ of degree 
+  
+    
+      
+        n
+        â
+        k
+      
+    
+    {\displaystyle n-k}
+  
+ that is known to both the sender and the receiver.  The generator polynomial 
+  
+    
+      
+        g
+        (
+        x
+        )
+      
+    
+    {\displaystyle g(x)}
+  
+ is defined as the polynomial whose roots are sequential powers of the Galois field primitive 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+
+
+
+  
+    
+      
+        g
+        (
+        x
+        )
+        =
+        (
+        x
+        â
+        
+          Î±
+          
+            i
+          
+        
+        )
+        (
+        x
+        â
+        
+          Î±
+          
+            i
+            +
+            1
+          
+        
+        )
+        â¯
+        (
+        x
+        â
+        
+          Î±
+          
+            i
+            +
+            n
+            â
+            k
+            â
+            1
+          
+        
+        )
+        =
+        
+          g
+          
+            0
+          
+        
+        +
+        
+          g
+          
+            1
+          
+        
+        x
+        +
+        â¯
+        +
+        
+          g
+          
+            n
+            â
+            k
+            â
+            1
+          
+        
+        
+          x
+          
+            n
+            â
+            k
+            â
+            1
+          
+        
+        +
+        
+          x
+          
+            n
+            â
+            k
+          
+        
+      
+    
+    {\displaystyle g(x)=(x-\alpha ^{i})(x-\alpha ^{i+1})\cdots (x-\alpha ^{i+n-k-1})=g_{0}+g_{1}x+\cdots +g_{n-k-1}x^{n-k-1}+x^{n-k}}
+  
+
+For a "narrow sense code", 
+  
+    
+      
+        i
+        =
+        1
+      
+    
+    {\displaystyle i=1}
+  
+. 
+
+
+  
+    
+      
+        
+          C
+        
+        =
+        
+          {
+          
+            
+              (
+              
+                
+                  s
+                  
+                    1
+                  
+                
+                ,
+                
+                  s
+                  
+                    2
+                  
+                
+                ,
+                â¦
+                ,
+                
+                  s
+                  
+                    n
+                  
+                
+              
+              )
+            
+            
+            
+              
+                |
+              
+            
+            
+            s
+            (
+            a
+            )
+            =
+            
+              â
+              
+                i
+                =
+                1
+              
+              
+                n
+              
+            
+            
+              s
+              
+                i
+              
+            
+            
+              a
+              
+                i
+              
+            
+            
+              Â is a polynomial that has at least the rootsÂ 
+            
+            
+              Î±
+              
+                1
+              
+            
+            ,
+            
+              Î±
+              
+                2
+              
+            
+            ,
+            â¦
+            ,
+            
+              Î±
+              
+                n
+                â
+                k
+              
+            
+          
+          }
+        
+        
+        .
+      
+    
+    {\displaystyle \mathbf {C} =\left\{\left(s_{1},s_{2},\dots ,s_{n}\right)\;{\Big |}\;s(a)=\sum _{i=1}^{n}s_{i}a^{i}{\text{ is a polynomial that has at least the roots }}\alpha ^{1},\alpha ^{2},\dots ,\alpha ^{n-k}\right\}\,.}
+  
+
+Systematic encoding procedure[edit]
+The encoding procedure for the BCH view of ReedâSolomon codes can be modified to yield a systematic encoding procedure, in which each codeword contains the message as a prefix, and simply appends error correcting symbols as a suffix. Here, instead of sending 
+  
+    
+      
+        s
+        (
+        x
+        )
+        =
+        p
+        (
+        x
+        )
+        g
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)=p(x)g(x)}
+  
+, the encoder constructs the transmitted polynomial 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ such that the coefficients of the 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ largest monomials are equal to the corresponding coefficients of 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+, and the lower-order coefficients of 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ are chosen exactly in such a way that 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ becomes divisible by 
+  
+    
+      
+        g
+        (
+        x
+        )
+      
+    
+    {\displaystyle g(x)}
+  
+. Then the coefficients of 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+ are a subsequence of the coefficients of 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+. To get a code that is overall systematic, we construct the message polynomial 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+ by interpreting the message as the sequence of its coefficients.
+Formally, the construction is done by multiplying 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+ by 
+  
+    
+      
+        
+          x
+          
+            t
+          
+        
+      
+    
+    {\displaystyle x^{t}}
+  
+ to make room for the 
+  
+    
+      
+        t
+        =
+        n
+        â
+        k
+      
+    
+    {\displaystyle t=n-k}
+  
+ check symbols, dividing that product by 
+  
+    
+      
+        g
+        (
+        x
+        )
+      
+    
+    {\displaystyle g(x)}
+  
+ to find the remainder, and then compensating for that remainder by subtracting it. The 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ check symbols are created by computing the remainder 
+  
+    
+      
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle s_{r}(x)}
+  
+:
+
+
+  
+    
+      
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        =
+        p
+        (
+        x
+        )
+        â
+        
+          x
+          
+            t
+          
+        
+        Â 
+        
+          mod
+          
+            Â 
+          
+        
+        g
+        (
+        x
+        )
+        .
+      
+    
+    {\displaystyle s_{r}(x)=p(x)\cdot x^{t}\ {\bmod {\ }}g(x).}
+  
+
+The remainder has degree at most 
+  
+    
+      
+        t
+        â
+        1
+      
+    
+    {\displaystyle t-1}
+  
+, whereas the coefficients of 
+  
+    
+      
+        
+          x
+          
+            t
+            â
+            1
+          
+        
+        ,
+        
+          x
+          
+            t
+            â
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          x
+          
+            1
+          
+        
+        ,
+        
+          x
+          
+            0
+          
+        
+      
+    
+    {\displaystyle x^{t-1},x^{t-2},\dots ,x^{1},x^{0}}
+  
+ in the polynomial 
+  
+    
+      
+        p
+        (
+        x
+        )
+        â
+        
+          x
+          
+            t
+          
+        
+      
+    
+    {\displaystyle p(x)\cdot x^{t}}
+  
+ are zero. Therefore, the following definition of the codeword 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ has the property that the first 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ coefficients are identical to the coefficients of 
+  
+    
+      
+        p
+        (
+        x
+        )
+      
+    
+    {\displaystyle p(x)}
+  
+:
+
+
+  
+    
+      
+        s
+        (
+        x
+        )
+        =
+        p
+        (
+        x
+        )
+        â
+        
+          x
+          
+            t
+          
+        
+        â
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        
+        .
+      
+    
+    {\displaystyle s(x)=p(x)\cdot x^{t}-s_{r}(x)\,.}
+  
+
+As a result, the codewords 
+  
+    
+      
+        s
+        (
+        x
+        )
+      
+    
+    {\displaystyle s(x)}
+  
+ are indeed elements of 
+  
+    
+      
+        
+          C
+        
+      
+    
+    {\displaystyle \mathbf {C} }
+  
+, that is, they are divisible by the generator polynomial 
+  
+    
+      
+        g
+        (
+        x
+        )
+      
+    
+    {\displaystyle g(x)}
+  
+:[10]
+
+
+  
+    
+      
+        s
+        (
+        x
+        )
+        â¡
+        p
+        (
+        x
+        )
+        â
+        
+          x
+          
+            t
+          
+        
+        â
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        â¡
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        â
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        â¡
+        0
+        
+        mod
+        
+        
+        g
+        (
+        x
+        )
+        
+        .
+      
+    
+    {\displaystyle s(x)\equiv p(x)\cdot x^{t}-s_{r}(x)\equiv s_{r}(x)-s_{r}(x)\equiv 0\mod g(x)\,.}
+  
+
+Properties[edit]
+The ReedâSolomon code is a [n, k, n â k + 1] code; in other words, it is a linear block code of length n (over F) with dimension k and minimum Hamming distance 
+  
+    
+      
+        
+          d
+          
+            min
+          
+        
+        =
+        n
+        â
+        k
+        +
+        1.
+      
+    
+    {\textstyle d_{\min }=n-k+1.}
+  
+ The ReedâSolomon code is optimal in the sense that the minimum distance has the maximum value possible for a linear code of size (n,Â k); this is known as the Singleton bound. Such a code is also called a maximum distance separable (MDS) code.
+The error-correcting ability of a ReedâSolomon code is determined by its minimum distance, or equivalently, by 
+  
+    
+      
+        n
+        â
+        k
+      
+    
+    {\displaystyle n-k}
+  
+, the measure of redundancy in the block. If the locations of the error symbols are not known in advance, then a ReedâSolomon code can correct up to 
+  
+    
+      
+        (
+        n
+        â
+        k
+        )
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle (n-k)/2}
+  
+ erroneous symbols, i.e., it can correct half as many errors as there are redundant symbols added to the block. Sometimes error locations are known in advance (e.g., "side information" in demodulator signal-to-noise ratios)âthese are called erasures. A ReedâSolomon code (like any MDS code) is able to correct twice as many erasures as errors, and any combination of errors and erasures can be corrected as long as the relation 2EÂ +Â SÂ â¤Â nÂ âÂ k is satisfied, where 
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+ is the number of errors and 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ is the number of erasures in the block.
+
+  Theoretical BER performance of the Reed-Solomon code (N=255, K=233, QPSK, AWGN). Step-like characteristic.
+The theoretical error bound can be described via the following formula for the AWGN channel for FSK:[11]
+
+
+  
+    
+      
+        
+          P
+          
+            b
+          
+        
+        â
+        
+          
+            
+              2
+              
+                m
+                â
+                1
+              
+            
+            
+              
+                2
+                
+                  m
+                
+              
+              â
+              1
+            
+          
+        
+        
+          
+            1
+            n
+          
+        
+        
+          â
+          
+            â
+            =
+            t
+            +
+            1
+          
+          
+            n
+          
+        
+        â
+        
+          
+            
+              (
+            
+            
+              n
+              â
+            
+            
+              )
+            
+          
+        
+        
+          P
+          
+            s
+          
+          
+            â
+          
+        
+        (
+        1
+        â
+        
+          P
+          
+            s
+          
+        
+        
+          )
+          
+            n
+            â
+            â
+          
+        
+      
+    
+    {\displaystyle P_{b}\approx {\frac {2^{m-1}}{2^{m}-1}}{\frac {1}{n}}\sum _{\ell =t+1}^{n}\ell {n \choose \ell }P_{s}^{\ell }(1-P_{s})^{n-\ell }}
+  
+
+and for other modulation schemes:
+
+
+  
+    
+      
+        
+          P
+          
+            b
+          
+        
+        â
+        
+          
+            1
+            m
+          
+        
+        
+          
+            1
+            n
+          
+        
+        
+          â
+          
+            â
+            =
+            t
+            +
+            1
+          
+          
+            n
+          
+        
+        â
+        
+          
+            
+              (
+            
+            
+              n
+              â
+            
+            
+              )
+            
+          
+        
+        
+          P
+          
+            s
+          
+          
+            â
+          
+        
+        (
+        1
+        â
+        
+          P
+          
+            s
+          
+        
+        
+          )
+          
+            n
+            â
+            â
+          
+        
+      
+    
+    {\displaystyle P_{b}\approx {\frac {1}{m}}{\frac {1}{n}}\sum _{\ell =t+1}^{n}\ell {n \choose \ell }P_{s}^{\ell }(1-P_{s})^{n-\ell }}
+  
+
+where 
+  
+    
+      
+        t
+        =
+        
+          
+            1
+            2
+          
+        
+        (
+        
+          d
+          
+            min
+          
+        
+        â
+        1
+        )
+      
+    
+    {\displaystyle t={\frac {1}{2}}(d_{\min }-1)}
+  
+, 
+  
+    
+      
+        
+          P
+          
+            s
+          
+        
+        =
+        1
+        â
+        (
+        1
+        â
+        s
+        
+          )
+          
+            h
+          
+        
+      
+    
+    {\displaystyle P_{s}=1-(1-s)^{h}}
+  
+, 
+  
+    
+      
+        h
+        =
+        
+          
+            m
+            
+              
+                log
+                
+                  2
+                
+              
+              â¡
+              M
+            
+          
+        
+      
+    
+    {\displaystyle h={\frac {m}{\log _{2}M}}}
+  
+, 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ is the symbol error rate in uncoded AWGN case and 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ is the modulation order.
+For practical uses of ReedâSolomon codes, it is common to use a finite field 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+ with 
+  
+    
+      
+        
+          2
+          
+            m
+          
+        
+      
+    
+    {\displaystyle 2^{m}}
+  
+ elements. In this case, each symbol can be represented as an 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+-bit value. 
+The sender sends the data points as encoded blocks, and the number of symbols in the encoded block is 
+  
+    
+      
+        n
+        =
+        
+          2
+          
+            m
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle n=2^{m}-1}
+  
+. Thus a ReedâSolomon code operating on 8-bit symbols has 
+  
+    
+      
+        n
+        =
+        
+          2
+          
+            8
+          
+        
+        â
+        1
+        =
+        255
+      
+    
+    {\displaystyle n=2^{8}-1=255}
+  
+ symbols per block. (This is a very popular value because of the prevalence of byte-oriented computer systems.) The number 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+, with 
+  
+    
+      
+        k
+        <
+        n
+      
+    
+    {\displaystyle k<n}
+  
+, of data symbols in the block is a design parameter. A commonly used code encodes 
+  
+    
+      
+        k
+        =
+        223
+      
+    
+    {\displaystyle k=223}
+  
+ eight-bit data symbols plus 32 eight-bit parity symbols in an 
+  
+    
+      
+        n
+        =
+        255
+      
+    
+    {\displaystyle n=255}
+  
+-symbol block; this is denoted as a 
+  
+    
+      
+        (
+        n
+        ,
+        k
+        )
+        =
+        (
+        255
+        ,
+        223
+        )
+      
+    
+    {\displaystyle (n,k)=(255,223)}
+  
+ code, and is capable of correcting up to 16 symbol errors per block.
+The ReedâSolomon code properties discussed above make them especially well-suited to applications where errors occur in bursts. This is because it does not matter to the code how many bits in a symbol are in error â if multiple bits in a symbol are corrupted it only counts as a single error. Conversely, if a data stream is not characterized by error bursts or drop-outs but by random single bit errors, a ReedâSolomon code is usually a poor choice compared to a binary code.
+The ReedâSolomon code, like the convolutional code, is a transparent code. This means that if the channel symbols have been inverted somewhere along the line, the decoders will still operate. The result will be the inversion of the original data. However, the ReedâSolomon code loses its transparency when the code is shortened. The "missing" bits in a shortened code need to be filled by either zeros or ones, depending on whether the data is complemented or not. (To put it another way, if the symbols are inverted, then the zero-fill needs to be inverted to a one-fill.) For this reason it is mandatory that the sense of the data (i.e., true or complemented) be resolved before ReedâSolomon decoding.
+Whether the ReedâSolomon code is cyclic or not depends on subtle details of the construction. In the original view of Reed and Solomon, where the codewords are the values of a polynomial, one can choose the sequence of evaluation points in such a way as to make the code cyclic. In particular, if 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ is a primitive root of the field 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+, then by definition all non-zero elements of 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+ take the form 
+  
+    
+      
+        
+          Î±
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \alpha ^{i}}
+  
+ for 
+  
+    
+      
+        i
+        â
+        {
+        1
+        ,
+        â¦
+        ,
+        q
+        â
+        1
+        }
+      
+    
+    {\displaystyle i\in \{1,\dots ,q-1\}}
+  
+, where 
+  
+    
+      
+        q
+        =
+        
+          |
+        
+        F
+        
+          |
+        
+      
+    
+    {\displaystyle q=|F|}
+  
+. Each polynomial 
+  
+    
+      
+        p
+      
+    
+    {\displaystyle p}
+  
+ over 
+  
+    
+      
+        F
+      
+    
+    {\displaystyle F}
+  
+ gives rise to a codeword 
+  
+    
+      
+        (
+        p
+        (
+        
+          Î±
+          
+            1
+          
+        
+        )
+        ,
+        â¦
+        ,
+        p
+        (
+        
+          Î±
+          
+            q
+            â
+            1
+          
+        
+        )
+        )
+      
+    
+    {\displaystyle (p(\alpha ^{1}),\dots ,p(\alpha ^{q-1}))}
+  
+. Since the function 
+  
+    
+      
+        a
+        â¦
+        p
+        (
+        Î±
+        a
+        )
+      
+    
+    {\displaystyle a\mapsto p(\alpha a)}
+  
+ is also a polynomial of the same degree, this function gives rise to a codeword 
+  
+    
+      
+        (
+        p
+        (
+        
+          Î±
+          
+            2
+          
+        
+        )
+        ,
+        â¦
+        ,
+        p
+        (
+        
+          Î±
+          
+            q
+          
+        
+        )
+        )
+      
+    
+    {\displaystyle (p(\alpha ^{2}),\dots ,p(\alpha ^{q}))}
+  
+; since 
+  
+    
+      
+        
+          Î±
+          
+            q
+          
+        
+        =
+        
+          Î±
+          
+            1
+          
+        
+      
+    
+    {\displaystyle \alpha ^{q}=\alpha ^{1}}
+  
+ holds, this codeword is the cyclic left-shift of the original codeword derived from 
+  
+    
+      
+        p
+      
+    
+    {\displaystyle p}
+  
+. So choosing a sequence of primitive root powers as the evaluation points makes the original view ReedâSolomon code cyclic. ReedâSolomon codes in the BCH view are always cyclic because BCH codes are cyclic.
+
+Remarks[edit]
+Designers are not required to use the "natural" sizes of ReedâSolomon code blocks. A technique known as "shortening" can produce a smaller code of any desired size from a larger code. For example, the widely used (255,223) code can be converted to a (160,128) code by padding the unused portion of the source block with 95 binary zeroes and not transmitting them. At the decoder, the same portion of the block is loaded locally with binary zeroes. The DelsarteâGoethalsâSeidel[12] theorem illustrates an example of an application of shortened ReedâSolomon codes. In parallel to shortening, a technique known as puncturing allows omitting some of the encoded parity symbols.
+
+BCH view decoders[edit]
+The decoders described in this section use the BCH view of a codeword as a sequence of coefficients. They use a fixed generator polynomial known to both encoder and decoder.
+
+PetersonâGorensteinâZierler decoder[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: PetersonâGorensteinâZierler algorithm
+Daniel Gorenstein and Neal Zierler developed a decoder that was described in a MIT Lincoln Laboratory report by Zierler in January 1960 and later in a paper in June 1961.[13] The GorensteinâZierler decoder and the related work on BCH codes are described in a book Error Correcting Codes by W. Wesley Peterson (1961).[14]
+
+Formulation[edit]
+The transmitted message, 
+  
+    
+      
+        (
+        
+          c
+          
+            0
+          
+        
+        ,
+        â¦
+        ,
+        
+          c
+          
+            i
+          
+        
+        ,
+        â¦
+        ,
+        
+          c
+          
+            n
+            â
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle (c_{0},\ldots ,c_{i},\ldots ,c_{n-1})}
+  
+, is viewed as the coefficients of a polynomial s(x):
+
+
+  
+    
+      
+        s
+        (
+        x
+        )
+        =
+        
+          â
+          
+            i
+            =
+            0
+          
+          
+            n
+            â
+            1
+          
+        
+        
+          c
+          
+            i
+          
+        
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle s(x)=\sum _{i=0}^{n-1}c_{i}x^{i}}
+  
+
+As a result of the Reed-Solomon encoding procedure, s(x) is divisible by the generator polynomial g(x):
+
+
+  
+    
+      
+        g
+        (
+        x
+        )
+        =
+        
+          â
+          
+            j
+            =
+            1
+          
+          
+            n
+            â
+            k
+          
+        
+        (
+        x
+        â
+        
+          Î±
+          
+            j
+          
+        
+        )
+        ,
+      
+    
+    {\displaystyle g(x)=\prod _{j=1}^{n-k}(x-\alpha ^{j}),}
+  
+
+where Î± is a primitive root.
+Since s(x) is a multiple of the generator g(x), it follows that it "inherits" all its roots:
+
+
+  
+    
+      
+        s
+        (
+        
+          Î±
+          
+            j
+          
+        
+        )
+        =
+        0
+        ,
+        Â 
+        j
+        =
+        1
+        ,
+        2
+        ,
+        â¦
+        ,
+        n
+        â
+        k
+      
+    
+    {\displaystyle s(\alpha ^{j})=0,\ j=1,2,\ldots ,n-k}
+  
+
+The transmitted polynomial is corrupted in transit by an error polynomial e(x) to produce the received polynomial r(x).
+
+
+  
+    
+      
+        r
+        (
+        x
+        )
+        =
+        s
+        (
+        x
+        )
+        +
+        e
+        (
+        x
+        )
+      
+    
+    {\displaystyle r(x)=s(x)+e(x)}
+  
+
+
+  
+    
+      
+        e
+        (
+        x
+        )
+        =
+        
+          â
+          
+            i
+            =
+            0
+          
+          
+            n
+            â
+            1
+          
+        
+        
+          e
+          
+            i
+          
+        
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle e(x)=\sum _{i=0}^{n-1}e_{i}x^{i}}
+  
+
+Coefficient ei will be zero if there is no error at that power of x and nonzero if there is an error. If there are Î½ errors at distinct powers ik of x, then
+
+
+  
+    
+      
+        e
+        (
+        x
+        )
+        =
+        
+          â
+          
+            k
+            =
+            1
+          
+          
+            Î½
+          
+        
+        
+          e
+          
+            
+              i
+              
+                k
+              
+            
+          
+        
+        
+          x
+          
+            
+              i
+              
+                k
+              
+            
+          
+        
+      
+    
+    {\displaystyle e(x)=\sum _{k=1}^{\nu }e_{i_{k}}x^{i_{k}}}
+  
+
+The goal of the decoder is to find the number of errors (Î½), the positions of the errors (ik), and the error values at those positions (eik). From those, e(x) can be calculated and subtracted from r(x) to get the originally sent message s(x).
+
+Syndrome decoding[edit]
+The decoder starts by evaluating the polynomial as received at points 
+  
+    
+      
+        
+          Î±
+          
+            1
+          
+        
+        â¦
+        
+          Î±
+          
+            n
+            â
+            k
+          
+        
+      
+    
+    {\displaystyle \alpha ^{1}\dots \alpha ^{n-k}}
+  
+. We call the results of that evaluation the "syndromes", Sj. They are defined as:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  S
+                  
+                    j
+                  
+                
+              
+              
+                
+                =
+                r
+                (
+                
+                  Î±
+                  
+                    j
+                  
+                
+                )
+                =
+                s
+                (
+                
+                  Î±
+                  
+                    j
+                  
+                
+                )
+                +
+                e
+                (
+                
+                  Î±
+                  
+                    j
+                  
+                
+                )
+                =
+                0
+                +
+                e
+                (
+                
+                  Î±
+                  
+                    j
+                  
+                
+                )
+                =
+                e
+                (
+                
+                  Î±
+                  
+                    j
+                  
+                
+                )
+                ,
+                Â 
+                j
+                =
+                1
+                ,
+                2
+                ,
+                â¦
+                ,
+                n
+                â
+                k
+              
+            
+            
+              
+              
+                
+                =
+                
+                  â
+                  
+                    k
+                    =
+                    1
+                  
+                  
+                    Î½
+                  
+                
+                
+                  e
+                  
+                    
+                      i
+                      
+                        k
+                      
+                    
+                  
+                
+                
+                  
+                    (
+                    
+                      Î±
+                      
+                        j
+                      
+                    
+                    )
+                  
+                  
+                    
+                      i
+                      
+                        k
+                      
+                    
+                  
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}S_{j}&=r(\alpha ^{j})=s(\alpha ^{j})+e(\alpha ^{j})=0+e(\alpha ^{j})=e(\alpha ^{j}),\ j=1,2,\ldots ,n-k\\&=\sum _{k=1}^{\nu }e_{i_{k}}\left(\alpha ^{j}\right)^{i_{k}}\end{aligned}}}
+  
+
+The advantage of looking at the syndromes is that the message polynomial drops out. In other words, the syndromes only relate to the error, and are unaffected by the actual contents of the message being transmitted. If the syndromes are all zero, the algorithm stops here and reports that the message was not corrupted in transit.
+
+Error locators and error values[edit]
+For convenience, define the error locators Xk and error values Yk as:
+
+
+  
+    
+      
+        
+          X
+          
+            k
+          
+        
+        =
+        
+          Î±
+          
+            
+              i
+              
+                k
+              
+            
+          
+        
+        ,
+        Â 
+        
+          Y
+          
+            k
+          
+        
+        =
+        
+          e
+          
+            
+              i
+              
+                k
+              
+            
+          
+        
+      
+    
+    {\displaystyle X_{k}=\alpha ^{i_{k}},\ Y_{k}=e_{i_{k}}}
+  
+
+Then the syndromes can be written in terms of these error locators and error values as
+
+
+  
+    
+      
+        
+          S
+          
+            j
+          
+        
+        =
+        
+          â
+          
+            k
+            =
+            1
+          
+          
+            Î½
+          
+        
+        
+          Y
+          
+            k
+          
+        
+        
+          X
+          
+            k
+          
+          
+            j
+          
+        
+      
+    
+    {\displaystyle S_{j}=\sum _{k=1}^{\nu }Y_{k}X_{k}^{j}}
+  
+
+This definition of the syndrome values is equivalent to the previous since 
+  
+    
+      
+        (
+        
+          Î±
+          
+            j
+          
+        
+        
+          )
+          
+            
+              i
+              
+                k
+              
+            
+          
+        
+        =
+        
+          Î±
+          
+            j
+            â
+            
+              i
+              
+                k
+              
+            
+          
+        
+        =
+        (
+        
+          Î±
+          
+            
+              i
+              
+                k
+              
+            
+          
+        
+        
+          )
+          
+            j
+          
+        
+        =
+        
+          X
+          
+            k
+          
+          
+            j
+          
+        
+      
+    
+    {\displaystyle (\alpha ^{j})^{i_{k}}=\alpha ^{j*i_{k}}=(\alpha ^{i_{k}})^{j}=X_{k}^{j}}
+  
+.
+The syndromes give a system of nÂ âÂ k â¥ 2Î½ equations in 2Î½ unknowns, but that system of equations is nonlinear in the Xk and does not have an obvious solution. However, if the Xk were known (see below), then the syndrome equations provide a linear system of equations that can easily be solved for the Yk error values.
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  
+                    X
+                    
+                      1
+                    
+                    
+                      1
+                    
+                  
+                
+                
+                  
+                    X
+                    
+                      2
+                    
+                    
+                      1
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  
+                    X
+                    
+                      Î½
+                    
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    X
+                    
+                      1
+                    
+                    
+                      2
+                    
+                  
+                
+                
+                  
+                    X
+                    
+                      2
+                    
+                    
+                      2
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  
+                    X
+                    
+                      Î½
+                    
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+                
+                  â®
+                
+                
+                
+                  â®
+                
+              
+              
+                
+                  
+                    X
+                    
+                      1
+                    
+                    
+                      n
+                      â
+                      k
+                    
+                  
+                
+                
+                  
+                    X
+                    
+                      2
+                    
+                    
+                      n
+                      â
+                      k
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  
+                    X
+                    
+                      Î½
+                    
+                    
+                      n
+                      â
+                      k
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  
+                    Y
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    Y
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+              
+              
+                
+                  
+                    Y
+                    
+                      Î½
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    S
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+              
+              
+                
+                  
+                    S
+                    
+                      n
+                      â
+                      k
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}X_{1}^{1}&X_{2}^{1}&\cdots &X_{\nu }^{1}\\X_{1}^{2}&X_{2}^{2}&\cdots &X_{\nu }^{2}\\\vdots &\vdots &&\vdots \\X_{1}^{n-k}&X_{2}^{n-k}&\cdots &X_{\nu }^{n-k}\\\end{bmatrix}}{\begin{bmatrix}Y_{1}\\Y_{2}\\\vdots \\Y_{\nu }\end{bmatrix}}={\begin{bmatrix}S_{1}\\S_{2}\\\vdots \\S_{n-k}\end{bmatrix}}}
+  
+
+Consequently, the problem is finding the Xk, because then the leftmost matrix would be known, and both sides of the equation could be multiplied by its inverse, yielding Yk
+In the variant of this algorithm where the locations of the errors are already known (when it is being used as an erasure code), this is the end. The error locations (Xk) are already known by some other method (for example, in an FM transmission, the sections where the bitstream was unclear or overcome with interference are probabilistically determinable from frequency analysis). In this scenario, up to 
+  
+    
+      
+        n
+        â
+        k
+      
+    
+    {\displaystyle n-k}
+  
+ errors can be corrected.
+The rest of the algorithm serves to locate the errors, and will require syndrome values up to 
+  
+    
+      
+        2
+        v
+      
+    
+    {\displaystyle 2v}
+  
+, instead of just the 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ used thus far. This is why 2x as many error correcting symbols need to be added as can be corrected without knowing their locations.
+
+Error locator polynomial[edit]
+There is a linear recurrence relation that gives rise to a system of linear equations. Solving those equations identifies those error locations Xk.
+Define the error locator polynomial Î(x) as
+
+
+  
+    
+      
+        Î
+        (
+        x
+        )
+        =
+        
+          â
+          
+            k
+            =
+            1
+          
+          
+            Î½
+          
+        
+        (
+        1
+        â
+        x
+        
+          X
+          
+            k
+          
+        
+        )
+        =
+        1
+        +
+        
+          Î
+          
+            1
+          
+        
+        
+          x
+          
+            1
+          
+        
+        +
+        
+          Î
+          
+            2
+          
+        
+        
+          x
+          
+            2
+          
+        
+        +
+        â¯
+        +
+        
+          Î
+          
+            Î½
+          
+        
+        
+          x
+          
+            Î½
+          
+        
+      
+    
+    {\displaystyle \Lambda (x)=\prod _{k=1}^{\nu }(1-xX_{k})=1+\Lambda _{1}x^{1}+\Lambda _{2}x^{2}+\cdots +\Lambda _{\nu }x^{\nu }}
+  
+
+The zeros of Î(x) are the reciprocals 
+  
+    
+      
+        
+          X
+          
+            k
+          
+          
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle X_{k}^{-1}}
+  
+. This follows from the above product notation construction since if 
+  
+    
+      
+        x
+        =
+        
+          X
+          
+            k
+          
+          
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle x=X_{k}^{-1}}
+  
+ then one of the multiplied terms will be zero 
+  
+    
+      
+        (
+        1
+        â
+        
+          X
+          
+            k
+          
+          
+            â
+            1
+          
+        
+        â
+        
+          X
+          
+            k
+          
+        
+        )
+        =
+        1
+        â
+        1
+        =
+        0
+      
+    
+    {\displaystyle (1-X_{k}^{-1}\cdot X_{k})=1-1=0}
+  
+, making the whole polynomial evaluate to zero.
+
+
+  
+    
+      
+        Î
+        (
+        
+          X
+          
+            k
+          
+          
+            â
+            1
+          
+        
+        )
+        =
+        0
+      
+    
+    {\displaystyle \Lambda (X_{k}^{-1})=0}
+  
+
+Let 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+ be any integer such that 
+  
+    
+      
+        1
+        â¤
+        j
+        â¤
+        Î½
+      
+    
+    {\displaystyle 1\leq j\leq \nu }
+  
+. Multiply both sides by 
+  
+    
+      
+        
+          Y
+          
+            k
+          
+        
+        
+          X
+          
+            k
+          
+          
+            j
+            +
+            Î½
+          
+        
+      
+    
+    {\displaystyle Y_{k}X_{k}^{j+\nu }}
+  
+ and it will still be zero. 
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                Î
+                (
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    1
+                  
+                
+                )
+                =
+                0.
+              
+            
+            
+              
+              
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                (
+                1
+                +
+                
+                  Î
+                  
+                    1
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    1
+                  
+                
+                +
+                
+                  Î
+                  
+                    2
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    2
+                  
+                
+                +
+                â¯
+                +
+                
+                  Î
+                  
+                    Î½
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    Î½
+                  
+                
+                )
+                =
+                0.
+              
+            
+            
+              
+              
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                +
+                
+                  Î
+                  
+                    1
+                  
+                
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    1
+                  
+                
+                +
+                
+                  Î
+                  
+                    2
+                  
+                
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    2
+                  
+                
+                +
+                â¯
+                +
+                
+                  Î
+                  
+                    Î½
+                  
+                
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    â
+                    Î½
+                  
+                
+                =
+                0.
+              
+            
+            
+              
+              
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                  
+                
+                +
+                
+                  Î
+                  
+                    1
+                  
+                
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                    â
+                    1
+                  
+                
+                +
+                
+                  Î
+                  
+                    2
+                  
+                
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                    +
+                    Î½
+                    â
+                    2
+                  
+                
+                +
+                â¯
+                +
+                
+                  Î
+                  
+                    Î½
+                  
+                
+                
+                  Y
+                  
+                    k
+                  
+                
+                
+                  X
+                  
+                    k
+                  
+                  
+                    j
+                  
+                
+                =
+                0.
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&Y_{k}X_{k}^{j+\nu }\Lambda (X_{k}^{-1})=0.\\&Y_{k}X_{k}^{j+\nu }(1+\Lambda _{1}X_{k}^{-1}+\Lambda _{2}X_{k}^{-2}+\cdots +\Lambda _{\nu }X_{k}^{-\nu })=0.\\&Y_{k}X_{k}^{j+\nu }+\Lambda _{1}Y_{k}X_{k}^{j+\nu }X_{k}^{-1}+\Lambda _{2}Y_{k}X_{k}^{j+\nu }X_{k}^{-2}+\cdots +\Lambda _{\nu }Y_{k}X_{k}^{j+\nu }X_{k}^{-\nu }=0.\\&Y_{k}X_{k}^{j+\nu }+\Lambda _{1}Y_{k}X_{k}^{j+\nu -1}+\Lambda _{2}Y_{k}X_{k}^{j+\nu -2}+\cdots +\Lambda _{\nu }Y_{k}X_{k}^{j}=0.\\\end{aligned}}}
+  
+
+Sum for k = 1 to Î½ and it will still be zero.
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                
+                  â
+                  
+                    k
+                    =
+                    1
+                  
+                  
+                    Î½
+                  
+                
+                
+                  (
+                  
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                      
+                    
+                    +
+                    
+                      Î
+                      
+                        1
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                        â
+                        1
+                      
+                    
+                    +
+                    
+                      Î
+                      
+                        2
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                        â
+                        2
+                      
+                    
+                    +
+                    â¯
+                    +
+                    
+                      Î
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                      
+                    
+                  
+                  )
+                
+                =
+                0
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\sum _{k=1}^{\nu }\left(Y_{k}X_{k}^{j+\nu }+\Lambda _{1}Y_{k}X_{k}^{j+\nu -1}+\Lambda _{2}Y_{k}X_{k}^{j+\nu -2}+\cdots +\Lambda _{\nu }Y_{k}X_{k}^{j}\right)=0\\\end{aligned}}}
+  
+
+Collect each term into its own sum.
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                      
+                    
+                  
+                  )
+                
+                +
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Î
+                      
+                        1
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                        â
+                        1
+                      
+                    
+                  
+                  )
+                
+                +
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Î
+                      
+                        2
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                        â
+                        2
+                      
+                    
+                  
+                  )
+                
+                +
+                â¯
+                +
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Î
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                      
+                    
+                  
+                  )
+                
+                =
+                0
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\left(\sum _{k=1}^{\nu }Y_{k}X_{k}^{j+\nu }\right)+\left(\sum _{k=1}^{\nu }\Lambda _{1}Y_{k}X_{k}^{j+\nu -1}\right)+\left(\sum _{k=1}^{\nu }\Lambda _{2}Y_{k}X_{k}^{j+\nu -2}\right)+\cdots +\left(\sum _{k=1}^{\nu }\Lambda _{\nu }Y_{k}X_{k}^{j}\right)=0\end{aligned}}}
+  
+
+Extract the constant values of 
+  
+    
+      
+        Î
+      
+    
+    {\displaystyle \Lambda }
+  
+ that are unaffected by the summation.
+
+
+  
+    
+      
+        
+          
+            
+              
+              
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                      
+                    
+                  
+                  )
+                
+                +
+                
+                  Î
+                  
+                    1
+                  
+                
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                        â
+                        1
+                      
+                    
+                  
+                  )
+                
+                +
+                
+                  Î
+                  
+                    2
+                  
+                
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                        +
+                        Î½
+                        â
+                        2
+                      
+                    
+                  
+                  )
+                
+                +
+                â¯
+                +
+                
+                  Î
+                  
+                    Î½
+                  
+                
+                
+                  (
+                  
+                    
+                      â
+                      
+                        k
+                        =
+                        1
+                      
+                      
+                        Î½
+                      
+                    
+                    
+                      Y
+                      
+                        k
+                      
+                    
+                    
+                      X
+                      
+                        k
+                      
+                      
+                        j
+                      
+                    
+                  
+                  )
+                
+                =
+                0
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}&\left(\sum _{k=1}^{\nu }Y_{k}X_{k}^{j+\nu }\right)+\Lambda _{1}\left(\sum _{k=1}^{\nu }Y_{k}X_{k}^{j+\nu -1}\right)+\Lambda _{2}\left(\sum _{k=1}^{\nu }Y_{k}X_{k}^{j+\nu -2}\right)+\cdots +\Lambda _{\nu }\left(\sum _{k=1}^{\nu }Y_{k}X_{k}^{j}\right)=0\end{aligned}}}
+  
+
+These summations are now equivalent to the syndrome values, which we know and can substitute in! This therefore reduces to
+
+
+  
+    
+      
+        
+          S
+          
+            j
+            +
+            Î½
+          
+        
+        +
+        
+          Î
+          
+            1
+          
+        
+        
+          S
+          
+            j
+            +
+            Î½
+            â
+            1
+          
+        
+        +
+        â¯
+        +
+        
+          Î
+          
+            Î½
+            â
+            1
+          
+        
+        
+          S
+          
+            j
+            +
+            1
+          
+        
+        +
+        
+          Î
+          
+            Î½
+          
+        
+        
+          S
+          
+            j
+          
+        
+        =
+        0
+        
+      
+    
+    {\displaystyle S_{j+\nu }+\Lambda _{1}S_{j+\nu -1}+\cdots +\Lambda _{\nu -1}S_{j+1}+\Lambda _{\nu }S_{j}=0\,}
+  
+
+Subtracting 
+  
+    
+      
+        
+          S
+          
+            j
+            +
+            Î½
+          
+        
+      
+    
+    {\displaystyle S_{j+\nu }}
+  
+ from both sides yields
+
+
+  
+    
+      
+        
+          S
+          
+            j
+          
+        
+        
+          Î
+          
+            Î½
+          
+        
+        +
+        
+          S
+          
+            j
+            +
+            1
+          
+        
+        
+          Î
+          
+            Î½
+            â
+            1
+          
+        
+        +
+        â¯
+        +
+        
+          S
+          
+            j
+            +
+            Î½
+            â
+            1
+          
+        
+        
+          Î
+          
+            1
+          
+        
+        =
+        â
+        
+          S
+          
+            j
+            +
+            Î½
+          
+        
+        Â 
+      
+    
+    {\displaystyle S_{j}\Lambda _{\nu }+S_{j+1}\Lambda _{\nu -1}+\cdots +S_{j+\nu -1}\Lambda _{1}=-S_{j+\nu }\ }
+  
+
+Recall that j was chosen to be any integer between 1 and v inclusive, and this equivalence is true for any and all such values. Therefore, we have v linear equations, not just one. This system of linear equations can therefore be solved for the coefficients Îi of the error location polynomial:
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  
+                    S
+                    
+                      1
+                    
+                  
+                
+                
+                  
+                    S
+                    
+                      2
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  
+                    S
+                    
+                      Î½
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      2
+                    
+                  
+                
+                
+                  
+                    S
+                    
+                      3
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  
+                    S
+                    
+                      Î½
+                      +
+                      1
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+                
+                  â®
+                
+                
+                
+                  â®
+                
+              
+              
+                
+                  
+                    S
+                    
+                      Î½
+                    
+                  
+                
+                
+                  
+                    S
+                    
+                      Î½
+                      +
+                      1
+                    
+                  
+                
+                
+                  â¯
+                
+                
+                  
+                    S
+                    
+                      2
+                      Î½
+                      â
+                      1
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  
+                    Î
+                    
+                      Î½
+                    
+                  
+                
+              
+              
+                
+                  
+                    Î
+                    
+                      Î½
+                      â
+                      1
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+              
+              
+                
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  â
+                  
+                    S
+                    
+                      Î½
+                      +
+                      1
+                    
+                  
+                
+              
+              
+                
+                  â
+                  
+                    S
+                    
+                      Î½
+                      +
+                      2
+                    
+                  
+                
+              
+              
+                
+                  â®
+                
+              
+              
+                
+                  â
+                  
+                    S
+                    
+                      Î½
+                      +
+                      Î½
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}S_{1}&S_{2}&\cdots &S_{\nu }\\S_{2}&S_{3}&\cdots &S_{\nu +1}\\\vdots &\vdots &&\vdots \\S_{\nu }&S_{\nu +1}&\cdots &S_{2\nu -1}\end{bmatrix}}{\begin{bmatrix}\Lambda _{\nu }\\\Lambda _{\nu -1}\\\vdots \\\Lambda _{1}\end{bmatrix}}={\begin{bmatrix}-S_{\nu +1}\\-S_{\nu +2}\\\vdots \\-S_{\nu +\nu }\end{bmatrix}}}
+  
+
+The above assumes the decoder knows the number of errors Î½, but that number has not been determined yet. The PGZ decoder does not determine Î½ directly but rather searches for it by trying successive values. The decoder first assumes the largest value for a trial Î½ and sets up the linear system for that value. If the equations can be solved (i.e., the matrix determinant is nonzero), then that trial value is the number of errors. If the linear system cannot be solved, then the trial Î½ is reduced by one and the next smaller system is examined. (Gill n.d., p.Â 35)
+
+Find the roots of the error locator polynomial[edit]
+Use the coefficients Îi found in the last step to build the error location polynomial. The roots of the error location polynomial can be found by exhaustive search. The error locators Xk are the reciprocals of those roots. The order of coefficients of the error location polynomial can be reversed, in which case the roots of that reversed polynomial are the error locators 
+  
+    
+      
+        
+          X
+          
+            k
+          
+        
+      
+    
+    {\displaystyle X_{k}}
+  
+ (not their reciprocals 
+  
+    
+      
+        
+          X
+          
+            k
+          
+          
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle X_{k}^{-1}}
+  
+). Chien search is an efficient implementation of this step.
+
+Calculate the error values[edit]
+Once the error locators Xk are known, the error values can be determined. This can be done by direct solution for Yk in the error equations matrix given above, or using the Forney algorithm.
+
+Calculate the error locations[edit]
+Calculate ik by taking the log base 
+  
+    
+      
+        Î±
+      
+    
+    {\displaystyle \alpha }
+  
+ of Xk. This is generally done using a precomputed lookup table.
+
+Fix the errors[edit]
+Finally, e(x) is generated from ik and eik and then is subtracted from r(x) to get the originally sent message s(x), with errors corrected.
+
+Example[edit]
+Consider the ReedâSolomon code defined in GF(929) with Î± = 3 and t = 4 (this is used in PDF417 barcodes) for a RS(7,3) code. The generator polynomial is
+
+
+  
+    
+      
+        g
+        (
+        x
+        )
+        =
+        (
+        x
+        â
+        3
+        )
+        (
+        x
+        â
+        
+          3
+          
+            2
+          
+        
+        )
+        (
+        x
+        â
+        
+          3
+          
+            3
+          
+        
+        )
+        (
+        x
+        â
+        
+          3
+          
+            4
+          
+        
+        )
+        =
+        
+          x
+          
+            4
+          
+        
+        +
+        809
+        
+          x
+          
+            3
+          
+        
+        +
+        723
+        
+          x
+          
+            2
+          
+        
+        +
+        568
+        x
+        +
+        522
+      
+    
+    {\displaystyle g(x)=(x-3)(x-3^{2})(x-3^{3})(x-3^{4})=x^{4}+809x^{3}+723x^{2}+568x+522}
+  
+
+If the message polynomial is p(x) = 3 x2 + 2 x + 1, then a systematic codeword is encoded as follows.
+
+
+  
+    
+      
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        =
+        p
+        (
+        x
+        )
+        
+        
+          x
+          
+            t
+          
+        
+        
+        mod
+        
+        
+        g
+        (
+        x
+        )
+        =
+        547
+        
+          x
+          
+            3
+          
+        
+        +
+        738
+        
+          x
+          
+            2
+          
+        
+        +
+        442
+        x
+        +
+        455
+      
+    
+    {\displaystyle s_{r}(x)=p(x)\,x^{t}\mod g(x)=547x^{3}+738x^{2}+442x+455}
+  
+
+
+  
+    
+      
+        s
+        (
+        x
+        )
+        =
+        p
+        (
+        x
+        )
+        
+        
+          x
+          
+            t
+          
+        
+        â
+        
+          s
+          
+            r
+          
+        
+        (
+        x
+        )
+        =
+        3
+        
+          x
+          
+            6
+          
+        
+        +
+        2
+        
+          x
+          
+            5
+          
+        
+        +
+        1
+        
+          x
+          
+            4
+          
+        
+        +
+        382
+        
+          x
+          
+            3
+          
+        
+        +
+        191
+        
+          x
+          
+            2
+          
+        
+        +
+        487
+        x
+        +
+        474
+      
+    
+    {\displaystyle s(x)=p(x)\,x^{t}-s_{r}(x)=3x^{6}+2x^{5}+1x^{4}+382x^{3}+191x^{2}+487x+474}
+  
+
+Errors in transmission might cause this to be received instead.
+
+
+  
+    
+      
+        r
+        (
+        x
+        )
+        =
+        s
+        (
+        x
+        )
+        +
+        e
+        (
+        x
+        )
+        =
+        3
+        
+          x
+          
+            6
+          
+        
+        +
+        2
+        
+          x
+          
+            5
+          
+        
+        +
+        123
+        
+          x
+          
+            4
+          
+        
+        +
+        456
+        
+          x
+          
+            3
+          
+        
+        +
+        191
+        
+          x
+          
+            2
+          
+        
+        +
+        487
+        x
+        +
+        474
+      
+    
+    {\displaystyle r(x)=s(x)+e(x)=3x^{6}+2x^{5}+123x^{4}+456x^{3}+191x^{2}+487x+474}
+  
+
+The syndromes are calculated by evaluating r at powers of Î±.
+
+
+  
+    
+      
+        
+          S
+          
+            1
+          
+        
+        =
+        r
+        (
+        
+          3
+          
+            1
+          
+        
+        )
+        =
+        3
+        â
+        
+          3
+          
+            6
+          
+        
+        +
+        2
+        â
+        
+          3
+          
+            5
+          
+        
+        +
+        123
+        â
+        
+          3
+          
+            4
+          
+        
+        +
+        456
+        â
+        
+          3
+          
+            3
+          
+        
+        +
+        191
+        â
+        
+          3
+          
+            2
+          
+        
+        +
+        487
+        â
+        3
+        +
+        474
+        =
+        732
+      
+    
+    {\displaystyle S_{1}=r(3^{1})=3\cdot 3^{6}+2\cdot 3^{5}+123\cdot 3^{4}+456\cdot 3^{3}+191\cdot 3^{2}+487\cdot 3+474=732}
+  
+
+
+  
+    
+      
+        
+          S
+          
+            2
+          
+        
+        =
+        r
+        (
+        
+          3
+          
+            2
+          
+        
+        )
+        =
+        637
+        ,
+        
+        
+          S
+          
+            3
+          
+        
+        =
+        r
+        (
+        
+          3
+          
+            3
+          
+        
+        )
+        =
+        762
+        ,
+        
+        
+          S
+          
+            4
+          
+        
+        =
+        r
+        (
+        
+          3
+          
+            4
+          
+        
+        )
+        =
+        925
+      
+    
+    {\displaystyle S_{2}=r(3^{2})=637,\;S_{3}=r(3^{3})=762,\;S_{4}=r(3^{4})=925}
+  
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  732
+                
+                
+                  637
+                
+              
+              
+                
+                  637
+                
+                
+                  762
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  â
+                  762
+                
+              
+              
+                
+                  â
+                  925
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  167
+                
+              
+              
+                
+                  004
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}732&637\\637&762\end{bmatrix}}{\begin{bmatrix}\Lambda _{2}\\\Lambda _{1}\end{bmatrix}}={\begin{bmatrix}-762\\-925\end{bmatrix}}={\begin{bmatrix}167\\004\end{bmatrix}}}
+  
+
+Using Gaussian elimination:
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  001
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  001
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  329
+                
+              
+              
+                
+                  821
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}001&000\\000&001\end{bmatrix}}{\begin{bmatrix}\Lambda _{2}\\\Lambda _{1}\end{bmatrix}}={\begin{bmatrix}329\\821\end{bmatrix}}}
+  
+
+Î(x) = 329 x2 + 821 x + 001, with roots x1 = 757 = 3â3 and x2 = 562 = 3â4
+The coefficients can be reversed to produce roots with positive exponents, but typically this isn't used:
+
+R(x) = 001 x2 + 821 x + 329, with roots 27 = 33 and 81 = 34
+with the log of the roots corresponding to the error locations (right to left, location 0 is the last term in the codeword).
+To calculate the error values, apply the Forney algorithm.
+
+Î©(x) = S(x) Î(x) mod x4 = 546 x + 732
+Î'(x) = 658 x + 821
+e1 = âÎ©(x1)/Î'(x1) = 074
+e2 = âÎ©(x2)/Î'(x2) = 122
+Subtracting 
+  
+    
+      
+        
+          e
+          
+            1
+          
+        
+        
+          x
+          
+            3
+          
+        
+        +
+        
+          e
+          
+            2
+          
+        
+        
+          x
+          
+            4
+          
+        
+        =
+        74
+        
+          x
+          
+            3
+          
+        
+        +
+        122
+        
+          x
+          
+            4
+          
+        
+      
+    
+    {\displaystyle e_{1}x^{3}+e_{2}x^{4}=74x^{3}+122x^{4}}
+  
+ from the received polynomial r(x) reproduces the original codeword s.
+
+BerlekampâMassey decoder[edit]
+The BerlekampâMassey algorithm is an alternate iterative procedure for finding the error locator polynomial. During each iteration, it calculates a discrepancy based on a current instance of Î(x) with an assumed number of errors e:
+
+
+  
+    
+      
+        Î
+        =
+        
+          S
+          
+            i
+          
+        
+        +
+        
+          Î
+          
+            1
+          
+        
+        Â 
+        
+          S
+          
+            i
+            â
+            1
+          
+        
+        +
+        â¯
+        +
+        
+          Î
+          
+            e
+          
+        
+        Â 
+        
+          S
+          
+            i
+            â
+            e
+          
+        
+      
+    
+    {\displaystyle \Delta =S_{i}+\Lambda _{1}\ S_{i-1}+\cdots +\Lambda _{e}\ S_{i-e}}
+  
+
+and then adjusts Î(x) and e so that a recalculated Î would be zero. The article BerlekampâMassey algorithm has a detailed description of the procedure. In the following example, C(x) is used to represent Î(x).
+
+Example[edit]
+Using the same data as the Peterson Gorenstein Zierler example above:
+
+
+
+
+n
+
+Sn+1
+
+d
+
+C
+
+B
+
+b
+
+m
+
+
+0
+732
+732
+197 x + 1
+1
+732
+1
+
+
+1
+637
+846
+173 x + 1
+1
+732
+2
+
+
+2
+762
+412
+634 x2 + 173 x + 1
+173 x + 1
+412
+1
+
+
+3
+925
+576
+329 x2 + 821 x + 1
+173 x + 1
+412
+2
+
+The final value of C is the error locator polynomial, Î(x).
+
+Euclidean decoder[edit]
+Another iterative method for calculating both the error locator polynomial and the error value polynomial is based on Sugiyama's adaptation of the extended Euclidean algorithm .
+Define S(x), Î(x), and Î©(x) for t syndromes and e errors:
+
+
+  
+    
+      
+        S
+        (
+        x
+        )
+        =
+        
+          S
+          
+            t
+          
+        
+        
+          x
+          
+            t
+            â
+            1
+          
+        
+        +
+        
+          S
+          
+            t
+            â
+            1
+          
+        
+        
+          x
+          
+            t
+            â
+            2
+          
+        
+        +
+        â¯
+        +
+        
+          S
+          
+            2
+          
+        
+        x
+        +
+        
+          S
+          
+            1
+          
+        
+      
+    
+    {\displaystyle S(x)=S_{t}x^{t-1}+S_{t-1}x^{t-2}+\cdots +S_{2}x+S_{1}}
+  
+
+
+  
+    
+      
+        Î
+        (
+        x
+        )
+        =
+        
+          Î
+          
+            e
+          
+        
+        
+          x
+          
+            e
+          
+        
+        +
+        
+          Î
+          
+            e
+            â
+            1
+          
+        
+        
+          x
+          
+            e
+            â
+            1
+          
+        
+        +
+        â¯
+        +
+        
+          Î
+          
+            1
+          
+        
+        x
+        +
+        1
+      
+    
+    {\displaystyle \Lambda (x)=\Lambda _{e}x^{e}+\Lambda _{e-1}x^{e-1}+\cdots +\Lambda _{1}x+1}
+  
+
+
+  
+    
+      
+        Î©
+        (
+        x
+        )
+        =
+        
+          Î©
+          
+            e
+          
+        
+        
+          x
+          
+            e
+          
+        
+        +
+        
+          Î©
+          
+            e
+            â
+            1
+          
+        
+        
+          x
+          
+            e
+            â
+            1
+          
+        
+        +
+        â¯
+        +
+        
+          Î©
+          
+            1
+          
+        
+        x
+        +
+        
+          Î©
+          
+            0
+          
+        
+      
+    
+    {\displaystyle \Omega (x)=\Omega _{e}x^{e}+\Omega _{e-1}x^{e-1}+\cdots +\Omega _{1}x+\Omega _{0}}
+  
+
+The key equation is:
+
+
+  
+    
+      
+        Î
+        (
+        x
+        )
+        S
+        (
+        x
+        )
+        =
+        Q
+        (
+        x
+        )
+        
+          x
+          
+            t
+          
+        
+        +
+        Î©
+        (
+        x
+        )
+      
+    
+    {\displaystyle \Lambda (x)S(x)=Q(x)x^{t}+\Omega (x)}
+  
+
+For t = 6 and e = 3:
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  
+                    Î
+                    
+                      3
+                    
+                  
+                  
+                    S
+                    
+                      6
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      8
+                    
+                  
+                
+              
+              
+                
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                  
+                    S
+                    
+                      6
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      3
+                    
+                  
+                  
+                    S
+                    
+                      5
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      7
+                    
+                  
+                
+              
+              
+                
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                  
+                    S
+                    
+                      6
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                  
+                    S
+                    
+                      5
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      3
+                    
+                  
+                  
+                    S
+                    
+                      4
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      6
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      6
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                  
+                    S
+                    
+                      5
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                  
+                    S
+                    
+                      4
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      3
+                    
+                  
+                  
+                    S
+                    
+                      3
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      5
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      5
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                  
+                    S
+                    
+                      4
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                  
+                    S
+                    
+                      3
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      3
+                    
+                  
+                  
+                    S
+                    
+                      2
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      4
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      4
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                  
+                    S
+                    
+                      3
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                  
+                    S
+                    
+                      2
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      3
+                    
+                  
+                  
+                    S
+                    
+                      1
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      3
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      3
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                  
+                    S
+                    
+                      2
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      2
+                    
+                  
+                  
+                    S
+                    
+                      1
+                    
+                  
+                
+                
+                  
+                    x
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  
+                    S
+                    
+                      2
+                    
+                  
+                  +
+                  
+                    Î
+                    
+                      1
+                    
+                  
+                  
+                    S
+                    
+                      1
+                    
+                  
+                
+                
+                  x
+                
+              
+              
+                
+                  
+                    S
+                    
+                      1
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  
+                    Q
+                    
+                      2
+                    
+                  
+                  
+                    x
+                    
+                      8
+                    
+                  
+                
+              
+              
+                
+                  
+                    Q
+                    
+                      1
+                    
+                  
+                  
+                    x
+                    
+                      7
+                    
+                  
+                
+              
+              
+                
+                  
+                    Q
+                    
+                      0
+                    
+                  
+                  
+                    x
+                    
+                      6
+                    
+                  
+                
+              
+              
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+              
+              
+                
+                  
+                    Î©
+                    
+                      2
+                    
+                  
+                  
+                    x
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  
+                    Î©
+                    
+                      1
+                    
+                  
+                  x
+                
+              
+              
+                
+                  
+                    Î©
+                    
+                      0
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}\Lambda _{3}S_{6}&x^{8}\\\Lambda _{2}S_{6}+\Lambda _{3}S_{5}&x^{7}\\\Lambda _{1}S_{6}+\Lambda _{2}S_{5}+\Lambda _{3}S_{4}&x^{6}\\S_{6}+\Lambda _{1}S_{5}+\Lambda _{2}S_{4}+\Lambda _{3}S_{3}&x^{5}\\S_{5}+\Lambda _{1}S_{4}+\Lambda _{2}S_{3}+\Lambda _{3}S_{2}&x^{4}\\S_{4}+\Lambda _{1}S_{3}+\Lambda _{2}S_{2}+\Lambda _{3}S_{1}&x^{3}\\S_{3}+\Lambda _{1}S_{2}+\Lambda _{2}S_{1}&x^{2}\\S_{2}+\Lambda _{1}S_{1}&x\\S_{1}\end{bmatrix}}={\begin{bmatrix}Q_{2}x^{8}\\Q_{1}x^{7}\\Q_{0}x^{6}\\0\\0\\0\\\Omega _{2}x^{2}\\\Omega _{1}x\\\Omega _{0}\end{bmatrix}}}
+  
+
+The middle terms are zero due to the relationship between Î and syndromes.
+The extended Euclidean algorithm can find a series of polynomials of the form
+
+Ai(x) S(x) + Bi(x) xt = Ri(x)
+where the degree of R decreases as i increases. Once the degree of Ri(x) < t/2, then
+Ai(x) = Î(x)
+Bi(x) = âQ(x)
+Ri(x) = Î©(x).
+B(x) and Q(x) don't need to be saved, so the algorithm becomes:
+
+Râ1 = xt
+R0 = S(x)
+Aâ1 = 0
+A0 = 1
+i = 0
+while degree of Ri â¥ t/2
+i = i + 1
+Q = Ri-2 / Ri-1
+Ri = Ri-2 - Q Ri-1
+Ai = Ai-2 - Q Ai-1
+to set low order term of Î(x) to 1, divide Î(x) and Î©(x) by Ai(0):
+
+Î(x) = Ai / Ai(0)
+Î©(x) = Ri / Ai(0)
+Ai(0) is the constant (low order) term of Ai.
+
+Example[edit]
+Using the same data as the PetersonâGorensteinâZierler example above:
+
+
+
+
+i
+
+Ri
+
+Ai
+
+
+â1
+
+001 x4 + 000 x3 + 000 x2 + 000 x + 000
+
+000
+
+
+0
+
+925 x3 + 762 x2 + 637 x + 732
+
+001
+
+
+1
+
+683 x2 + 676 x + 024
+
+697 x + 396
+
+
+2
+
+673 x + 596
+
+608 x2 + 704 x + 544
+
+
+Î(x) = A2 / 544 = 329 x2 + 821 x + 001
+Î©(x) = R2 / 544 = 546 x + 732
+Decoder using discrete Fourier transform[edit]
+A discrete Fourier transform can be used for decoding.[15] To avoid conflict with syndrome names, let c(x) = s(x) the encoded codeword. r(x) and e(x) are the same as above. Define C(x), E(x), and R(x) as the discrete Fourier transforms of c(x), e(x), and r(x). Since r(x) = c(x) + e(x), and since a discrete Fourier transform is a linear operator, R(x) = C(x) + E(x).
+Transform r(x) to R(x) using discrete Fourier transform. Since the calculation for a discrete Fourier transform is the same as the calculation for syndromes, t coefficients of R(x) and E(x) are the same as the syndromes:
+
+
+  
+    
+      
+        
+          R
+          
+            j
+          
+        
+        =
+        
+          E
+          
+            j
+          
+        
+        =
+        
+          S
+          
+            j
+          
+        
+        =
+        r
+        (
+        
+          Î±
+          
+            j
+          
+        
+        )
+      
+    
+    {\displaystyle R_{j}=E_{j}=S_{j}=r(\alpha ^{j})}
+  
+
+
+  
+    
+      
+        
+          forÂ 
+        
+        1
+        â¤
+        j
+        â¤
+        t
+      
+    
+    {\displaystyle {\text{for }}1\leq j\leq t}
+  
+
+Use 
+  
+    
+      
+        
+          R
+          
+            1
+          
+        
+      
+    
+    {\displaystyle R_{1}}
+  
+ through 
+  
+    
+      
+        
+          R
+          
+            t
+          
+        
+      
+    
+    {\displaystyle R_{t}}
+  
+ as syndromes (they're the same) and generate the error locator polynomial using the methods from any of the above decoders.
+Let v = number of errors. Generate E(x) using the known coefficients 
+  
+    
+      
+        
+          E
+          
+            1
+          
+        
+      
+    
+    {\displaystyle E_{1}}
+  
+ to 
+  
+    
+      
+        
+          E
+          
+            t
+          
+        
+      
+    
+    {\displaystyle E_{t}}
+  
+, the error locator polynomial, and these formulas
+
+
+  
+    
+      
+        
+          E
+          
+            0
+          
+        
+        =
+        â
+        
+          
+            1
+            
+              Î
+              
+                v
+              
+            
+          
+        
+        (
+        
+          E
+          
+            v
+          
+        
+        +
+        
+          Î
+          
+            1
+          
+        
+        
+          E
+          
+            v
+            â
+            1
+          
+        
+        +
+        â¯
+        +
+        
+          Î
+          
+            v
+            â
+            1
+          
+        
+        
+          E
+          
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle E_{0}=-{\frac {1}{\Lambda _{v}}}(E_{v}+\Lambda _{1}E_{v-1}+\cdots +\Lambda _{v-1}E_{1})}
+  
+
+
+  
+    
+      
+        
+          E
+          
+            j
+          
+        
+        =
+        â
+        (
+        
+          Î
+          
+            1
+          
+        
+        
+          E
+          
+            j
+            â
+            1
+          
+        
+        +
+        
+          Î
+          
+            2
+          
+        
+        
+          E
+          
+            j
+            â
+            2
+          
+        
+        +
+        â¯
+        +
+        
+          Î
+          
+            v
+          
+        
+        
+          E
+          
+            j
+            â
+            v
+          
+        
+        )
+      
+    
+    {\displaystyle E_{j}=-(\Lambda _{1}E_{j-1}+\Lambda _{2}E_{j-2}+\cdots +\Lambda _{v}E_{j-v})}
+  
+
+
+  
+    
+      
+        
+          forÂ 
+        
+        t
+        <
+        j
+        <
+        n
+      
+    
+    {\displaystyle {\text{for }}t<j<n}
+  
+
+Then calculate C(x) = R(x) â E(x) and take the inverse transform (polynomial interpolation) of C(x) to produce c(x).
+
+Decoding beyond the error-correction bound[edit]
+The Singleton bound states that the minimum distance d of a linear block code of size (n,k) is upper-bounded by nÂ âÂ kÂ +Â 1. The distance d was usually understood to limit the error-correction capability to â(d-1) / 2â. The ReedâSolomon code achieves this bound with equality, and can thus correct up to â(n-k) / 2â errors. However, this error-correction bound is not exact.
+In 1999, Madhu Sudan and Venkatesan Guruswami at MIT published "Improved Decoding of ReedâSolomon and Algebraic-Geometry Codes" introducing an algorithm that allowed for the correction of errors beyond half the minimum distance of the code.[16] It applies to ReedâSolomon codes and more generally to algebraic geometric codes. This algorithm produces a list of codewords (it is a list-decoding algorithm) and is based on interpolation and factorization of polynomials over 
+  
+    
+      
+        G
+        F
+        (
+        
+          2
+          
+            m
+          
+        
+        )
+      
+    
+    {\displaystyle GF(2^{m})}
+  
+ and its extensions.
+
+Soft-decoding[edit]
+The algebraic decoding methods described above are hard-decision methods, which means that for every symbol a hard decision is made about its value. For example, a decoder could associate with each symbol an additional value corresponding to the channel demodulator's confidence in the correctness of the symbol. The advent of LDPC and turbo codes, which employ iterated soft-decision belief propagation decoding methods to achieve error-correction performance close to the theoretical limit, has spurred interest in applying soft-decision decoding to conventional algebraic codes. In 2003, Ralf Koetter and Alexander Vardy presented a polynomial-time soft-decision algebraic list-decoding algorithm for ReedâSolomon codes, which was based upon the work by Sudan and Guruswami.[17]
+In 2016, Steven J. Franke and Joseph H. Taylor published a novel soft-decision decoder.[18]
+
+Matlab example[edit]
+Encoder[edit]
+Here we present a simple Matlab implementation for an encoder.
+
+function [encoded] = rsEncoder(msg, m, prim_poly, n, k)
+    % RSENCODER Encode message with the Reed-Solomon algorithm
+    % m is the number of bits per symbol
+    % prim_poly: Primitive polynomial p(x). Ie for DM is 301
+    % k is the size of the message
+    % n is the total size (k+redundant)
+    % Example: msg = uint8('Test')
+    % enc_msg = rsEncoder(msg, 8, 301, 12, numel(msg));
+ 
+    % Get the alpha
+    alpha = gf(2, m, prim_poly);
+ 
+    % Get the Reed-Solomon generating polynomial g(x)
+    g_x = genpoly(k, n, alpha);
+ 
+    % Multiply the information by X^(n-k), or just pad with zeros at the end to
+    % get space to add the redundant information
+    msg_padded = gf([msg zeros(1, n - k)], m, prim_poly);
+ 
+    % Get the remainder of the division of the extended message by the
+    % Reed-Solomon generating polynomial g(x)
+    [~, remainder] = deconv(msg_padded, g_x);
+ 
+    % Now return the message with the redundant information
+    encoded = msg_padded - remainder;
+ 
+end
+
+% Find the Reed-Solomon generating polynomial g(x), by the way this is the
+% same as the rsgenpoly function on matlab
+function g = genpoly(k, n, alpha)
+    g = 1;
+    % A multiplication on the galois field is just a convolution
+    for k = mod(1 : n - k, n)
+        g = conv(g, [1 alpha .^ (k)]);
+    end
+end
+
+Decoder[edit]
+Now the decoding part:
+
+function [decoded, error_pos, error_mag, g, S] = rsDecoder(encoded, m, prim_poly, n, k)
+    % RSDECODER Decode a Reed-Solomon encoded message
+    %   Example:
+    % [dec, ~, ~, ~, ~] = rsDecoder(enc_msg, 8, 301, 12, numel(msg))
+    max_errors = floor((n - k) / 2);
+    orig_vals = encoded.x;
+    % Initialize the error vector
+    errors = zeros(1, n);
+    g = [];
+    S = [];
+ 
+    % Get the alpha
+    alpha = gf(2, m, prim_poly);
+ 
+    % Find the syndromes (Check if dividing the message by the generator
+    % polynomial the result is zero)
+    Synd = polyval(encoded, alpha .^ (1:n - k));
+    Syndromes = trim(Synd);
+ 
+    % If all syndromes are zeros (perfectly divisible) there are no errors
+    if isempty(Syndromes.x)
+        decoded = orig_vals(1:k);
+        error_pos = [];
+        error_mag = [];
+        g = [];
+        S = Synd;
+        return;
+    end
+ 
+    % Prepare for the euclidean algorithm (Used to find the error locating
+    % polynomials)
+    r0 = [1, zeros(1, 2 * max_errors)]; r0 = gf(r0, m, prim_poly); r0 = trim(r0);
+    size_r0 = length(r0);
+    r1 = Syndromes;
+    f0 = gf([zeros(1, size_r0 - 1) 1], m, prim_poly);
+    f1 = gf(zeros(1, size_r0), m, prim_poly);
+    g0 = f1; g1 = f0;
+ 
+    % Do the euclidean algorithm on the polynomials r0(x) and Syndromes(x) in
+    % order to find the error locating polynomial
+    while true
+        % Do a long division
+        [quotient, remainder] = deconv(r0, r1);
+        % Add some zeros
+        quotient = pad(quotient, length(g1));
+     
+        % Find quotient*g1 and pad
+        c = conv(quotient, g1);
+        c = trim(c);
+        c = pad(c, length(g0));
+     
+        % Update g as g0-quotient*g1
+        g = g0 - c;
+     
+        % Check if the degree of remainder(x) is less than max_errors
+        if all(remainder(1:end - max_errors) == 0)
+            break;
+        end
+     
+        % Update r0, r1, g0, g1 and remove leading zeros
+        r0 = trim(r1); r1 = trim(remainder);
+        g0 = g1; g1 = g;
+    end
+ 
+    % Remove leading zeros
+    g = trim(g);
+ 
+    % Find the zeros of the error polynomial on this galois field
+    evalPoly = polyval(g, alpha .^ (n - 1 : - 1 : 0));
+    error_pos = gf(find(evalPoly == 0), m);
+ 
+    % If no error position is found we return the received work, because
+    % basically is nothing that we could do and we return the received message
+    if isempty(error_pos)
+        decoded = orig_vals(1:k);
+        error_mag = [];
+        return;
+    end
+ 
+    % Prepare a linear system to solve the error polynomial and find the error
+    % magnitudes
+    size_error = length(error_pos);
+    Syndrome_Vals = Syndromes.x;
+    b(:, 1) = Syndrome_Vals(1:size_error);
+    for idx = 1 : size_error
+        e = alpha .^ (idx * (n - error_pos.x));
+        err = e.x;
+        er(idx, :) = err;
+    end
+ 
+    % Solve the linear system
+    error_mag = (gf(er, m, prim_poly) \ gf(b, m, prim_poly))';
+    % Put the error magnitude on the error vector
+    errors(error_pos.x) = error_mag.x;
+    % Bring this vector to the galois field
+    errors_gf = gf(errors, m, prim_poly);
+ 
+    % Now to fix the errors just add with the encoded code
+    decoded_gf = encoded(1:k) + errors_gf(1:k);
+    decoded = decoded_gf.x;
+ 
+end
+
+% Remove leading zeros from Galois array
+function gt = trim(g)
+    gx = g.x;
+    gt = gf(gx(find(gx, 1) : end), g.m, g.prim_poly);
+end
+
+% Add leading zeros
+function xpad = pad(x, k)
+    len = length(x);
+    if (len < k)
+        xpad = [zeros(1, k - len) x];
+    end
+end
+
+Reed Solomon original view decoders[edit]
+The decoders described in this section use the Reed Solomon original view of a codeword as a sequence of polynomial values where the polynomial is based on the message to be encoded. The same set of fixed values are used by the encoder and decoder, and the decoder recovers the encoding polynomial (and optionally an error locating polynomial) from the received message.
+
+Theoretical decoder[edit]
+Reed & Solomon (1960) described a theoretical decoder that corrected errors by finding the most popular message polynomial. The decoder only knows the set of values 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+      
+    
+    {\displaystyle a_{1}}
+  
+ to 
+  
+    
+      
+        
+          a
+          
+            n
+          
+        
+      
+    
+    {\displaystyle a_{n}}
+  
+ and which encoding method was used to generate the codeword's sequence of values. The original message, the polynomial, and any errors are unknown. A decoding procedure could use a method like Lagrange interpolation on various subsets of n codeword values taken k at a time to repeatedly produce potential polynomials, until a sufficient number of matching polynomials are produced to reasonably eliminate any errors in the received codeword. Once a polynomial is determined, then any errors in the codeword can be corrected, by recalculating the corresponding codeword values. Unfortunately, in all but the simplest of cases, there are too many subsets, so the algorithm is impractical. The number of subsets is the binomial coefficient, 
+  
+    
+      
+        
+          
+            
+              
+                (
+              
+              
+                n
+                k
+              
+              
+                )
+              
+            
+          
+          =
+          
+            
+              
+                n
+                !
+              
+              
+                (
+                n
+                â
+                k
+                )
+                !
+                k
+                !
+              
+            
+          
+        
+      
+    
+    {\displaystyle \textstyle {\binom {n}{k}}={n! \over (n-k)!k!}}
+  
+, and the number of subsets is infeasible for even modest codes. For a 
+  
+    
+      
+        (
+        255
+        ,
+        249
+        )
+      
+    
+    {\displaystyle (255,249)}
+  
+ code that can correct 3 errors, the naive theoretical decoder would examine 359 billion subsets. 
+
+Berlekamp Welch decoder[edit]
+In 1986, a decoder known as the BerlekampâWelch algorithm was developed as a decoder that is able to recover the original message polynomial as well as an error "locator" polynomial that produces zeroes for the input values that correspond to errors, with time complexity O(n^3), where n is the number of values in a message. The recovered polynomial is then used to recover (recalculate as needed) the original message.
+
+Example[edit]
+Using RS(7,3), GF(929), and the set of evaluation points ai = i â 1
+
+ a = {0, 1, 2, 3, 4, 5, 6} 
+If the message polynomial is
+
+ p(x) = 003 x2 + 002 x + 001
+The codeword is
+
+ c = {001, 006, 017, 034, 057, 086, 121} 
+Errors in transmission might cause this to be received instead.
+
+ b = c + e = {001, 006, 123, 456, 057, 086, 121} 
+The key equations are:
+
+
+  
+    
+      
+        
+          b
+          
+            i
+          
+        
+        E
+        (
+        
+          a
+          
+            i
+          
+        
+        )
+        â
+        Q
+        (
+        
+          a
+          
+            i
+          
+        
+        )
+        =
+        0
+      
+    
+    {\displaystyle b_{i}E(a_{i})-Q(a_{i})=0}
+  
+
+Assume maximum number of errors: e = 2. The key equations become:
+
+
+  
+    
+      
+        
+          b
+          
+            i
+          
+        
+        (
+        
+          e
+          
+            0
+          
+        
+        +
+        
+          e
+          
+            1
+          
+        
+        
+          a
+          
+            i
+          
+        
+        )
+        â
+        (
+        
+          q
+          
+            0
+          
+        
+        +
+        
+          q
+          
+            1
+          
+        
+        
+          a
+          
+            i
+          
+        
+        +
+        
+          q
+          
+            2
+          
+        
+        
+          a
+          
+            i
+          
+          
+            2
+          
+        
+        +
+        
+          q
+          
+            3
+          
+        
+        
+          a
+          
+            i
+          
+          
+            3
+          
+        
+        +
+        
+          q
+          
+            4
+          
+        
+        
+          a
+          
+            i
+          
+          
+            4
+          
+        
+        )
+        =
+        â
+        
+          b
+          
+            i
+          
+        
+        
+          a
+          
+            i
+          
+          
+            2
+          
+        
+      
+    
+    {\displaystyle b_{i}(e_{0}+e_{1}a_{i})-(q_{0}+q_{1}a_{i}+q_{2}a_{i}^{2}+q_{3}a_{i}^{3}+q_{4}a_{i}^{4})=-b_{i}a_{i}^{2}}
+  
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  001
+                
+                
+                  000
+                
+                
+                  928
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+              
+              
+                
+                  006
+                
+                
+                  006
+                
+                
+                  928
+                
+                
+                  928
+                
+                
+                  928
+                
+                
+                  928
+                
+                
+                  928
+                
+              
+              
+                
+                  123
+                
+                
+                  246
+                
+                
+                  928
+                
+                
+                  927
+                
+                
+                  925
+                
+                
+                  921
+                
+                
+                  913
+                
+              
+              
+                
+                  456
+                
+                
+                  439
+                
+                
+                  928
+                
+                
+                  926
+                
+                
+                  920
+                
+                
+                  902
+                
+                
+                  848
+                
+              
+              
+                
+                  057
+                
+                
+                  228
+                
+                
+                  928
+                
+                
+                  925
+                
+                
+                  913
+                
+                
+                  865
+                
+                
+                  673
+                
+              
+              
+                
+                  086
+                
+                
+                  430
+                
+                
+                  928
+                
+                
+                  924
+                
+                
+                  904
+                
+                
+                  804
+                
+                
+                  304
+                
+              
+              
+                
+                  121
+                
+                
+                  726
+                
+                
+                  928
+                
+                
+                  923
+                
+                
+                  893
+                
+                
+                  713
+                
+                
+                  562
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  
+                    e
+                    
+                      0
+                    
+                  
+                
+              
+              
+                
+                  
+                    e
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      0
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      3
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      4
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  000
+                
+              
+              
+                
+                  923
+                
+              
+              
+                
+                  437
+                
+              
+              
+                
+                  541
+                
+              
+              
+                
+                  017
+                
+              
+              
+                
+                  637
+                
+              
+              
+                
+                  289
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}001&000&928&000&000&000&000\\006&006&928&928&928&928&928\\123&246&928&927&925&921&913\\456&439&928&926&920&902&848\\057&228&928&925&913&865&673\\086&430&928&924&904&804&304\\121&726&928&923&893&713&562\end{bmatrix}}{\begin{bmatrix}e_{0}\\e_{1}\\q_{0}\\q_{1}\\q_{2}\\q_{3}\\q_{4}\end{bmatrix}}={\begin{bmatrix}000\\923\\437\\541\\017\\637\\289\end{bmatrix}}}
+  
+
+Using Gaussian elimination:
+
+
+  
+    
+      
+        
+          
+            [
+            
+              
+                
+                  001
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  001
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  000
+                
+                
+                  001
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  001
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  001
+                
+                
+                  000
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  001
+                
+                
+                  000
+                
+              
+              
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  000
+                
+                
+                  001
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  
+                    e
+                    
+                      0
+                    
+                  
+                
+              
+              
+                
+                  
+                    e
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      0
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      1
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      2
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      3
+                    
+                  
+                
+              
+              
+                
+                  
+                    q
+                    
+                      4
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  006
+                
+              
+              
+                
+                  924
+                
+              
+              
+                
+                  006
+                
+              
+              
+                
+                  007
+                
+              
+              
+                
+                  009
+                
+              
+              
+                
+                  916
+                
+              
+              
+                
+                  003
+                
+              
+            
+            ]
+          
+        
+      
+    
+    {\displaystyle {\begin{bmatrix}001&000&000&000&000&000&000\\000&001&000&000&000&000&000\\000&000&001&000&000&000&000\\000&000&000&001&000&000&000\\000&000&000&000&001&000&000\\000&000&000&000&000&001&000\\000&000&000&000&000&000&001\end{bmatrix}}{\begin{bmatrix}e_{0}\\e_{1}\\q_{0}\\q_{1}\\q_{2}\\q_{3}\\q_{4}\end{bmatrix}}={\begin{bmatrix}006\\924\\006\\007\\009\\916\\003\end{bmatrix}}}
+  
+
+ Q(x) = 003 x4 + 916 x3 + 009 x2 + 007 x + 006
+ E(x) = 001 x2 + 924 x + 006
+ Q(x) / E(x) = P(x) = 003 x2 + 002 x + 001
+Recalculate  P(x)  where  E(x) = 0Â : {2, 3}  to correct  b resulting in the corrected codeword:
+
+ c = {001, 006, 017, 034, 057, 086, 121} 
+Gao decoder[edit]
+In 2002, an improved decoder was developed by Shuhong Gao, based on the extended Euclid algorithm Gao_RS.pdf .
+
+Example[edit]
+Using the same data as the Berlekamp Welch example above:
+
+
+  
+    
+      
+        
+          R
+          
+            â
+            1
+          
+        
+        =
+        
+          â
+          
+            i
+            =
+            1
+          
+          
+            n
+          
+        
+        (
+        x
+        â
+        
+          a
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle R_{-1}=\prod _{i=1}^{n}(x-a_{i})}
+  
+
+
+  
+    
+      
+        
+          R
+          
+            0
+          
+        
+        =
+      
+    
+    {\displaystyle R_{0}=}
+  
+ Lagrange interpolation of 
+  
+    
+      
+        {
+        
+          a
+          
+            i
+          
+        
+        ,
+        b
+        (
+        
+          a
+          
+            i
+          
+        
+        )
+        }
+      
+    
+    {\displaystyle \{a_{i},b(a_{i})\}}
+  
+ for i = 1 to n
+
+  
+    
+      
+        
+          A
+          
+            â
+            1
+          
+        
+        =
+        0
+      
+    
+    {\displaystyle A_{-1}=0}
+  
+
+
+  
+    
+      
+        
+          A
+          
+            0
+          
+        
+        =
+        1
+      
+    
+    {\displaystyle A_{0}=1}
+  
+
+
+
+
+i
+
+Ri
+
+Ai
+
+
+â1
+
+001 x7 + 908 x6 + 175 x5 + 194 x4 + 695 x3 + 094 x2 + 720 x + 000
+
+000
+
+
+0
+
+055 x6 + 440 x5 + 497 x4 + 904 x3 + 424 x2 + 472 x + 001
+
+001
+
+
+1
+
+702 x5 + 845 x4 + 691 x3 + 461 x2 + 327 x + 237
+
+152 x + 237
+
+
+2
+
+266 x4 + 086 x3 + 798 x2 + 311 x + 532
+
+708 x2 + 176 x + 532
+
+
+ Q(x) = R2 = 266 x4 + 086 x3 + 798 x2 + 311 x + 532
+ E(x) = A2 = 708 x2 + 176 x + 532
+divide Q(x) and E(x) by most significant coefficient of E(x) = 708. (Optional)
+
+ Q(x) = 003 x4 + 916 x3 + 009 x2 + 007 x + 006
+ E(x) = 001 x2 + 924 x + 006
+ Q(x) / E(x) = P(x) = 003 x2 + 002 x + 001
+Recalculate  P(x)  where  E(x) = 0Â : {2, 3}  to correct  b resulting in the corrected codeword:
+
+ c = {001, 006, 017, 034, 057, 086, 121} 
+See also[edit]
+BCH code
+Cyclic code
+Chien search
+BerlekampâMassey algorithm
+Forward error correction
+BerlekampâWelch algorithm
+Folded ReedâSolomon code
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^  Authors in Andrews et al. (2007), provide simulation results which show that for the same code rate (1/6) turbo codes outperform Reed-Solomon concatenated codes up to 2 dB (bit error rate).[9]
+
+
+References[edit]
+
+
+^ Reed & Solomon (1960)
+
+^ D. Gorenstein and N. Zierler, "A class of cyclic linear error-correcting codes in p^m symbols", J. SIAM, vol. 9, pp. 207-214, June 1961
+
+^ Error Correcting Codes by W_Wesley_Peterson, 1961
+
+^ Error Correcting Codes by W_Wesley_Peterson, second edition, 1972
+
+^ Yasuo Sugiyama, Masao Kasahara, Shigeichi Hirasawa, and Toshihiko Namekawa. A method for solving key equation for decoding Goppa codes. Information and Control, 27:87â99, 1975.
+
+^ http://www.math.clemson.edu/~sgao/papers/RS.pdf
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Immink, K. A. S. (1994), "ReedâSolomon Codes and the Compact Disc",  in Wicker, Stephen B.; Bhargava, Vijay K. (eds.), ReedâSolomon Codes and Their Applications, IEEE Press, ISBNÂ 978-0-7803-1025-4
+
+^ J. Hagenauer, E. Offer, and L. Papke, Reed Solomon Codes and Their Applications. New York IEEE Press, 1994 - p. 433
+
+^ Jump up to: a b Andrews, Kenneth S., et al. "The development of turbo and LDPC codes for deep-space applications." Proceedings of the IEEE 95.11 (2007): 2142-2156.
+
+^ See Lin & Costello (1983, p.Â 171), for example.
+
+^ "Analytical Expressions Used in bercoding and BERTool". Archived from the original on 2019-02-01. Retrieved 2019-02-01.
+
+^ Pfender, Florian; Ziegler, GÃ¼nter M. (September 2004), "Kissing Numbers, Sphere Packings, and Some Unexpected Proofs" (PDF), Notices of the American Mathematical Society, 51 (8): 873â883, archived (PDF) from the original on 2008-05-09, retrieved 2009-09-28. Explains the Delsarte-Goethals-Seidel theorem as used in the context of the error correcting code for compact disc.
+
+^ D. Gorenstein and N. Zierler, "A class of cyclic linear error-correcting codes in p^m symbols," J. SIAM, vol. 9, pp. 207â214, June 1961
+
+^ Error Correcting Codes by W Wesley Peterson, 1961
+
+^ Shu Lin and Daniel J. Costello Jr, "Error Control Coding" second edition, pp. 255â262, 1982, 2004
+
+^ Guruswami, V.; Sudan, M. (September 1999), "Improved decoding of ReedâSolomon codes and algebraic geometry codes", IEEE Transactions on Information Theory, 45 (6): 1757â1767, CiteSeerXÂ 10.1.1.115.292, doi:10.1109/18.782097
+
+^ Koetter, Ralf; Vardy, Alexander (2003). "Algebraic soft-decision decoding of ReedâSolomon codes". IEEE Transactions on Information Theory. 49 (11): 2809â2825. CiteSeerXÂ 10.1.1.13.2021. doi:10.1109/TIT.2003.819332.
+
+^ Franke, Steven J.; Taylor, Joseph H. (2016). "Open Source Soft-Decision Decoder for the JT65 (63,12) ReedâSolomon Code" (PDF). QEX (May/June): 8â17. Archived (PDF) from the original on 2017-03-09. Retrieved 2017-06-07.
+
+
+Further reading[edit]
+Gill, John (n.d.), EE387 Notes #7, Handout #28 (PDF), Stanford University, archived from the original (PDF) on June 30, 2014, retrieved April 21, 2010
+Hong, Jonathan; Vetterli, Martin (August 1995), "Simple Algorithms for BCH Decoding" (PDF), IEEE Transactions on Communications, 43 (8): 2324â2333, doi:10.1109/26.403765
+Lin, Shu; Costello, Jr., Daniel J. (1983), Error Control Coding: Fundamentals and Applications, New Jersey, NJ: Prentice-Hall, ISBNÂ 978-0-13-283796-5
+Massey, J. L. (1969), "Shift-register synthesis and BCH decoding" (PDF), IEEE Transactions on Information Theory, IT-15 (1): 122â127, doi:10.1109/tit.1969.1054260
+Peterson, Wesley W. (1960), "Encoding and Error Correction Procedures for the Bose-Chaudhuri Codes", IRE Transactions on Information Theory, IT-6 (4): 459â470, doi:10.1109/TIT.1960.1057586
+Reed, Irving S.; Solomon, Gustave (1960), "Polynomial Codes over Certain Finite Fields", Journal of the Society for Industrial and Applied Mathematics, 8 (2): 300â304, doi:10.1137/0108018
+Welch, L. R. (1997), The Original View of ReedâSolomon Codes (PDF), Lecture Notes
+Berlekamp, Elwyn R. (1967), Nonbinary BCH decoding, International Symposium on Information Theory, San Remo, Italy
+Berlekamp, Elwyn R. (1984) [1968], Algebraic Coding Theory (RevisedÂ ed.), Laguna Hills, CA: Aegean Park Press, ISBNÂ 978-0-89412-063-3
+Cipra, Barry Arthur (1993), "The Ubiquitous ReedâSolomon Codes", SIAM News, 26 (1)
+Forney, Jr., G. (October 1965), "On Decoding BCH Codes", IEEE Transactions on Information Theory, 11 (4): 549â557, doi:10.1109/TIT.1965.1053825
+Koetter, Ralf (2005), ReedâSolomon Codes, MIT Lecture Notes 6.451 (Video), archived from the original on 2013-03-13
+MacWilliams, F. J.; Sloane, N. J. A. (1977), The Theory of Error-Correcting Codes, New York, NY: North-Holland Publishing Company
+Reed, Irving S.; Chen, Xuemin (1999), Error-Control Coding for Data Networks, Boston, MA: Kluwer Academic Publishers
+External links[edit]
+Information and tutorials[edit]
+Introduction to ReedâSolomon codes: principles, architecture and implementation (CMU)
+A Tutorial on ReedâSolomon Coding for Fault-Tolerance in RAID-like Systems
+Algebraic soft-decoding of ReedâSolomon codes
+Wikiversity:ReedâSolomon codes for coders
+BBC R&D White Paper WHP031
+Geisel, William A. (August 1990), Tutorial on ReedâSolomon Error Correction Coding, Technical Memorandum, NASA, TM-102162
+Gao, Shuhong (January 2002), New Algorithm For Decoding Reed-Solomon Codes (PDF), Clemson
+Concatenated codes by Dr. Dave Forney (scholarpedia.org).
+Reid, Jeff A. (April 1995), CRC and Reed Solomon ECC (PDF)
+Implementations[edit]
+Schifra Open Source C++ ReedâSolomon Codec
+Henry Minsky's RSCode library, ReedâSolomon encoder/decoder
+Open Source C++ ReedâSolomon Soft Decoding library
+Matlab implementation of errors and-erasures ReedâSolomon decoding
+Octave implementation in communications package
+Pure-Python implementation of a ReedâSolomon codec
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=ReedâSolomon_error_correction&oldid=1066266046"
+		Categories: Error detection and correctionCoding theoryHidden categories: Articles with short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from March 2017CS1: long volume value
+	

@@ -1,0 +1,686 @@
+
+Title:
+Edit distance
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Computer science metric of string similarity
+In computational linguistics and computer science, edit distance is a way of quantifying how dissimilar two strings (e.g., words) are to one another by counting the minimum number of operations required to transform one string into the other. Edit distances find applications in natural language processing, where automatic spelling correction can determine candidate corrections for a misspelled word by selecting words from a dictionary that have a low distance to the word in question. In bioinformatics, it can be used to quantify the similarity of DNA sequences, which can be viewed as strings of the letters A, C, G and T.
+Different definitions of an edit distance use different sets of string operations. Levenshtein distance operations are the removal, insertion, or substitution of a character in the string. Being the most common metric, the term Levenshtein distance is often used interchangeably with edit distance.[1]
+
+Contents
+
+1 Types of edit distance
+2 Formal definition and properties
+
+2.1 Example
+2.2 Properties
+
+
+3 Computation
+
+3.1 Common algorithm
+3.2 Improved algorithms
+
+
+4 Applications
+5 Language edit distance
+6 See also
+7 References
+
+
+
+Types of edit distance[edit]
+Different types of edit distance allow different sets of string operations. For instance:
+
+The Levenshtein distance allows deletion, insertion and substitution.
+The Longest common subsequence (LCS) distance allows only insertion and deletion, not substitution.
+The Hamming distance allows only substitution, hence, it only applies to strings of the same length.
+The DamerauâLevenshtein distance allows insertion, deletion, substitution, and the transposition of two adjacent characters.
+The Jaro distance allows only transposition.
+Some edit distances are defined as a parameterizable metric calculated with a specific set of allowed edit operations, and each operation is assigned a cost (possibly infinite). This is further generalized by DNA sequence alignment algorithms such as the SmithâWaterman algorithm, which make an operation's cost depend on where it is applied.
+
+Formal definition and properties[edit]
+Given two strings a and b on an alphabet Î£ (e.g. the set of ASCII characters, the set of bytes [0..255], etc.), the edit distance d(a, b) is the minimum-weight series of edit operations that transforms a into b. One of the simplest sets of edit operations is that defined by Levenshtein in 1966:[2]
+
+Insertion of a single symbol. If a = uv, then inserting the symbol x produces uxv. This can also be denoted Îµâx, using Îµ to denote the empty string.
+Deletion of a single symbol changes uxv to uv (xâÎµ).
+Substitution of a single symbol x for a symbol y â  x changes uxv to uyv (xây).
+In Levenshtein's original definition, each of these operations has unit cost (except that substitution of a character by itself has zero cost), so the Levenshtein distance is equal to the minimum number of operations required to transform a to b. A more general definition associates non-negative weight functions wins(x), wdel(x) and wsub(x,Â y) with the operations.[2]
+Additional primitive operations have been suggested. DamerauâLevenshtein distance counts as a single edit a common mistake: transposition of two adjacent characters, formally characterized by an operation that changes uxyv into uyxv.[3][4]
+For the task of correcting OCR output, merge and split operations have been used which replace a single character into a pair of them or vice versa.[4]
+Other variants of edit distance are obtained by restricting the set of operations. Longest common subsequence (LCS) distance is edit distance with insertion and deletion as the only two edit operations, both at unit cost.[1]:â37â Similarly, by only allowing substitutions (again at unit cost), Hamming distance is obtained; this must be restricted to equal-length strings.[1]
+JaroâWinkler distance can be obtained from an edit distance where only transpositions are allowed.
+
+Example[edit]
+The Levenshtein distance between "kitten" and "sitting" is 3. A minimal edit script that transforms the former into the latter is:
+
+kitten â sitten (substitute "s" for "k")
+sitten â sittin (substitute "i" for "e")
+sittin â sitting (insert "g" at the end)
+LCS distance (insertions and deletions only) gives a different distance and minimal edit script:
+
+kitten â itten (delete "k" at 0)
+itten â sitten (insert "s" at 0)
+sitten â sittn (delete "e" at 4)
+sittn â sittin (insert "i" at 4)
+sittin â sitting (insert "g" at 6)
+for a total cost/distance of 5 operations.
+
+Properties[edit]
+Edit distance with non-negative cost satisfies the axioms of a metric, giving rise to a metric space of strings, when the following conditions are met:[1]:â37â
+
+Every edit operation has positive cost;
+for every operation, there is an inverse operation with equal cost.
+With these properties, the metric axioms are satisfied as follows:
+
+d(a, b) = 0 if and only if a=b, since each string can be trivially transformed to itself using exactly zero operations.
+d(a, b) > 0 when a â  b, since this would require at least one operation at non-zero cost.
+d(a, b) = d(b, a) by equality of the cost of each operation and its inverse.
+Triangle inequality: d(a, c) â¤ d(a, b) + d(b, c).[5]
+Levenshtein distance and LCS distance with unit cost satisfy the above conditions, and therefore the metric axioms. Variants of edit distance that are not proper metrics have also been considered in the literature.[1]
+Other useful properties of unit-cost edit distances include:
+
+LCS distance is bounded above by the sum of lengths of a pair of strings.[1]:â37â
+LCS distance is an upper bound on Levenshtein distance.
+For strings of the same length, Hamming distance is an upper bound on Levenshtein distance.[1]
+Regardless of cost/weights, the following property holds of all edit distances:
+
+When a and b share a common prefix, this prefix has no effect on the distance. Formally, when a = uv and b = uw, then d(a, b) = d(v, w).[4] This allows speeding up many computations involving edit distance and edit scripts, since common prefixes and suffixes can be skipped in linear time.
+Computation[edit]
+The first algorithm for computing minimum edit distance between a pair of strings was published by Damerau in 1964.[6]
+
+Common algorithm[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: WagnerâFischer algorithm
+Using Levenshtein's original operations, the (nonsymmetric) edit distance from 
+  
+    
+      
+        a
+        =
+        
+          a
+          
+            1
+          
+        
+        â¦
+        
+          a
+          
+            m
+          
+        
+      
+    
+    {\displaystyle a=a_{1}\ldots a_{m}}
+  
+ to 
+  
+    
+      
+        b
+        =
+        
+          b
+          
+            1
+          
+        
+        â¦
+        
+          b
+          
+            n
+          
+        
+      
+    
+    {\displaystyle b=b_{1}\ldots b_{n}}
+  
+ is given by 
+  
+    
+      
+        
+          d
+          
+            m
+            n
+          
+        
+      
+    
+    {\displaystyle d_{mn}}
+  
+, defined by the recurrence[2]
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  d
+                  
+                    i
+                    0
+                  
+                
+              
+              
+                
+                =
+                
+                  â
+                  
+                    k
+                    =
+                    1
+                  
+                  
+                    i
+                  
+                
+                
+                  w
+                  
+                    
+                      d
+                      e
+                      l
+                    
+                  
+                
+                (
+                
+                  a
+                  
+                    k
+                  
+                
+                )
+                ,
+              
+              
+              
+                
+                
+                  for
+                
+                
+                1
+                â¤
+                i
+                â¤
+                m
+              
+            
+            
+              
+                
+                  d
+                  
+                    0
+                    j
+                  
+                
+              
+              
+                
+                =
+                
+                  â
+                  
+                    k
+                    =
+                    1
+                  
+                  
+                    j
+                  
+                
+                
+                  w
+                  
+                    
+                      i
+                      n
+                      s
+                    
+                  
+                
+                (
+                
+                  b
+                  
+                    k
+                  
+                
+                )
+                ,
+              
+              
+              
+                
+                
+                  for
+                
+                
+                1
+                â¤
+                j
+                â¤
+                n
+              
+            
+            
+              
+                
+                  d
+                  
+                    i
+                    j
+                  
+                
+              
+              
+                
+                =
+                
+                  
+                    {
+                    
+                      
+                        
+                          
+                            d
+                            
+                              i
+                              â
+                              1
+                              ,
+                              j
+                              â
+                              1
+                            
+                          
+                        
+                        
+                          
+                            for
+                          
+                          
+                          
+                            a
+                            
+                              i
+                            
+                          
+                          =
+                          
+                            b
+                            
+                              j
+                            
+                          
+                        
+                      
+                      
+                        
+                          min
+                          
+                            
+                              {
+                              
+                                
+                                  
+                                    
+                                      d
+                                      
+                                        i
+                                        â
+                                        1
+                                        ,
+                                        j
+                                      
+                                    
+                                    +
+                                    
+                                      w
+                                      
+                                        
+                                          d
+                                          e
+                                          l
+                                        
+                                      
+                                    
+                                    (
+                                    
+                                      a
+                                      
+                                        i
+                                      
+                                    
+                                    )
+                                  
+                                
+                                
+                                  
+                                    
+                                      d
+                                      
+                                        i
+                                        ,
+                                        j
+                                        â
+                                        1
+                                      
+                                    
+                                    +
+                                    
+                                      w
+                                      
+                                        
+                                          i
+                                          n
+                                          s
+                                        
+                                      
+                                    
+                                    (
+                                    
+                                      b
+                                      
+                                        j
+                                      
+                                    
+                                    )
+                                  
+                                
+                                
+                                  
+                                    
+                                      d
+                                      
+                                        i
+                                        â
+                                        1
+                                        ,
+                                        j
+                                        â
+                                        1
+                                      
+                                    
+                                    +
+                                    
+                                      w
+                                      
+                                        
+                                          s
+                                          u
+                                          b
+                                        
+                                      
+                                    
+                                    (
+                                    
+                                      a
+                                      
+                                        i
+                                      
+                                    
+                                    ,
+                                    
+                                      b
+                                      
+                                        j
+                                      
+                                    
+                                    )
+                                  
+                                
+                              
+                              
+                            
+                          
+                        
+                        
+                          
+                            for
+                          
+                          
+                          
+                            a
+                            
+                              i
+                            
+                          
+                          â 
+                          
+                            b
+                            
+                              j
+                            
+                          
+                        
+                      
+                    
+                    
+                  
+                
+              
+              
+              
+                
+                
+                  for
+                
+                
+                1
+                â¤
+                i
+                â¤
+                m
+                ,
+                1
+                â¤
+                j
+                â¤
+                n
+                .
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}d_{i0}&=\sum _{k=1}^{i}w_{\mathrm {del} }(a_{k}),&&\quad {\text{for}}\;1\leq i\leq m\\d_{0j}&=\sum _{k=1}^{j}w_{\mathrm {ins} }(b_{k}),&&\quad {\text{for}}\;1\leq j\leq n\\d_{ij}&={\begin{cases}d_{i-1,j-1}&{\text{for}}\;a_{i}=b_{j}\\\min {\begin{cases}d_{i-1,j}+w_{\mathrm {del} }(a_{i})\\d_{i,j-1}+w_{\mathrm {ins} }(b_{j})\\d_{i-1,j-1}+w_{\mathrm {sub} }(a_{i},b_{j})\end{cases}}&{\text{for}}\;a_{i}\neq b_{j}\end{cases}}&&\quad {\text{for}}\;1\leq i\leq m,1\leq j\leq n.\end{aligned}}}
+  
+
+This algorithm can be generalized to handle transpositions by adding another term in the recursive clause's minimization.[3]
+The straightforward, recursive way of evaluating this recurrence takes exponential time. Therefore, it is usually computed using a dynamic programming algorithm that is commonly credited to Wagner and Fischer,[7] although it has a history of multiple invention.[2][3]
+After completion of the WagnerâFischer algorithm, a minimal sequence of edit operations can be read off as a backtrace of the operations used during the dynamic programming algorithm starting at 
+  
+    
+      
+        
+          d
+          
+            m
+            n
+          
+        
+      
+    
+    {\displaystyle d_{mn}}
+  
+.
+This algorithm has a time complexity of Î(mn)  where m and n are the lengths of the strings. When the full dynamic programming table is constructed, its space complexity is also Î(mn); this can be improved to Î(min(m,n)) by observing that at any instant, the algorithm only requires two rows (or two columns) in memory. However, this optimization makes it impossible to read off the minimal series of edit operations.[3] A linear-space solution to this problem is offered by Hirschberg's algorithm.[8]:â634â
+
+Improved algorithms[edit]
+Improving on the WagnerâFisher algorithm described above, Ukkonen describes several variants,[9] one of which takes two strings and a maximum edit distance s, and returns min(s, d). It achieves this by only computing and storing a part of the dynamic programming table around its diagonal. This algorithm takes time O(sÃmin(m,n)), where m and n are the lengths of the strings. Space complexity is O(s2) or O(s), depending on whether the edit sequence needs to be read off.[3]
+Further improvements by Landau, Myers, and Schmidt [1] give an O(s2 + max(m,n)) time algorithm.[10]
+For a finite alphabet and edit costs which are multiples of each other, the fastest known exact algorithm is of Masek and Paterson[11] having worst case runtime of O(nm/logn).
+
+Applications[edit]
+Edit distance finds applications in computational biology and natural language processing, e.g. the correction of spelling mistakes or OCR errors, and approximate string matching, where the objective is to find matches for short strings in many longer texts, in situations where a small number of differences is to be expected.
+Various algorithms exist that solve problems beside the computation of distance between a pair of strings, to solve related types of problems.
+
+Hirschberg's algorithm computes the optimal alignment of two strings, where optimality is defined as minimizing edit distance.
+Approximate string matching can be formulated in terms of edit distance. Ukkonen's 1985 algorithm takes a string p, called the pattern, and a constant k; it then builds a deterministic finite state automaton that finds, in an arbitrary string s, a substring whose edit distance to p is at most k[12] (cf. the AhoâCorasick algorithm, which similarly constructs an automaton to search for any of a number of patterns, but without allowing edit operations). A similar algorithm for approximate string matching is the bitap algorithm, also defined in terms of edit distance.
+Levenshtein automata are finite-state machines that recognize a set of strings within bounded edit distance of a fixed reference string.[4]
+Language edit distance[edit]
+A generalization of the edit distance between strings is the language edit distance between a string and a language, usually a formal language. Instead of considering the edit distance between one string and another, the language edit distance is the minimum edit distance that can be attained between a fixed string and any string taken from a set of strings. More formally, for any language L and string x over an alphabet Î£, the language edit distance d(L, x) is given by[13]
+  
+    
+      
+        d
+        (
+        L
+        ,
+        x
+        )
+        =
+        
+          min
+          
+            y
+            â
+            L
+          
+        
+        d
+        (
+        x
+        ,
+        y
+        )
+      
+    
+    {\displaystyle d(L,x)=\min _{y\in L}d(x,y)}
+  
+, where 
+  
+    
+      
+        d
+        (
+        x
+        ,
+        y
+        )
+      
+    
+    {\displaystyle d(x,y)}
+  
+ is the string edit distance. When the language L is context free, there is a cubic time dynamic programming algorithm proposed by Aho and Peterson in 1972 which computes the language edit distance.[14] For less expressive families of grammars, such as the regular grammars, faster algorithms exist for computing the edit distance.[15]
+Language edit distance has found many diverse applications, such as RNA folding, error correction, and solutions to the Optimum Stack Generation problem.[13][16]
+
+See also[edit]
+Graph edit distance
+String-to-string correction problem
+String metric
+Time Warp Edit Distance
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d e f g .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Navarro, Gonzalo (1 March 2001). "A guided tour to approximate string matching" (PDF). ACM Computing Surveys. 33 (1): 31â88. CiteSeerXÂ 10.1.1.452.6317. doi:10.1145/375360.375365. Retrieved 19 March 2015.
+
+^ Jump up to: a b c d Daniel Jurafsky; James H. Martin. Speech and Language Processing. Pearson Education International. pp.Â 107â111.
+
+^ Jump up to: a b c d e Esko Ukkonen (1983). On approximate string matching. Foundations of Computation Theory. Springer. pp.Â 487â495. doi:10.1007/3-540-12689-9_129.
+
+^ Jump up to: a b c d Schulz, Klaus U.; Mihov, Stoyan (2002). "Fast string correction with Levenshtein automata". International Journal of Document Analysis and Recognition. 5 (1): 67â85. CiteSeerXÂ 10.1.1.16.652. doi:10.1007/s10032-002-0082-8.
+
+^ Lei Chen; Raymond Ng (2004). On the marriage of Lp-norms and edit distance (PDF). Proc. 30th Int'l Conf. on Very Large Databases (VLDB). Vol.Â 30. doi:10.1016/b978-012088469-8.50070-x.
+
+^ Kukich, Karen (1992). "Techniques for Automatically Correcting Words in Text" (PDF). ACM Computing Surveys. 24 (4): 377â439. doi:10.1145/146370.146380. Archived from the original (PDF) on 2016-09-27. Retrieved 2017-11-09.
+
+^ R. Wagner; M. Fischer (1974). "The string-to-string correction problem". J. ACM. 21: 168â178. doi:10.1145/321796.321811. S2CIDÂ 13381535.
+
+^ Skiena, Steven (2010). The Algorithm Design Manual (2ndÂ ed.). Springer Science+Business Media. Bibcode:2008adm..book.....S. ISBNÂ 978-1-849-96720-4.
+
+^ Ukkonen, Esko (1985). "Algorithms for approximate string matching" (PDF). Information and Control. 64 (1â3): 100â118. doi:10.1016/S0019-9958(85)80046-2.
+
+^ Landau; Myers; Schmidt (1998). "Incremental String Comparison". SIAM Journal on Computing. 27 (2): 557â582. CiteSeerXÂ 10.1.1.38.1766. doi:10.1137/S0097539794264810.
+
+^ Masek, William J.; Paterson, Michael S. (February 1980). "A faster algorithm computing string edit distances". Journal of Computer and System Sciences. 20 (1): 18â31. doi:10.1016/0022-0000(80)90002-1. ISSNÂ 0022-0000.
+
+^ Esko Ukkonen (1985). "Finding approximate patterns in strings". J. Algorithms. 6: 132â137. doi:10.1016/0196-6774(85)90023-9.
+
+^ Jump up to: a b Bringmann, Karl; Grandoni, Fabrizio; Saha, Barna; Williams, Virginia Vassilevska (2016). "Truly Sub-cubic Algorithms for Language Edit Distance and RNA-Folding via Fast Bounded-Difference Min-Plus Product" (PDF). 2016 IEEE 57th Annual Symposium on Foundations of Computer Science (FOCS). pp.Â 375â384. arXiv:1707.05095. doi:10.1109/focs.2016.48. ISBNÂ 978-1-5090-3933-3.
+
+^ Aho, A.; Peterson, T. (1972-12-01). "A Minimum Distance Error-Correcting Parser for Context-Free Languages". SIAM Journal on Computing. 1 (4): 305â312. doi:10.1137/0201022. ISSNÂ 0097-5397.
+
+^ Wagner, Robert A. (1974). "Order-n correction for regular languages". Communications of the ACM. 17 (5): 265â268. doi:10.1145/360980.360995. S2CIDÂ 11063282.
+
+^ Saha, B. (2014-10-01). The Dyck Language Edit Distance Problem in Near-Linear Time. 2014 IEEE 55th Annual Symposium on Foundations of Computer Science. pp.Â 611â620. doi:10.1109/FOCS.2014.71. ISBNÂ 978-1-4799-6517-5. S2CIDÂ 14806359.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Edit_distance&oldid=1064071915"
+		Categories: String metricsHidden categories: Articles with short descriptionShort description is different from Wikidata
+	

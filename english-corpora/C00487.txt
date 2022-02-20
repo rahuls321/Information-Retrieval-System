@@ -1,0 +1,1700 @@
+
+Title:
+Edge detection
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .sidebar{width:22em;float:right;clear:right;margin:0.5em 0 1em 1em;background:#f8f9fa;border:1px solid #aaa;padding:0.2em;text-align:center;line-height:1.4em;font-size:88%;border-collapse:collapse;display:table}body.skin-minerva .mw-parser-output .sidebar{display:table!important;float:right!important;margin:0.5em 0 1em 1em!important}.mw-parser-output .sidebar-subgroup{width:100%;margin:0;border-spacing:0}.mw-parser-output .sidebar-left{float:left;clear:left;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-none{float:none;clear:both;margin:0.5em 1em 1em 0}.mw-parser-output .sidebar-outer-title{padding:0 0.4em 0.2em;font-size:125%;line-height:1.2em;font-weight:bold}.mw-parser-output .sidebar-top-image{padding:0.4em}.mw-parser-output .sidebar-top-caption,.mw-parser-output .sidebar-pretitle-with-top-image,.mw-parser-output .sidebar-caption{padding:0.2em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-pretitle{padding:0.4em 0.4em 0;line-height:1.2em}.mw-parser-output .sidebar-title,.mw-parser-output .sidebar-title-with-pretitle{padding:0.2em 0.8em;font-size:145%;line-height:1.2em}.mw-parser-output .sidebar-title-with-pretitle{padding:0.1em 0.4em}.mw-parser-output .sidebar-image{padding:0.2em 0.4em 0.4em}.mw-parser-output .sidebar-heading{padding:0.1em 0.4em}.mw-parser-output .sidebar-content{padding:0 0.5em 0.4em}.mw-parser-output .sidebar-content-with-subgroup{padding:0.1em 0.4em 0.2em}.mw-parser-output .sidebar-above,.mw-parser-output .sidebar-below{padding:0.3em 0.8em;font-weight:bold}.mw-parser-output .sidebar-collapse .sidebar-above,.mw-parser-output .sidebar-collapse .sidebar-below{border-top:1px solid #aaa;border-bottom:1px solid #aaa}.mw-parser-output .sidebar-navbar{text-align:right;font-size:115%;padding:0 0.4em 0.4em}.mw-parser-output .sidebar-list-title{padding:0 0.4em;text-align:left;font-weight:bold;line-height:1.6em;font-size:105%}.mw-parser-output .sidebar-list-title-c{padding:0 0.4em;text-align:center;margin:0 3.3em}@media(max-width:720px){body.mediawiki .mw-parser-output .sidebar{width:100%!important;clear:both;float:none!important;margin-left:0!important;margin-right:0!important}}Feature detection
+Edge detection
+Canny
+Deriche
+Differential
+Sobel
+Prewitt
+Roberts cross
+
+Corner detection
+Harris operator
+Shi and Tomasi
+Level curve curvature
+Hessian feature strength measures
+SUSAN
+FAST
+
+Blob detection
+Laplacian of Gaussian (LoG)
+Difference of Gaussians (DoG)
+Determinant of Hessian  (DoH)
+Maximally stable extremal regions
+PCBR
+
+Ridge detection
+Hough transform
+Hough transform
+Generalized Hough transform
+
+Structure tensor
+Structure tensor
+Generalized structure tensor
+
+Affine invariant feature detection
+Affine shape adaptation
+Harris affine
+Hessian affine
+
+Feature description
+SIFT
+SURF
+GLOH
+HOG
+
+Scale space
+Scale-space axioms
+Implementation details
+Pyramids
+.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vte
+Edge detection includes a variety of mathematical methods that aim at identifying edges, curves in a digital image at which the image brightness changes sharply or, more formally, has discontinuities. The same problem of finding discontinuities in one-dimensional signals is known as step detection and the problem of finding signal discontinuities over time is known as change detection. Edge detection is a fundamental tool in image processing, machine vision and computer vision, particularly in the areas of feature detection and feature extraction.[1]
+
+Contents
+
+1 Motivations
+2 Edge properties
+3 A simple edge model
+4 Why it is a non-trivial task
+5 Approaches
+
+5.1 Canny
+5.2 Other first-order methods
+5.3 Thresholding and linking
+5.4 Edge thinning
+5.5 Second-order approaches
+
+5.5.1 Differential
+
+
+5.6 Phase congruency-based
+5.7 Phase Stretch Transform (PST)
+5.8 Subpixel
+
+
+6 See also
+7 References
+8 Further reading
+
+
+
+Motivations[edit]
+  Canny edge detection applied to a photograph
+The purpose of detecting sharp changes in image brightness is to capture important events and changes in properties of the world.
+It can be shown that under rather general assumptions for an image formation model, discontinuities in image brightness are likely to correspond to:[2][3]
+
+discontinuities in depth,
+discontinuities in surface orientation,
+changes in material properties and
+variations in scene illumination.
+In the ideal case, the result of applying an edge detector to an image may lead to a set of connected curves that indicate the boundaries of objects, the boundaries of surface markings as well as curves that correspond to discontinuities in surface orientation.
+Thus, applying an edge detection algorithm to an image may significantly reduce the amount of data to be processed and may therefore filter out information that may be regarded as less relevant, while preserving the important structural properties of an image.
+If the edge detection step is successful, the subsequent task of interpreting the information contents in the original image may therefore be substantially simplified.
+However, it is not always possible to obtain such ideal edges from real life images of moderate complexity.
+Edges extracted from non-trivial images are often hampered by fragmentation, meaning that the edge curves are not connected, missing edge segments as well as false edges not corresponding to interesting phenomena in the image â thus complicating the subsequent task of interpreting the image data.[4]
+Edge detection is one of the fundamental steps in image processing, image analysis, image pattern recognition, and computer vision techniques.
+
+Edge properties[edit]
+The edges extracted from a two-dimensional image of a three-dimensional scene can be classified as either viewpoint dependent or viewpoint independent.
+A viewpoint independent edge typically reflects inherent properties of the three-dimensional objects, such as surface markings and surface shape.
+A viewpoint dependent edge may change as the viewpoint changes, and typically reflects the geometry of the scene, such as objects occluding one another.
+A typical edge might for instance be the border between a block of red color and a block of yellow. In contrast a line (as can be extracted by a ridge detector) can be a small number of pixels of a different color on an otherwise unchanging background. For a line, there may therefore usually be one edge on each side of the line.
+
+A simple edge model[edit]
+Although certain literature has considered the detection of ideal step edges, the edges obtained from natural images are usually not at all ideal step edges. Instead they are normally affected by one or several of the following effects:
+
+focal blur caused by a finite depth-of-field and finite point spread function.
+penumbral blur caused by shadows created by light sources of non-zero radius.
+shading at a smooth object
+A number of researchers have used a Gaussian smoothed step edge (an error function) as the simplest extension of the ideal step edge model for modeling the effects of edge blur in practical applications.[4][5]
+Thus, a one-dimensional image 
+  
+    
+      
+        f
+      
+    
+    {\displaystyle f}
+  
+ that has exactly one edge placed at 
+  
+    
+      
+        x
+        =
+        0
+      
+    
+    {\displaystyle x=0}
+  
+ may be modeled as:
+
+
+  
+    
+      
+        f
+        (
+        x
+        )
+        =
+        
+          
+            
+              
+                I
+                
+                  r
+                
+              
+              â
+              
+                I
+                
+                  â
+                
+              
+            
+            2
+          
+        
+        
+          (
+          
+            erf
+            â¡
+            
+              (
+              
+                
+                  x
+                  
+                    
+                      
+                        2
+                      
+                    
+                    Ï
+                  
+                
+              
+              )
+            
+            +
+            1
+          
+          )
+        
+        +
+        
+          I
+          
+            â
+          
+        
+        .
+      
+    
+    {\displaystyle f(x)={\frac {I_{r}-I_{\ell }}{2}}\left(\operatorname {erf} \left({\frac {x}{{\sqrt {2}}\sigma }}\right)+1\right)+I_{\ell }.}
+  
+
+At the left side of the edge, the intensity is 
+  
+    
+      
+        
+          I
+          
+            â
+          
+        
+        =
+        
+          lim
+          
+            x
+            â
+            â
+            â
+          
+        
+        f
+        (
+        x
+        )
+      
+    
+    {\displaystyle I_{\ell }=\lim _{x\rightarrow -\infty }f(x)}
+  
+, and right of the edge it is
+
+  
+    
+      
+        
+          I
+          
+            r
+          
+        
+        =
+        
+          lim
+          
+            x
+            â
+            â
+          
+        
+        f
+        (
+        x
+        )
+      
+    
+    {\displaystyle I_{r}=\lim _{x\rightarrow \infty }f(x)}
+  
+. The scale parameter 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \sigma }
+  
+ is called the blur scale of the edge. Ideally this scale parameter should be adjusted based on the quality of image to avoid destroying true edges of the image.[citation needed]
+
+Why it is a non-trivial task[edit]
+To illustrate why edge detection is not a trivial task, consider the problem of detecting edges in the following one-dimensional signal. Here, we may intuitively say that there should be an edge between the 4th and 5th pixels.
+
+
+
+
+5
+
+7
+
+6
+
+4
+
+152
+
+148
+
+149
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+If the intensity difference were smaller between the 4th and the 5th pixels and if the intensity differences between the adjacent neighboring pixels were higher, it would not be as easy to say that there should be an edge in the corresponding region. Moreover, one could argue that this case is one in which there are several edges.
+
+
+
+
+5
+
+7
+
+6
+
+41
+
+113
+
+148
+
+149
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hence, to firmly state a specific threshold on how large the intensity change between two neighbouring pixels must be for us to say that there should be an edge between these pixels is not always simple.[4] Indeed, this is one of the reasons why edge detection may be a non-trivial problem unless the objects in the scene are particularly simple and the illumination conditions can be well controlled (see for example, the edges extracted from the image with the girl above).
+
+Approaches[edit]
+There are many methods for edge detection, but most of them can be grouped into two categories, search-based and zero-crossing based.
+The search-based methods detect edges by first computing a measure of edge strength, usually a first-order derivative expression such as the gradient magnitude, and then searching for local directional maxima of the gradient magnitude using a computed estimate of the local orientation of the edge, usually the gradient direction.
+The zero-crossing based methods search for zero crossings in a second-order derivative expression computed from the image in order to find edges, usually the zero-crossings of the Laplacian or the zero-crossings of a non-linear differential expression. As a pre-processing step to edge detection, a smoothing stage, typically Gaussian smoothing, is almost always applied (see also noise reduction).
+The edge detection methods that have been published mainly differ in the types of smoothing filters that are applied and the way the measures of edge strength are computed. As many edge detection methods rely on the computation of image gradients, they also differ in the types of filters used for computing gradient estimates in the x- and y-directions.
+A survey of a number of different edge detection methods can be found in (Ziou and Tabbone 1998);[6] see also the encyclopedia articles on edge detection in Encyclopedia of Mathematics[3] and Encyclopedia of Computer Science and Engineering.[7]
+
+Canny[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Canny edge detector
+John Canny considered the mathematical problem of deriving an optimal smoothing filter given the criteria of detection, localization and minimizing multiple responses to a single edge.[8] He showed that the optimal filter given these assumptions is a sum of four exponential terms. He also showed that this filter can be well approximated by first-order derivatives of Gaussians.
+Canny also introduced the notion of non-maximum suppression, which means that given the presmoothing filters, edge points are defined as points where the gradient magnitude assumes a local maximum in the gradient direction.
+Looking for the zero crossing of the 2nd derivative along the gradient direction was first proposed by Haralick.[9]
+It took less than two decades to find a modern geometric variational meaning for that operator that links it to the MarrâHildreth (zero crossing of the Laplacian) edge detector.
+That observation was presented by Ron Kimmel and Alfred Bruckstein.[10]
+Although his work was done in the early days of computer vision, the Canny edge detector (including its variations) is still a state-of-the-art edge detector.[11] Edge detectors that perform better than the Canny usually require longer computation times or a greater number of parameters.
+The CannyâDeriche detector was derived from similar mathematical criteria as the Canny edge detector, although starting from a discrete viewpoint and then leading to a set of recursive filters for image smoothing instead of exponential filters or Gaussian filters.[12]
+The differential edge detector described below can be seen as a reformulation of Canny's method from the viewpoint of differential invariants computed from a scale space representation leading to a number of advantages in terms of both theoretical analysis and sub-pixel implementation. In that aspect, Log Gabor filter have been shown to be a good choice to extract boundaries in natural scenes.[13]
+
+Other first-order methods[edit]
+Different gradient operators can be applied to estimate image gradients from the input image or a smoothed version of it. The simplest approach is to use central differences:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  L
+                  
+                    x
+                  
+                
+                (
+                x
+                ,
+                y
+                )
+              
+              
+                
+                =
+                â
+                
+                  
+                    1
+                    2
+                  
+                
+                L
+                (
+                x
+                â
+                1
+                ,
+                y
+                )
+                +
+                0
+                â
+                L
+                (
+                x
+                ,
+                y
+                )
+                +
+                
+                  
+                    1
+                    2
+                  
+                
+                â
+                L
+                (
+                x
+                +
+                1
+                ,
+                y
+                )
+              
+            
+            
+              
+                
+                  L
+                  
+                    y
+                  
+                
+                (
+                x
+                ,
+                y
+                )
+              
+              
+                
+                =
+                â
+                
+                  
+                    1
+                    2
+                  
+                
+                L
+                (
+                x
+                ,
+                y
+                â
+                1
+                )
+                +
+                0
+                â
+                L
+                (
+                x
+                ,
+                y
+                )
+                +
+                
+                  
+                    1
+                    2
+                  
+                
+                â
+                L
+                (
+                x
+                ,
+                y
+                +
+                1
+                )
+                ,
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}L_{x}(x,y)&=-{\frac {1}{2}}L(x-1,y)+0\cdot L(x,y)+{\frac {1}{2}}\cdot L(x+1,y)\\[8pt]L_{y}(x,y)&=-{\frac {1}{2}}L(x,y-1)+0\cdot L(x,y)+{\frac {1}{2}}\cdot L(x,y+1),\end{aligned}}}
+  
+
+corresponding to the application of the following filter masks to the image data:
+
+
+  
+    
+      
+        
+          L
+          
+            y
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  +
+                  1
+                  
+                    /
+                  
+                  2
+                
+                
+                  0
+                
+                
+                  â
+                  1
+                  
+                    /
+                  
+                  2
+                
+              
+            
+            ]
+          
+        
+        L
+        
+        
+          and
+        
+        
+        
+          L
+          
+            x
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  +
+                  1
+                  
+                    /
+                  
+                  2
+                
+              
+              
+                
+                  0
+                
+              
+              
+                
+                  â
+                  1
+                  
+                    /
+                  
+                  2
+                
+              
+            
+            ]
+          
+        
+        L
+        .
+      
+    
+    {\displaystyle L_{y}={\begin{bmatrix}+1/2&0&-1/2\end{bmatrix}}L\quad {\text{and}}\quad L_{x}={\begin{bmatrix}+1/2\\0\\-1/2\end{bmatrix}}L.}
+  
+
+The well-known and earlier Sobel operator is based on the following filters:
+
+
+  
+    
+      
+        
+          L
+          
+            y
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  +
+                  1
+                
+                
+                  0
+                
+                
+                  â
+                  1
+                
+              
+              
+                
+                  +
+                  2
+                
+                
+                  0
+                
+                
+                  â
+                  2
+                
+              
+              
+                
+                  +
+                  1
+                
+                
+                  0
+                
+                
+                  â
+                  1
+                
+              
+            
+            ]
+          
+        
+        L
+        
+        
+          and
+        
+        
+        
+          L
+          
+            x
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  +
+                  1
+                
+                
+                  +
+                  2
+                
+                
+                  +
+                  1
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  â
+                  1
+                
+                
+                  â
+                  2
+                
+                
+                  â
+                  1
+                
+              
+            
+            ]
+          
+        
+        L
+        .
+      
+    
+    {\displaystyle L_{y}={\begin{bmatrix}+1&0&-1\\+2&0&-2\\+1&0&-1\end{bmatrix}}L\quad {\text{and}}\quad L_{x}={\begin{bmatrix}+1&+2&+1\\0&0&0\\-1&-2&-1\end{bmatrix}}L.}
+  
+
+Given such estimates of first-order image derivatives, the gradient magnitude is then computed as:
+
+
+  
+    
+      
+        
+          |
+        
+        â
+        L
+        
+          |
+        
+        =
+        
+          
+            
+              L
+              
+                x
+              
+              
+                2
+              
+            
+            +
+            
+              L
+              
+                y
+              
+              
+                2
+              
+            
+          
+        
+      
+    
+    {\displaystyle |\nabla L|={\sqrt {L_{x}^{2}+L_{y}^{2}}}}
+  
+
+while the gradient orientation can be estimated as
+
+
+  
+    
+      
+        Î¸
+        =
+        atan2
+        â¡
+        (
+        
+          L
+          
+            y
+          
+        
+        ,
+        
+          L
+          
+            x
+          
+        
+        )
+        .
+      
+    
+    {\displaystyle \theta =\operatorname {atan2} (L_{y},L_{x}).}
+  
+
+Other first-order difference operators for estimating image gradient have been proposed in the Prewitt operator, Roberts cross, Kayyali[14] operator and FreiâChen operator.
+It is possible to extend filters dimension to avoid the issue of recognizing edge in low SNR image. The cost of this operation is loss in terms of resolution. Examples are Extended Prewitt 7Ã7.
+
+Thresholding and linking[edit]
+Once we have computed a measure of edge strength (typically the gradient magnitude), the next stage is to apply a threshold, to decide whether edges are present or not at an image point. The lower the threshold, the more edges will be detected, and the result will be increasingly susceptible to noise and detecting edges of irrelevant features in the image.  Conversely a high threshold may miss subtle edges, or result in fragmented edges.
+If the edge is applied to just the gradient magnitude image, the resulting edges will in general be thick and some type of edge thinning post-processing is necessary. For edges detected with non-maximum suppression however, the edge curves are thin by definition and the edge pixels can be linked into edge polygon by an edge linking (edge tracking) procedure. On a discrete grid, the non-maximum suppression stage can be implemented by estimating the gradient direction using first-order derivatives, then rounding off the gradient direction to multiples of 45 degrees, and finally comparing the values of the gradient magnitude in the estimated gradient direction.
+A commonly used approach to handle the problem of appropriate thresholds for thresholding is by using thresholding with hysteresis.  This method uses multiple thresholds to find edges. We begin by using the upper threshold to find the start of an edge. Once we have a start point, we then trace the path of the edge through the image pixel by pixel, marking an edge whenever we are above the lower threshold.  We stop marking our edge only when the value falls below our lower threshold. This approach makes the assumption that edges are likely to be in continuous curves, and allows us to follow a faint section of an edge we have previously seen, without meaning that every noisy pixel in the image is marked down as an edge. Still, however, we have the problem of choosing appropriate thresholding parameters, and suitable thresholding values may vary over the image.
+
+Edge thinning[edit]
+Edge thinning is a technique used to remove the unwanted spurious points on the edges in an image. This technique is employed after the image has been filtered for noise (using median, Gaussian filter etc.), the edge operator has been applied (like the ones described above, Canny or Sobel) to detect the edges and after the edges have been smoothed using an appropriate threshold value.
+This removes all the unwanted points and if applied carefully, results in one pixel thick edge elements.
+Advantages:
+
+Sharp and thin edges lead to greater efficiency in object recognition.
+If Hough transforms are used to detect lines and ellipses, then thinning could give much better results.
+If the edge happens to be the boundary of a region, then thinning could easily give the image parameters like perimeter without much algebra.
+There are many popular algorithms used to do this, one such is described below:
+
+Choose a type of connectivity, like 8, 6 or 4.
+8 connectivity is preferred, where all the immediate pixels surrounding a particular pixel are considered.
+Remove points from North, south, east and west.
+Do this in multiple passes, i.e. after the north pass, use the same semi processed image in the other passes and so on.
+Remove a point if:The point has no neighbors in the North (if you are in the north pass, and respective directions for other passes).The point is not the end of a line.The point is isolated.Removing the points will not cause to disconnect its neighbors in any way.
+Else keep the point.
+The number of passes across direction should be chosen according to the level of accuracy desired.
+
+Second-order approaches[edit]
+Some edge-detection operators are instead based upon second-order derivatives of the intensity.  This essentially captures the rate of change in the intensity gradient. Thus, in the ideal continuous case, detection of zero-crossings in the second derivative captures local maxima in the gradient.
+The early MarrâHildreth operator is based on the detection of zero-crossings of the Laplacian operator applied to a Gaussian-smoothed image. It can be shown, however, that this operator will also return false edges corresponding to local minima of the gradient magnitude. Moreover, this operator will give poor localization at curved edges. Hence, this operator is today mainly of historical interest.
+
+Differential[edit]
+A more refined second-order edge detection approach which automatically detects edges with sub-pixel accuracy, uses the following differential approach of detecting zero-crossings of the second-order directional derivative in the gradient direction:
+Following the differential geometric way of expressing the requirement of non-maximum suppression proposed by Lindeberg,[4][15] let us introduce at every image point a local coordinate system 
+  
+    
+      
+        (
+        u
+        ,
+        v
+        )
+      
+    
+    {\displaystyle (u,v)}
+  
+, with the 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+-direction parallel to the gradient direction. Assuming that the image has been pre-smoothed by Gaussian smoothing and a scale space representation 
+  
+    
+      
+        L
+        (
+        x
+        ,
+        y
+        ;
+        t
+        )
+      
+    
+    {\displaystyle L(x,y;t)}
+  
+ at scale 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ has been computed, we can require that the gradient magnitude of the scale space representation, which is equal to the first-order directional derivative in the 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+-direction 
+  
+    
+      
+        
+          L
+          
+            v
+          
+        
+      
+    
+    {\displaystyle L_{v}}
+  
+, should have its first order directional derivative in the 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+-direction equal to zero
+
+
+  
+    
+      
+        
+          â
+          
+            v
+          
+        
+        (
+        
+          L
+          
+            v
+          
+        
+        )
+        =
+        0
+      
+    
+    {\displaystyle \partial _{v}(L_{v})=0}
+  
+
+while the second-order directional derivative in the 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+-direction of 
+  
+    
+      
+        
+          L
+          
+            v
+          
+        
+      
+    
+    {\displaystyle L_{v}}
+  
+ should be negative, i.e.,
+
+
+  
+    
+      
+        
+          â
+          
+            v
+            v
+          
+        
+        (
+        
+          L
+          
+            v
+          
+        
+        )
+        â¤
+        0.
+      
+    
+    {\displaystyle \partial _{vv}(L_{v})\leq 0.}
+  
+
+Written out as an explicit expression in terms of local partial derivatives 
+  
+    
+      
+        
+          L
+          
+            x
+          
+        
+        ,
+        
+          L
+          
+            y
+          
+        
+        ,
+        â¦
+        ,
+        
+          L
+          
+            y
+            y
+            y
+          
+        
+      
+    
+    {\displaystyle L_{x},L_{y},\ldots ,L_{yyy}}
+  
+, this edge definition can be expressed as the zero-crossing curves of the differential invariant
+
+
+  
+    
+      
+        
+          L
+          
+            v
+          
+          
+            2
+          
+        
+        
+          L
+          
+            v
+            v
+          
+        
+        =
+        
+          L
+          
+            x
+          
+          
+            2
+          
+        
+        
+        
+          L
+          
+            x
+            x
+          
+        
+        +
+        2
+        
+        
+          L
+          
+            x
+          
+        
+        
+        
+          L
+          
+            y
+          
+        
+        
+        
+          L
+          
+            x
+            y
+          
+        
+        +
+        
+          L
+          
+            y
+          
+          
+            2
+          
+        
+        
+        
+          L
+          
+            y
+            y
+          
+        
+        =
+        0
+        ,
+      
+    
+    {\displaystyle L_{v}^{2}L_{vv}=L_{x}^{2}\,L_{xx}+2\,L_{x}\,L_{y}\,L_{xy}+L_{y}^{2}\,L_{yy}=0,}
+  
+
+that satisfy a sign-condition on the following differential invariant
+
+
+  
+    
+      
+        
+          L
+          
+            v
+          
+          
+            3
+          
+        
+        
+          L
+          
+            v
+            v
+            v
+          
+        
+        =
+        
+          L
+          
+            x
+          
+          
+            3
+          
+        
+        
+        
+          L
+          
+            x
+            x
+            x
+          
+        
+        +
+        3
+        
+        
+          L
+          
+            x
+          
+          
+            2
+          
+        
+        
+        
+          L
+          
+            y
+          
+        
+        
+        
+          L
+          
+            x
+            x
+            y
+          
+        
+        +
+        3
+        
+        
+          L
+          
+            x
+          
+        
+        
+        
+          L
+          
+            y
+          
+          
+            2
+          
+        
+        
+        
+          L
+          
+            x
+            y
+            y
+          
+        
+        +
+        
+          L
+          
+            y
+          
+          
+            3
+          
+        
+        
+        
+          L
+          
+            y
+            y
+            y
+          
+        
+        â¤
+        0
+      
+    
+    {\displaystyle L_{v}^{3}L_{vvv}=L_{x}^{3}\,L_{xxx}+3\,L_{x}^{2}\,L_{y}\,L_{xxy}+3\,L_{x}\,L_{y}^{2}\,L_{xyy}+L_{y}^{3}\,L_{yyy}\leq 0}
+  
+ where 
+  
+    
+      
+        
+          L
+          
+            x
+          
+        
+        ,
+        
+          L
+          
+            y
+          
+        
+        ,
+        â¦
+        ,
+        
+          L
+          
+            y
+            y
+            y
+          
+        
+      
+    
+    {\displaystyle L_{x},L_{y},\ldots ,L_{yyy}}
+  
+
+denote partial derivatives computed from a scale space representation 
+  
+    
+      
+        L
+      
+    
+    {\displaystyle L}
+  
+ obtained by smoothing the original image with a Gaussian kernel. In this way, the edges will be automatically obtained as continuous curves with sub-pixel accuracy. Hysteresis thresholding can also be applied to these differential and subpixel edge segments.
+In practice, first-order derivative approximations can be computed by central differences as described above, while second-order derivatives can be computed from the scale space representation 
+  
+    
+      
+        L
+      
+    
+    {\displaystyle L}
+  
+ according to:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  L
+                  
+                    x
+                    x
+                  
+                
+                (
+                x
+                ,
+                y
+                )
+              
+              
+                
+                =
+                L
+                (
+                x
+                â
+                1
+                ,
+                y
+                )
+                â
+                2
+                L
+                (
+                x
+                ,
+                y
+                )
+                +
+                L
+                (
+                x
+                +
+                1
+                ,
+                y
+                )
+                ,
+              
+            
+            
+              
+                
+                  L
+                  
+                    x
+                    y
+                  
+                
+                (
+                x
+                ,
+                y
+                )
+              
+              
+                
+                =
+                
+                  
+                    1
+                    4
+                  
+                
+                (
+                L
+                (
+                x
+                â
+                1
+                ,
+                y
+                â
+                1
+                )
+                â
+                L
+                (
+                x
+                â
+                1
+                ,
+                y
+                +
+                1
+                )
+                â
+                L
+                (
+                x
+                +
+                1
+                ,
+                y
+                â
+                1
+                )
+                +
+                L
+                (
+                x
+                +
+                1
+                ,
+                y
+                +
+                1
+                )
+                )
+                ,
+              
+            
+            
+              
+                
+                  L
+                  
+                    y
+                    y
+                  
+                
+                (
+                x
+                ,
+                y
+                )
+              
+              
+                
+                =
+                L
+                (
+                x
+                ,
+                y
+                â
+                1
+                )
+                â
+                2
+                L
+                (
+                x
+                ,
+                y
+                )
+                +
+                L
+                (
+                x
+                ,
+                y
+                +
+                1
+                )
+                .
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}L_{xx}(x,y)&=L(x-1,y)-2L(x,y)+L(x+1,y),\\[6pt]L_{xy}(x,y)&={\frac {1}{4}}(L(x-1,y-1)-L(x-1,y+1)-L(x+1,y-1)+L(x+1,y+1)),\\[6pt]L_{yy}(x,y)&=L(x,y-1)-2L(x,y)+L(x,y+1).\end{aligned}}}
+  
+
+corresponding to the following filter masks:
+
+
+  
+    
+      
+        
+          L
+          
+            x
+            x
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  â
+                  2
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        L
+        
+        
+          and
+        
+        
+        
+          L
+          
+            x
+            y
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                  
+                    /
+                  
+                  4
+                
+                
+                  0
+                
+                
+                  1
+                  
+                    /
+                  
+                  4
+                
+              
+              
+                
+                  0
+                
+                
+                  0
+                
+                
+                  0
+                
+              
+              
+                
+                  1
+                  
+                    /
+                  
+                  4
+                
+                
+                  0
+                
+                
+                  â
+                  1
+                  
+                    /
+                  
+                  4
+                
+              
+            
+            ]
+          
+        
+        L
+        
+        
+          and
+        
+        
+        
+          L
+          
+            y
+            y
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  1
+                
+              
+              
+                
+                  â
+                  2
+                
+              
+              
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        L
+        .
+      
+    
+    {\displaystyle L_{xx}={\begin{bmatrix}1&-2&1\end{bmatrix}}L\quad {\text{and}}\quad L_{xy}={\begin{bmatrix}-1/4&0&1/4\\0&0&0\\1/4&0&-1/4\end{bmatrix}}L\quad {\text{and}}\quad L_{yy}={\begin{bmatrix}1\\-2\\1\end{bmatrix}}L.}
+  
+
+Higher-order derivatives for the third-order sign condition can be obtained in an analogous fashion.
+
+Phase congruency-based[edit]
+A recent development in edge detection techniques takes a frequency domain approach to finding edge locations.  Phase congruency (also known as phase coherence) methods attempt to find locations in an image where all sinusoids in the frequency domain are in phase.  These locations will generally correspond to the location of a perceived edge, regardless of whether the edge is represented by a large change in intensity in the spatial domain.  A key benefit of this technique is that it responds strongly to Mach bands, and avoids false positives typically found around roof edges. A roof edge, is a discontinuity in the first order derivative of a grey-level profile.[16]
+
+Phase Stretch Transform (PST)[edit]
+  Feature enhancement in an image (St Paul's Cathedral, London) using Phase Stretch Transform (PST). Left panel shows the original image and the right panel shows the detected features using PST.
+The phase stretch transform or PST is a physics-inspired computational approach to signal and image processing. One of its utilities is for feature detection and classification.[17][18] PST is a spin-off from research on the time stretch dispersive Fourier transform. PST transforms the image by emulating propagation through a diffractive medium with engineered 3D dispersive property (refractive index). The operation relies on symmetry of the dispersion profile and can be understood in terms of dispersive eigenfunctions or stretch modes.[19] PST performs similar functionality as phase contrast microscopy but on digital images. PST is also applicable to digital images as well as temporal, time series, data.
+
+Subpixel[edit]
+To increase the precision of edge detection, several subpixel techniques had been proposed, including curve-fitting, moment-based,[20][21] reconstructive, and partial area effect methods.[22] These methods have different characteristics. Curve fitting methods are computationally simple but are easily affected by noise. Moment-based methods use an integral-based approach to reduce the effect of noise, but may require more computations in some cases. Reconstructive methods use horizontal gradients or vertical gradients to build a curve and find the peak of the curve as the sub-pixel edge. Partial area effect methods are based on the hypothesis that each pixel value depends on the area at both sides of the edge inside that pixel, producing accurate individual estimation for every edge pixel. Certain variants of the moment-based technique have been shown to be the most accurate for isolated edges.[21]  Edge detection on an angiographic image. On the left, edge detection is made at a pixel level. On the right, subpixel edge detection locates the edge inside the pixel precisely
+See also[edit]
+Convolution#Applications
+Edge-preserving filtering
+Feature detection (computer vision) for other low-level feature detectors
+Image derivative
+Gabor filter
+Image noise reduction
+Kirsch operator for edge detection in the compass directions
+Ridge detection for relations between edge detectors and ridge detectors
+Log Gabor filter
+Phase stretch transform
+References[edit]
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Umbaugh, Scott E (2010). Digital image processing and analysisÂ : human and computer vision applications with CVIPtools (2ndÂ ed.). Boca Raton, FL: CRC Press. ISBNÂ 978-1-4398-0205-2.
+
+^ H.G. Barrow and J.M. Tenenbaum (1981) "Interpreting line drawings as three-dimensional surfaces", Artificial Intelligence, vol 17, issues 1â3, pages 75â116.
+
+^ Jump up to: a b Lindeberg, Tony (2001) [1994], "Edge detection", Encyclopedia of Mathematics, EMS Press
+
+^ Jump up to: a b c d T. Lindeberg (1998) "Edge detection and ridge detection with automatic scale selection", International Journal of Computer Vision, 30, 2, pages 117â154.
+
+^ W. Zhang and F. Bergholm (1997) "Multi-scale blur estimation and edge type classification for scene analysis", International Journal of Computer Vision, vol 24, issue 3, Pages: 219â250.
+
+^ D. Ziou and S. Tabbone (1998) "Edge detection techniques: An overview", International Journal of Pattern Recognition and Image Analysis, 8(4):537â559, 1998
+
+^ J. M. Park and Y. Lu (2008) "Edge detection in grayscale, color, and range images", in B. W. Wah (editor)  Encyclopedia of Computer Science and Engineering, doi 10.1002/9780470050118.ecse603
+
+^ J. Canny (1986) "A computational approach to edge detection", IEEE Transactions on Pattern Analysis and Machine Intelligence, vol 8, pages 679â714.
+
+^ 
+R. Haralick, (1984) "Digital step edges from zero crossing of second directional derivatives", IEEE Transactions on Pattern Analysis and Machine Intelligence, 6(1):58â68.
+
+^ R. Kimmel and A.M. Bruckstein (2003) "On regularized Laplacian zero crossings and other optimal edge integrators", International Journal of Computer Vision, 53(3) pages 225â243.
+
+^ Shapiro L. G. & Stockman G. C. (2001) Computer Vision. London etc.: Prentice Hall, Page 326.
+
+^ R. Deriche (1987) Using Canny's criteria to derive an optimal edge detector recursively implemented, Int. J. Computer Vision, vol 1, pages 167â187.
+
+^ Sylvain Fischer, Rafael Redondo, Laurent Perrinet, Gabriel Cristobal. Sparse approximation of images inspired from the functional architecture of the primary visual areas. EURASIP Journal on Advances in Signal Processing, special issue on Image Perception, 2007
+
+^ Dim, Jules R.; Takamura, Tamio (2013-12-11). "Alternative Approach for Satellite Cloud Classification: Edge Gradient Application". Advances in Meteorology. 2013: 1â8. doi:10.1155/2013/584816. ISSNÂ 1687-9309.
+
+^ T. Lindeberg (1993) "Discrete derivative approximations with scale-space properties: A basis for low-level feature extraction", J. of Mathematical Imaging and Vision, 3(4), pages 349â376.
+
+^ T. Pajdla and V. Hlavac (1993) "Surface discontinuities in range images," in Proc IEEE 4th Int. Conf. Comput. Vision, pp. 524â528.
+
+^ M. H. Asghari, and B. Jalali, "Edge detection in digital images using dispersive phase stretch," International Journal of Biomedical Imaging, Vol. 2015, Article ID 687819, pp. 1â6 (2015).
+
+^ M. H. Asghari, and B. Jalali, "Physics-inspired image edge detection," IEEE Global Signal and Information Processing Symposium (GlobalSIP 2014), paper: WdBD-L.1, Atlanta, December 2014.
+
+^ B. Jalali and A. Mahjoubfar, "Tailoring Wideband Signals With a Photonic Hardware Accelerator," Proceedings of the IEEE, Vol. 103, No. 7, pp. 1071â1086 (2015).
+
+^ Ghosal, S.; Mehrota, R (1993-01-01). "Orthogonal Moment Operators for Subpixel Edge Detection". Pattern Recognition. 26 (2): 295â306. doi:10.1016/0031-3203(93)90038-X.
+
+^ Jump up to: a b Christian, John (2017-01-01). "Accurate Planetary Limb Localization for Image-Based Spacecraft Navigation". Journal of Spacecraft and Rockets. 54 (3): 708â730. Bibcode:2017JSpRo..54..708C. doi:10.2514/1.A33692.
+
+^ Trujillo-Pino, AgustÃ­n; Krissian, Karl; AlemÃ¡n-Flores, Miguel; Santana-CedrÃ©s, Daniel (2013-01-01). "Accurate subpixel edge location based on partial area effect". Image and Vision Computing. 31 (1): 72â90. doi:10.1016/j.imavis.2012.10.005. hdl:10553/43474.
+
+
+Further reading[edit]
+Lindeberg, Tony (2001) [1994], "Edge detection", Encyclopedia of Mathematics, EMS Press
+Entry on edge detection in Encyclopedia of Computer Science and Engineering
+Edge Detection using FPGA
+A-contrario line segment detection with code and on-line demonstration
+Edge detection using MATLAB
+Subpixel edge detection using Matlab
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Edge_detection&oldid=1069622980"
+		Categories: Feature detection (computer vision)Image processingHidden categories: All articles with unsourced statementsArticles with unsourced statements from September 2015
+	

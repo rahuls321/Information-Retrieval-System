@@ -1,0 +1,1747 @@
+
+Title:
+Splay tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Self-adjusting binary search tree
+
+
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}Splay treeTypetreeInvented1985Invented byDaniel Dominic Sleator and Robert Endre TarjanTime complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)
+O(n)Search
+
+amortized O(entropy)
+amortized O(log n)Insert
+
+amortized O(entropy)
+amortized O(log n)Delete
+
+amortized O(entropy)
+amortized O(log n)
+A splay tree is a binary search tree with the additional property that recently accessed elements are quick to access again.  Like self-balancing binary search trees, a splay tree performs basic operations such as insertion, look-up and removal in O(log n) amortized time. For many sequences of non-random operations, splay trees perform better than other search trees, even performing better than O(log n) for sufficiently non-random patterns, all without requiring advance knowledge of the pattern.  The splay tree was invented by Daniel Sleator and Robert Tarjan in 1985.[1]
+All normal operations on a binary search tree are combined with one basic operation, called splaying. Splaying the tree for a certain element rearranges the tree so that the element is placed at the root of the tree.  One way to do this with the basic search operation is to first perform a standard binary tree search for the element in question, and then use tree rotations in a specific fashion to bring the element to the top. Alternatively, a top-down algorithm can combine the search and the tree reorganization into a single phase.
+
+Contents
+
+1 Advantages
+2 Disadvantages
+3 Operations
+
+3.1 Splaying
+3.2 Join
+3.3 Split
+3.4 Insertion
+3.5 Deletion
+
+
+4 Implementation and variants
+5 Analysis
+
+5.1 Zig step
+5.2 Zig-zig step
+5.3 Zig-zag step
+5.4 Weighted analysis
+
+
+6 Performance theorems
+7 Dynamic optimality conjecture
+8 Variants
+9 See also
+10 Notes
+11 References
+12 External links
+
+
+
+Advantages[edit]
+Good performance for a splay tree depends on the fact that it is self-optimizing, in that frequently accessed nodes will move nearer to the root where they can be accessed more quickly. The worst-case heightâthough unlikelyâis O(n), with the average being O(log n).
+Having frequently-used nodes near the root is an advantage for many practical applications (also see locality of reference), and is particularly useful for implementing caches and garbage collection algorithms.
+Advantages include:
+
+Comparable performance: Average-case performance is as efficient as other trees.[2]
+Small memory footprint: Splay trees do not need to store any bookkeeping data.
+Disadvantages[edit]
+The most significant disadvantage of splay trees is that the height of a splay tree can be linear.  For example, this will be the case after accessing all n elements in non-decreasing order.  Since the height of a tree corresponds to the worst-case access time, this means that the actual cost of a single operation can be high. However the amortized access cost of this worst case is logarithmic, O(log n).  Also, the expected access cost can be reduced to O(log n) by using a randomized variant.[3]
+The representation of splay trees can change even when they are accessed in a 'read-only' manner (i.e. by find operations).  This complicates the use of such splay trees in a multi-threaded environment.  Specifically, extra management is needed if multiple threads are allowed to perform find operations concurrently. This also makes them unsuitable for general use in purely functional programming, although even there they can be used in limited ways to implement priority queues.
+Finally, when the access pattern is random, the additional splaying overhead adds a significant constant factor to the cost compared to less-dynamic alternatives.
+
+Operations[edit]
+Splaying[edit]
+When a node x is accessed, a splay operation is performed on x to move it to the root. To perform a splay operation we carry out a sequence of splay steps, each of which moves x closer to the root. By performing a splay operation on the node of interest after every access, the recently accessed nodes are kept near the root and the tree remains roughly balanced, so that we achieve the desired amortized time bounds.
+Each particular step depends on three factors:
+
+Whether x is the left or right child of its parent node, p,
+whether p is the root or not, and if not
+whether p is the left or right child of its parent, g (the grandparent of x).
+It is important to remember to set gg (the great-grandparent of x) to now point to x after any splay operation. If gg is null, then x obviously is now the root and must be updated as such.
+There are three types of splay steps, each of which has two symmetric variants: left- and right-handed. For the sake of brevity, only one of these two is shown for each type. (In the following diagrams, circles indicate nodes of interest and triangles indicate sub-trees of arbitrary size.) The three types of splay steps are:
+Zig step: this step is done when p is the root. The tree is rotated on the edge between x and p.  Zig steps exist to deal with the parity issue, will be done only as the last step in a splay operation, and only when x has odd depth at the beginning of the operation.
+
+
+Zig-zig step: this step is done when p is not the root and x and p are either both right children or are both left children. The picture below shows the case where x and p are both left children. The tree is rotated on the edge joining p with its parent g, then rotated on the edge joining x with p. Note that zig-zig steps are the only thing that differentiate splay trees from the rotate to root method introduced by Allen and Munro[4] prior to the introduction of splay trees.
+
+
+Zig-zag step: this step is done when p is not the root and x is a right child and p is a left child or vice versa (x is left, p is right). The tree is rotated on the edge between p and x, and then rotated on the resulting edge between x and g.
+
+
+Join[edit]
+Given two trees S and T such that all elements of S are smaller than the elements of T, the following steps can be used to join them to a single tree:
+
+Splay the largest item in S. Now this item is in the root of S and has a null right child.
+Set the right child of the new root to T.
+Split[edit]
+Given a tree and an element x, return two new trees: one containing all elements less than or equal to x and the other containing all elements greater than x. This can be done in the following way:
+
+Splay x. Now it is in the root so the tree to its left contains all elements smaller than x and the tree to its right contains all element larger than x.
+Split the right subtree from the rest of the tree.
+Insertion[edit]
+To insert a value x into a splay tree:
+
+Insert x as with a normal binary search tree.
+when an item is inserted, a splay is performed.
+As a result, the newly inserted node x becomes the root of the tree.
+Alternatively:
+
+Use the split operation to split the tree at the value of x to two sub-trees: S and T.
+Create a new tree in which x is the root, S is its left sub-tree and T its right sub-tree.
+Deletion[edit]
+To delete a node x, use the same method as with a binary search tree:
+
+If x has two children:
+Swap its value with that of either the rightmost node of its left sub tree (its in-order predecessor) or the leftmost node of its right subtree (its in-order successor).
+Remove that node instead.
+In this way, deletion is reduced to the problem of removing a node with 0 or 1 children. Unlike a binary search tree, in a splay tree after deletion, we splay the parent of the removed node to the top of the tree.
+Alternatively:
+
+The node to be deleted is first splayed, i.e. brought to the root of the tree and then deleted.  leaves the tree with two sub trees.
+The two sub-trees are then joined using a "join" operation.
+Implementation and variants[edit]
+Splaying, as mentioned above, is performed during a second, bottom-up pass over the access path of a node. It is possible to record the access path during the first pass for use during the second, but that requires extra space during the access operation.  Another alternative is to keep a parent pointer in every node, which avoids the need for extra space during access operations but may reduce overall time efficiency because of the need to update those pointers.[1]
+Another method which can be used is based on the argument that we can restructure the tree on our way down the access path instead of making a second pass. This top-down splaying routine uses three sets of nodes â left tree, right tree and middle tree. The first two contain all items of original tree known to be less than or greater than current item respectively. The middle tree consists of the sub-tree rooted at the current node. These three sets are updated down the access path while keeping the splay operations in check. Another method, semisplaying, modifies the zig-zig case to reduce the amount of restructuring done in all operations.[1][5]
+Below there is an implementation of splay trees in C++, which uses pointers to represent each node on the tree. This implementation is based on bottom-up splaying version and uses the second method of deletion on a splay tree.  Also, unlike the above definition, this C++ version does not splay the tree on finds â it only splays on insertions and deletions, and the find operation, therefore, has linear time complexity.
+
+#include <functional>
+
+#ifndef SPLAY_TREE
+#define SPLAY_TREE
+
+template<typename T, typename Comp = std::less<T>>
+class splay_tree {
+private:
+  Comp comp;
+  unsigned long p_size;
+  
+  struct node {
+    node *left, *right;
+    node *parent;
+    T key;
+    node(const T& init = T()) : left(nullptr), right(nullptr), parent(nullptr), key(init) { }
+    ~node() {
+
+    }
+  } *root;
+  
+  void left_rotate(node *x) {
+    node *y = x->right;
+    if (y) {
+      x->right = y->left;
+      if (y->left) y->left->parent = x;
+      y->parent = x->parent;
+    }
+    
+    if (!x->parent) root = y;
+    else if (x == x->parent->left) x->parent->left = y;
+    else x->parent->right = y;
+    if (y) y->left = x;
+    x->parent = y;
+  }
+  
+  void right_rotate(node *x) {
+    node *y = x->left;
+    if (y) {
+      x->left = y->right;
+      if (y->right) y->right->parent = x;
+      y->parent = x->parent;
+    }
+    if (!x->parent) root = y;
+    else if (x == x->parent->left) x->parent->left = y;
+    else x->parent->right = y;
+    if (y) y->right = x;
+    x->parent = y;
+  }
+  
+  void splay(node *x) {
+    while (x->parent) {
+      if (!x->parent->parent) {
+        if (x->parent->left == x) right_rotate(x->parent);
+        else left_rotate(x->parent);
+      } else if (x->parent->left == x && x->parent->parent->left == x->parent) {
+        right_rotate(x->parent->parent);
+        right_rotate(x->parent);
+      } else if (x->parent->right == x && x->parent->parent->right == x->parent) {
+        left_rotate(x->parent->parent);
+        left_rotate(x->parent);
+      } else if (x->parent->left == x && x->parent->parent->right == x->parent) {
+        right_rotate(x->parent);
+        left_rotate(x->parent);
+      } else {
+        left_rotate(x->parent);
+        right_rotate(x->parent);
+      }
+    }
+  }
+  
+  void replace(node *u, node *v) {
+    if (!u->parent) root = v;
+    else if (u == u->parent->left) u->parent->left = v;
+    else u->parent->right = v;
+    if (v) v->parent = u->parent;
+  }
+  
+  node* subtree_minimum(node *u) {
+    while (u->left) u = u->left;
+    return u;
+  }
+  
+  node* subtree_maximum(node *u) {
+    while (u->right) u = u->right;
+    return u;
+  }
+public:
+  splay_tree() : root(nullptr), p_size(0) { }
+  
+  void insert(const T &key) {
+    node *z = root;
+    node *p = nullptr;
+    
+    while (z) {
+      p = z;
+      if (comp(z->key, key)) z = z->right;
+      else z = z->left;
+    }
+    
+    z = new node(key);
+    z->parent = p;
+    
+    if (!p) root = z;
+    else if (comp(p->key, z->key)) p->right = z;
+    else p->left = z;
+    
+    splay(z);
+    p_size++;
+  }
+  
+  node* find(const T &key) {
+    node *z = root;
+    while (z) {
+      if (comp(z->key, key)) z = z->right;
+      else if (comp(key, z->key)) z = z->left;
+      else return z;
+    }
+    return nullptr;
+  }
+        
+  void erase(const T &key) {
+    node *z = find(key);
+    if (!z) return;
+    
+    splay(z);
+    
+    if (!z->left) replace(z, z->right);
+    else if (!z->right) replace(z, z->left);
+    else {
+      node *y = subtree_minimum(z->right);
+      if (y->parent != z) {
+        replace(y, y->right);
+        y->right = z->right;
+        y->right->parent = y;
+      }
+      replace(z, y);
+      y->left = z->left;
+      y->left->parent = y;
+    }
+    
+    delete z;
+    p_size--;
+  }
+
+/* //the alternative implementation
+    void erase(const T &key) {
+        node *z = find(key);
+        if (!z) return;
+        
+        splay(z);
+        
+        node *s = z->left;
+        node *t = z->right;
+        delete z;
+        
+        node *sMax = NULL;
+        if (s) {
+            s->parent = NULL;
+            sMax = subtree_maximum(s);
+            splay(sMax);
+            root = sMax;
+        }
+        if (t) {
+            if (s)
+                sMax->right = t;
+            else
+                root = t;
+            t->parent = sMax;
+        }
+        
+        p_size--;
+    }
+*/
+  
+  const T& minimum() { return subtree_minimum(root)->key; }
+  const T& maximum() { return subtree_maximum(root)->key; }
+  
+  bool empty() const { return root == nullptr; }
+  unsigned long size() const { return p_size; }
+};
+
+#endif // SPLAY_TREE
+
+Analysis[edit]
+A simple amortized analysis of static splay trees can be carried out using the potential method. Define:
+
+size(r) = the number of nodes in the sub-tree rooted at node r (including r).
+rank(r) = log2(size(r)).
+Î¦ = the sum of the ranks of all the nodes in the tree.
+Î¦ will tend to be high for poorly balanced trees and low for well-balanced trees.
+To apply the potential method, we first calculate ÎÎ¦: the change in the potential caused by a splay operation. We check each case separately. Denote by rank' the rank function after the operation. x, p and g are the nodes affected by the rotation operation (see figures above).
+
+Zig step[edit]
+
+
+
+ÎÎ¦
+= rank'(p) â rank(p) + rank'(x) â rank(x)Â Â 
+
+[since only p and x change ranks]
+
+
+
+= rank'(p) â rank(x)
+
+[since rank'(x)=rank(p)]
+
+
+
+â¤ rank'(x) â rank(x)
+
+[since rank'(p)<rank'(x)]
+
+Zig-zig step[edit]
+
+
+ÎÎ¦
+= rank'(g) â rank(g) + rank'(p) â rank(p) + rank'(x) â rank(x)
+
+
+
+=  rank'(g) + rank'(p) â rank(p) â rank(x)Â Â 
+
+[since rank'(x)=rank(g)]
+
+
+
+â¤  rank'(g) + rank'(x) â 2 rank(x)
+
+[since rank(x)<rank(p) and rank'(x)>rank'(p)]
+
+
+
+â¤  3(rank'(x)ârank(x)) â 2
+
+[due to the concavity of the log function]
+
+Zig-zag step[edit]
+
+
+ÎÎ¦
+= rank'(g) â rank(g) + rank'(p) â rank(p) + rank'(x) â rank(x)
+
+
+
+â¤ rank'(g) + rank'(p) â 2 rank(x)Â Â 
+
+[since rank'(x)=rank(g) and rank(x)<rank(p)]
+
+
+
+â¤ 3(rank'(x)ârank(x)) â 2
+
+[due to the concavity of the log function]
+
+The amortized cost of any operation is ÎÎ¦ plus the actual cost. The actual cost of any zig-zig or zig-zag operation is 2 since there are two rotations to make. Hence:
+
+
+
+amortized-cost
+= cost + ÎÎ¦
+
+
+
+â¤ 3(rank'(x)ârank(x))
+
+When summed over the entire splay operation, this telescopes to 3(rank(root)ârank(x)) which is O(log n).  The Zig operation adds an amortized cost of 1, but there's at most one such operation.
+So now we know that the total amortized time for a sequence of m operations is:
+
+
+  
+    
+      
+        
+          T
+          
+            
+              a
+              m
+              o
+              r
+              t
+              i
+              z
+              e
+              d
+            
+          
+        
+        (
+        m
+        )
+        =
+        O
+        (
+        m
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle T_{\mathrm {amortized} }(m)=O(m\log n)}
+  
+
+To go from the amortized time to the actual time, we must add the decrease in potential from the initial state before any operation is done (Î¦i) to the final state after all operations are completed (Î¦f).
+
+
+  
+    
+      
+        
+          Î¦
+          
+            i
+          
+        
+        â
+        
+          Î¦
+          
+            f
+          
+        
+        =
+        
+          â
+          
+            x
+          
+        
+        
+          
+            
+              r
+              a
+              n
+              k
+            
+            
+              i
+            
+          
+          (
+          x
+          )
+          â
+          
+            
+              r
+              a
+              n
+              k
+            
+            
+              f
+            
+          
+          (
+          x
+          )
+        
+        =
+        O
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle \Phi _{i}-\Phi _{f}=\sum _{x}{\mathrm {rank} _{i}(x)-\mathrm {rank} _{f}(x)}=O(n\log n)}
+  
+
+where the last inequality comes from the fact that for every node x, the minimum rank is 0 and the maximum rank is log(n).
+Now we can finally bound the actual time:
+
+
+  
+    
+      
+        
+          T
+          
+            
+              a
+              c
+              t
+              u
+              a
+              l
+            
+          
+        
+        (
+        m
+        )
+        =
+        O
+        (
+        m
+        log
+        â¡
+        n
+        +
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle T_{\mathrm {actual} }(m)=O(m\log n+n\log n)}
+  
+
+Weighted analysis[edit]
+The above analysis can be generalized in the following way.
+
+Assign to each node r a weight w(r).
+Define size(r) = the sum of weights of nodes in the sub-tree rooted at node r (including r).
+Define rank(r) and Î¦ exactly as above.
+The same analysis applies and the amortized cost of a splaying operation is again:
+
+
+  
+    
+      
+        
+          r
+          a
+          n
+          k
+        
+        (
+        r
+        o
+        o
+        t
+        )
+        â
+        
+          r
+          a
+          n
+          k
+        
+        (
+        x
+        )
+        =
+        O
+        (
+        log
+        â¡
+        
+          W
+        
+        â
+        log
+        â¡
+        
+          w
+          (
+          x
+          )
+        
+        )
+        =
+        O
+        
+          (
+          
+            log
+            â¡
+            
+              
+                W
+                
+                  w
+                  (
+                  x
+                  )
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \mathrm {rank} (root)-\mathrm {rank} (x)=O(\log {W}-\log {w(x)})=O\left(\log {\frac {W}{w(x)}}\right)}
+  
+
+where W is the sum of all weights.
+The decrease from the initial to the final potential is bounded by:
+
+
+  
+    
+      
+        
+          Î¦
+          
+            i
+          
+        
+        â
+        
+          Î¦
+          
+            f
+          
+        
+        â¤
+        
+          â
+          
+            x
+            â
+            t
+            r
+            e
+            e
+          
+        
+        
+          log
+          â¡
+          
+            
+              W
+              
+                w
+                (
+                x
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle \Phi _{i}-\Phi _{f}\leq \sum _{x\in tree}{\log {\frac {W}{w(x)}}}}
+  
+
+since the maximum size of any single node is W and the minimum is w(x).
+Hence the actual time is bounded by:
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            
+              â
+              
+                x
+                â
+                s
+                e
+                q
+                u
+                e
+                n
+                c
+                e
+              
+            
+            
+              log
+              â¡
+              
+                
+                  W
+                  
+                    w
+                    (
+                    x
+                    )
+                  
+                
+              
+            
+            +
+            
+              â
+              
+                x
+                â
+                t
+                r
+                e
+                e
+              
+            
+            
+              log
+              â¡
+              
+                
+                  W
+                  
+                    w
+                    (
+                    x
+                    )
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(\sum _{x\in sequence}{\log {\frac {W}{w(x)}}}+\sum _{x\in tree}{\log {\frac {W}{w(x)}}}\right)}
+  
+
+Performance theorems[edit]
+There are several theorems and conjectures regarding the worst-case runtime for performing a sequence S of m accesses in a splay tree containing n elements.
+
+.mw-parser-output .math_theorem{margin:1em 2em;padding:0.5em 1em 0.4em;border:1px solid #aaa}@media(max-width:500px){.mw-parser-output .math_theorem{margin:1em 0em;padding:0.5em 0.5em 0.4em}}
+Balance TheoremÂ âÂ The cost of performing the sequence S is 
+  
+    
+      
+        O
+        
+          [
+          
+            m
+            log
+            â¡
+            n
+            +
+            n
+            log
+            â¡
+            n
+          
+          ]
+        
+      
+    
+    {\displaystyle O\left[m\log n+n\log n\right]}
+  
+.
+
+  .mw-parser-output .math_proof{border:thin solid #aaa;margin:1em 2em;padding:0.5em 1em 0.4em;text-align:justify}@media(max-width:500px){.mw-parser-output .math_proof{margin:1em 0;padding:0.5em 0.5em 0.4em}}Proof
+Take a constant weight, e.g. 
+  
+    
+      
+        w
+        (
+        x
+        )
+        =
+        1
+      
+    
+    {\displaystyle w(x)=1}
+  
+ for every node x. Then 
+  
+    
+      
+        W
+        =
+        n
+      
+    
+    {\displaystyle W=n}
+  
+.
+
+ 
+This theorem implies that splay trees perform as well as static balanced binary search trees on sequences of at least n accesses.[1]
+
+
+
+Static Optimality TheoremÂ âÂ Let 
+  
+    
+      
+        
+          q
+          
+            x
+          
+        
+      
+    
+    {\displaystyle q_{x}}
+  
+ be the number of times element x is accessed in S. If every element is accessed at least once, then the cost of performing S is 
+  
+    
+      
+        O
+        
+          [
+          
+            m
+            +
+            
+              â
+              
+                x
+                â
+                t
+                r
+                e
+                e
+              
+            
+            
+              q
+              
+                x
+              
+            
+            log
+            â¡
+            
+              
+                m
+                
+                  q
+                  
+                    x
+                  
+                
+              
+            
+          
+          ]
+        
+      
+    
+    {\displaystyle O\left[m+\sum _{x\in tree}q_{x}\log {\frac {m}{q_{x}}}\right]}
+  
+ 
+
+  Proof
+Let 
+  
+    
+      
+        w
+        (
+        x
+        )
+        =
+        
+          q
+          
+            x
+          
+        
+      
+    
+    {\displaystyle w(x)=q_{x}}
+  
+. Then 
+  
+    
+      
+        W
+        =
+        m
+      
+    
+    {\displaystyle W=m}
+  
+.
+
+ 
+This theorem implies that splay trees perform as well as an optimum static binary search tree on sequences of at least n accesses. They spend less time on the more frequent items.[1] Another way of stating the same result is that, on input sequences where the items are drawn independently at random from a non-uniform probability distribution on n items, the expected (average case) amortized cost of each access is proportional to the Shannon entropy of the distribution.[6]
+
+
+
+Static Finger TheoremÂ âÂ Assume that the items are numbered from 1 through n in ascending order. Let f be any fixed element (the 'finger'). Then the cost of performing S is 
+  
+    
+      
+        O
+        
+          [
+          
+            m
+            +
+            n
+            log
+            â¡
+            n
+            +
+            
+              â
+              
+                x
+                â
+                s
+                e
+                q
+                u
+                e
+                n
+                c
+                e
+              
+            
+            log
+            â¡
+            (
+            
+              |
+            
+            x
+            â
+            f
+            
+              |
+            
+            +
+            1
+            )
+          
+          ]
+        
+      
+    
+    {\displaystyle O\left[m+n\log n+\sum _{x\in sequence}\log(|x-f|+1)\right]}
+  
+.
+
+  Proof
+Let 
+  
+    
+      
+        w
+        (
+        x
+        )
+        =
+        1
+        
+          /
+        
+        (
+        
+          |
+        
+        x
+        â
+        f
+        
+          |
+        
+        +
+        1
+        
+          )
+          
+            2
+          
+        
+      
+    
+    {\displaystyle w(x)=1/(|x-f|+1)^{2}}
+  
+. Then 
+  
+    
+      
+        W
+        =
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle W=O(1)}
+  
+. The net potential drop is O (n log n) since the weight of any item is at least 
+  
+    
+      
+        1
+        
+          /
+        
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle 1/n^{2}}
+  
+.[1]
+
+
+
+
+Dynamic Finger TheoremÂ âÂ Assume that the 'finger' for each step accessing an element y is the element accessed in the previous step, x. The cost of performing S is 
+  
+    
+      
+        O
+        
+          [
+          
+            m
+            +
+            n
+            +
+            
+              â
+              
+                x
+                ,
+                y
+                â
+                s
+                e
+                q
+                u
+                e
+                n
+                c
+                e
+              
+              
+                m
+              
+            
+            log
+            â¡
+            (
+            
+              |
+            
+            y
+            â
+            x
+            
+              |
+            
+            +
+            1
+            )
+          
+          ]
+        
+      
+    
+    {\displaystyle O\left[m+n+\sum _{x,y\in sequence}^{m}\log(|y-x|+1)\right]}
+  
+.[7][8]
+
+
+
+Working Set TheoremÂ âÂ At any time during the sequence, let 
+  
+    
+      
+        t
+        (
+        x
+        )
+      
+    
+    {\displaystyle t(x)}
+  
+ be the number of distinct elements accessed before the previous time element x was accessed.  The cost of performing S is 
+  
+    
+      
+        O
+        
+          [
+          
+            m
+            +
+            n
+            log
+            â¡
+            n
+            +
+            
+              â
+              
+                x
+                â
+                s
+                e
+                q
+                u
+                e
+                n
+                c
+                e
+              
+            
+            log
+            â¡
+            (
+            t
+            (
+            x
+            )
+            +
+            1
+            )
+          
+          ]
+        
+      
+    
+    {\displaystyle O\left[m+n\log n+\sum _{x\in sequence}\log(t(x)+1)\right]}
+  
+ 
+
+  Proof
+Let 
+  
+    
+      
+        w
+        (
+        x
+        )
+        =
+        1
+        
+          /
+        
+        (
+        t
+        (
+        x
+        )
+        +
+        1
+        
+          )
+          
+            2
+          
+        
+      
+    
+    {\displaystyle w(x)=1/(t(x)+1)^{2}}
+  
+. Note that here the weights change during the sequence. However, the sequence of weights is still a permutation of 
+  
+    
+      
+        1
+        ,
+        
+          
+            
+              1
+              4
+            
+          
+        
+        ,
+        
+          
+            
+              1
+              9
+            
+          
+        
+        ,
+        â¯
+        ,
+        
+          
+            
+              1
+              
+                n
+                
+                  2
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle 1,{\tfrac {1}{4}},{\tfrac {1}{9}},\cdots ,{\tfrac {1}{n^{2}}}}
+  
+. So as before 
+  
+    
+      
+        W
+        =
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle W=O(1)}
+  
+. The net potential drop is O (n log n).
+
+ 
+This theorem is equivalent to splay trees having key-independent optimality.[1]
+
+
+
+Scanning TheoremÂ âÂ Also known as the Sequential Access Theorem or the Queue theorem.  Accessing the n elements of a splay tree in symmetric order takes O(n) time, regardless of the initial structure of the splay tree.[9] The tightest upper bound proven so far is 
+  
+    
+      
+        4.5
+        n
+      
+    
+    {\displaystyle 4.5n}
+  
+.[10]
+
+
+Dynamic optimality conjecture[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Optimal binary search tree
+.mw-parser-output .unsolved{margin:0 1em 1em;border:#ccc solid;padding:0.35em 0.35em 0.35em 2.2em;background-color:#eee;background-image:url("https://upload.wikimedia.org/wikipedia/commons/2/26/Question%2C_Web_Fundamentals.svg");background-position:top 50%left 0.35em;background-size:1.5em;background-repeat:no-repeat}@media(min-width:720px){.mw-parser-output .unsolved{float:right;max-width:25%}}.mw-parser-output .unsolved-label{font-weight:bold}.mw-parser-output .unsolved-body{margin:0.35em;font-style:italic}.mw-parser-output .unsolved-more{font-size:smaller}
+
+Unsolved problem in computer science:
+Do splay trees perform as well as any other binary search tree algorithm?
+(more unsolved problems in computer science)
+
+In addition to the proven performance guarantees for splay trees there is an unproven conjecture of great interest from the original Sleator and Tarjan paper.  This conjecture is known as the dynamic optimality conjecture and it basically claims that splay trees perform as well as any other binary search tree algorithm up to a constant factor.
+
+Dynamic Optimality Conjecture:[1] Let 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ be any binary search tree algorithm that accesses an element 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ by traversing the path from the root to 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ at a cost of 
+  
+    
+      
+        d
+        (
+        x
+        )
+        +
+        1
+      
+    
+    {\displaystyle d(x)+1}
+  
+, and that between accesses can make any rotations in the tree at a cost of 1 per rotation.  Let 
+  
+    
+      
+        A
+        (
+        S
+        )
+      
+    
+    {\displaystyle A(S)}
+  
+ be the cost for 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ to perform the sequence 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ of accesses.  Then the cost for a splay tree to perform the same accesses is 
+  
+    
+      
+        O
+        [
+        n
+        +
+        A
+        (
+        S
+        )
+        ]
+      
+    
+    {\displaystyle O[n+A(S)]}
+  
+.
+There are several corollaries of the dynamic optimality conjecture that remain unproven:
+
+Traversal Conjecture:[1] Let 
+  
+    
+      
+        
+          T
+          
+            1
+          
+        
+      
+    
+    {\displaystyle T_{1}}
+  
+ and 
+  
+    
+      
+        
+          T
+          
+            2
+          
+        
+      
+    
+    {\displaystyle T_{2}}
+  
+ be two splay trees containing the same elements.  Let 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ be the sequence obtained by visiting the elements in 
+  
+    
+      
+        
+          T
+          
+            2
+          
+        
+      
+    
+    {\displaystyle T_{2}}
+  
+ in preorder (i.e., depth first search order).  The total cost of performing the sequence 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ of accesses on 
+  
+    
+      
+        
+          T
+          
+            1
+          
+        
+      
+    
+    {\displaystyle T_{1}}
+  
+ is 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+.
+Deque Conjecture:[9][11][12] Let 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ be a sequence of 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ double-ended queue operations (push, pop, inject, eject).  Then the cost of performing 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ on a splay tree is 
+  
+    
+      
+        O
+        (
+        m
+        +
+        n
+        )
+      
+    
+    {\displaystyle O(m+n)}
+  
+.
+Split Conjecture:[5] Let 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ be any permutation of the elements of the splay tree.  Then the cost of deleting the elements in the order 
+  
+    
+      
+        S
+      
+    
+    {\displaystyle S}
+  
+ is 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+.
+Variants[edit]
+In order to reduce the number of restructuring operations, it is possible to replace the splaying with semi-splaying, in which an element is splayed only halfway towards the root.[1][13]
+Another way to reduce restructuring is to do full splaying, but only in some of the access operations â only when the access path is longer than a threshold, or only in the first m access operations.[1]
+
+See also[edit]
+AVL tree
+B-tree
+Finger tree
+Geometry of binary search trees
+Iacono's working set structure
+Link/cut tree
+List of data structures
+Scapegoat tree
+Splaysort, a sorting algorithm using splay trees
+T-tree
+Treap
+Tree rotation
+Trees
+Zipper (data structure)
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d e f g h i j k Sleator & Tarjan 1985.
+
+^ Goodrich, Tamassia & Goldwasser 2014.
+
+^ Albers & Karpinski 2002.
+
+^ Allen & Munro 1978.
+
+^ Jump up to: a b Lucas 1991.
+
+^ Grinberg et al. (1995).
+
+^ Cole et al. 2000.
+
+^ Cole 2000.
+
+^ Jump up to: a b Tarjan 1985.
+
+^ Elmasry 2004.
+
+^ Pettie 2008.
+
+^ Sundar 1992.
+
+^ Brinkmann, Degraer & De Loof 2009.
+
+
+References[edit]
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Albers, Susanne; Karpinski, Marek (28 February 2002). "Randomized Splay Trees: Theoretical and Experimental Results" (PDF). Information Processing Letters. 81 (4): 213â221. doi:10.1016/s0020-0190(01)00230-7.
+Allen, Brian; Munro, Ian (October 1978). "Self-organizing binary search trees". Journal of the ACM. 25 (4): 526â535. doi:10.1145/322092.322094. S2CIDÂ 15967344.
+Brinkmann, Gunnar; Degraer, Jan; De Loof, Karel (January 2009). "Rehabilitation of an unloved child: semi-splaying" (PDF). Software: Practice and Experience. 39 (1): 33â45. CiteSeerXÂ 10.1.1.84.790. doi:10.1002/spe.v39:1. hdl:11382/102133. The results show that semi-splaying, which was introduced in the same paper as splaying, performs better than splaying under almost all possible conditions. This makes semi-splaying a good alternative for all applications where normally splaying would be applied. The reason why splaying became so prominent while semi-splaying is relatively unknown and much less studied is hard to understand.
+Cole, Richard; Mishra, Bud; Schmidt, Jeanette; Siegel, Alan (January 2000). "On the Dynamic Finger Conjecture for Splay Trees. Part I: Splay Sorting log n-Block Sequences". SIAM Journal on Computing. 30 (1): 1â43. CiteSeerXÂ 10.1.1.36.4558. doi:10.1137/s0097539797326988.
+Cole, Richard (January 2000). "On the Dynamic Finger Conjecture for Splay Trees. Part II: The Proof". SIAM Journal on Computing. 30 (1): 44â85. CiteSeerXÂ 10.1.1.36.2713. doi:10.1137/S009753979732699X.
+Elmasry, Amr (April 2004). "On the sequential access theorem and Deque conjecture for splay trees". Theoretical Computer Science. 314 (3): 459â466. doi:10.1016/j.tcs.2004.01.019.
+Goodrich, Michael; Tamassia, Roberto; Goldwasser, Michael (2014). Data Structures and Algorithms in Java (6Â ed.). Wiley. p.Â 506. ISBNÂ 978-1-118-77133-4.
+Grinberg, Dennis; Rajagopalan, Sivaramakrishnan; Venkatesan, Ramarathnam; Wei, Victor K. (1995). "Splay trees for data compression".  In Clarkson, Kenneth L. (ed.). Proceedings of the Sixth Annual ACM-SIAM Symposium on Discrete Algorithms, 22â24 January 1995. San Francisco, California, USA. ACM/SIAM. pp.Â 522â530. Average depth of access in a splay tree is proportional to the entropy.
+Knuth, Donald (1997). The Art of Computer Programming. Vol.Â 3: Sorting and Searching (3rdÂ ed.). Addison-Wesley. p.Â 478. ISBNÂ 0-201-89685-0.
+Lucas, Joan M. (1991). "On the Competitiveness of Splay Trees: Relations to the Union-Find Problem". On-line Algorithms: Proceedings of a DIMACS Workshop, February 11â13, 1991. Series in Discrete Mathematics and Theoretical Computer Science. Vol.Â 7. Center for Discrete Mathematics and Theoretical Computer Science. pp.Â 95â124. ISBNÂ 0-8218-7111-0.
+Pettie, Seth (2008). Splay Trees, Davenport-Schinzel Sequences, and the Deque Conjecture (PDF). Proc. 19th ACM-SIAM Symposium on Discrete Algorithms. Vol.Â 0707. pp.Â 1115â1124. arXiv:0707.2160. Bibcode:2007arXiv0707.2160P.
+Sleator, Daniel D.; Tarjan, Robert E. (1985). "Self-Adjusting Binary Search Trees" (PDF). Journal of the ACM. 32 (3): 652â686. doi:10.1145/3828.3835. S2CIDÂ 1165848.
+Sundar, Rajamani (1992). "On the Deque conjecture for the splay algorithm". Combinatorica. 12 (1): 95â124. doi:10.1007/BF01191208. S2CIDÂ 27422556.
+Tarjan, Robert E. (1985). "Sequential access in splay trees takes linear time". Combinatorica. 5 (4): 367â378. doi:10.1007/BF02579253. S2CIDÂ 34757821.
+External links[edit]
+NIST's Dictionary of Algorithms and Data Structures: Splay Tree
+Implementations in C and Java (by Daniel Sleator)
+Pointers to splay tree visualizations
+Fast and efficient implementation of Splay trees
+Top-Down Splay Tree Java implementation
+Zipper Trees
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+showvteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Splay_tree&oldid=1066303634"
+		Categories: Binary treesSearch treesAmortized data structuresHidden categories: Articles with short descriptionShort description is different from WikidataUse dmy dates from January 2022CS1: long volume value
+	

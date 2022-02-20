@@ -1,0 +1,280 @@
+
+Title:
+Quickselect
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Quickselect"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (August 2013) (Learn how and when to remove this template message)
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}QuickselectAnimated visualization of the quickselect algorithm. Selecting the 22nd smallest value.ClassSelection algorithmData structureArrayWorst-case performanceÐ(n2)Best-case performance
+  
+    
+      
+        Î©
+      
+    
+    {\displaystyle \Omega }
+  
+(n)Average performance
+  
+    
+      
+        Î
+      
+    
+    {\displaystyle \Theta }
+  
+(n)
+In computer science, quickselect is a selection algorithm to find the kth smallest element in an unordered list. It is related to the quicksort sorting algorithm. Like quicksort, it was developed by Tony Hoare, and thus is also known as Hoare's selection algorithm.[1] Like quicksort, it is efficient in practice and has good average-case performance, but has poor worst-case performance. Quickselect and its variants are the selection algorithms most often used in efficient real-world implementations. 
+Quickselect uses the same overall approach as quicksort, choosing one element as a pivot and partitioning the data in two based on the pivot, accordingly as less than or greater than the pivot. However, instead of recursing into both sides, as in quicksort, quickselect only recurses into one side â the side with the element it is searching for. This reduces the average complexity from 
+  
+    
+      
+        Î
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n\log n)}
+  
+ to 
+  
+    
+      
+        Î
+        (
+        n
+        )
+      
+    
+    {\displaystyle \Theta (n)}
+  
+, with a worst case of 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+.
+As with quicksort, quickselect is generally implemented as an in-place algorithm, and beyond selecting the kth element, it also partially sorts the data. See selection algorithm for further discussion of the connection with sorting.
+
+Contents
+
+1 Algorithm
+2 Time complexity
+3 Variants
+4 See also
+5 References
+6 External links
+
+
+
+Algorithm[edit]
+In quicksort, there is a subprocedure called partition that can, in linear time, group a list (ranging from indices left to right) into two parts: those less than a certain element, and those greater than or equal to the element. Here is pseudocode that performs a partition about the element list[pivotIndex]:
+
+function partition(list, left, right, pivotIndex) is
+    pivotValueÂ := list[pivotIndex]
+    swap list[pivotIndex] and list[right]  // Move pivot to end
+    storeIndexÂ := left
+    for i from left to right â 1 do
+        if list[i] < pivotValue then
+            swap list[storeIndex] and list[i]
+            increment storeIndex
+    swap list[right] and list[storeIndex]  // Move pivot to its final place
+    return storeIndex
+
+This is known as the Lomuto partition scheme, which is simpler but less efficient than Hoare's original partition scheme.
+In quicksort, we recursively sort both branches, leading to best-case 
+  
+    
+      
+        Î©
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle \Omega (n\log n)}
+  
+ time. However, when doing selection, we already know which partition our desired element lies in, since the pivot is in its final sorted position, with all those preceding it in an unsorted order and all those following it in an unsorted order. Therefore, a single recursive call locates the desired element in the correct partition, and we build upon this for quickselect:
+
+// Returns the k-th smallest element of list within left..right inclusive
+// (i.e. left <= k <= right).
+function select(list, left, right, k) is
+    if left = right then   // If the list contains only one element,
+        return list[left]  // return that element
+    pivotIndex Â := ...     // select a pivotIndex between left and right,
+                           // e.g., left + floor(rand()Â % (right â left + 1))
+    pivotIndex Â := partition(list, left, right, pivotIndex)
+    // The pivot is in its final sorted position
+    if k = pivotIndex then
+        return list[k]
+    else if k < pivotIndex then
+        return select(list, left, pivotIndex â 1, k)
+    else
+        return select(list, pivotIndex + 1, right, k) 
+
+Note the resemblance to quicksort: just as the minimum-based selection algorithm is a partial selection sort, this is a partial quicksort, generating and partitioning only 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(\log n)}
+  
+ of its 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ partitions. This simple procedure has expected linear performance, and, like quicksort, has quite good performance in practice. It is also an in-place algorithm, requiring only constant memory overhead if tail call optimization is available, or if eliminating the tail recursion with a loop:
+function select(list, left, right, k) is
+    loop
+        if left = right then
+            return list[left]
+        pivotIndexÂ := ...     // select pivotIndex between left and right
+        pivotIndexÂ := partition(list, left, right, pivotIndex)
+        if k = pivotIndex then
+            return list[k]
+        else if k < pivotIndex then
+            rightÂ := pivotIndex â 1
+        else
+            leftÂ := pivotIndex + 1
+
+Time complexity[edit]
+Like quicksort, quickselect has good average performance, but is sensitive to the pivot that is chosen. If good pivots are chosen, meaning ones that consistently decrease the search set by a given fraction, then the search set decreases in size exponentially and by induction (or summing the geometric series) one sees that performance is linear, as each step is linear and the overall time is a constant times this (depending on how quickly the search set reduces). However, if bad pivots are consistently chosen, such as decreasing by only a single element each time, then worst-case performance is quadratic: 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+. This occurs for example in searching for the maximum element of a set, using the first element as the pivot, and having sorted data.
+
+Variants[edit]
+The easiest solution is to choose a random pivot, which yields almost certain linear time. Deterministically, one can use median-of-3 pivot strategy (as in the quicksort), which yields linear performance on partially sorted data, as is common in the real world. However, contrived sequences can still cause worst-case complexity; David Musser describes a "median-of-3 killer" sequence that allows an attack against that strategy, which was one motivation for his introselect algorithm.
+One can assure linear performance even in the worst case by using a more sophisticated pivot strategy; this is done in the median of medians algorithm. However, the overhead of computing the pivot is high, and thus this is generally not used in practice. One can combine basic quickselect with median of medians as fallback to get both fast average case performance and linear worst-case performance; this is done in introselect.
+Finer computations of the average time complexity yield a worst case of 
+  
+    
+      
+        n
+        (
+        2
+        +
+        2
+        log
+        â¡
+        2
+        +
+        o
+        (
+        1
+        )
+        )
+        â¤
+        3.4
+        n
+        +
+        o
+        (
+        n
+        )
+      
+    
+    {\displaystyle n(2+2\log 2+o(1))\leq 3.4n+o(n)}
+  
+ for random pivots (in the case of the median; other k are faster).[2] The constant can be improved to 3/2 by a more complicated pivot strategy, yielding the FloydâRivest algorithm, which has average complexity of 
+  
+    
+      
+        1.5
+        n
+        +
+        Î
+        (
+        
+          n
+          
+            1
+            
+              /
+            
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle 1.5n+\Theta (n^{1/2})}
+  
+ for median, with other k being faster.
+
+See also[edit]
+FloydâRivest algorithm
+Introselect
+Median of medians
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Hoare, C. A. R. (1961). "Algorithm 65: Find". Comm. ACM. 4 (7): 321â322. doi:10.1145/366622.366647.
+
+^ Blum-style analysis of Quickselect, David Eppstein, October 9, 2007.
+
+
+External links[edit]
+"qselect", Quickselect algorithm in Matlab,  Manolis Lourakis
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Quickselect&oldid=1066151481"
+		Categories: Selection algorithmsHidden categories: Articles needing additional references from August 2013All articles needing additional references
+	

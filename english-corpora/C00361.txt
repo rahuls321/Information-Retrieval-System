@@ -1,0 +1,837 @@
+
+Title:
+Residual neural network
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  Canonical form of a residual neural network. A layer âÂ Â âÂ 1 is skipped over activation from âÂ âÂ 2.
+A residual neural network (ResNet) is an artificial neural network (ANN) of a kind that builds on constructs known from pyramidal cells in the cerebral cortex. Residual neural networks do this by utilizing skip connections, or shortcuts to jump over some layers. Typical ResNet models are implemented with double- or triple- layer skips that contain nonlinearities (ReLU) and batch normalization in between.[1] An additional weight matrix may be used to learn the skip weights; these models are known as HighwayNets.[2] Models with several parallel skips are referred to as DenseNets.[3] In the context of residual neural networks, a non-residual network may be described as a plain network.
+
+  A reconstruction of a pyramidal cell. Soma and dendrites are labeled in red, axon arbor in blue. (1) Soma, (2) Basal dendrite, (3) Apical dendrite, (4) Axon, (5) Collateral axon.
+There are two main reasons to add skip connections: to avoid the problem of vanishing gradients, or to mitigate the Degradation (accuracy saturation) problem; where adding more layers to a suitably deep model leads to higher training error.[1] During training, the weights adapt to mute the upstream layer[clarification needed], and amplify the previously-skipped layer. In the simplest case, only the weights for the adjacent layer's connection are adapted, with no explicit weights for the upstream layer. This works best when a single nonlinear layer is stepped over, or when the intermediate layers are all linear. If not, then an explicit weight matrix should be learned for the skipped connection (a HighwayNet should be used).
+Skipping effectively simplifies the network, using fewer layers in the initial training stages[clarification needed]. This speeds learning by reducing the impact of vanishing gradients, as there are fewer layers to propagate through. The network then gradually restores the skipped layers as it learns the feature space. Towards the end of training, when all layers are expanded, it stays closer to the manifold[clarification needed] and thus learns faster. A neural network without residual parts explores more of the feature space. This makes it more vulnerable to perturbations that cause it to leave the manifold, and necessitates extra training data to recover.
+
+Contents
+
+1 Biological analogue
+2 Forward propagation
+3 Backward propagation
+4 Notes
+5 References
+
+
+
+Biological analogue[edit]
+The brain has structures similar to residual nets, as cortical layer VI neurons get input from layer I, skipping intermediary layers.[4] In the figure this compares to signals from the apical dendrite (3) skipping over layers, while the basal dendrite (2) collects signals from the previous and/or same layer.[note 1][5] Similar structures exists for other layers.[6] How many layers in the cerebral cortex compare to layers in an artificial neural network is not clear, nor whether every area in the cerebral cortex exhibits the same structure, but over large areas they appear similar. There is no evidence of anything like backpropagation taking place in the brain and existence of global âteaching signalâ or iterative optimization in animal brain is not supported by neurophysiological evidence.
+
+Forward propagation[edit]
+Given a weight matrix 
+  
+    
+      
+        
+          W
+          
+            â
+            â
+            1
+            ,
+            â
+          
+        
+      
+    
+    {\textstyle W^{\ell -1,\ell }}
+  
+ for connection weights from layer 
+  
+    
+      
+        â
+        â
+        1
+      
+    
+    {\textstyle \ell -1}
+  
+ to 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+, and a weight matrix 
+  
+    
+      
+        
+          W
+          
+            â
+            â
+            2
+            ,
+            â
+          
+        
+      
+    
+    {\textstyle W^{\ell -2,\ell }}
+  
+ for connection weights from layer 
+  
+    
+      
+        â
+        â
+        2
+      
+    
+    {\textstyle \ell -2}
+  
+ to 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+, then the forward propagation through the activation function would be (aka HighwayNets)
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  a
+                  
+                    â
+                  
+                
+              
+              
+                
+                :=
+                
+                  g
+                
+                (
+                
+                  W
+                  
+                    â
+                    â
+                    1
+                    ,
+                    â
+                  
+                
+                â
+                
+                  a
+                  
+                    â
+                    â
+                    1
+                  
+                
+                +
+                
+                  b
+                  
+                    â
+                  
+                
+                +
+                
+                  W
+                  
+                    â
+                    â
+                    2
+                    ,
+                    â
+                  
+                
+                â
+                
+                  a
+                  
+                    â
+                    â
+                    2
+                  
+                
+                )
+              
+            
+            
+              
+              
+                
+                :=
+                
+                  g
+                
+                (
+                
+                  Z
+                  
+                    â
+                  
+                
+                +
+                
+                  W
+                  
+                    â
+                    â
+                    2
+                    ,
+                    â
+                  
+                
+                â
+                
+                  a
+                  
+                    â
+                    â
+                    2
+                  
+                
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}a^{\ell }&:=\mathbf {g} (W^{\ell -1,\ell }\cdot a^{\ell -1}+b^{\ell }+W^{\ell -2,\ell }\cdot a^{\ell -2})\\&:=\mathbf {g} (Z^{\ell }+W^{\ell -2,\ell }\cdot a^{\ell -2})\end{aligned}}}
+  
+
+where 
+
+
+  
+    
+      
+        
+          a
+          
+            â
+          
+        
+      
+    
+    {\textstyle a^{\ell }}
+  
+ the activations (outputs) of neurons in layer 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+,
+
+  
+    
+      
+        
+          g
+        
+      
+    
+    {\textstyle \mathbf {g} }
+  
+ the activation function for layer 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+,
+
+  
+    
+      
+        
+          W
+          
+            â
+            â
+            1
+            ,
+            â
+          
+        
+      
+    
+    {\textstyle W^{\ell -1,\ell }}
+  
+ the weight matrix for neurons between layer 
+  
+    
+      
+        â
+        â
+        1
+      
+    
+    {\textstyle \ell -1}
+  
+ and 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+, and
+
+  
+    
+      
+        
+          Z
+          
+            â
+          
+        
+        =
+        
+          W
+          
+            â
+            â
+            1
+            ,
+            â
+          
+        
+        â
+        
+          a
+          
+            â
+            â
+            1
+          
+        
+        +
+        
+          b
+          
+            â
+          
+        
+      
+    
+    {\textstyle Z^{\ell }=W^{\ell -1,\ell }\cdot a^{\ell -1}+b^{\ell }}
+  
+
+Absent an explicit matrix 
+  
+    
+      
+        
+          W
+          
+            â
+            â
+            2
+            ,
+            â
+          
+        
+      
+    
+    {\textstyle W^{\ell -2,\ell }}
+  
+ (aka ResNets), forward propagation through the activation function simplifies to
+
+
+  
+    
+      
+        
+          a
+          
+            â
+          
+        
+        :=
+        
+          g
+        
+        (
+        
+          Z
+          
+            â
+          
+        
+        +
+        
+          a
+          
+            â
+            â
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle a^{\ell }:=\mathbf {g} (Z^{\ell }+a^{\ell -2})}
+  
+
+Another way to formulate this is to substitute an identity matrix for 
+  
+    
+      
+        
+          W
+          
+            â
+            â
+            2
+            ,
+            â
+          
+        
+      
+    
+    {\textstyle W^{\ell -2,\ell }}
+  
+, but that is only valid when the dimensions match. This is somewhat confusingly called an identity block, which means that the activations from layer 
+  
+    
+      
+        â
+        â
+        2
+      
+    
+    {\textstyle \ell -2}
+  
+ are passed to layer 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+ without weighting.
+In the cerebral cortex such forward skips are done for several layers. Usually all forward skips start from the same layer, and successively connect to later layers. In the general case this will be expressed as (aka DenseNets)
+
+
+  
+    
+      
+        
+          a
+          
+            â
+          
+        
+        :=
+        
+          g
+        
+        
+          (
+          
+            
+              Z
+              
+                â
+              
+            
+            +
+            
+              â
+              
+                k
+                =
+                2
+              
+              
+                K
+              
+            
+            
+              W
+              
+                â
+                â
+                k
+                ,
+                â
+              
+            
+            â
+            
+              a
+              
+                â
+                â
+                k
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle a^{\ell }:=\mathbf {g} \left(Z^{\ell }+\sum _{k=2}^{K}W^{\ell -k,\ell }\cdot a^{\ell -k}\right)}
+  
+.
+Backward propagation[edit]
+During backpropagation learning for the normal path
+
+
+  
+    
+      
+        Î
+        
+          w
+          
+            â
+            â
+            1
+            ,
+            â
+          
+        
+        :=
+        â
+        Î·
+        
+          
+            
+              â
+              
+                E
+                
+                  â
+                
+              
+            
+            
+              â
+              
+                w
+                
+                  â
+                  â
+                  1
+                  ,
+                  â
+                
+              
+            
+          
+        
+        =
+        â
+        Î·
+        
+          a
+          
+            â
+            â
+            1
+          
+        
+        â
+        
+          Î´
+          
+            â
+          
+        
+      
+    
+    {\displaystyle \Delta w^{\ell -1,\ell }:=-\eta {\frac {\partial E^{\ell }}{\partial w^{\ell -1,\ell }}}=-\eta a^{\ell -1}\cdot \delta ^{\ell }}
+  
+
+and for the skip paths (nearly identical)
+
+
+  
+    
+      
+        Î
+        
+          w
+          
+            â
+            â
+            2
+            ,
+            â
+          
+        
+        :=
+        â
+        Î·
+        
+          
+            
+              â
+              
+                E
+                
+                  â
+                
+              
+            
+            
+              â
+              
+                w
+                
+                  â
+                  â
+                  2
+                  ,
+                  â
+                
+              
+            
+          
+        
+        =
+        â
+        Î·
+        
+          a
+          
+            â
+            â
+            2
+          
+        
+        â
+        
+          Î´
+          
+            â
+          
+        
+      
+    
+    {\displaystyle \Delta w^{\ell -2,\ell }:=-\eta {\frac {\partial E^{\ell }}{\partial w^{\ell -2,\ell }}}=-\eta a^{\ell -2}\cdot \delta ^{\ell }}
+  
+.
+In both cases 
+
+
+  
+    
+      
+        Î·
+      
+    
+    {\textstyle \eta }
+  
+ a learning rate (
+  
+    
+      
+        Î·
+        <
+        0
+        )
+      
+    
+    {\textstyle \eta <0)}
+  
+,
+
+  
+    
+      
+        
+          Î´
+          
+            â
+          
+        
+      
+    
+    {\textstyle \delta ^{\ell }}
+  
+ the error signal of neurons at layer 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+, and
+
+  
+    
+      
+        
+          a
+          
+            i
+          
+          
+            â
+          
+        
+      
+    
+    {\textstyle a_{i}^{\ell }}
+  
+ the activation of neurons at layer 
+  
+    
+      
+        â
+      
+    
+    {\textstyle \ell }
+  
+.
+If the skip path has fixed weights (e.g. the identity matrix, as above), then they are not updated. If they can be updated, the rule is an ordinary backpropagation update rule.
+In the general case there can be 
+  
+    
+      
+        K
+      
+    
+    {\textstyle K}
+  
+ skip path weight matrices, thus
+
+
+  
+    
+      
+        Î
+        
+          w
+          
+            â
+            â
+            k
+            ,
+            â
+          
+        
+        :=
+        â
+        Î·
+        
+          
+            
+              â
+              
+                E
+                
+                  â
+                
+              
+            
+            
+              â
+              
+                w
+                
+                  â
+                  â
+                  k
+                  ,
+                  â
+                
+              
+            
+          
+        
+        =
+        â
+        Î·
+        
+          a
+          
+            â
+            â
+            k
+          
+        
+        â
+        
+          Î´
+          
+            â
+          
+        
+      
+    
+    {\displaystyle \Delta w^{\ell -k,\ell }:=-\eta {\frac {\partial E^{\ell }}{\partial w^{\ell -k,\ell }}}=-\eta a^{\ell -k}\cdot \delta ^{\ell }}
+  
+
+As the learning rules are similar, the weight matrices can be merged and learned in the same step.
+
+Notes[edit]
+
+^ Some research indicates that there are additional structures here, so this explanation is somewhat simplified.
+
+
+References[edit]
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}He, Kaiming; Zhang, Xiangyu; Ren, Shaoqing; Sun, Jian (2016). Deep Residual Learning for Image Recognition. 2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR). Las Vegas, NV, USA: IEEE. pp.Â 770â778. arXiv:1512.03385. doi:10.1109/CVPR.2016.90. ISBNÂ 978-1-4673-8851-1.
+
+^ Srivastava, Rupesh Kumar; Greff, Klaus; Schmidhuber, JÃ¼rgen (2015-05-02). "Highway Networks". arXiv:1505.00387 [cs.LG].
+
+^ Huang, Gao; Liu, Zhuang; Van Der Maaten, Laurens; Weinberger, Kilian Q. (2017). Densely Connected Convolutional Networks. 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR). Honolulu, HI: IEEE. pp.Â 2261â2269. arXiv:1608.06993. doi:10.1109/CVPR.2017.243. ISBNÂ 978-1-5386-0457-1.
+
+^ Thomson, AM (2010). "Neocortical layer 6, a review". Frontiers in Neuroanatomy. 4: 13. doi:10.3389/fnana.2010.00013. PMCÂ 2885865. PMIDÂ 20556241.
+
+^ Winterer, Jochen; Maier, Nikolaus; Wozny, Christian; Beed, Prateep; Breustedt, JÃ¶rg; Evangelista, Roberta; Peng, Yangfan; DâAlbis, Tiziano; Kempter, Richard (2017). "Excitatory Microcircuits within Superficial Layers of the Medial Entorhinal Cortex". Cell Reports. 19 (6): 1110â1116. doi:10.1016/j.celrep.2017.04.041. PMIDÂ 28494861.
+
+^ Fitzpatrick, David (1996-05-01). "The Functional Organization of Local Circuits in Visual Cortex: Insights from the Study of Tree Shrew Striate Cortex". Cerebral Cortex. 6 (3): 329â341. doi:10.1093/cercor/6.3.329. ISSNÂ 1047-3211. PMIDÂ 8670661.
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Residual_neural_network&oldid=1068898324"
+		Categories: Computational statisticsArtificial neural networksComputational neuroscienceHidden categories: Wikipedia articles needing clarification from August 2019Wikipedia articles needing clarification from January 2020Wikipedia articles needing clarification from March 2019
+	

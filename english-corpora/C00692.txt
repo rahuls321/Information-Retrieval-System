@@ -1,0 +1,285 @@
+
+Title:
+Recursive descent parser
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Algorithm
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (February 2009) (Learn how and when to remove this template message)
+In computer science, a recursive descent parser is a kind of top-down parser built from a set of mutually recursive procedures (or a non-recursive equivalent) where each such procedure implements one of the nonterminals of the grammar. Thus the structure of the resulting program closely mirrors that of the grammar it recognizes.[1]
+A predictive parser is a recursive descent parser that does not require backtracking.[2]  Predictive parsing is possible only for the class of LL(k) grammars, which are the context-free grammars for which there exists some positive integer k that allows a recursive descent parser to decide which production to use by examining only the next k tokens of input. The LL(k) grammars therefore exclude all ambiguous grammars, as well as all grammars that contain left recursion.  Any context-free grammar can be transformed into an equivalent grammar that has no left recursion, but removal of left recursion does not always yield an LL(k) grammar. A predictive parser runs in linear time.
+Recursive descent with backtracking is a technique that determines which production to use by trying each production in turn.  Recursive descent with backtracking is not limited to LL(k) grammars, but is not guaranteed to terminate unless the grammar is LL(k).  Even when they terminate, parsers that use recursive descent with backtracking may require exponential time.
+Although predictive parsers are widely used, and are frequently chosen if writing a parser by hand, programmers often prefer to use a table-based parser produced by a parser generator[citation needed], either for an LL(k) language or using an alternative parser, such as LALR or LR. This is particularly the case if a grammar is not in LL(k) form, as transforming the grammar to LL to make it suitable for predictive parsing is involved. Predictive parsers can also be automatically generated, using tools like ANTLR.
+Predictive parsers can be depicted using transition diagrams for each non-terminal symbol where the edges between the initial and the final states are labelled by the symbols (terminals and non-terminals) of the right side of the production rule.[3]
+
+Contents
+
+1 Example parser
+
+1.1 C implementation
+
+
+2 Examples
+3 See also
+4 References
+
+4.1 General references
+
+
+5 External links
+
+
+
+Example parser[edit]
+The following EBNF-like grammar (for Niklaus Wirth's PL/0 programming language, from Algorithms + Data Structures = Programs) is in LL(1) form:
+
+ program = block "." .
+ 
+ block =
+     ["const" ident "=" num {"," ident "=" num} ";"]
+     ["var" ident {"," ident} ";"]
+     {"procedure" ident ";" block ";"} statement .
+ 
+ statement =
+     ident ":=" expression
+     | "call" ident
+     | "begin" statement {";" statement } "end"
+     | "if" condition "then" statement
+     | "while" condition "do" statement .
+ 
+ condition =
+     "odd" expression
+     | expression ("="|"#"|"<"|"<="|">"|">=") expression .
+ 
+ expression = ["+"|"-"] term {("+"|"-") term} .
+ 
+ term = factor {("*"|"/") factor} .
+ 
+ factor =
+     ident
+     | number
+     | "(" expression ")" .
+
+Terminals are expressed in quotes.  Each nonterminal is defined by a rule in the grammar, except for ident and number, which are assumed to be implicitly defined.
+
+C implementation[edit]
+What follows is an implementation of a recursive descent parser for the above language in C. The parser reads in source code, and exits with an error message if the code fails to parse, exiting silently if the code parses correctly.
+Notice how closely the predictive parser below mirrors the grammar above.  There is a procedure for each nonterminal in the grammar.  Parsing descends in a top-down manner, until the final nonterminal has been processed.  The program fragment depends on a global variable, sym, which contains the current symbol from the input, and the function nextsym, which updates sym when called.
+The implementations of the functions nextsym and error are omitted for simplicity.
+
+typedef enum {ident, number, lparen, rparen, times, slash, plus,
+    minus, eql, neq, lss, leq, gtr, geq, callsym, beginsym, semicolon,
+    endsym, ifsym, whilesym, becomes, thensym, dosym, constsym, comma,
+    varsym, procsym, period, oddsym} Symbol;
+
+Symbol sym;
+void nextsym(void);
+void error(const char msg[]);
+
+int accept(Symbol s) {
+    if (sym == s) {
+        nextsym();
+        return 1;
+    }
+    return 0;
+}
+
+int expect(Symbol s) {
+    if (accept(s))
+        return 1;
+    error("expect: unexpected symbol");
+    return 0;
+}
+
+void factor(void) {
+    if (accept(ident)) {
+        ;
+    } else if (accept(number)) {
+        ;
+    } else if (accept(lparen)) {
+        expression();
+        expect(rparen);
+    } else {
+        error("factor: syntax error");
+        nextsym();
+    }
+}
+
+void term(void) {
+    factor();
+    while (sym == times || sym == slash) {
+        nextsym();
+        factor();
+    }
+}
+
+void expression(void) {
+    if (sym == plus || sym == minus)
+        nextsym();
+    term();
+    while (sym == plus || sym == minus) {
+        nextsym();
+        term();
+    }
+}
+
+void condition(void) {
+    if (accept(oddsym)) {
+        expression();
+    } else {
+        expression();
+        if (sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq) {
+            nextsym();
+            expression();
+        } else {
+            error("condition: invalid operator");
+            nextsym();
+        }
+    }
+}
+
+void statement(void) {
+    if (accept(ident)) {
+        expect(becomes);
+        expression();
+    } else if (accept(callsym)) {
+        expect(ident);
+    } else if (accept(beginsym)) {
+        do {
+            statement();
+        } while (accept(semicolon));
+        expect(endsym);
+    } else if (accept(ifsym)) {
+        condition();
+        expect(thensym);
+        statement();
+    } else if (accept(whilesym)) {
+        condition();
+        expect(dosym);
+        statement();
+    } else {
+        error("statement: syntax error");
+        nextsym();
+    }
+}
+
+void block(void) {
+    if (accept(constsym)) {
+        do {
+            expect(ident);
+            expect(eql);
+            expect(number);
+        } while (accept(comma));
+        expect(semicolon);
+    }
+    if (accept(varsym)) {
+        do {
+            expect(ident);
+        } while (accept(comma));
+        expect(semicolon);
+    }
+    while (accept(procsym)) {
+        expect(ident);
+        expect(semicolon);
+        block();
+        expect(semicolon);
+    }
+    statement();
+}
+
+void program(void) {
+    nextsym();
+    block();
+    expect(period);
+}
+
+Examples[edit]
+Some recursive descent parser generators:
+
+TMG â an early compiler-compiler used in the 1960s and early 1970s
+JavaCC
+Coco/R
+ANTLR
+Spirit Parser Framework â a C++ recursive descent parser generator framework requiring no pre-compile step
+parboiled (Java) â a recursive descent PEG parsing library for Java
+See also[edit]
+Parser combinator â a higher-order function used in combinatory parsing, a method of factoring recursive descent parser designs
+Parsing expression grammar â another form representing recursive descent grammar
+Recursive ascent parser
+Tail recursive parser â a variant of the recursive descent parser
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Burge, W.H. (1975). Recursive Programming Techniques. ISBNÂ 0-201-14450-6.
+
+^ Watson, Des (22 March 2017). A Practical Approach to Compiler Construction. Springer. ISBNÂ 978-3-319-52789-5.
+
+^ Aho, Alfred V.; Sethi, Ravi; Ullman, Jeffrey (1986). Compilers: Principles, Techniques and Tools (firstÂ ed.). Addison Wesley. p.Â 183.
+
+
+General references[edit]
+Compilers: Principles, Techniques, and Tools, first edition, Alfred V Aho, Ravi Sethi, and Jeffrey D Ullman, in particular Section 4.4.
+Modern Compiler Implementation in Java, Second Edition, Andrew Appel, 2002, ISBNÂ 0-521-82060-X.
+Recursive Programming Techniques, W.H. Burge, 1975, ISBNÂ 0-201-14450-6
+Crafting a Compiler with C, Charles N Fischer and Richard J LeBlanc, Jr, 1991, ISBNÂ 0-8053-2166-7.
+Compiling with C# and Java, Pat Terry, 2005, ISBNÂ 0-321-26360-X, 624
+Algorithms + Data Structures = Programs, Niklaus Wirth, 1975, ISBNÂ 0-13-022418-9
+Compiler Construction, Niklaus Wirth, 1996, ISBNÂ 0-201-40353-6
+External links[edit]
+Introduction to Parsing - an easy to read introduction to parsing, with a comprehensive section on recursive descent parsing
+How to turn a Grammar into C code - a brief tutorial on implementing recursive descent parser
+Simple mathematical expressions parser in Ruby
+Simple Top Down Parsing in Python
+Jack W. Crenshaw: Let's Build A Compiler (1988-1995), in Pascal, with assembly language output, using a "keep it simple" approach
+Functional Pearls: Monadic Parsing in Haskell
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteParsing algorithmsTop-down
+LL
+Recursive descent
+Tail recursive
+Pratt parser
+Bottom-up
+Precedence
+Simple
+Operator
+Shunting-yard
+Bounded-context
+LR
+Simple
+Look-ahead
+Canonical
+Generalized
+CYK
+Recursive ascent
+Shift-reduce
+Mixed, other
+Combinator
+Chart
+Earley
+Related topics
+PEG
+Definite clause grammar
+Deterministic parsing
+Dynamic programming
+Memoization
+Parser generator
+LALR
+Parse tree
+AST
+Scannerless parsing
+History of compiler construction
+Comparison of parser generators
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Recursive_descent_parser&oldid=990788914"
+		Categories: Parsing algorithmsHidden categories: Articles with short descriptionShort description matches WikidataArticles lacking in-text citations from February 2009All articles lacking in-text citationsAll articles with unsourced statementsArticles with unsourced statements from February 2018Articles with example C code
+	

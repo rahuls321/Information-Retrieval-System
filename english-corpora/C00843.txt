@@ -1,0 +1,340 @@
+
+Title:
+Segment tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Data structure used in programming
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about the data structure used to store segments. For a different data structure only used to efficiently calculate prefix sums, see Fenwick tree.
+This article relies largely or entirely on a single source. Relevant discussion may be found on the talk page. Please help improve this article by introducing  citations to additional sources.Find sources:Â "Segment tree"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (November 2007)This article may be too technical for most readers to understand. Please help improve it to make it understandable to non-experts, without removing the technical details.  (October 2020) (Learn how and when to remove this template message)
+In computer science, a segment tree, also known as a statistic tree, is a tree data structure used for storing information about intervals, or segments. It allows querying which of the stored segments contain a given point. It is, in principle, a static structure; that is, it's a structure that cannot be modified once it's built.  A similar data structure is the interval tree.
+A segment tree for a set I of n intervals uses O(n log n) storage and can be built in O(n log n) time. Segment trees support searching for all the intervals that contain a query point in time O(log n + k), k being the number of retrieved intervals or segments.[1]
+Applications of the segment tree are in the areas of computational geometry, geographic information systems and machine learning.
+The segment tree can be generalized to higher dimension spaces.
+
+Contents
+
+1 Structure description
+2 Storage requirements
+3 Construction
+4 Query
+5 Generalization for higher dimensions
+6 Notes
+7 History
+8 References
+9 Sources cited
+10 External links
+
+
+
+Structure description[edit]
+This section describes the structure of a segment tree in a one-dimensional space.
+Let S be a set of intervals, or segments. Let p1, p2, ..., pm be the list of distinct interval endpoints, sorted from left to right. Consider the partitioning of the real line induced by those points. The regions of this partitioning are called elementary intervals. Thus, the elementary intervals are, from left to right:
+
+
+  
+    
+      
+        (
+        â
+        â
+        ,
+        
+          p
+          
+            1
+          
+        
+        )
+        ,
+        [
+        
+          p
+          
+            1
+          
+        
+        ,
+        
+          p
+          
+            1
+          
+        
+        ]
+        ,
+        (
+        
+          p
+          
+            1
+          
+        
+        ,
+        
+          p
+          
+            2
+          
+        
+        )
+        ,
+        [
+        
+          p
+          
+            2
+          
+        
+        ,
+        
+          p
+          
+            2
+          
+        
+        ]
+        ,
+        â¦
+        ,
+        (
+        
+          p
+          
+            m
+            â
+            1
+          
+        
+        ,
+        
+          p
+          
+            m
+          
+        
+        )
+        ,
+        [
+        
+          p
+          
+            m
+          
+        
+        ,
+        
+          p
+          
+            m
+          
+        
+        ]
+        ,
+        (
+        
+          p
+          
+            m
+          
+        
+        ,
+        +
+        â
+        )
+      
+    
+    {\displaystyle (-\infty ,p_{1}),[p_{1},p_{1}],(p_{1},p_{2}),[p_{2},p_{2}],\dots ,(p_{m-1},p_{m}),[p_{m},p_{m}],(p_{m},+\infty )}
+  
+
+That is, the list of elementary intervals consists of open intervals between two consecutive endpoints pi and pi+1, alternated with closed intervals consisting of a single endpoint. Single points are treated themselves as intervals because the answer to a query is not necessarily the same at the interior of an elementary interval and its endpoints.[2]
+
+  Graphic example of the structure of the segment tree. This instance is built for the segments shown at the bottom.
+Given a set I of intervals, or segments, a segment tree T for I is structured as follows:
+
+T is a binary tree.
+Its leaves correspond to the elementary intervals induced by the endpoints in I, in an ordered way: the leftmost leaf corresponds to the leftmost interval, and so on. The elementary interval corresponding to a leaf v is denoted Int(v).
+The internal nodes of T  correspond to intervals that are the union  of elementary intervals: the interval Int(N) corresponding to node N is the union of the intervals corresponding to the leaves of the tree rooted at N. That implies that Int(N) is the union of the intervals of its two children.
+Each node or leaf v in T stores the interval Int(v) and a set   of intervals, in some data structure. This canonical subset of node v contains the intervals [x, xâ²] from I such that [x, xâ²] contains Int(v) and does not contain Int(parent(v)). That is, each node in T stores the segments that span through its interval, but do not span through the interval of its parent.[3]
+
+Storage requirements[edit]
+This section analyzes the storage cost of a segment tree in a one-dimensional space.
+A segment tree T on a set I of n intervals uses O(n log n) storage.
+
+.mw-parser-output .math_theorem{margin:1em 2em;padding:0.5em 1em 0.4em;border:1px solid #aaa}@media(max-width:500px){.mw-parser-output .math_theorem{margin:1em 0em;padding:0.5em 0.5em 0.4em}}
+LemmaÂ âÂ  Any interval [x, xâ²] of I is stored in the canonical set for at most two nodes at the same depth.
+
+
+.mw-parser-output .math_proof{border:thin solid #aaa;margin:1em 2em;padding:0.5em 1em 0.4em;text-align:justify}@media(max-width:500px){.mw-parser-output .math_proof{margin:1em 0;padding:0.5em 0.5em 0.4em}}Proof
+Let v1, v2, v3 be the three nodes at the same depth, numbered from left to right; and let p(v) be the parent node of any given node v. Suppose [x, xâ²] is stored at v1 and v3. This means that [x, xâ²] spans the whole interval from the left endpoint of Int(v1) to the right endpoint of Int(v3). Note that all segments at a particular level are non-overlapping and ordered from left to right: this is true by construction for the level containing the leaves, and the property is not lost when moving from any level to the one above it by combining pairs of adjacent segments. Now either parent(v2) = parent(v1), or the former is to the right of the latter (edges in the tree do not cross). In the first case, Int(parent(v2))'s leftmost point is the same as Int(v1)'s leftmost point; in the second case, Int(parent(v2))'s leftmost point is to the right of Int(parent(v1))'s rightmost point, and therefore also to the right of Int(v1)'s rightmost point. In both cases, Int(parent(v2)) begins at or to the right of Int(v1)'s leftmost point. Similar reasoning shows that Int(parent(v2)) ends at or to the left of Int(v3)'s rightmost point. Int(parent(v2)) must therefore be contained in [x, xâ²]; hence, [x, xâ²] will not be stored at v2.
+
+
+The set I has at most 4n + 1 elementary intervals. Because T is a binary balanced tree with at most 4n + 1 leaves, its height is O(log n). Since any interval is stored at most twice at a given depth of the tree, that the total amount of storage is O(n log n).[4]
+Construction[edit]
+This section describes the construction of a segment tree in a one-dimensional space.
+A segment tree from the set of segments I, can be built as follows. First, the endpoints of the intervals in I are sorted. The elementary intervals are obtained from that. Then, a balanced binary tree is built on the elementary intervals, and for each node v it is determined the interval Int(v) it represents. It remains to compute the canonical subsets for the nodes. To achieve this, the intervals in I are inserted one by one into the segment tree. An interval X = [x, xâ²] can be inserted in a subtree rooted at T, using the following procedure:[5]
+
+If Int(T) is contained in X then store X at T, and finish.
+Else:
+If X intersects the interval of the left child of T, then insert X in that child, recursively.
+If X intersects the interval of the right child of T, then insert X in that child, recursively.
+The complete construction operation takes O(n log n) time, n being the number of segments in I.
+
+Proof
+Sorting the endpoints takes O(n log n). Building a balanced binary tree from the sorted endpoints, takes linear time on n.
+The insertion of an interval X = [x, xâ²] into the tree, costs O(log n).
+Proof
+Visiting every node takes constant time (assuming that canonical subsets are stored in a simple data structure like a linked list). When we visit node v, we either store X at v, or Int(v) contains an endpoint of X. As proved above, an interval is stored at most twice at each level of the tree. There is also at most one node at every level whose corresponding interval contains x, and one node whose interval contains xâ². So, at most four nodes per level are visited. Since there are O(log n) levels, the total cost of the insertion is O(log n).[1]
+
+
+
+Query[edit]
+This section describes the query operation of a segment tree in a one-dimensional space.
+A query for a segment tree, receives a point qx(should be one of the leaves of tree), and retrieves a list of all the segments stored which contain the point qx.
+Formally stated; given a node (subtree) v and a query point qx, the query can be done using the following algorithm:
+
+Report all the intervals in I(v).
+If v is not a leaf:
+If qx is in Int(left child of v) then
+Perform a query in the left child of v.
+If qx is in Int(right child of v) then
+Perform a query in the right child of v.
+In a segment tree that contains n intervals, those containing a given query point can be reported in O(log n + k) time, where k is the number of reported intervals.
+
+Proof
+The query algorithm visits one node per level of the tree, so O(log n) nodes in total. On the other hand, at a node v, the segments in I are reported in O(1 + kv) time, where kv is the number of intervals at node v, reported. The sum of all the kv for all nodes v visited, is k, the number of reported segments.[4]
+
+
+Generalization for higher dimensions[edit]
+The segment tree can be generalized to higher dimension spaces, in the form of multi-level segment trees. In higher dimensional versions, the segment tree stores a collection of axis-parallel (hyper-)rectangles, and can retrieve the rectangles that contain a given query point. The structure uses O(n logd n) storage, and answers queries in O(logd n).
+The use of fractional cascading lowers the query time bound by a logarithmic factor. The use of the interval tree on the deepest level of associated structures lowers the storage bound by a logarithmic factor.[6]
+
+Notes[edit]
+A query that asks for all the intervals containing a given point is often referred as a stabbing query.[7]
+The segment tree is less efficient than the interval tree for range queries in one dimension, due to its higher storage requirement: O(n log n) against the O(n) of the interval tree. The importance of the segment tree is that the segments within each nodeâs canonical subset can be stored in any arbitrary manner.[7]
+For n intervals whose endpoints are in a small integer range (e.g., in the range [1,â¦,O(n)]), optimal data structures[which?] exist with a linear preprocessing time and query time O(1 + k) for reporting all k intervals containing a given query point.
+Another advantage of the segment tree is that it can easily be adapted to counting queries; that is, to report the number of segments containing a given point, instead of reporting the segments themselves. Instead of storing the intervals in the canonical subsets, it can simply store the number of them. Such a segment tree uses linear storage, and requires an O(log n) query time, so it is optimal.[8]
+Higher dimensional versions of the interval tree and the priority search tree do not exist; that is, there is no clear extension of these structures that solves the analogous problem in higher dimensions. But the structures can be used as associated structure of segment trees.[6]
+
+History[edit]
+This section needs expansion. You can help by adding to it.  (November 2007)
+The segment tree was invented by Jon Bentley in 1977; in "Solutions to Kleeâs rectangle problems".[7]
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b (de Berg et al. 2000, p.Â 227)
+
+^ (de Berg et al. 2000, p.Â 224)
+
+^ (de Berg et al. 2000, pp.Â 225â226)
+
+^ Jump up to: a b (de Berg et al. 2000, p.Â 226)
+
+^ (de Berg et al. 2000, pp.Â 226â227)
+
+^ Jump up to: a b (de Berg et al. 2000, p.Â 230)
+
+^ Jump up to: a b c (de Berg et al. 2000, p.Â 229)
+
+^ (de Berg et al. 2000, pp.Â 229â230)
+
+
+Sources cited[edit]
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}de Berg, Mark; van Kreveld, Marc; Overmars, Mark; Schwarzkopf, Otfried (2000). "More Geometric Data Structures". Computational Geometry: algorithms and applications (2ndÂ ed.). Springer-Verlag Berlin Heidelberg New York. doi:10.1007/978-3-540-77974-2. ISBNÂ 3-540-65620-0.
+http://www.cs.nthu.edu.tw/~wkhon/ds/ds10/tutorial/tutorial6.pdf
+External links[edit]
+Segment Tree â CP-Algorithms
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Segment_tree&oldid=1060405064"
+		Categories: Trees (data structures)Binary treesComputer graphics data structuresHidden categories: Articles with short descriptionShort description is different from WikidataArticles needing additional references from November 2007All articles needing additional referencesWikipedia articles that are too technical from October 2020All articles that are too technicalAll articles with specifically marked weasel-worded phrasesArticles with specifically marked weasel-worded phrases from February 2014Articles to be expanded from November 2007All articles to be expandedArticles using small message boxes
+	

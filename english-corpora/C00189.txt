@@ -1,0 +1,2342 @@
+
+Title:
+Ray tracing (graphics)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Ray tracing (physics).
+
+
+Rendering method
+  This recursive ray tracing of reflective colored spheres on a white surface demonstrates the effects of shallow depth of field, "area" light sources, and diffuse interreflection.
+In 3D computer graphics, ray tracing is a technique for modeling light transport for use in a wide variety of rendering algorithms for generating digital images.
+On a spectrum of computational cost and visual fidelity, ray tracing-based rendering techniques from ray casting, 
+recursive ray tracing, distribution ray tracing, photon mapping to path tracing are generally slower and higher fidelity than scanline rendering methods.[1] Thus, ray tracing was first deployed in applications where taking a relatively long time to render could be tolerated, such as in still computer-generated images, and film and television visual effects (VFX), but was less suited to real-time applications such as video games, where speed is critical in rendering each frame.[2]
+Since 2018, however, hardware acceleration for real-time ray tracing has become standard on new commercial graphics cards, and graphics APIs have followed suit, allowing developers to use hybrid ray tracing and rasterization-based rendering[3][4] in games and other real-time applications with a lesser hit to frame render times.
+Ray tracing is capable of simulating a variety of optical effects,[5] such as reflection, refraction, soft shadows, scattering, depth of field, motion blur, caustics, ambient occlusion and dispersion phenomena (such as chromatic aberration). It can also be used to trace the path of sound waves in a similar fashion to light waves, making it a viable option for more immersive sound design in video games by rendering realistic reverberation and echoes.[6] In fact, any physical wave or particle phenomenon with approximately linear motion can be simulated with ray tracing.
+Ray tracing-based rendering techniques that involve sampling light over a domain generate image noise artifacts that can be addressed by tracing a very large number of rays or using denoising techniques.
+
+Contents
+
+1 History
+2 Algorithm overview
+
+2.1 Calculate rays for rectangular viewport
+
+
+3 Detailed description of ray tracing computer algorithm and its genesis
+
+3.1 What happens in (simplified) nature
+3.2 Ray casting algorithm
+3.3 Recursive ray tracing algorithm
+3.4 Advantages over other rendering methods
+3.5 Disadvantages
+3.6 Reversed direction of traversal of scene by the rays
+3.7 Example
+
+
+4 Adaptive depth control
+5 Bounding volumes
+6 Interactive ray tracing
+7 Computational complexity
+8 See also
+9 References
+10 External links
+
+
+
+History[edit]
+  This woodcut by Albrecht DÃ¼rer from 1525 shows the use of a DÃ¼rer's door.
+  This image by Albrecht DÃ¼rer from 1532 shows a man using a grid layout to create an image. The German renaissance artist is credited with first describing the technique.
+The idea of ray tracing comes from as early as the 16th century when it was described by Albrecht DÃ¼rer, who is credited for its invention.[7] In Four Books on Measurement, he described an apparatus called a DÃ¼rer's door using a thread attached to the end of a stylus that an assistant moves along the contours of the object to draw. The thread passes through the door's frame and then through a hook on the wall. The thread forms a ray and the hook acts as the center of projection and corresponds to the camera position in ray tracing.[8][9]
+Using a computer for ray tracing to generate shaded pictures was first accomplished by Arthur Appel in 1968.[10] Appel used ray tracing for primary visibility (determining the closest surface to the camera at each image point), and traced secondary rays to the light source from each point being shaded to determine whether the point was in shadow or not.
+Later, in 1971, Goldstein and Nagel of MAGI (Mathematical Applications Group, Inc.)[11] published â3-D Visual Simulationâ, wherein ray tracing is used to make shaded pictures of solids by simulating the photographic process in reverse. They cast a ray through each picture element (pixel) in the screen into the scene to identify the visible surface. The first surface intersected by the ray was the visible one. This non-recursive ray tracing-based rendering algorithm is today called "ray casting". At the ray-surface intersection point found, they computed the surface normal and, knowing the position of the light source, computed the brightness of the pixel on the screen. Their publication describes a short (30 second) film âmade using the University of Marylandâs display hardware outfitted with a 16mm camera. The film showed the helicopter and a simple ground level gun emplacement. The helicopter was programmed to undergo a series of maneuvers including turns, take-offs, and landings, etc., until it eventually is shot down and crashed.â A CDC 6600 computer was used. MAGI produced an animation video called MAGI/SynthaVision Sampler in 1974.[12]
+
+  Flip book created in 1976 at CaltechAnother early instance of ray casting came in 1976, when Scott Roth created a flip book animation in Bob Sproull's computer graphics course at Caltech. The scanned pages are shown as a video on the right. Roth's computer program noted an edge point at a pixel location if the ray intersected a bounded plane different from that of its neighbors. Of course, a ray could intersect multiple planes in space, but only the surface point closest to the camera was noted as visible. The edges are jagged because only a coarse resolution was practical with the computing power of the time-sharing DEC PDP-10 used. The âterminalâ was a Tektronix storage-tube display for text and graphics. Attached to the display was a printer which would create an image of the display on rolling thermal paper.  Roth extended the framework, introduced the term ray casting in the context of computer graphics and solid modeling, and later published his work while at GM Research Labs.[13]
+Turner Whitted was the first to show recursive ray tracing for mirror reflection and for refraction through translucent objects, with an angle determined by the solid's index of refraction, and to use ray tracing for anti-aliasing.[14] Whitted also showed ray traced shadows. He produced a recursive ray-traced film called The Compleat Angler[15] in 1979 while an engineer at Bell Labs. Whitted's deeply recursive ray tracing algorithm reframed rendering from being primarily a matter of surface visibility determination to being a matter of light transport. His paper inspired a series of subsequent work by others that included distribution ray tracing and finally unbiased path tracing, which provides the rendering equation framework that has allowed computer generated imagery to be faithful to reality.
+For decades, global illumination in major films using computer generated imagery was faked with additional lights. Ray tracing-based rendering eventually changed that by enabling physically-based light transport. Early feature films rendered entirely using path tracing include Monster House (2006), Cloudy with a Chance of Meatballs (2009),[16] and Monsters University (2013).[17]
+
+Algorithm overview[edit]
+  The ray-tracing algorithm builds an image by extending rays into a scene and bouncing them off surfaces and towards sources of light to approximate the color value of pixels.
+  Illustration of the ray-tracing algorithm for one pixel (up to the first bounce)
+Optical ray tracing describes a method for producing visual images constructed in 3D computer graphics environments, with more photorealism than either ray casting or scanline rendering techniques. It works by tracing a path from an imaginary eye through each pixel in a virtual screen, and calculating the color of the object visible through it.
+Scenes in ray tracing are described mathematically by a programmer or by a visual artist (normally using intermediary tools). Scenes may also incorporate data from images and models captured by means such as digital photography.
+Typically, each ray must be tested for intersection with some subset of all the objects in the scene. Once the nearest object has been identified, the algorithm will estimate the incoming light at the point of intersection, examine the material properties of the object, and combine this information to calculate the final color of the pixel. Certain illumination algorithms and reflective or translucent materials may require more rays to be re-cast into the scene.
+It may at first seem counterintuitive or "backward" to send rays away from the camera, rather than into it (as actual light does in reality), but doing so is many orders of magnitude more efficient. Since the overwhelming majority of light rays from a given light source do not make it directly into the viewer's eye, a "forward" simulation could potentially waste a tremendous amount of computation on light paths that are never recorded.
+Therefore, the shortcut taken in ray tracing is to presuppose that a given ray intersects the view frame. After either a maximum number of reflections or a ray traveling a certain distance without intersection, the ray ceases to travel and the pixel's value is updated.
+
+
+Calculate rays for rectangular viewport[edit]
+On input we have (in calculation we use vector normalization and cross product):
+
+
+  
+    
+      
+        E
+        â
+        
+          
+            R
+            
+              3
+            
+          
+        
+      
+    
+    {\displaystyle E\in \mathbb {R^{3}} }
+  
+ eye position
+
+  
+    
+      
+        T
+        â
+        
+          
+            R
+            
+              3
+            
+          
+        
+      
+    
+    {\displaystyle T\in \mathbb {R^{3}} }
+  
+ target position
+
+  
+    
+      
+        Î¸
+        â
+        [
+        0
+        ,
+        Ï
+        ]
+      
+    
+    {\displaystyle \theta \in [0,\pi ]}
+  
+ field of view - for humans, we can assume 
+  
+    
+      
+        â
+        Ï
+        
+          /
+        
+        2
+        
+          Â rad
+        
+        =
+        
+          90
+          
+            â
+          
+        
+      
+    
+    {\displaystyle \approx \pi /2{\text{ rad}}=90^{\circ }}
+  
+
+
+  
+    
+      
+        m
+        ,
+        k
+        â
+        
+          N
+        
+      
+    
+    {\displaystyle m,k\in \mathbb {N} }
+  
+ numbers of square pixels on viewport vertical and horizontal direction
+
+  
+    
+      
+        i
+        ,
+        j
+        â
+        
+          N
+        
+        ,
+        1
+        â¤
+        i
+        â¤
+        k
+        â§
+        1
+        â¤
+        j
+        â¤
+        m
+      
+    
+    {\displaystyle i,j\in \mathbb {N} ,1\leq i\leq k\land 1\leq j\leq m}
+  
+ numbers of actual pixel
+
+  
+    
+      
+        
+          
+            
+              v
+              â
+            
+          
+        
+        â
+        
+          
+            R
+            
+              3
+            
+          
+        
+      
+    
+    {\displaystyle {\vec {v}}\in \mathbb {R^{3}} }
+  
+ vertical vector which indicates where is up and down, usually 
+  
+    
+      
+        
+          
+            
+              v
+              â
+            
+          
+        
+        =
+        [
+        0
+        ,
+        1
+        ,
+        0
+        ]
+      
+    
+    {\displaystyle {\vec {v}}=[0,1,0]}
+  
+ (not visible on picture) - roll component which determine viewport rotation around point C (where the axis of rotation is the ET section)
+
+The idea is to find the position of each viewport pixel center  
+  
+    
+      
+        
+          P
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle P_{ij}}
+  
+ which allows us to find the line going from eye 
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+ through that pixel and finally get the ray described by point 
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+ and vector 
+  
+    
+      
+        
+          
+            
+              
+                R
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+        =
+        
+          P
+          
+            i
+            j
+          
+        
+        â
+        E
+      
+    
+    {\displaystyle {\vec {R}}_{ij}=P_{ij}-E}
+  
+ (or its normalisation 
+  
+    
+      
+        
+          
+            
+              
+                r
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle {\vec {r}}_{ij}}
+  
+). First we need to find the coordinates of the bottom left viewport pixel 
+  
+    
+      
+        
+          P
+          
+            1
+            m
+          
+        
+      
+    
+    {\displaystyle P_{1m}}
+  
+ and find the next pixel by making a shift along directions parallel to viewport (vectors 
+  
+    
+      
+        
+          
+            
+              
+                b
+                â
+              
+            
+          
+          
+            n
+          
+        
+      
+    
+    {\displaystyle {\vec {b}}_{n}}
+  
+ i 
+  
+    
+      
+        
+          
+            
+              
+                v
+                â
+              
+            
+          
+          
+            n
+          
+        
+      
+    
+    {\displaystyle {\vec {v}}_{n}}
+  
+) multiplied by the size of the pixel. Below we introduce formulas which include distance 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ between the eye and the viewport. However, this value will be reduced during ray normalization 
+  
+    
+      
+        
+          
+            
+              
+                r
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle {\vec {r}}_{ij}}
+  
+ (so you might as well accept that 
+  
+    
+      
+        d
+        =
+        1
+      
+    
+    {\displaystyle d=1}
+  
+ and remove it from calculations).
+Pre-calculations: let's find and normalise vector 
+  
+    
+      
+        
+          
+            
+              t
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\vec {t}}}
+  
+ and vectors 
+  
+    
+      
+        
+          
+            
+              b
+              â
+            
+          
+        
+        ,
+        
+          
+            
+              v
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\vec {b}},{\vec {v}}}
+  
+ which are parallel to the viewport (all depicted on above picture)
+
+
+  
+    
+      
+        
+          
+            
+              t
+              â
+            
+          
+        
+        =
+        T
+        â
+        E
+        ,
+        
+        
+          
+            
+              b
+              â
+            
+          
+        
+        =
+        
+          
+            
+              v
+              â
+            
+          
+        
+        Ã
+        
+          
+            
+              t
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\vec {t}}=T-E,\qquad {\vec {b}}={\vec {v}}\times {\vec {t}}}
+  
+
+
+  
+    
+      
+        
+          
+            
+              
+                t
+                â
+              
+            
+          
+          
+            n
+          
+        
+        =
+        
+          
+            
+              
+                t
+                â
+              
+            
+            
+              
+                |
+              
+              
+                |
+              
+              
+                
+                  
+                    t
+                    â
+                  
+                
+              
+              
+                |
+              
+              
+                |
+              
+            
+          
+        
+        ,
+        
+        
+          
+            
+              
+                b
+                â
+              
+            
+          
+          
+            n
+          
+        
+        =
+        
+          
+            
+              
+                b
+                â
+              
+            
+            
+              
+                |
+              
+              
+                |
+              
+              
+                
+                  
+                    b
+                    â
+                  
+                
+              
+              
+                |
+              
+              
+                |
+              
+            
+          
+        
+        ,
+        
+        
+          
+            
+              
+                v
+                â
+              
+            
+          
+          
+            n
+          
+        
+        =
+        
+          
+            
+              
+                t
+                â
+              
+            
+          
+          
+            n
+          
+        
+        Ã
+        
+          
+            
+              
+                b
+                â
+              
+            
+          
+          
+            n
+          
+        
+      
+    
+    {\displaystyle {\vec {t}}_{n}={\frac {\vec {t}}{||{\vec {t}}||}},\qquad {\vec {b}}_{n}={\frac {\vec {b}}{||{\vec {b}}||}},\qquad {\vec {v}}_{n}={\vec {t}}_{n}\times {\vec {b}}_{n}}
+  
+
+note that viewport center 
+  
+    
+      
+        C
+        =
+        E
+        +
+        
+          
+            
+              
+                t
+                â
+              
+            
+          
+          
+            n
+          
+        
+        d
+      
+    
+    {\displaystyle C=E+{\vec {t}}_{n}d}
+  
+, next we calculate viewport sizes 
+  
+    
+      
+        
+          h
+          
+            x
+          
+        
+        ,
+        
+          h
+          
+            y
+          
+        
+      
+    
+    {\displaystyle h_{x},h_{y}}
+  
+ divided by 2 including aspect ratio 
+  
+    
+      
+        
+          
+            
+              m
+              â
+              1
+            
+            
+              k
+              â
+              1
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {m-1}{k-1}}}
+  
+
+
+
+  
+    
+      
+        
+          g
+          
+            x
+          
+        
+        =
+        
+          
+            
+              h
+              
+                x
+              
+            
+            2
+          
+        
+        =
+        d
+        tan
+        â¡
+        
+          
+            Î¸
+            2
+          
+        
+        ,
+        
+        
+          g
+          
+            y
+          
+        
+        =
+        
+          
+            
+              h
+              
+                y
+              
+            
+            2
+          
+        
+        =
+        
+          g
+          
+            x
+          
+        
+        
+          
+            
+              m
+              â
+              1
+            
+            
+              k
+              â
+              1
+            
+          
+        
+      
+    
+    {\displaystyle g_{x}={\frac {h_{x}}{2}}=d\tan {\frac {\theta }{2}},\qquad g_{y}={\frac {h_{y}}{2}}=g_{x}{\frac {m-1}{k-1}}}
+  
+
+and then we calculate next-pixel shifting vectors 
+  
+    
+      
+        
+          q
+          
+            x
+          
+        
+        ,
+        
+          q
+          
+            y
+          
+        
+      
+    
+    {\displaystyle q_{x},q_{y}}
+  
+ along directions parallel to viewport (
+  
+    
+      
+        
+          
+            
+              b
+              â
+            
+          
+        
+        ,
+        
+          
+            
+              v
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\vec {b}},{\vec {v}}}
+  
+), and left bottom pixel center 
+  
+    
+      
+        
+          p
+          
+            1
+            m
+          
+        
+      
+    
+    {\displaystyle p_{1m}}
+  
+
+
+
+  
+    
+      
+        
+          
+            
+              
+                q
+                â
+              
+            
+          
+          
+            x
+          
+        
+        =
+        
+          
+            
+              2
+              
+                g
+                
+                  x
+                
+              
+            
+            
+              k
+              â
+              1
+            
+          
+        
+        
+          
+            
+              
+                b
+                â
+              
+            
+          
+          
+            n
+          
+        
+        ,
+        
+        
+          
+            
+              
+                q
+                â
+              
+            
+          
+          
+            y
+          
+        
+        =
+        
+          
+            
+              2
+              
+                g
+                
+                  y
+                
+              
+            
+            
+              m
+              â
+              1
+            
+          
+        
+        
+          
+            
+              
+                v
+                â
+              
+            
+          
+          
+            n
+          
+        
+        ,
+        
+        
+          
+            
+              
+                p
+                â
+              
+            
+          
+          
+            1
+            m
+          
+        
+        =
+        
+          
+            
+              
+                t
+                â
+              
+            
+          
+          
+            n
+          
+        
+        d
+        â
+        
+          g
+          
+            x
+          
+        
+        
+          
+            
+              
+                b
+                â
+              
+            
+          
+          
+            n
+          
+        
+        â
+        
+          g
+          
+            y
+          
+        
+        
+          
+            
+              
+                v
+                â
+              
+            
+          
+          
+            n
+          
+        
+      
+    
+    {\displaystyle {\vec {q}}_{x}={\frac {2g_{x}}{k-1}}{\vec {b}}_{n},\qquad {\vec {q}}_{y}={\frac {2g_{y}}{m-1}}{\vec {v}}_{n},\qquad {\vec {p}}_{1m}={\vec {t}}_{n}d-g_{x}{\vec {b}}_{n}-g_{y}{\vec {v}}_{n}}
+  
+
+Calculations: note 
+  
+    
+      
+        
+          P
+          
+            i
+            j
+          
+        
+        =
+        E
+        +
+        
+          
+            
+              
+                p
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle P_{ij}=E+{\vec {p}}_{ij}}
+  
+ and ray 
+  
+    
+      
+        
+          
+            
+              
+                R
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+        =
+        
+          P
+          
+            i
+            j
+          
+        
+        â
+        E
+        =
+        
+          
+            
+              
+                p
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle {\vec {R}}_{ij}=P_{ij}-E={\vec {p}}_{ij}}
+  
+ so
+
+
+  
+    
+      
+        
+          
+            
+              
+                p
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+        =
+        
+          
+            
+              
+                p
+                â
+              
+            
+          
+          
+            1
+            m
+          
+        
+        +
+        
+          
+            
+              
+                q
+                â
+              
+            
+          
+          
+            x
+          
+        
+        (
+        i
+        â
+        1
+        )
+        +
+        
+          
+            
+              
+                q
+                â
+              
+            
+          
+          
+            y
+          
+        
+        (
+        j
+        â
+        1
+        )
+      
+    
+    {\displaystyle {\vec {p}}_{ij}={\vec {p}}_{1m}+{\vec {q}}_{x}(i-1)+{\vec {q}}_{y}(j-1)}
+  
+
+
+  
+    
+      
+        
+          
+            
+              
+                r
+                â
+              
+            
+          
+          
+            i
+            j
+          
+        
+        =
+        
+          
+            
+              
+                
+                  
+                    R
+                    â
+                  
+                
+              
+              
+                i
+                j
+              
+            
+            
+              
+                |
+              
+              
+                |
+              
+              
+                
+                  
+                    
+                      R
+                      â
+                    
+                  
+                
+                
+                  i
+                  j
+                
+              
+              
+                |
+              
+              
+                |
+              
+            
+          
+        
+        =
+        
+          
+            
+              
+                
+                  
+                    p
+                    â
+                  
+                
+              
+              
+                i
+                j
+              
+            
+            
+              
+                |
+              
+              
+                |
+              
+              
+                
+                  
+                    
+                      p
+                      â
+                    
+                  
+                
+                
+                  i
+                  j
+                
+              
+              
+                |
+              
+              
+                |
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\vec {r}}_{ij}={\frac {{\vec {R}}_{ij}}{||{\vec {R}}_{ij}||}}={\frac {{\vec {p}}_{ij}}{||{\vec {p}}_{ij}||}}}
+  
+
+Above formula was tested in this javascript project (works in browser).
+
+Detailed description of ray tracing computer algorithm and its genesis[edit]
+What happens in (simplified) nature[edit]
+See also: Electromagnetism and Quantum electrodynamics
+In nature, a light source emits a ray of light which travels, eventually, to a surface that interrupts its progress.  One can think of this "ray" as a stream of photons traveling along the same path.  In a perfect vacuum this ray will be a straight line (ignoring relativistic effects). Any combination of four things might happen with this light ray: absorption, reflection, refraction and fluorescence.  A surface may absorb part of the light ray, resulting in a loss of intensity of the reflected and/or refracted light.  It might also reflect all or part of the light ray, in one or more directions. If the surface has any transparent or translucent properties, it refracts a portion of the light beam into itself in a different direction while absorbing some (or all) of the spectrum (and possibly altering the color). Less commonly, a surface may absorb some portion of the light and fluorescently re-emit the light at a longer wavelength color in a random direction, though this is rare enough that it can be discounted from most rendering applications. Between absorption, reflection, refraction and fluorescence, all of the incoming light must be accounted for, and no more.  A surface cannot, for instance, reflect 66% of an incoming light ray, and refract 50%, since the two would add up to be 116%. From here, the reflected and/or refracted rays may strike other surfaces, where their absorptive, refractive, reflective and fluorescent properties again affect the progress of the incoming rays.  Some of these rays travel in such a way that they hit our eye, causing us to see the scene and so contribute to the final rendered image.
+
+Ray casting algorithm[edit]
+Main article: Ray casting
+The idea behind ray casting, the predecessor to recursive ray tracing, is to trace rays from the eye, one per pixel, and find the closest object blocking the path of that ray. Think of an image as a screen-door, with each square in the screen being a pixel.  This is then the object the eye sees through that pixel.  Using the material properties and the effect of the lights in the scene, this algorithm can determine the shading of this object.  The simplifying assumption is made that if a surface faces a light, the light will reach that surface and not be blocked or in shadow.  The shading of the surface is computed using traditional 3D computer graphics shading models.  One important advantage ray casting offered over older scanline algorithms was its ability to easily deal with non-planar surfaces and solids, such as cones and spheres. If a mathematical surface can be intersected by a ray, it can be rendered using ray casting. Elaborate objects can be created by using solid modeling techniques and easily rendered.
+
+Recursive ray tracing algorithm[edit]
+  Ray tracing can create photorealistic images.
+  In addition to the high degree of realism, ray tracing can simulate the effects of a camera due to depth of field and aperture shape (in this case a hexagon).
+  The number of reflections, or bounces, a ârayâ can make, and how it is affected each time it encounters a surface, is controlled by settings in the software. In this image, each ray was allowed to reflect up to 16 times. Multiple âreflections of reflectionsâ can thus be seen in these spheres. (Image created with Cobalt.)
+  The number of refractions a ârayâ can make, and how it is affected each time it encounters a surface that permits the transmission of light, is controlled by settings in the software. Here, each ray was set to refract or reflect (the "depth") up to 9 times. Fresnel reflections were used and caustics are visible. (Image created with V-Ray.)
+Earlier algorithms traced rays from the eye into the scene until they hit an object, but determined the ray color without recursively tracing more rays.  Recursive ray tracing continues the process. When a ray hits a surface, additional rays may be cast because of reflection, refraction, and shadow.:[18]
+
+A reflection ray is traced in the mirror-reflection direction. The closest object it intersects is what will be seen in the reflection.
+A refraction ray traveling through transparent material works similarly, with the addition that a refractive ray could be entering or exiting a material. Turner Whitted extended the mathematical logic for rays passing through a transparent solid to include the effects of refraction.[19]
+A shadow ray is traced toward each light. If any opaque object is found between the surface and the light, the surface is in shadow and the light does not illuminate it.
+These recursive rays add more realism to ray traced images.
+
+Advantages over other rendering methods[edit]
+Ray tracing-based rendering's popularity stems from its basis in a realistic simulation of light transport, as compared to other rendering methods, such as rasterization, which focuses more on the realistic simulation of geometry. Effects such as reflections and shadows, which are difficult to simulate using other algorithms, are a natural result of the ray tracing algorithm. The computational independence of each ray makes ray tracing amenable to a basic level of parallelization,[20] but the divergence of ray paths makes high utilization under parallelism quite difficult to achieve in practice.[21]
+
+Disadvantages[edit]
+A serious disadvantage of ray tracing is performance (though it can in theory be faster than traditional scanline rendering depending on scene complexity vs. number of pixels on-screen). Until the late 2010s, ray tracing in real time was usually considered impossible on consumer hardware for nontrivial tasks. Scanline algorithms and other algorithms use data coherence to share computations between pixels, while ray tracing normally starts the process anew, treating each eye ray separately. However, this separation offers other advantages, such as the ability to shoot more rays as needed to perform spatial anti-aliasing and improve image quality where needed.
+Although it does handle interreflection and optical effects such as refraction accurately, traditional ray tracing is also not necessarily photorealistic. True photorealism occurs when the rendering equation is closely approximated or fully implemented. Implementing the rendering equation gives true photorealism, as the equation describes every physical effect of light flow. However, this is usually infeasible given the computing resources required.
+The realism of all rendering methods can be evaluated as an approximation to the equation. Ray tracing, if it is limited to Whitted's algorithm, is not necessarily the most realistic. Methods that trace rays, but include additional techniques (photon mapping, path tracing), give a far more accurate simulation of real-world lighting.
+
+Reversed direction of traversal of scene by the rays[edit]
+The process of shooting rays from the eye to the light source to render an image is sometimes called backwards ray tracing, since it is the opposite direction photons actually travel. However, there is confusion with this terminology. Early ray tracing was always done from the eye, and early researchers such as James Arvo used the term backwards ray tracing to mean shooting rays from the lights and gathering the results.  Therefore, it is clearer to distinguish eye-based versus light-based ray tracing.
+While the direct illumination is generally best sampled using eye-based ray tracing, certain indirect effects can benefit from rays generated from the lights. Caustics are bright patterns caused by the focusing of light off a wide reflective region onto a narrow area of (near-)diffuse surface.  An algorithm that casts rays directly from lights onto reflective objects, tracing their paths to the eye, will better sample this phenomenon. This integration of eye-based and light-based rays is often expressed as bidirectional path tracing, in which paths are traced from both the eye and lights, and the paths subsequently joined by a connecting ray after some length.[22][23]
+Photon mapping is another method that uses both light-based and eye-based ray tracing; in an initial pass, energetic photons are traced along rays from the light source so as to compute an estimate of radiant flux as a function of 3-dimensional space (the eponymous photon map itself). In a subsequent pass, rays are traced from the eye into the scene to determine the visible surfaces, and the photon map is used to estimate the illumination at the visible surface points.[24][25] The advantage of photon mapping versus bidirectional path tracing is the ability to achieve significant reuse of photons, reducing computation, at the cost of statistical bias.
+An additional problem occurs when light must pass through a very narrow aperture to illuminate the scene (consider a darkened room, with a door slightly ajar leading to a brightly lit room), or a scene in which most points do not have direct line-of-sight to any light source (such as with ceiling-directed light fixtures or torchieres). In such cases, only a very small subset of paths will transport energy; Metropolis light transport is a method which begins with a random search of the path space, and when energetic paths are found, reuses this information by exploring the nearby space of rays.[26]
+
+  Image showing recursively generated rays from the "eye" (and through an image plane) to a light source after encountering two diffuse surfaces.
+To the right is an image showing a simple example of a path of rays recursively generated from the camera (or eye) to the light source using the above algorithm. A diffuse surface reflects light in all directions.
+First, a ray is created at an eyepoint and traced through a pixel and into the scene, where it hits a diffuse surface. From that surface the algorithm recursively generates a reflection ray, which is traced through the scene, where it hits another diffuse surface. Finally, another reflection ray is generated and traced through the scene, where it hits the light source and is absorbed. The color of the pixel now depends on the colors of the first and second diffuse surface and the color of the light emitted from the light source. For example, if the light source emitted white light and the two diffuse surfaces were blue, then the resulting color of the pixel is blue.
+
+Example[edit]
+As a demonstration of the principles involved in ray tracing, consider how one would find the intersection between a ray and a sphere. This is merely the math behind the lineâsphere intersection and the subsequent determination of the colour of the pixel being calculated. There is, of course, far more to the general process of ray tracing, but this demonstrates an example of the algorithms used.
+In vector notation, the equation of a sphere with center 
+  
+    
+      
+        
+          c
+        
+      
+    
+    {\displaystyle \mathbf {c} }
+  
+ and radius 
+  
+    
+      
+        r
+      
+    
+    {\displaystyle r}
+  
+ is
+
+
+  
+    
+      
+        
+          
+            â
+            
+              
+                x
+              
+              â
+              
+                c
+              
+            
+            â
+          
+          
+            2
+          
+        
+        =
+        
+          r
+          
+            2
+          
+        
+        .
+      
+    
+    {\displaystyle \left\Vert \mathbf {x} -\mathbf {c} \right\Vert ^{2}=r^{2}.}
+  
+
+Any point on a ray starting from point 
+  
+    
+      
+        
+          s
+        
+      
+    
+    {\displaystyle \mathbf {s} }
+  
+ with direction 
+  
+    
+      
+        
+          d
+        
+      
+    
+    {\displaystyle \mathbf {d} }
+  
+ (here 
+  
+    
+      
+        
+          d
+        
+      
+    
+    {\displaystyle \mathbf {d} }
+  
+ is a unit vector) can be written as
+
+
+  
+    
+      
+        
+          x
+        
+        =
+        
+          s
+        
+        +
+        t
+        
+          d
+        
+        ,
+      
+    
+    {\displaystyle \mathbf {x} =\mathbf {s} +t\mathbf {d} ,}
+  
+
+where 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ is its distance between 
+  
+    
+      
+        
+          x
+        
+      
+    
+    {\displaystyle \mathbf {x} }
+  
+ and 
+  
+    
+      
+        
+          s
+        
+      
+    
+    {\displaystyle \mathbf {s} }
+  
+.  In our problem, we know 
+  
+    
+      
+        
+          c
+        
+      
+    
+    {\displaystyle \mathbf {c} }
+  
+,  
+  
+    
+      
+        r
+      
+    
+    {\displaystyle r}
+  
+, 
+  
+    
+      
+        
+          s
+        
+      
+    
+    {\displaystyle \mathbf {s} }
+  
+ (e.g. the position of a light source) and 
+  
+    
+      
+        
+          d
+        
+      
+    
+    {\displaystyle \mathbf {d} }
+  
+, and we need to find 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+. Therefore, we substitute for 
+  
+    
+      
+        
+          x
+        
+      
+    
+    {\displaystyle \mathbf {x} }
+  
+:
+
+
+  
+    
+      
+        
+          
+            â
+            
+              
+                s
+              
+              +
+              t
+              
+                d
+              
+              â
+              
+                c
+              
+            
+            â
+          
+          
+            2
+          
+        
+        =
+        
+          r
+          
+            2
+          
+        
+        .
+      
+    
+    {\displaystyle \left\Vert \mathbf {s} +t\mathbf {d} -\mathbf {c} \right\Vert ^{2}=r^{2}.}
+  
+
+Let 
+  
+    
+      
+        
+          v
+        
+        Â 
+        
+          
+            
+              
+                =
+              
+              
+                
+                  d
+                  e
+                  f
+                
+              
+            
+          
+        
+        Â 
+        
+          s
+        
+        â
+        
+          c
+        
+      
+    
+    {\displaystyle \mathbf {v} \ {\stackrel {\mathrm {def} }{=}}\ \mathbf {s} -\mathbf {c} }
+  
+ for simplicity; then
+
+
+  
+    
+      
+        
+          
+            â
+            
+              
+                v
+              
+              +
+              t
+              
+                d
+              
+            
+            â
+          
+          
+            2
+          
+        
+        =
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \left\Vert \mathbf {v} +t\mathbf {d} \right\Vert ^{2}=r^{2}}
+  
+
+
+  
+    
+      
+        
+          
+            v
+          
+          
+            2
+          
+        
+        +
+        
+          t
+          
+            2
+          
+        
+        
+          
+            d
+          
+          
+            2
+          
+        
+        +
+        2
+        
+          v
+        
+        â
+        t
+        
+          d
+        
+        =
+        
+          r
+          
+            2
+          
+        
+      
+    
+    {\displaystyle \mathbf {v} ^{2}+t^{2}\mathbf {d} ^{2}+2\mathbf {v} \cdot t\mathbf {d} =r^{2}}
+  
+
+
+  
+    
+      
+        (
+        
+          
+            d
+          
+          
+            2
+          
+        
+        )
+        
+          t
+          
+            2
+          
+        
+        +
+        (
+        2
+        
+          v
+        
+        â
+        
+          d
+        
+        )
+        t
+        +
+        (
+        
+          
+            v
+          
+          
+            2
+          
+        
+        â
+        
+          r
+          
+            2
+          
+        
+        )
+        =
+        0.
+      
+    
+    {\displaystyle (\mathbf {d} ^{2})t^{2}+(2\mathbf {v} \cdot \mathbf {d} )t+(\mathbf {v} ^{2}-r^{2})=0.}
+  
+
+Knowing that d is a unit vector allows us this minor simplification:
+
+
+  
+    
+      
+        
+          t
+          
+            2
+          
+        
+        +
+        (
+        2
+        
+          v
+        
+        â
+        
+          d
+        
+        )
+        t
+        +
+        (
+        
+          
+            v
+          
+          
+            2
+          
+        
+        â
+        
+          r
+          
+            2
+          
+        
+        )
+        =
+        0.
+      
+    
+    {\displaystyle t^{2}+(2\mathbf {v} \cdot \mathbf {d} )t+(\mathbf {v} ^{2}-r^{2})=0.}
+  
+
+This quadratic equation has solutions
+
+
+  
+    
+      
+        t
+        =
+        
+          
+            
+              â
+              (
+              2
+              
+                v
+              
+              â
+              
+                d
+              
+              )
+              Â±
+              
+                
+                  (
+                  2
+                  
+                    v
+                  
+                  â
+                  
+                    d
+                  
+                  
+                    )
+                    
+                      2
+                    
+                  
+                  â
+                  4
+                  (
+                  
+                    
+                      v
+                    
+                    
+                      2
+                    
+                  
+                  â
+                  
+                    r
+                    
+                      2
+                    
+                  
+                  )
+                
+              
+            
+            2
+          
+        
+        =
+        â
+        (
+        
+          v
+        
+        â
+        
+          d
+        
+        )
+        Â±
+        
+          
+            (
+            
+              v
+            
+            â
+            
+              d
+            
+            
+              )
+              
+                2
+              
+            
+            â
+            (
+            
+              
+                v
+              
+              
+                2
+              
+            
+            â
+            
+              r
+              
+                2
+              
+            
+            )
+          
+        
+        .
+      
+    
+    {\displaystyle t={\frac {-(2\mathbf {v} \cdot \mathbf {d} )\pm {\sqrt {(2\mathbf {v} \cdot \mathbf {d} )^{2}-4(\mathbf {v} ^{2}-r^{2})}}}{2}}=-(\mathbf {v} \cdot \mathbf {d} )\pm {\sqrt {(\mathbf {v} \cdot \mathbf {d} )^{2}-(\mathbf {v} ^{2}-r^{2})}}.}
+  
+
+The two values of 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ found by solving this equation are the two ones such that 
+  
+    
+      
+        
+          s
+        
+        +
+        t
+        
+          d
+        
+      
+    
+    {\displaystyle \mathbf {s} +t\mathbf {d} }
+  
+ are the points where the ray intersects the sphere.
+Any value which is negative does not lie on the ray, but rather in the opposite half-line (i.e. the one starting from 
+  
+    
+      
+        
+          s
+        
+      
+    
+    {\displaystyle \mathbf {s} }
+  
+ with opposite direction).
+If the quantity under the square root ( the discriminant )  is negative, then the ray does not intersect the sphere.
+Let us suppose now that there is at least a positive solution, and let 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+ be the minimal one. In addition, let us suppose that the sphere is the nearest object on our scene intersecting our ray, and that it is made of a reflective material. We need to find in which direction the light ray is reflected. The laws of reflection state that the angle of reflection is equal and opposite to the angle of incidence between the incident ray and the normal to the sphere.
+The normal to the sphere is simply
+
+
+  
+    
+      
+        
+          n
+        
+        =
+        
+          
+            
+              
+                y
+              
+              â
+              
+                c
+              
+            
+            
+              â
+              
+                
+                  y
+                
+                â
+                
+                  c
+                
+              
+              â
+            
+          
+        
+        ,
+      
+    
+    {\displaystyle \mathbf {n} ={\frac {\mathbf {y} -\mathbf {c} }{\left\Vert \mathbf {y} -\mathbf {c} \right\Vert }},}
+  
+
+where 
+  
+    
+      
+        
+          y
+        
+        =
+        
+          s
+        
+        +
+        t
+        
+          d
+        
+      
+    
+    {\displaystyle \mathbf {y} =\mathbf {s} +t\mathbf {d} }
+  
+ is the intersection point found before. The reflection direction can be found by a reflection of 
+  
+    
+      
+        
+          d
+        
+      
+    
+    {\displaystyle \mathbf {d} }
+  
+ with respect to 
+  
+    
+      
+        
+          n
+        
+      
+    
+    {\displaystyle \mathbf {n} }
+  
+, that is
+
+
+  
+    
+      
+        
+          r
+        
+        =
+        
+          d
+        
+        â
+        2
+        (
+        
+          n
+        
+        â
+        
+          d
+        
+        )
+        
+          n
+        
+        .
+      
+    
+    {\displaystyle \mathbf {r} =\mathbf {d} -2(\mathbf {n} \cdot \mathbf {d} )\mathbf {n} .}
+  
+
+Thus the reflected ray has equation
+
+
+  
+    
+      
+        
+          x
+        
+        =
+        
+          y
+        
+        +
+        u
+        
+          r
+        
+        .
+        
+      
+    
+    {\displaystyle \mathbf {x} =\mathbf {y} +u\mathbf {r} .\,}
+  
+
+Now we only need to compute the intersection of the latter ray with our field of view, to get the pixel which our reflected light ray will hit. Lastly, this pixel is set to an appropriate color, taking into account how the color of the original light source and the one of the sphere are combined by the reflection.
+
+Adaptive depth control[edit]
+Adaptive depth control means that the renderer stops generating reflected/transmitted rays when the computed intensity becomes less than a certain threshold. There must always be a set maximum depth or else the program would generate an infinite number of rays. But it is not always necessary to go to the maximum depth if the surfaces are not highly reflective. To test for this the ray tracer must compute and keep the product of the global and reflection coefficients as the rays are traced.
+Example: let Kr = 0.5 for a set of surfaces. Then from the first surface the maximum contribution is 0.5, for the reflection from the second: 0.5 Ã 0.5 = 0.25, the third: 0.25 Ã 0.5 = 0.125, the fourth: 0.125 Ã 0.5 = 0.0625, the fifth: 0.0625 Ã 0.5 = 0.03125, etc. In addition we might implement a distance attenuation factor such as 1/D2, which would also decrease the intensity contribution.
+For a transmitted ray we could do something similar but in that case the distance traveled through the object would cause even faster intensity decrease. As an example of this, Hall & Greenberg found that even for a very reflective scene, using this with a maximum depth of 15 resulted in an average ray tree depth of 1.7.[27]
+
+Bounding volumes[edit]
+Enclosing groups of objects in sets of hierarchical bounding volumes decreases the amount of computations required for ray tracing. A cast ray is first tested for an intersection with the bounding volume, and then if there is an intersection, the volume is recursively divided until the ray hits the object. The best type of bounding volume will be determined by the shape of the underlying object or objects. For example, if the objects are long and thin, then a sphere will enclose mainly empty space compared to a box. Boxes are also easier to generate hierarchical bounding volumes.
+Note that using a hierarchical system like this (assuming it is done carefully) changes the intersection computational time from a linear dependence on the number of objects to something between linear and a logarithmic dependence. This is because, for a perfect case, each intersection test would divide the possibilities by two, and result in a binary tree type structure. Spatial subdivision methods, discussed below, try to achieve this.
+Kay & Kajiya give a list of desired properties for hierarchical bounding volumes:
+
+Subtrees should contain objects that are near each other and the further down the tree the closer should be the objects.
+The volume of each node should be minimal.
+The sum of the volumes of all bounding volumes should be minimal.
+Greater attention should be placed on the nodes near the root since pruning a branch near the root will remove more potential objects than one farther down the tree.
+The time spent constructing the hierarchy should be much less than the time saved by using it.
+Interactive ray tracing[edit]
+See also: Ray-tracing hardware
+The first implementation of an interactive ray tracer was the LINKS-1 Computer Graphics System built in 1982 at Osaka University's School of Engineering, by professors Ohmura Kouichi, Shirakawa Isao and Kawata Toru with 50 students.[citation needed] It was a massively parallel processing computer system with 514 microprocessors (257 Zilog Z8001s and 257 iAPX 86s), used for rendering realistic 3D computer graphics with high-speed ray tracing. According to the Information Processing Society of Japan: "The core of 3D image rendering is calculating the luminance of each pixel making up a rendered surface from the given viewpoint, light source, and object position. The LINKS-1 system was developed to realize an image rendering methodology in which each pixel could be parallel processed independently using ray tracing. By developing a new software methodology specifically for high-speed image rendering, LINKS-1 was able to rapidly render highly realistic images." It was used to create an early 3D planetarium-like video of the heavens made completely with computer graphics. The video was presented at the Fujitsu pavilion at the 1985 International Exposition in Tsukuba."[28] It was the second system to do so after the Evans & Sutherland Digistar in 1982. The LINKS-1 was reported to be the world's most powerful computer in 1984.[29]
+The earliest public record of "real-time" ray tracing with interactive rendering (i.e., updates greater than a frame per second) was credited at the 2005 SIGGRAPH computer graphics conference as being the REMRT/RT tools developed in 1986 by Mike Muuss for the BRL-CAD solid modeling system. Initially published in 1987 at USENIX, the BRL-CAD ray tracer was an early implementation of a parallel network distributed ray tracing system that achieved several frames per second in rendering performance.[30] This performance was attained by means of the highly optimized yet platform independent LIBRT ray tracing engine in BRL-CAD and by using solid implicit CSG geometry on several shared memory parallel machines over a commodity network. BRL-CAD's ray tracer, including the REMRT/RT tools, continue to be available and developed today as open source software.[31]
+Since then, there have been considerable efforts and research towards implementing ray tracing at real-time speeds for a variety of purposes on stand-alone desktop configurations. These purposes include interactive 3D graphics applications such as demoscene productions, computer and video games, and image rendering. Some real-time software 3D engines based on ray tracing have been developed by hobbyist demo programmers since the late 1990s.[32]
+In 1999 a team from the University of Utah, led by Steven Parker, demonstrated interactive ray tracing live at the 1999 Symposium on Interactive 3D Graphics. They rendered a 35 million sphere model at 512 by 512 pixel resolution, running at approximately 15 frames per second on 60 CPUs.[33]
+The OpenRT project included a highly optimized software core for ray tracing along with an OpenGL-like API in order to offer an alternative to the current rasterisation based approach for interactive 3D graphics. Ray tracing hardware, such as the experimental Ray Processing Unit developed by Sven Woop at the Saarland University, has been designed to accelerate some of the computationally intensive operations of ray tracing. On March 16, 2007, the University of Saarland revealed an implementation of a high-performance ray tracing engine that allowed computer games to be rendered via ray tracing without intensive resource usage.[34]
+
+Play media  Quake Wars Ray Traced
+On June 12, 2008 Intel demonstrated a special version of Enemy Territory: Quake Wars, titled Quake Wars: Ray Traced, using ray tracing for rendering, running in basic HD (720p) resolution. ETQW operated at 14â29 frames per second. The demonstration ran on a 16-core (4 socket, 4 core) Xeon Tigerton system running at 2.93Â GHz.[35]
+At SIGGRAPH 2009, Nvidia announced OptiX, a free API for real-time ray tracing on Nvidia GPUs. The API exposes seven programmable entry points within the ray tracing pipeline, allowing for custom cameras, ray-primitive intersections, shaders, shadowing, etc. This flexibility enables bidirectional path tracing, Metropolis light transport, and many other rendering algorithms that cannot be implemented with tail recursion.[36] OptiX-based renderers are used in Autodesk Arnold, Adobe AfterEffects, Bunkspeed Shot, Autodesk Maya, 3ds max, and many other renderers.
+Imagination Technologies offers a free API called OpenRL which accelerates tail recursive ray tracing-based rendering algorithms and, together with their proprietary ray tracing hardware, works with Autodesk Maya to provide what 3D World calls "real-time raytracing to the everyday artist".[37]
+In 2014, a demo of the PlayStation 4 video game The Tomorrow Children, developed by Q-Games and Japan Studio, demonstrated new lighting techniques developed by Q-Games, notably cascaded voxel cone ray tracing, which simulates lighting in real-time and uses more realistic reflections rather than screen space reflections.[38]
+Nvidia offers hardware-accelerated ray tracing in their GeForce RTX and Quadro RTX GPUs, currently based on the Ampere architecture. The Nvidia hardware uses a separate functional block, publicly called an "RT core". This unit is somewhat comparable to a texture unit in size, latency, and interface to the processor core. The unit features BVH traversal, compressed BVH node decompression, ray-AABB intersection testing, and ray-triangle intersection testing.
+AMD offers interactive ray tracing on top of OpenCL on Vega graphics cards through Radeon ProRender.[39] In October 2020, the company unveiled the Radeon RX 6000 series, its second generation Navi GPUs with support for hardware-accelerated ray tracing at an online event.[40][41][42][43][44]
+The PlayStation 5, Xbox Series X and Series S support dedicated ray tracing hardware components in their GPUs for real-time ray tracing effects.[45][46][47][48]
+
+Computational complexity[edit]
+Various complexity results have been proven for certain formulations of the ray tracing problem. In particular, if the decision version of the ray tracing problem is defined as follows[49] â given a light ray's initial position and direction and some fixed point, does the ray eventually reach that point, then the referenced paper proves the following results:
+
+Ray tracing in 3D optical systems with a finite set of reflective or refractive objects represented by a system of rational quadratic inequalities is undecidable.
+Ray tracing in 3D optical systems with a finite set of refractive objects represented by a system of rational linear inequalities is undecidable.
+Ray tracing in 3D optical systems with a finite set of rectangular reflective or refractive objects is undecidable.
+Ray tracing in 3D optical systems with a finite set of reflective or partially reflective objects represented by a system of linear inequalities, some of which can be irrational is undecidable.
+Ray tracing in 3D optical systems with a finite set of reflective or partially reflective objects represented by a system of rational linear inequalities is PSPACE-hard.
+For any dimension equal to or greater than 2, ray tracing with a finite set of parallel and perpendicular reflective surfaces represented by rational linear inequalities is in PSPACE.
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Beam tracing
+Cone tracing
+Distributed ray tracing
+Global illumination
+Gouraud shading
+List of ray tracing software
+Parallel computing
+Path tracing
+Phong shading
+Progressive refinement
+Shading
+Specular reflection
+Tessellation
+Per-pixel lighting
+GPUOpen
+Nvidia GameWorks
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Shirley, Peter (July 9, 2003). Realistic Ray Tracing. A K Peters/CRC Press; 2nd edition. ISBNÂ 978-1568814612.
+
+^ "Sponsored Feature: Changing the Game - Experimental Cloud-Based Ray Tracing". www.gamasutra.com. Retrieved March 18, 2021.
+
+^ "Hybrid rendering for real-time lighting: ray tracing vs rasterization - Imagination". January 2, 2017.
+
+^ "Implementing hybrid ray tracing in a rasterized game engine - Imagination". May 6, 2014.
+
+^ "Disney explains why its 3D animation looks so realistic". Engadget. Retrieved March 18, 2021.
+
+^ "The Next Big Steps In Game Sound Design". www.gamasutra.com. January 28, 2010. Retrieved March 18, 2021.
+
+^ Georg Rainer Hofmann (1990). "Who invented ray tracing?". The Visual Computer. 6 (3): 120â124. doi:10.1007/BF01911003. S2CIDÂ 26348610..
+
+^ Steve Luecking (2013). "DÃ¼rer, drawing, and digital thinking - 2013 FATE Conference". brian-curtis.com. Retrieved August 13, 2020.
+
+^ Steve Luecking. "Stephen J Luecking". Retrieved August 13, 2020.
+
+^ Appel, Arthur (April 30, 1968), "Some techniques for shading machine renderings of solids" (PDF), AFIPS '68 (Spring) Proceedings of the April 30--May 2, 1968, Spring Joint Computer Conference: 37â45, doi:10.1145/1468075.1468082, S2CIDÂ 207171023{{citation}}:  CS1 maint: date and year (link)
+
+^ Goldstein, Robert; Nagel, Roger (January 1971), "3-D Visual simulation", Simulation, 16 (1): 25â31, doi:10.1177/003754977101600104, S2CIDÂ 122824395
+
+^ Syntha Vision Sampler. 1974 â via Internet Archive.
+
+^ Roth, Scott D. (February 1982), "Ray Casting for Modeling Solids", Computer Graphics and Image Processing, 18 (2): 109â144, doi:10.1016/0146-664X(82)90169-1
+
+^ Whitted T. (1979) An Improved Illumination Model for Shaded Display. Proceedings of the 6th annual conference on Computer graphics and interactive techniques
+
+^ The Compleat Angler. Bell Laboratories. 1978 â via Internet Archive.
+
+^ "Food for Laughs". Computer Graphics World.
+
+^ M.s (May 28, 2013). "This Animated Life: Pixar's Lightspeed Brings New Light to Monsters University". This Animated Life. Retrieved May 26, 2020.
+
+^ Tomas Nikodym (June 2010). "Ray Tracing Algorithm For Interactive Applications" (PDF). Czech Technical University, FEE. Archived from the original (PDF) on March 3, 2016.
+
+^ Whitted, T. (1979). "An Improved Illumination Model for Shaded Display". Proceedings of the 6th annual conference on Computer graphics and interactive techniques. CiteSeerXÂ 10.1.1.156.1534. ISBNÂ 0-89791-004-4.
+
+^ Chalmers, A.; Davis, T.; Reinhard, E. (2002). Practical Parallel Rendering. AK Peters. ISBNÂ 1-56881-179-9.
+
+^ Aila, Timo; Laine, Samulii (2009). "Understanding the Efficiency of Ray Traversal on GPUs". HPG '09: Proceedings of the Conference on High Performance Graphics 2009. pp.Â 145â149. doi:10.1145/1572769.1572792. ISBNÂ 9781605586038. S2CIDÂ 15392840.
+
+^ Eric P. Lafortune and Yves D. Willems (December 1993). "Bi-Directional Path Tracing". Proceedings of Compugraphics '93: 145â153.
+
+^ PÃ©ter Dornbach (1998). "Implementation of bidirectional ray tracing algorithm" (PDF). Retrieved June 11, 2008.
+
+^ Global Illumination using Photon Maps Archived 2008-08-08 at the Wayback Machine
+
+^ "Photon Mapping - Zack Waters".
+
+^ Veach, Eric; Guibas, Leonidas J. (1997). "Metropolis Light Transport". SIGGRAPH '97: Proceedings of the 24th annual conference on Computer graphics and interactive techniques. pp.Â 65â76. doi:10.1145/258734.258775. ISBNÂ 0897918967. S2CIDÂ 1832504.
+
+^ Hall, Roy A.; Greenberg, Donald P. (November 1983). "A Testbed for Realistic Image Synthesis". IEEE Computer Graphics and Applications. 3 (8): 10â20. CiteSeerXÂ 10.1.1.131.1958. doi:10.1109/MCG.1983.263292. S2CIDÂ 9594422.
+
+^ "ãOsaka University ã LINKS-1 Computer Graphics System". IPSJ Computer Museum. Information Processing Society of Japan. Retrieved November 15, 2018.
+
+^ Defanti, Thomas A. (1984). Advances in computers. Volume 23 (PDF). Academic Press. p.Â 121. ISBNÂ 0-12-012123-9.
+
+^ See Proceedings of 4th Computer Graphics Workshop, Cambridge, MA, USA, October 1987. Usenix Association, 1987. pp 86â98.
+
+^ "About BRL-CAD". Retrieved January 18, 2019.
+
+^ Piero Foscari. "The Realtime Raytracing Realm". ACM Transactions on Graphics. Retrieved September 17, 2007.
+
+^ 
+Parker, Steven; Martin, William (April 26, 1999). "Interactive ray tracing". I3D '99 Proceedings of the 1999 Symposium on Interactive 3D Graphics. I3D '99. 5 (April 1999): 119â126. CiteSeerXÂ 10.1.1.6.8426. doi:10.1145/300523.300537. ISBNÂ 1581130821. S2CIDÂ 4522715. Retrieved October 30, 2019.
+
+^ Mark Ward (March 16, 2007). "Rays light up life-like graphics". BBC News. Retrieved September 17, 2007.
+
+^ Theo Valich (June 12, 2008). "Intel converts ET: Quake Wars to ray tracing". TG Daily. Retrieved June 16, 2008.
+
+^ Nvidia (October 18, 2009). "Nvidia OptiX". Nvidia. Retrieved November 6, 2009.
+
+^ "3DWorld: Hardware review: Caustic Series2 R2500 ray-tracing accelerator card". Retrieved April 23, 2013.3D World, April 2013
+
+^ Cuthbert, Dylan (October 24, 2015). "Creating the beautiful, ground-breaking visuals of The Tomorrow Children on PS4". PlayStation Blog. Retrieved December 7, 2015.
+
+^ "GPUOpen Real-time Ray-tracing".
+
+^ Garreffa, Anthony (September 9, 2020). "AMD to reveal next-gen Big Navi RDNA 2 graphics cards on October 28". TweakTown. Retrieved September 9, 2020.
+
+^ Lyles, Taylor (September 9, 2020). "AMD's next-generation Zen 3 CPUs and Radeon RX 6000 'Big Navi' GPU will be revealed next month". The Verge. Retrieved September 10, 2020.
+
+^ "AMD Teases Radeon RX 6000 Card Performance Numbers: Aiming For 3080?". anandtech.com. AnandTech. October 8, 2020. Retrieved October 25, 2020.
+
+^ "AMD Announces Ryzen "Zen 3" and Radeon "RDNA2" Presentations for October: A New Journey Begins". anandtech.com. AnandTech. September 9, 2020. Retrieved October 25, 2020.
+
+^ Judd, Will (October 28, 2020). "AMD unveils three Radeon 6000 graphics cards with ray tracing and RTX-beating performance". Eurogamer. Retrieved October 28, 2020.
+
+^ Warren, Tom (June 8, 2019). "Microsoft hints at next-generation Xbox 'Scarlet' in E3 teasers". The Verge. Retrieved October 8, 2019.
+
+^ Chaim, Gartenberg (October 8, 2019). "Sony confirms PlayStation 5 name, holiday 2020 release date". The Verge. Retrieved October 8, 2019.
+
+^ Warren, Tom (February 24, 2020). "Microsoft reveals more Xbox Series X specs, confirms 12 teraflops GPU". The Verge. Retrieved February 25, 2020.
+
+^ Warren, Tom (September 9, 2020). "Microsoft reveals Xbox Series S specs, promises four times the processing power of Xbox One". The Verge. Retrieved September 9, 2020.
+
+^ "Computability and Complexity of Ray Tracing" (PDF). CS.Duke.edu.
+
+
+External links[edit]
+Interactive Ray Tracing: The replacement of rasterization?
+The Compleat Angler (1978)
+Writing a Simple Ray Tracer (scratchapixel)
+Ray tracing a torus
+Ray Tracing in One Weekend Book Series
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Ray_tracing_(graphics)&oldid=1068358906"
+		Categories: Ray tracing (graphics)Geometrical opticsVirtual realityGlobal illumination algorithmsComputer graphics3D computer graphicsShadingHidden categories: CS1 maint: date and yearWebarchive template wayback linksUse mdy dates from October 2019Articles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from January 2019
+	

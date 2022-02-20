@@ -1,0 +1,972 @@
+
+Title:
+Tagged union
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Data structure used to hold a value that could take on several different, but fixed, types
+In computer science, a tagged union, also called a variant, variant record, choice type, discriminated union, disjoint union, sum type or coproduct, is a data structure used to hold a value that could take on several different, but fixed, types. Only one of the types can be in use at any one time, and a tag field explicitly indicates which one is in use. It can be thought of as a type that has several "cases", each of which should be handled correctly when that type is manipulated. This is critical in defining recursive datatypes, in which some component of a value may have the same type as the value itself, for example in defining a type for representing trees, where it is necessary to distinguish multi-node subtrees and leaves. Like ordinary unions, tagged unions can save storage by overlapping storage areas for each type, since only one is in use at a time.
+
+Contents
+
+1 Description
+2 Advantages and disadvantages
+3 Examples
+4 Timeline of language support
+
+4.1 1960s
+4.2 1970s & 1980s
+4.3 2000s
+4.4 2010s
+
+
+5 Class hierarchies as tagged unions
+6 See also
+7 References
+8 External links
+
+
+
+Description[edit]
+Tagged unions are most important in functional languages such as ML and Haskell, where they are called datatypes (see algebraic data type) and the compiler is able to verify that all cases of a tagged union are always handled, avoiding many types of errors. They can, however, be constructed in nearly any language, and are much safer than untagged unions, often simply called unions, which are similar but do not explicitly keep track of which member of the union is currently in use.
+Tagged unions are often accompanied by the concept of a type constructor, which is similar but not the same as a constructor for a class. Type constructors produce a tagged union type, given the initial tag type and the corresponding type.
+Mathematically, tagged unions correspond to disjoint or discriminated unions, usually written using +. Given an element of a disjoint union A + B,  it is possible to determine whether it came from A or B. If an element lies in both, there will be two effectively distinct copies of the value in A + B, one from A and one from B.
+In type theory, a tagged union is called a sum type.  Sum types are the dual of product types.  Notations vary, but usually the sum type A + B comes with two introduction forms (injections) inj1: A â A + B and inj2: B â A + B.  The elimination form is case analysis, known as pattern matching in ML-style programming languages: if e has type A + B and e1 and e2 have type 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+ under the assumptions x: A and y: B respectively, then the term 
+
+  
+    
+      
+        
+          
+            c
+            a
+            s
+            e
+          
+        
+        Â 
+        e
+        Â 
+        
+          
+            o
+            f
+          
+        
+        Â 
+        x
+        â
+        
+          e
+          
+            1
+          
+        
+        â£
+        y
+        â
+        
+          e
+          
+            2
+          
+        
+      
+    
+    {\displaystyle {\mathsf {case}}\ e\ {\mathsf {of}}\ x\Rightarrow e_{1}\mid y\Rightarrow e_{2}}
+  
+ has type 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \tau }
+  
+.  The sum type corresponds to intuitionistic logical disjunction under the CurryâHoward correspondence.
+An enumerated type can be seen as a degenerate case: a tagged union of unit types.  It corresponds to a set of nullary constructors and may be implemented as a simple tag variable, since it holds no additional data besides the value of the tag.
+Many programming techniques and data structures, including rope, lazy evaluation, class hierarchy (see below), arbitrary-precision arithmetic, CDR coding, the indirection bit and other kinds of tagged pointers, etc. 
+are usually implemented using some sort of tagged union.
+A tagged union can be seen as the simplest kind of self-describing data format.
+The tag of the tagged union can be seen as the simplest kind of metadata.
+
+Advantages and disadvantages[edit]
+The primary advantage of a tagged union over an untagged union is that all accesses are safe, and the compiler can even check that all cases are handled. Untagged unions depend on program logic to correctly identify the currently active field, which may result in strange behavior and hard-to-find bugs if that logic fails.
+The primary advantage of a tagged union over a simple record containing a field for each type is that it saves storage by overlapping storage for all the types. Some implementations reserve enough storage for the largest type, while others dynamically adjust the size of a tagged union value as needed. When the value is immutable, it is simple to allocate just as much storage as is needed.
+The main disadvantage of tagged unions is that the tag occupies space. Since there are usually a small number of alternatives, the tag can often be squeezed into 2 or 3 bits wherever space can be found, but sometimes even these bits are not available. In this case, a helpful alternative may be folded, computed or encoded tags, where the tag value is dynamically computed from the contents of the union field. Common examples of this are the use of reserved values, where, for example, a function returning a positive number may return -1 to indicate failure, and sentinel values, most often used in tagged pointers.
+Sometimes, untagged unions are used to perform bit-level conversions between types, called reinterpret casts in C++. Tagged unions are not intended for this purpose; typically a new value is assigned whenever the tag is changed.
+Many languages support, to some extent, a universal data type, which is a type that includes every value of every other type, and often a way is provided to test the actual type of a value of the universal type. These are sometimes referred to as variants. While universal data types are comparable to tagged unions in their formal definition, typical tagged unions include a relatively small number of cases, and these cases form different ways of expressing a single coherent concept, such as a data structure node or instruction. Also, there is an expectation that every possible case of a tagged union will be dealt with when it is used. The values of a universal data type are not related and there is no feasible way to deal with them all.
+Like option types and exception handling, tagged unions are sometimes used to handle the occurrence of exceptional results.  Often these tags are folded into the type as "reserved values", and their occurrence is not consistently checked: this is a fairly common source of programming errors.  This use of tagged unions can be formalized as a monad with the following functions:
+
+
+  
+    
+      
+        
+          return
+        
+        :
+        A
+        â
+        
+          (
+          
+            A
+            +
+            E
+          
+          )
+        
+        =
+        a
+        â¦
+        
+          value
+        
+        
+        a
+      
+    
+    {\displaystyle {\text{return}}\colon A\to \left(A+E\right)=a\mapsto {\text{value}}\,a}
+  
+
+
+  
+    
+      
+        
+          bind
+        
+        :
+        
+          (
+          
+            A
+            +
+            E
+          
+          )
+        
+        â
+        
+          (
+          
+            A
+            â
+            
+              (
+              
+                B
+                +
+                E
+              
+              )
+            
+          
+          )
+        
+        â
+        
+          (
+          
+            B
+            +
+            E
+          
+          )
+        
+        =
+        a
+        â¦
+        f
+        â¦
+        
+          
+            {
+            
+              
+                
+                  
+                    err
+                  
+                  
+                  e
+                
+                
+                  
+                    if
+                  
+                  Â 
+                  a
+                  =
+                  
+                    err
+                  
+                  
+                  e
+                
+              
+              
+                
+                  f
+                  
+                  
+                    a
+                    â²
+                  
+                
+                
+                  
+                    if
+                  
+                  Â 
+                  a
+                  =
+                  
+                    value
+                  
+                  
+                  
+                    a
+                    â²
+                  
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\text{bind}}\colon \left(A+E\right)\to \left(A\to \left(B+E\right)\right)\to \left(B+E\right)=a\mapsto f\mapsto {\begin{cases}{\text{err}}\,e&{\text{if}}\ a={\text{err}}\,e\\f\,a'&{\text{if}}\ a={\text{value}}\,a'\end{cases}}}
+  
+
+where "value" and "err" are the constructors of the union type, A and B are valid result types and E is the type of error conditions.  Alternately, the same monad may be described by return and two additional functions, fmap and join:
+
+
+  
+    
+      
+        
+          fmap
+        
+        :
+        (
+        A
+        â
+        B
+        )
+        â
+        
+          (
+          
+            
+              (
+              
+                A
+                +
+                E
+              
+              )
+            
+            â
+            
+              (
+              
+                B
+                +
+                E
+              
+              )
+            
+          
+          )
+        
+        =
+        f
+        â¦
+        a
+        â¦
+        
+          
+            {
+            
+              
+                
+                  
+                    err
+                  
+                  
+                  e
+                
+                
+                  
+                    if
+                  
+                  Â 
+                  a
+                  =
+                  
+                    err
+                  
+                  
+                  e
+                
+              
+              
+                
+                  
+                    value
+                  
+                  
+                  
+                    (
+                  
+                  
+                  f
+                  
+                  
+                    a
+                    â²
+                  
+                  
+                  
+                    )
+                  
+                
+                
+                  
+                    if
+                  
+                  Â 
+                  a
+                  =
+                  
+                    value
+                  
+                  
+                  
+                    a
+                    â²
+                  
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\text{fmap}}\colon (A\to B)\to \left(\left(A+E\right)\to \left(B+E\right)\right)=f\mapsto a\mapsto {\begin{cases}{\text{err}}\,e&{\text{if}}\ a={\text{err}}\,e\\{\text{value}}\,{\text{(}}\,f\,a'\,{\text{)}}&{\text{if}}\ a={\text{value}}\,a'\end{cases}}}
+  
+
+
+  
+    
+      
+        
+          join
+        
+        :
+        (
+        (
+        A
+        +
+        E
+        )
+        +
+        E
+        )
+        â
+        (
+        A
+        +
+        E
+        )
+        =
+        a
+        â¦
+        
+          
+            {
+            
+              
+                
+                  
+                    err
+                  
+                  
+                  e
+                
+                
+                  
+                    
+                      if
+                    
+                  
+                  Â 
+                  a
+                  =
+                  
+                    err
+                  
+                  
+                  e
+                
+              
+              
+                
+                  
+                    err
+                  
+                  
+                  e
+                
+                
+                  
+                    if
+                  
+                  Â 
+                  a
+                  =
+                  
+                    value
+                  
+                  
+                  
+                    (err
+                  
+                  
+                  e
+                  
+                  
+                    )
+                  
+                
+              
+              
+                
+                  
+                    value
+                  
+                  
+                  
+                    a
+                    â²
+                  
+                
+                
+                  
+                    if
+                  
+                  Â 
+                  a
+                  =
+                  
+                    value
+                  
+                  
+                  
+                    (value
+                  
+                  
+                  
+                    a
+                    â²
+                  
+                  
+                  
+                    )
+                  
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\text{join}}\colon ((A+E)+E)\to (A+E)=a\mapsto {\begin{cases}{\text{err}}\,e&{\mbox{if}}\ a={\text{err}}\,e\\{\text{err}}\,e&{\text{if}}\ a={\text{value}}\,{\text{(err}}\,e\,{\text{)}}\\{\text{value}}\,a'&{\text{if}}\ a={\text{value}}\,{\text{(value}}\,a'\,{\text{)}}\end{cases}}}
+  
+
+Examples[edit]
+Say we wanted to build a binary tree of integers. In ML, we would do this by creating a datatype like this:
+
+datatype tree = Leaf
+              | Node of (int * tree * tree)
+
+This is a tagged union with two cases: one, the leaf, is used to terminate a path of the tree, and functions much like a null value would in imperative languages. The other branch holds a node, which contains an integer and a left and right subtree. Leaf and Node are the constructors, which enable us to actually produce a particular tree, such as:
+
+Node(5, Node(1, Leaf, Leaf), Node(3, Leaf, Node(4, Leaf, Leaf)))
+
+which corresponds to this tree:
+
+
+Now we can easily write a typesafe function that, say, counts the number of nodes in the tree:
+
+fun countNodes(Leaf) = 0
+  | countNodes(Node(int, left, right)) =
+      1 + countNodes(left) + countNodes(right)
+
+Timeline of language support[edit]
+1960s[edit]
+In ALGOL 68, tagged unions are called united modes, the tag is implicit, and the case construct is used to determine which field is tagged:
+mode node = union (real, int, compl, string);
+Usage example for union case of node:
+
+node nÂ := "1234";
+Â 
+case n in
+  (real r):   print(("real:", r)),
+  (int i):    print(("int:", i)),
+  (compl c):  print(("compl:", c)),
+  (string s): print(("string:", s))
+  out         print(("?:", n))
+esac
+
+1970s & 1980s[edit]
+Although primarily only functional languages such as ML (from the 1970s) and Haskell (from 1990s) give a central role to tagged unions and have the power to check that all cases are handled, other languages have support for tagged unions as well. However, in practice they can be less efficient in non-functional languages due to optimizations enabled by functional language compilers that can eliminate explicit tag checks and avoid explicit storage of tags.[citation needed]
+Pascal, Ada, and Modula-2 call them variant records (formally discriminated type in Ada), and require the tag field to be manually created and the tag values specified, as in this Pascal example:
+
+type shapeKind = (square, rectangle, circle);
+     shape = record
+                centerx : integer;
+                centery : integer;
+                case kind : shapeKind of
+                   square : (side : integer);
+                   rectangle : (width, height : integer);
+                   circle : (radius : integer);
+	      end;
+
+and this Ada equivalent:
+
+type Shape_Kind is (Square, Rectangle, Circle);
+type Shape (Kind : Shape_Kind) is record
+   Center_X : Integer;
+   Center_Y : Integer;
+   case Kind is
+      when Square =>
+         Side : Integer;
+      when Rectangle =>
+         Width, Height : Integer;
+      when Circle =>
+         Radius : Integer;
+   end case;
+end record;
+
+-- Any attempt to access a member whose existence depends
+-- on a particular value of the discriminant, while the
+-- discriminant is not the expected one, raises an error.
+
+In C and C++, a tagged union can be created from untagged unions using a strict access discipline where the tag is always checked:
+
+enum ShapeKind { Square, Rectangle, Circle };
+
+struct Shape {
+    int centerx;
+    int centery;
+    enum ShapeKind kind;
+    union {
+        struct { int side; };           /* Square */
+        struct { int width, height; }; /* Rectangle */
+        struct { int radius; };         /* Circle */
+    };
+};
+
+int getSquareSide(struct Shape* s) {
+    assert(s->kind == Square);
+    return s->side;
+}
+
+void setSquareSide(struct Shape* s, int side) {
+    s->kind = Square;
+    s->side = side;
+}
+
+/* and so on */
+
+As long as the union fields are only accessed through the functions, the accesses will be safe and correct. The same approach can be used for encoded tags; we simply decode the tag and then check it on each access. If the inefficiency of these tag checks is a concern, they may be automatically removed in the final version.
+C and C++ also have language support for one particular tagged union: the possibly-null pointer. This may be compared to the option type in ML or the Maybe type in Haskell, and can be seen as a tagged pointer: a tagged union (with an encoded tag) of two types:
+
+Valid pointers,
+A null pointer type with only one value, null, indicating an exceptional condition.
+Unfortunately, C compilers do not verify that the null case is always handled, and this is a particularly prevalent source of errors in C code, since there is a tendency to ignore exceptional cases.
+
+2000s[edit]
+One advanced dialect of C called Cyclone has extensive built-in support for tagged unions.[1]
+The enum types in the Rust, Haxe and Swift languages also work as tagged unions.
+The variant library from Boost has demonstrated it was possible to implement a safe tagged union as a library in C++, visitable using function objects.
+
+struct display : boost::static_visitor<void>
+{
+    void operator()(int i)
+    {
+        std::cout << "It's an int, with value " << i << std::endl;
+    }
+
+    void operator()(const std::string& s)
+    {
+        std::cout << "It's a string, with value " << s << std::endl;
+    }
+};
+
+boost::variant<int, std::string> v = 42;
+boost::apply_visitor(display(), v);
+
+boost::variant<int, std::string> v = "hello world";
+boost::apply_visitor(display(), v);
+
+Scala has case classes:
+
+sealed abstract class Tree
+case object Leaf extends Tree
+case class Node(value: Int, left: Tree, right: Tree) extends Tree
+
+val tree = Node(5, Node(1, Leaf, Leaf), Node(3, Leaf, Node(4, Leaf, Leaf)))
+
+Because the class hierarchy is sealed, the compiler can check that all cases are handled in a pattern match:
+
+tree match {
+  case Node(x, _, _) => println("top level node value: " + x)
+  case Leaf          => println("top level node is a leaf")
+}
+
+Scala's case classes also permit reuse through subtyping:
+
+sealed abstract class Shape(centerX: Int, centerY: Int)
+case class Square(side: Int, centerX: Int, centerY: Int) extends Shape(centerX, centerY)
+case class Rectangle(length: Int, height: Int, centerX: Int, centerY: Int) extends Shape(centerX, centerY)
+case class Circle(radius: Int, centerX: Int, centerY: Int) extends Shape(centerX, centerY)
+
+F# has discriminated unions:
+
+type Tree =
+  | Leaf
+  | Node of value: int * left: Tree * right: Tree
+
+let tree = Node(5, Node(1, Leaf, Leaf), Node(3, Leaf, Node(4, Leaf, Leaf)))
+
+Because the defined cases are exhaustive, the compiler can check that all cases are handled in a pattern match:
+
+match tree with
+| Node (x, _, _) -> printfn "top level node value: %i" x
+| Leaf           -> printfn "top level node is a leaf"
+
+Haxe's enums also work as tagged unions:[2]
+
+enum Color {
+  Red;
+  Green;
+  Blue;
+  Rgb(r:Int, g:Int, b:Int);
+}
+
+These can be matched using a switch expression:
+
+switch (color) {
+  case Red: trace("Color was red");
+  case Green: trace("Color was green");
+  case Blue: trace("Color was blue");
+  case Rgb(r, g, b): trace("Color had a red value of " +r);
+}
+Nim has object variants[3] similar in declaration to those in Pascal and Ada:type
+  ShapeKind = enum
+    skSquare, skRectangle, skCircle
+  Shape = object
+    centerX, centerY: int
+    case kind: ShapeKind
+    of skSquare:
+      side: int
+    of skRectangle:
+      length, height: int
+    of skCircle:
+      radius: int
+Macros can be used to emulate pattern matching or to create syntactic sugar for declaring object variants, seen here as implemented by the package patty:import patty
+
+proc `~`[A](a: A): ref A =
+  new(result)
+  result[] = a
+
+variant List[A]:
+  Nil
+  Cons(x: A, xs: ref List[A])
+
+proc listHelper[A](xs: seq[A]): List[A] =
+  if xs.len == 0: Nil[A]()
+  else: Cons(xs[0], ~listHelper(xs[1 .. xs.high]))
+
+proc list[A](xs: varargs[A]): List[A] = listHelper(@xs)
+
+proc sum(xs: List[int]): int = (block:
+  match xs:
+    Nil: 0
+    Cons(y, ys): y + sum(ys[])
+)
+
+echo sum(list(1, 2, 3, 4, 5))
+
+2010s[edit]
+Enums are added in Scala 3,[4] allowing us to rewrite the earlier Scala examples more concisely:
+
+enum Tree[+T]:
+  case Leaf
+  case Node(x: Int, left: Tree[T], right: Tree[T])
+
+enum Shape(centerX: Int, centerY: Int):
+  case Square(side: Int, centerX: Int, centerY: Int) extends Shape(centerY, centerX)
+  case Rectangle(length: Int, height: Int, centerX: Int, centerY: Int) extends Shape(centerX, centerY)
+  case Circle(radius: Int, centerX: Int, centerY: Int) extends Shape(centerX, centerY)
+
+The Rust language has extensive support for tagged unions, called enums.[5] For example:
+
+enum Tree {
+    Leaf,
+    Node(i64, Box<Tree>, Box<Tree>)
+}
+
+It also allows matching on unions:
+
+let tree = Tree::Node(
+    2,
+    Box::new(Tree::Node(0, Box::new(Tree::Leaf), Box::new(Tree::Leaf))),
+    Box::new(Tree::Node(3, Box::new(Tree::Leaf),
+        Box::new(Tree::Node(4, Box::new(Tree::Leaf), Box::new(Tree::Leaf)))))
+);
+
+fn add_values(tree: Tree) -> i64 {
+    match tree {
+        Tree::Node(v, a, b) => v + add_values(*a) + add_values(*b),
+        Tree::Leaf => 0
+    }
+}
+
+assert_eq!(add_values(tree), 9);
+
+Rust's error handling model relies extensively on these tagged unions, especially the Option<T> type, which is either None or Some(T), and the Result<T, E> type, which is either Ok(T) or Err(E).[6]
+
+Swift also has substantial support for tagged unions via enumerations.[7] For example:enum Tree {
+    case leaf
+    indirect case node(Int, Tree, Tree)
+}
+
+let tree = Tree.node(
+    2,
+    .node(0, .leaf, .leaf),
+    .node(3, .leaf, .node(4, .leaf, .leaf))
+)
+
+func add_values(_ tree: Tree) -> Int {
+    switch tree {
+    case let .node(v, a, b):
+        return v + add_values(a) + add_values(b)
+
+    case .leaf:
+        return 0
+    }
+}
+
+assert(add_values(tree) == 9)
+With TypeScript it is possible to create tagged unions as well. For example:
+interface Leaf { type: "leaf"; value: string; }
+
+interface Node { type: "node"; left: Tree; right: Tree; }
+
+type Tree = Leaf | Node
+
+function visit(tree: Tree) {
+    switch (tree.type) {
+        case "leaf":
+            console.log(tree.value)
+            break
+        case "node":
+            visit(tree.left)
+            visit(tree.right)
+            break 
+    } 
+}
+Python 3.9 introduces support for typing annotations that can be used to define a tagged union type (PEP-593[8]): Currency = Annotated[
+    TypedDict('Currency', {'dollars': float, 'pounds': float}, total=False),
+    TaggedUnion,
+]
+C++20 introduces std::variant and constexpr ifusing Tree = std::variant<struct Leaf, struct Node>;
+
+struct Leaf
+{
+  std::string value;
+};
+struct Node
+{
+  Tree* left = nullptr;
+  Tree* right = nullptr;
+};
+
+struct Transverser
+{
+  template<typename T>
+  void operator()(T&& v)
+  {
+    if constexpr (std::is_same_v<T, Leaf&>)
+    {
+      std::cout << v.value << "\n";
+    }
+    else if constexpr (std::is_same_v<T, Node&>)
+    {
+      if (v.left != nullptr)
+        std::visit(Transverser{}, *v.left);
+
+      if (v.right != nullptr)
+        std::visit(Transverser{}, *v.right);
+    }
+    else
+    {
+      static_assert("non-exhaustive visitor!");
+    };
+  }
+};
+/*Tree forest = ...;
+  std::visit(Transverser{}, forest);*/
+
+Class hierarchies as tagged unions[edit]
+In a typical class hierarchy in object-oriented programming, each subclass can encapsulate data unique to that class. The metadata used to perform virtual method lookup (for example, the object's vtable pointer in most C++ implementations) identifies the subclass and so effectively acts as a tag identifying the particular data stored by the instance (see RTTI).
+An object's constructor sets this tag, and it remains constant throughout the object's lifetime.
+Nevertheless, a class hierarchy involves true subtype polymorphism; it can be extended by creating further subclasses of the same base type, which could not be handled correctly under a tag/dispatch model.  Hence, it is usually not possible to do case analysis or dispatch on a subobject's 'tag' as one would for tagged unions.  Some languages such as Scala allow base classes to be "sealed", and unify tagged unions with sealed base classes.
+
+See also[edit]
+Discriminator, the type tag for discriminated unions in CORBA
+Variant type (COM)
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ http://cyclone.thelanguage.org/wiki/Tagged%20Unions
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Using Enums - Haxe - The Cross-platform Toolkit". Haxe Foundation.
+
+^ "Nim Manual". nim-lang.org. Retrieved 2020-01-23.
+
+^ "Scala 3 Language Reference: Enumerations". The Scala Team.
+
+^ "The Rust Programming Language". Mozilla.
+
+^ "Rust By Example". Mozilla.
+
+^ "Enumerations â The Swift Programming Language (Swift 5.4)". docs.swift.org. Retrieved 2021-04-28.
+
+^ "PEP 593 -- Flexible function and variable annotations". Python.org. Retrieved 2021-06-20.
+
+
+External links[edit]
+boost::variant is a C++ typesafe discriminated union
+std.variant is an implementation of variant type in D 2.0
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteData typesUninterpreted
+Bit
+Byte
+Trit
+Tryte
+Word
+Bit array
+Numeric
+Arbitrary-precision or bignum
+Complex
+Decimal
+Fixed point
+Floating point
+Reduced precision
+Minifloat
+Half precision
+bfloat16
+Single precision
+Double precision
+Quadruple precision
+Octuple precision
+Extended precision
+Long double
+Integer
+signedness
+Interval
+Rational
+Pointer
+Address
+physical
+virtual
+Reference
+Text
+Character
+String
+null-terminated
+Composite
+Algebraic data type
+generalized
+Array
+Associative array
+Class
+Dependent
+Equality
+Inductive
+Intersection
+List
+Object
+metaobject
+Option type
+Product
+Record or Struct
+Refinement
+Set
+Union
+tagged
+Other
+Boolean
+Bottom type
+Collection
+Enumerated type
+Exception
+Function type
+Opaque data type
+Recursive data type
+Semaphore
+Stream
+Top type
+Type class
+Unit type
+Void
+Relatedtopics
+Abstract data type
+Data structure
+Generic
+Kind
+metaclass
+Object type
+Parametric polymorphism
+Primitive data type
+Protocol
+interface
+Subtyping
+Type constructor
+Type conversion
+Type system
+Type theory
+Variable
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Tagged_union&oldid=1062730533"
+		Categories: Data typesType theoryHidden categories: Articles with short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from January 2017Articles with example Pascal codeArticles with example ALGOL 68 codeArticles with example C codeArticles with example C++ codeArticles with example Ada code
+	

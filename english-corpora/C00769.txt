@@ -1,0 +1,1904 @@
+
+Title:
+Boltzmann machine
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Type ofÂ stochasticÂ recurrent neural network
+  A graphical representation of an example Boltzmann machine. Each undirected edge represents dependency. In this example there are 3 hidden units and 4 visible units. This is not a restricted Boltzmann machine.
+A Boltzmann machine (also called stochastic Hopfield network with hidden units or SherringtonâKirkpatrick model with external field or stochastic Ising-Lenz-Little model) is a type of stochastic recurrent neural network. It is a Markov random field.[1] It was translated from statistical physics for use in cognitive science. The Boltzmann machine is based on a stochastic spin-glass model with an external field, i.e., a SherringtonâKirkpatrick model that is a stochastic Ising Model[2] and applied to machine learning.[3]
+Boltzmann machines are theoretically intriguing because of the locality and Hebbian nature of their training algorithm (being trained by Hebb's rule), and because of their parallelism and the resemblance of their dynamics to simple physical processes.  Boltzmann machines with unconstrained connectivity have not proven useful for practical problems in machine learning or inference, but if the connectivity is properly constrained, the learning can be made efficient enough to be useful for practical problems.[4]
+They are named after the Boltzmann distribution in statistical mechanics, which is used in their sampling function.  They were heavily popularized and promoted by Geoffrey Hinton, Terry Sejnowski and Yann LeCun in cognitive sciences communities and in machine learning.[5]  As a more general class within machine learning these models are called "energy based models" (EBM), because Hamiltonian of spin glasses are used as a starting point to define the learning task.[6]
+
+Contents
+
+1 Structure
+2 Unit state probability
+3 Equilibrium state
+4 Training
+5 Problems
+6 Types
+
+6.1 Restricted Boltzmann machine
+6.2 Deep Boltzmann machine
+6.3 Spike-and-slab RBMs
+
+
+7 History
+8 See also
+9 References
+10 Further reading
+11 External links
+
+
+
+Structure[edit]
+  A graphical representation of a Boltzmann machine with a few weights labeled. Each undirected edge represents dependency and is weighted with weight 
+  
+    
+      
+        
+          w
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle w_{ij}}
+  
+. In this example there are 3 hidden units (blue) and 4 visible units (white). This is not a restricted Boltzmann machine.
+A Boltzmann machine, like a Hopfield network, is a network of units with an "energy" (Hamiltonian) defined for the overall network. Its units produce binary results. Unlike Hopfield nets, Boltzmann machine units are stochastic. The global energy 
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+ in a Boltzmann machine is identical in form to that of Hopfield networks and Ising models:
+
+
+  
+    
+      
+        E
+        =
+        â
+        
+          (
+          
+            
+              â
+              
+                i
+                <
+                j
+              
+            
+            
+              w
+              
+                i
+                j
+              
+            
+            
+            
+              s
+              
+                i
+              
+            
+            
+            
+              s
+              
+                j
+              
+            
+            +
+            
+              â
+              
+                i
+              
+            
+            
+              Î¸
+              
+                i
+              
+            
+            
+            
+              s
+              
+                i
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle E=-\left(\sum _{i<j}w_{ij}\,s_{i}\,s_{j}+\sum _{i}\theta _{i}\,s_{i}\right)}
+  
+
+Where:
+
+
+  
+    
+      
+        
+          w
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle w_{ij}}
+  
+ is the connection strength between unit 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+ and unit 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+.
+
+  
+    
+      
+        
+          s
+          
+            i
+          
+        
+      
+    
+    {\displaystyle s_{i}}
+  
+ is the state, 
+  
+    
+      
+        
+          s
+          
+            i
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        }
+      
+    
+    {\displaystyle s_{i}\in \{0,1\}}
+  
+, of unit 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+.
+
+  
+    
+      
+        
+          Î¸
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \theta _{i}}
+  
+ is the bias of unit 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ in the global energy function. (
+  
+    
+      
+        â
+        
+          Î¸
+          
+            i
+          
+        
+      
+    
+    {\displaystyle -\theta _{i}}
+  
+ is the activation threshold for the unit.)
+Often the weights 
+  
+    
+      
+        
+          w
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle w_{ij}}
+  
+ are represented as a symmetric matrix 
+  
+    
+      
+        W
+        =
+        [
+        
+          w
+          
+            i
+            j
+          
+        
+        ]
+      
+    
+    {\displaystyle W=[w_{ij}]}
+  
+ with zeros along the diagonal.
+
+Unit state probability[edit]
+The difference in the global energy that results from a single unit 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ equaling 0 (off) versus 1 (on), written 
+  
+    
+      
+        Î
+        
+          E
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \Delta E_{i}}
+  
+, assuming a symmetric matrix of weights, is given by:
+
+
+  
+    
+      
+        Î
+        
+          E
+          
+            i
+          
+        
+        =
+        
+          â
+          
+            j
+            >
+            i
+          
+        
+        
+          w
+          
+            i
+            j
+          
+        
+        
+        
+          s
+          
+            j
+          
+        
+        +
+        
+          â
+          
+            j
+            <
+            i
+          
+        
+        
+          w
+          
+            j
+            i
+          
+        
+        
+        
+          s
+          
+            j
+          
+        
+        +
+        
+          Î¸
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \Delta E_{i}=\sum _{j>i}w_{ij}\,s_{j}+\sum _{j<i}w_{ji}\,s_{j}+\theta _{i}}
+  
+
+This can be expressed as the difference of energies of two states:
+
+
+  
+    
+      
+        Î
+        
+          E
+          
+            i
+          
+        
+        =
+        
+          E
+          
+            i=off
+          
+        
+        â
+        
+          E
+          
+            i=on
+          
+        
+      
+    
+    {\displaystyle \Delta E_{i}=E_{\text{i=off}}-E_{\text{i=on}}}
+  
+
+Substituting the energy of each state with its relative probability according to the Boltzmann factor (the property of a Boltzmann distribution that the energy of a state is proportional to the negative log probability of that state) gives:
+
+
+  
+    
+      
+        Î
+        
+          E
+          
+            i
+          
+        
+        =
+        â
+        
+          k
+          
+            B
+          
+        
+        
+        T
+        ln
+        â¡
+        (
+        
+          p
+          
+            i=off
+          
+        
+        )
+        â
+        (
+        â
+        
+          k
+          
+            B
+          
+        
+        
+        T
+        ln
+        â¡
+        (
+        
+          p
+          
+            i=on
+          
+        
+        )
+        )
+      
+    
+    {\displaystyle \Delta E_{i}=-k_{B}\,T\ln(p_{\text{i=off}})-(-k_{B}\,T\ln(p_{\text{i=on}}))}
+  
+
+where 
+  
+    
+      
+        
+          k
+          
+            B
+          
+        
+      
+    
+    {\displaystyle k_{B}}
+  
+ is Boltzmann's constant and is absorbed into the artificial notion of temperature 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+. We then rearrange terms and consider that the probabilities of the unit being on and off must sum to one:
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              
+                E
+                
+                  i
+                
+              
+            
+            T
+          
+        
+        =
+        ln
+        â¡
+        (
+        
+          p
+          
+            i=on
+          
+        
+        )
+        â
+        ln
+        â¡
+        (
+        
+          p
+          
+            i=off
+          
+        
+        )
+      
+    
+    {\displaystyle {\frac {\Delta E_{i}}{T}}=\ln(p_{\text{i=on}})-\ln(p_{\text{i=off}})}
+  
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              
+                E
+                
+                  i
+                
+              
+            
+            T
+          
+        
+        =
+        ln
+        â¡
+        (
+        
+          p
+          
+            i=on
+          
+        
+        )
+        â
+        ln
+        â¡
+        (
+        1
+        â
+        
+          p
+          
+            i=on
+          
+        
+        )
+      
+    
+    {\displaystyle {\frac {\Delta E_{i}}{T}}=\ln(p_{\text{i=on}})-\ln(1-p_{\text{i=on}})}
+  
+
+
+  
+    
+      
+        
+          
+            
+              Î
+              
+                E
+                
+                  i
+                
+              
+            
+            T
+          
+        
+        =
+        ln
+        â¡
+        
+          (
+          
+            
+              
+                p
+                
+                  i=on
+                
+              
+              
+                1
+                â
+                
+                  p
+                  
+                    i=on
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle {\frac {\Delta E_{i}}{T}}=\ln \left({\frac {p_{\text{i=on}}}{1-p_{\text{i=on}}}}\right)}
+  
+
+
+  
+    
+      
+        â
+        
+          
+            
+              Î
+              
+                E
+                
+                  i
+                
+              
+            
+            T
+          
+        
+        =
+        ln
+        â¡
+        
+          (
+          
+            
+              
+                1
+                â
+                
+                  p
+                  
+                    i=on
+                  
+                
+              
+              
+                p
+                
+                  i=on
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle -{\frac {\Delta E_{i}}{T}}=\ln \left({\frac {1-p_{\text{i=on}}}{p_{\text{i=on}}}}\right)}
+  
+
+
+  
+    
+      
+        â
+        
+          
+            
+              Î
+              
+                E
+                
+                  i
+                
+              
+            
+            T
+          
+        
+        =
+        ln
+        â¡
+        
+          (
+          
+            
+              
+                1
+                
+                  p
+                  
+                    i=on
+                  
+                
+              
+            
+            â
+            1
+          
+          )
+        
+      
+    
+    {\displaystyle -{\frac {\Delta E_{i}}{T}}=\ln \left({\frac {1}{p_{\text{i=on}}}}-1\right)}
+  
+
+
+  
+    
+      
+        exp
+        â¡
+        
+          (
+          
+            â
+            
+              
+                
+                  Î
+                  
+                    E
+                    
+                      i
+                    
+                  
+                
+                T
+              
+            
+          
+          )
+        
+        =
+        
+          
+            1
+            
+              p
+              
+                i=on
+              
+            
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle \exp \left(-{\frac {\Delta E_{i}}{T}}\right)={\frac {1}{p_{\text{i=on}}}}-1}
+  
+
+Solving for 
+  
+    
+      
+        
+          p
+          
+            i=on
+          
+        
+      
+    
+    {\displaystyle p_{\text{i=on}}}
+  
+, the probability that the 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+-th unit is on gives:
+
+
+  
+    
+      
+        
+          p
+          
+            i=on
+          
+        
+        =
+        
+          
+            1
+            
+              1
+              +
+              exp
+              â¡
+              (
+              â
+              
+                
+                  
+                    Î
+                    
+                      E
+                      
+                        i
+                      
+                    
+                  
+                  T
+                
+              
+              )
+            
+          
+        
+      
+    
+    {\displaystyle p_{\text{i=on}}={\frac {1}{1+\exp(-{\frac {\Delta E_{i}}{T}})}}}
+  
+
+where the scalar 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+ is referred to as the temperature of the system. This relation is the source of the logistic function found in probability expressions in variants of the Boltzmann machine.
+
+Equilibrium state[edit]
+The network runs by repeatedly choosing a unit and resetting its state. After running for long enough at a certain temperature, the probability of a global state of the network depends only upon that global state's energy, according to a Boltzmann distribution, and not on the initial state from which the process was started. This means that log-probabilities of global states become linear in their energies. This relationship is true when the machine is "at thermal equilibrium", meaning that the probability distribution of global states has converged. Running the network beginning from a high temperature, its temperature gradually decreases until reaching a thermal equilibrium at a lower temperature. It then may converge to a distribution where the energy level fluctuates around the global minimum. This process is called simulated annealing.
+To train the network so that the chance it will converge to a global state according to an external distribution over these states, the weights must be set so that the global states with the highest probabilities get the lowest energies. This is done by training.
+
+Training[edit]
+The units in the Boltzmann machine are divided into 'visible' units, V, and 'hidden' units, H. The visible units are those that receive information from the 'environment', i.e. the training set is a set of binary vectors over the set V. The distribution over the training set is denoted 
+  
+    
+      
+        
+          P
+          
+            +
+          
+        
+        (
+        V
+        )
+      
+    
+    {\displaystyle P^{+}(V)}
+  
+.  
+The distribution over global states converges as the Boltzmann machine reaches thermal equilibrium. We denote this distribution, after we marginalize it over the hidden units, as 
+  
+    
+      
+        
+          P
+          
+            â
+          
+        
+        (
+        V
+        )
+      
+    
+    {\displaystyle P^{-}(V)}
+  
+.
+Our goal is to approximate the "real" distribution 
+  
+    
+      
+        
+          P
+          
+            +
+          
+        
+        (
+        V
+        )
+      
+    
+    {\displaystyle P^{+}(V)}
+  
+ using the 
+  
+    
+      
+        
+          P
+          
+            â
+          
+        
+        (
+        V
+        )
+      
+    
+    {\displaystyle P^{-}(V)}
+  
+ produced by the machine. The similarity of the two distributions is measured by the KullbackâLeibler divergence, 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+:
+
+
+  
+    
+      
+        G
+        =
+        
+          â
+          
+            v
+          
+        
+        
+          
+            P
+            
+              +
+            
+          
+          (
+          v
+          )
+          ln
+          â¡
+          
+            (
+            
+              
+                
+                  
+                    P
+                    
+                      +
+                    
+                  
+                  (
+                  v
+                  )
+                
+                
+                  
+                    P
+                    
+                      â
+                    
+                  
+                  (
+                  v
+                  )
+                
+              
+            
+            )
+          
+        
+      
+    
+    {\displaystyle G=\sum _{v}{P^{+}(v)\ln \left({\frac {P^{+}(v)}{P^{-}(v)}}\right)}}
+  
+
+where the sum is over all the possible states of 
+  
+    
+      
+        V
+      
+    
+    {\displaystyle V}
+  
+. 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ is a function of the weights, since they determine the energy of a state, and the energy determines 
+  
+    
+      
+        
+          P
+          
+            â
+          
+        
+        (
+        v
+        )
+      
+    
+    {\displaystyle P^{-}(v)}
+  
+, as promised by the Boltzmann distribution. A gradient descent algorithm over 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+, changes a given weight, 
+  
+    
+      
+        
+          w
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle w_{ij}}
+  
+  by subtracting the partial derivative of 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+ with respect to the weight.
+Boltzmann machine training involves two alternating phases. One is the "positive" phase where the visible units' states are clamped to a particular binary state vector sampled from the training set (according to 
+  
+    
+      
+        
+          P
+          
+            +
+          
+        
+      
+    
+    {\displaystyle P^{+}}
+  
+). The other is the "negative" phase where the network is allowed to run freely, i.e. no units have their state determined by external data. The gradient with respect to a given weight, 
+  
+    
+      
+        
+          w
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle w_{ij}}
+  
+, is given by the equation:[7]
+
+
+  
+    
+      
+        
+          
+            
+              â
+              
+                G
+              
+            
+            
+              â
+              
+                
+                  w
+                  
+                    i
+                    j
+                  
+                
+              
+            
+          
+        
+        =
+        â
+        
+          
+            1
+            R
+          
+        
+        [
+        
+          p
+          
+            i
+            j
+          
+          
+            +
+          
+        
+        â
+        
+          p
+          
+            i
+            j
+          
+          
+            â
+          
+        
+        ]
+      
+    
+    {\displaystyle {\frac {\partial {G}}{\partial {w_{ij}}}}=-{\frac {1}{R}}[p_{ij}^{+}-p_{ij}^{-}]}
+  
+
+where:
+
+
+  
+    
+      
+        
+          p
+          
+            i
+            j
+          
+          
+            +
+          
+        
+      
+    
+    {\displaystyle p_{ij}^{+}}
+  
+ is the probability that units i and j are both on when the machine is at equilibrium on the positive phase.
+
+  
+    
+      
+        
+          p
+          
+            i
+            j
+          
+          
+            â
+          
+        
+      
+    
+    {\displaystyle p_{ij}^{-}}
+  
+ is the probability that units i and j are both on when the machine is at equilibrium on the negative phase.
+
+  
+    
+      
+        R
+      
+    
+    {\displaystyle R}
+  
+ denotes the learning rate
+This result follows from the fact that at thermal equilibrium the probability 
+  
+    
+      
+        
+          P
+          
+            â
+          
+        
+        (
+        s
+        )
+      
+    
+    {\displaystyle P^{-}(s)}
+  
+ of any global state 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ when the network is free-running is given by the Boltzmann distribution.
+This learning rule is biologically plausible because the only information needed to change the weights is provided by "local" information. That is, the connection (synapse, biologically) does not need information about anything other than the two neurons it connects. This is more biologically realistic than the information needed by a connection in many other neural network training algorithms, such as backpropagation.
+The training of a Boltzmann machine does not use the EM algorithm, which is heavily used in machine learning. By minimizing the KL-divergence, it is equivalent to maximizing the log-likelihood of the data. Therefore, the training procedure performs gradient ascent on the log-likelihood of the observed data. This is in contrast to the EM algorithm, where the posterior distribution of the hidden nodes must be calculated before the maximization of the expected value of the complete data likelihood during the M-step.
+Training the biases is similar, but uses only single node activity:
+
+
+  
+    
+      
+        
+          
+            
+              â
+              
+                G
+              
+            
+            
+              â
+              
+                
+                  Î¸
+                  
+                    i
+                  
+                
+              
+            
+          
+        
+        =
+        â
+        
+          
+            1
+            R
+          
+        
+        [
+        
+          p
+          
+            i
+          
+          
+            +
+          
+        
+        â
+        
+          p
+          
+            i
+          
+          
+            â
+          
+        
+        ]
+      
+    
+    {\displaystyle {\frac {\partial {G}}{\partial {\theta _{i}}}}=-{\frac {1}{R}}[p_{i}^{+}-p_{i}^{-}]}
+  
+
+Problems[edit]
+Theoretically the Boltzmann machine is a rather general computational medium. For instance, if trained on photographs, the machine would theoretically model the distribution of photographs, and could use that model to, for example, complete a partial photograph.
+Unfortunately, Boltzmann machines experience a serious practical problem, namely that it seems to stop learning correctly when the machine is scaled up to anything larger than a trivial size.[citation needed] This is due to important effects, specifically:
+
+the required time order to collect equilibrium statistics grows exponentially with the machine's size, and with the magnitude of the connection strengths[citation needed]
+connection strengths are more plastic when the connected units have activation probabilities intermediate between zero and one, leading to a so-called variance trap. The net effect is that noise causes the connection strengths to follow a random walk until the activities saturate.
+Types[edit]
+Restricted Boltzmann machine[edit]
+  Graphical representation of a restricted Boltzmann machine. The four blue units represent hidden units, and the three red units represent visible states. In restricted Boltzmann machines there are only connections (dependencies) between hidden and visible units, and none between units of the same type (no hidden-hidden, nor visible-visible connections).
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Restricted Boltzmann machine
+Although learning is impractical in general Boltzmann machines, it can be made quite efficient in a restricted Boltzmann machine (RBM) which does not allow intralayer connections between hidden units and visible units, i.e. there is no connection between visible to visible and hidden to hidden units. After training one RBM, the activities of its hidden units can be treated as data for training a higher-level RBM. This method of stacking RBMs makes it possible to train many layers of hidden units efficiently and is one of the most common deep learning strategies. As each new layer is added the generative model improves.
+An extension to the restricted Boltzmann machine allows using real valued data rather than binary data.[8]
+One example of a practical RBM application is in speech recognition.[9]
+
+Deep Boltzmann machine[edit]
+A deep Boltzmann machine (DBM) is a type of binary pairwise Markov random field (undirected probabilistic graphical model) with multiple layers of hidden random variables. It is a network of symmetrically coupled stochastic binary units. It comprises a set of visible units 
+  
+    
+      
+        
+          Î½
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            D
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {\nu }}\in \{0,1\}^{D}}
+  
+ and layers of hidden units 
+  
+    
+      
+        
+          
+            h
+          
+          
+            (
+            1
+            )
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            
+              F
+              
+                1
+              
+            
+          
+        
+        ,
+        
+          
+            h
+          
+          
+            (
+            2
+            )
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            
+              F
+              
+                2
+              
+            
+          
+        
+        ,
+        â¦
+        ,
+        
+          
+            h
+          
+          
+            (
+            L
+            )
+          
+        
+        â
+        {
+        0
+        ,
+        1
+        
+          }
+          
+            
+              F
+              
+                L
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\boldsymbol {h}}^{(1)}\in \{0,1\}^{F_{1}},{\boldsymbol {h}}^{(2)}\in \{0,1\}^{F_{2}},\ldots ,{\boldsymbol {h}}^{(L)}\in \{0,1\}^{F_{L}}}
+  
+. No connection links units of the same layer (like RBM). For the DBM, the probability assigned to vector Î½ is
+
+
+  
+    
+      
+        p
+        (
+        
+          Î½
+        
+        )
+        =
+        
+          
+            1
+            Z
+          
+        
+        
+          â
+          
+            h
+          
+        
+        
+          e
+          
+            
+              â
+              
+                i
+                j
+              
+            
+            
+              W
+              
+                i
+                j
+              
+              
+                (
+                1
+                )
+              
+            
+            
+              Î½
+              
+                i
+              
+            
+            
+              h
+              
+                j
+              
+              
+                (
+                1
+                )
+              
+            
+            +
+            
+              â
+              
+                j
+                l
+              
+            
+            
+              W
+              
+                j
+                l
+              
+              
+                (
+                2
+                )
+              
+            
+            
+              h
+              
+                j
+              
+              
+                (
+                1
+                )
+              
+            
+            
+              h
+              
+                l
+              
+              
+                (
+                2
+                )
+              
+            
+            +
+            
+              â
+              
+                l
+                m
+              
+            
+            
+              W
+              
+                l
+                m
+              
+              
+                (
+                3
+                )
+              
+            
+            
+              h
+              
+                l
+              
+              
+                (
+                2
+                )
+              
+            
+            
+              h
+              
+                m
+              
+              
+                (
+                3
+                )
+              
+            
+          
+        
+        ,
+      
+    
+    {\displaystyle p({\boldsymbol {\nu }})={\frac {1}{Z}}\sum _{h}e^{\sum _{ij}W_{ij}^{(1)}\nu _{i}h_{j}^{(1)}+\sum _{jl}W_{jl}^{(2)}h_{j}^{(1)}h_{l}^{(2)}+\sum _{lm}W_{lm}^{(3)}h_{l}^{(2)}h_{m}^{(3)}},}
+  
+
+where 
+  
+    
+      
+        
+          h
+        
+        =
+        {
+        
+          
+            h
+          
+          
+            (
+            1
+            )
+          
+        
+        ,
+        
+          
+            h
+          
+          
+            (
+            2
+            )
+          
+        
+        ,
+        
+          
+            h
+          
+          
+            (
+            3
+            )
+          
+        
+        }
+      
+    
+    {\displaystyle {\boldsymbol {h}}=\{{\boldsymbol {h}}^{(1)},{\boldsymbol {h}}^{(2)},{\boldsymbol {h}}^{(3)}\}}
+  
+ are the set of hidden units, and 
+  
+    
+      
+        Î¸
+        =
+        {
+        
+          
+            W
+          
+          
+            (
+            1
+            )
+          
+        
+        ,
+        
+          
+            W
+          
+          
+            (
+            2
+            )
+          
+        
+        ,
+        
+          
+            W
+          
+          
+            (
+            3
+            )
+          
+        
+        }
+      
+    
+    {\displaystyle \theta =\{{\boldsymbol {W}}^{(1)},{\boldsymbol {W}}^{(2)},{\boldsymbol {W}}^{(3)}\}}
+  
+ are the model parameters, representing visible-hidden and hidden-hidden interactions.[10] In a DBN only the top two layers form a restricted Boltzmann machine (which is an undirected graphical model), while lower layers form a directed generative model. In a DBM all layers are symmetric and undirected.
+Like DBNs, DBMs can learn complex and abstract internal representations of the input in tasks such as object or speech recognition, using limited, labeled data to fine-tune the representations built using a large set of unlabeled sensory input data. However, unlike DBNs and deep convolutional neural networks, they pursue the inference and training procedure in both directions, bottom-up and top-down, which allow the DBM to better unveil the representations of the input structures.[11][12][13]
+However, the slow speed of DBMs limits their performance and functionality. Because exact maximum likelihood learning is intractable for DBMs, only approximate maximum likelihood learning is possible. Another option is to use mean-field inference to estimate data-dependent expectations and approximate the expected sufficient statistics by using Markov chain Monte Carlo (MCMC).[10] This approximate inference, which must be done for each test input, is about 25 to 50 times slower than a single bottom-up pass in DBMs. This makes joint optimization impractical for large data sets, and restricts the use of DBMs for tasks such as feature representation.
+
+Spike-and-slab RBMs[edit]
+The need for deep learning with real-valued inputs, as in Gaussian RBMs, led to the spike-and-slab RBM (ssRBM), which models continuous-valued inputs with binary latent variables.[14] Similar to basic RBMs and its variants, a spike-and-slab RBM is a bipartite graph, while like GRBMs, the visible units (input) are real-valued. The difference is in the hidden layer, where each hidden unit has a binary spike variable and a real-valued slab variable. A spike is a discrete probability mass at zero, while a slab is a density over continuous domain;[15] their mixture forms a prior.[16]
+An extension of ssRBM called Âµ-ssRBM provides extra modeling capacity using additional terms in the energy function. One of these terms enables the model to form a conditional distribution of the spike variables by marginalizing out the slab variables given an observation.
+
+History[edit]
+The Boltzmann machine is based on a spin-glass model of Sherrington-Kirkpatrick's stochastic Ising Model.[17]
+The original contribution in applying such energy based models in cognitive science appeared in papers by Hinton and Sejnowski.[18][19]
+The seminal publication by John Hopfield connected physics and statistical mechanics, mentioning spin glasses.[20]
+The idea of applying the Ising model with annealed Gibbs sampling is present in Douglas Hofstadter's Copycat project.[21][22]
+Similar ideas (with a change of sign in the energy function) are found in Paul Smolensky's "Harmony Theory".
+The explicit analogy drawn with statistical mechanics in the Boltzmann Machine formulation led to the use of terminology borrowed from physics (e.g., "energy" rather than "harmony"), which became standard in the field. The widespread adoption of this terminology may have been encouraged by the fact that its use led to the adoption of a variety of concepts and methods from statistical mechanics. The various proposals to use simulated annealing for inference were apparently independent.
+Ising models became considered to be a special case of Markov random fields, which find widespread application in linguistics, robotics, computer vision and artificial intelligence.
+
+See also[edit]
+Restricted Boltzmann machine
+Helmholtz machine
+Markov Random Field
+Ising Model
+Hopfield network
+Learning rule[23] that uses conditional "local" information can be derived from the reversed form of 
+  
+    
+      
+        G
+      
+    
+    {\displaystyle G}
+  
+,
+
+  
+    
+      
+        
+          G
+          â²
+        
+        =
+        
+          â
+          
+            v
+          
+        
+        
+          
+            P
+            
+              â
+            
+          
+          (
+          v
+          )
+          ln
+          â¡
+          
+            (
+            
+              
+                
+                  
+                    P
+                    
+                      â
+                    
+                  
+                  (
+                  v
+                  )
+                
+                
+                  
+                    P
+                    
+                      +
+                    
+                  
+                  (
+                  v
+                  )
+                
+              
+            
+            )
+          
+        
+      
+    
+    {\displaystyle G'=\sum _{v}{P^{-}(v)\ln \left({\frac {P^{-}(v)}{P^{+}(v)}}\right)}}
+  
+.
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Hinton, Geoffrey E. (2007-05-24). "Boltzmann machine". Scholarpedia. 2 (5): 1668. Bibcode:2007SchpJ...2.1668H. doi:10.4249/scholarpedia.1668. ISSNÂ 1941-6016.
+
+^ Sherrington, David; Kirkpatrick, Scott (1975), "Solvable Model of a Spin-Glass", Physical Review Letters, 35 (35): 1792â1796, Bibcode:1975PhRvL..35.1792S, doi:10.1103/PhysRevLett.35.1792
+
+^ Ackley, David H; Hinton Geoffrey E; Sejnowski, Terrence J (1985), "A learning algorithm for Boltzmann machines" (PDF), Cognitive Science, 9 (1): 147â169, doi:10.1207/s15516709cog0901_7
+
+^ Osborn, Thomas R. (1 January 1990). "Fast Teaching of Boltzmann Machines with Local Inhibition". International Neural Network Conference. Springer Netherlands. pp.Â 785. doi:10.1007/978-94-009-0643-3_76. ISBNÂ 978-0-7923-0831-7.
+
+^ Ackley, David H; Hinton Geoffrey E; Sejnowski, Terrence J (1985), "A learning algorithm for Boltzmann machines" (PDF), Cognitive Science, 9 (1): 147â169, doi:10.1207/s15516709cog0901_7
+
+^ Nijkamp, E.; Hill, M. E; Han, T. (2020), "On the Anatomy of MCMC-Based Maximum Likelihood Learning of Energy-Based Models", Proceedings of the AAAI Conference on Artificial Intelligence, 4 (34): 5272â5280, doi:10.1609/aaai.v34i04.5973
+
+^ Ackley, David H.; Hinton, Geoffrey E.; Sejnowski, Terrence J. (1985). "A Learning Algorithm for Boltzmann Machines" (PDF). Cognitive Science. 9 (1): 147â169. doi:10.1207/s15516709cog0901_7. Archived from the original (PDF) on 18 July 2011.
+
+^ Recent Developments in Deep Learning, archived from the original on 2021-12-22, retrieved 2020-02-17
+
+^ Yu, Dong; Dahl, George; Acero, Alex; Deng, Li (2011). "Context-Dependent Pre-trained Deep Neural Networks for Large Vocabulary Speech Recognition" (PDF). Microsoft Research. 20.
+
+^ Jump up to: a b Hinton, Geoffrey; Salakhutdinov, Ruslan (2012). "A better way to pretrain deep Boltzmann machines" (PDF). Advances in Neural. 3: 1â9. Archived from the original (PDF) on 2017-08-13. Retrieved 2017-08-18.
+
+^ Hinton, Geoffrey; Salakhutdinov, Ruslan (2009). "Efficient Learning of Deep Boltzmann Machines" (PDF). 3: 448â455. Archived from the original (PDF) on 2015-11-06. Retrieved 2017-08-18. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Bengio, Yoshua; LeCun, Yann (2007). "Scaling Learning Algorithms towards AI" (PDF). 1: 1â41. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Larochelle, Hugo; Salakhutdinov, Ruslan (2010). "Efficient Learning of Deep Boltzmann Machines" (PDF): 693â700. Archived from the original (PDF) on 2017-08-14. Retrieved 2017-08-18. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Courville, Aaron; Bergstra, James; Bengio, Yoshua (2011). "A Spike and Slab Restricted Boltzmann Machine" (PDF). JMLR: Workshop and Conference Proceeding. 15: 233â241. Archived from the original (PDF) on 2016-03-04. Retrieved 2019-08-25.
+
+^ Courville, Aaron; Bergstra, James; Bengio, Yoshua (2011). "Unsupervised Models of Images by Spike-and-Slab RBMs" (PDF). Proceedings of the 28th International Conference on Machine Learning. Vol.Â 10. pp.Â 1â8. Archived from the original (PDF) on 2016-03-04. Retrieved 2019-08-25.
+
+^ Mitchell, T; Beauchamp, J (1988). "Bayesian Variable Selection in Linear Regression". Journal of the American Statistical Association. 83 (404): 1023â1032. doi:10.1080/01621459.1988.10478694.
+
+^ Sherrington, David; Kirkpatrick, Scott (1975-12-29). "Solvable Model of a Spin-Glass". Physical Review Letters. 35 (26): 1792â1796. Bibcode:1975PhRvL..35.1792S. doi:10.1103/physrevlett.35.1792. ISSNÂ 0031-9007.
+
+^ Hinton, Geoffery; Sejnowski, Terrence J. (May 1983). Analyzing Cooperative Computation. 5th Annual Congress of the Cognitive Science Society. Rochester, New York. Retrieved 17 February 2020.
+
+^ Hinton, Geoffrey E.; Sejnowski, Terrence J. (June 1983). Optimal Perceptual Inference. IEEE Conference on Computer Vision and Pattern Recognition (CVPR). Washington, D.C.: IEEE Computer Society. pp.Â 448â453.
+
+^ Hopfield, J. J. (1982). "Neural networks and physical systems with emergent collective computational abilities". Proceedings of the National Academy of Sciences of the United States of America. [s.n.] 79 (8): 2554â8. Bibcode:1982PNAS...79.2554H. doi:10.1073/pnas.79.8.2554. OCLCÂ 848771572. PMCÂ 346238. PMIDÂ 6953413.
+
+^ Hofstadter, D. R. (January 1984). The Copycat Project: An Experiment in Nondeterminism and Creative Analogies. Defense Technical Information Center. OCLCÂ 227617764.
+
+^ Hofstadter, Douglas R. (1988). "A Non-Deterministic Approach to Analogy, Involving the Ising Model of Ferromagnetism".  In Caianiello, Eduardo R. (ed.). Physics of cognitive processes. Teaneck, New Jersey: World Scientific. ISBNÂ 9971-5-0255-0. OCLCÂ 750950619.
+
+^ Liou, C.-Y.; Lin, S.-L. (1989). "The other variant Boltzmann machine". International Joint Conference on Neural Networks. Washington, D.C., USA: IEEE. pp.Â 449â454. doi:10.1109/IJCNN.1989.118618.
+
+
+https://www.mis.mpg.de/preprints/2018/preprint2018_87.pdf
+Further reading[edit]
+Hinton, G. E.; Sejnowski, T. J. (1986).  D. E. Rumelhart; J. L. McClelland (eds.). "Learning and Relearning in Boltzmann Machines" (PDF). Parallel Distributed Processing: Explorations in the Microstructure of Cognition. Volume 1: Foundations: 282â317. Archived from the original (PDF) on 2010-07-05.
+Hinton, G. E. (2002). "Training Products of Experts by Minimizing Contrastive Divergence" (PDF). Neural Computation. 14 (8): 1771â1800. CiteSeerXÂ 10.1.1.35.8613. doi:10.1162/089976602760128018. PMIDÂ 12180402. S2CIDÂ 207596505.
+Hinton, G. E.; Osindero, S.; Teh, Y. (2006). "A fast learning algorithm for deep belief nets" (PDF). Neural Computation. 18 (7): 1527â1554. CiteSeerXÂ 10.1.1.76.1541. doi:10.1162/neco.2006.18.7.1527. PMIDÂ 16764513. S2CIDÂ 2309950.
+External links[edit]
+Scholarpedia article by Hinton about Boltzmann machines
+Talk at Google by Geoffrey Hinton
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteStatistical mechanicsTheory
+Principle of maximum entropy
+ergodic theory
+Statistical thermodynamics
+Ensembles
+partition functions
+equations of state
+thermodynamic potential:
+U
+H
+F
+G
+Maxwell relations
+Models
+Ferromagnetism models
+Ising
+Potts
+Heisenberg
+percolation
+Particles with force field
+depletion force
+Lennard-Jones potential
+Mathematical approaches
+Boltzmann equation
+H-theorem
+Vlasov equation
+BBGKY hierarchy
+stochastic process
+mean-field theory and conformal field theory
+Critical phenomena
+Phase transition
+Critical exponents
+correlation length
+size scaling
+Entropy
+Boltzmann
+Shannon
+Tsallis 
+RÃ©nyi
+von Neumann
+Applications
+Statistical field theory
+elementary particle
+superfluidity
+Condensed matter physics
+Complex system
+chaos
+information theory
+Boltzmann machine
+
+Authority control 
+Integrated Authority File (Germany)
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Boltzmann_machine&oldid=1061594812"
+		Categories: Artificial neural networksLudwig BoltzmannHidden categories: CS1 errors: missing periodicalArticles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from January 2013Articles with unsourced statements from August 2015Articles with GND identifiers
+	

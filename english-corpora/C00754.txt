@@ -1,0 +1,129 @@
+
+Title:
+Java remote method invocation
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  A typical implementation model of Java-RMI using stub and skeleton objects. Java 2 SDK, Standard Edition, v1.2 removed the need for a skeleton.
+In computing, the Java Remote Method Invocation (Java RMI) is a Java API that performs remote method invocation, the object-oriented equivalent of remote procedure calls (RPC), with support for direct transfer of serialized Java classes and distributed garbage-collection.
+The original implementation depends on Java Virtual Machine (JVM) class-representation mechanisms and it thus only supports making calls from one JVM to another. The protocol underlying this Java-only implementation is known as Java Remote Method Protocol (JRMP). In order to support code running in a non-JVM context, programmers later developed a CORBA version.
+Usage of the term RMI may denote solely the programming interface or may signify both the API and JRMP, IIOP, or another implementation, whereas the term RMI-IIOP (read: RMI over IIOP) specifically denotes the RMI interface delegating most of the functionality to the supporting CORBA implementation.
+The basic idea of Java RMI, the distributed garbage-collection (DGC) protocol, and much of the architecture underlying the original Sun implementation, come from the "network objects" feature of Modula-3.
+
+Contents
+
+1 Generalized code
+2 Jini version
+3 Example
+4 References
+5 External links
+
+
+
+Generalized code[edit]
+The programmers of the original RMI API generalized the code somewhat to support different implementations, such as a HTTP transport. Additionally, the ability to pass arguments "by value" was added to CORBA in order to be compatible with the RMI interface. Still, the RMI-IIOP and JRMP implementations do not have fully identical interfaces.
+RMI functionality comes in the package java.rmi, while most of Sun's implementation is located in the sun.rmi package. Note that with Java versions before Java 5.0 developers had to compile RMI stubs in a separate compilation step using rmic. Version 5.0 of Java and beyond no longer require this step.
+
+Jini version[edit]
+Jini offers a more advanced version of RMI in Java. It functions similarly but provides more advanced security, object discovery capabilities, and other mechanisms for distributed object applications.[1]
+
+Example[edit]
+The following classes implement a simple client-server program using RMI that displays a message.
+RmiServer class â listens to RMI requests and implements the interface which is used by the client to invoke remote methods.
+
+import java.rmi.Naming;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.registry.*;
+
+public class RmiServer extends UnicastRemoteObject implements RmiServerIntf {
+    public static final String MESSAGE = "Hello World";
+
+    public RmiServer() throws RemoteException {
+        super(0); // required to avoid the 'rmic' step, see below
+    }
+
+    public String getMessage() {
+        return MESSAGE;
+    }
+
+    public static void main(String args[]) throws Exception {
+        System.out.println("RMI server started");
+
+        try { //special exception handler for registry creation
+            LocateRegistry.createRegistry(1099);
+            System.out.println("java RMI registry created.");
+        } catch (RemoteException e) {
+            //do nothing, error means registry already exists
+            System.out.println("java RMI registry already exists.");
+        }
+           
+        //Instantiate RmiServer
+        RmiServer server = new RmiServer();
+
+        // Bind this object instance to the name "RmiServer"
+        Naming.rebind("//localhost/RmiServer", server);
+        System.out.println("PeerServer bound in registry");
+    }
+}
+
+RmiServerIntf interface â defines the interface that is used by the client and implemented by the server.
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface RmiServerIntf extends Remote {
+    String getMessage() throws RemoteException;
+}
+
+RmiClient class â this is the client which gets the reference (a proxy) to the remote object living on the server and invokes its method to get a message. If the server object implemented java.io.Serializable instead of java.rmi.Remote, it would be serialized and passed to the client as a value.[2]
+
+import java.rmi.Naming;
+
+public class RmiClient {
+    public static void main(String args[]) throws Exception {
+        RmiServerIntf server = (RmiServerIntf)Naming.lookup("//localhost/RmiServer");
+        System.out.println(server.getMessage());
+    }
+}
+
+Before running this example, we need to make a 'stub' file for the interface we used. For this task we have the RMI compiler - 'rmic'
+
+Note: we make a stub file from the '*.class' file with the implementation of the remote interface, not from the '*.java' file.
+rmic RmiServer
+
+Note that since version 5.0 of J2SE support for dynamically generated stub files has been added, and rmic is only provided for backwards compatibility with earlier runtimes,[3] or for programs that don't provide an explicit port number (or zero) when exporting remote objects, which is required for generated stubs to be possible, as described in the Javadoc for UnicastRemoteObject. See the comment in the constructor above.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Taylor, Ian J (2005). From P2P to Web Services and GridsÂ : Peers in a Client/Server World. Computer Communications and Networks. London: Springer-Verlag. doi:10.1007/b138333. ISBNÂ 1852338695. OCLCÂ 827073874.[pageÂ needed]
+
+^ Wilson, M. Jeff (November 10, 2000). "Get smart with proxies and RMI". JavaWorld. Retrieved 2020-07-18.
+
+^ "Java RMI Release Notes". Oracle. Retrieved 9 May 2012.
+
+
+External links[edit]
+"Remote Method Invocation Home". Oracle Technology Network for Java Developers. Redwood Shores, CA, USA: Oracle Corporation. Retrieved 2014-07-14.
+The Java RMI tutorial - a good starting point to learn RMI. Also check the Hello World in RMI
+the Java RMI online training - Very good for training JavaRMI and as reference
+The RMI page in the JDK docs
+java.rmi (Sun's Java API Reference for the RMI package)
+Ann Wollrath; Roger Riggs; Jim Waldo. "A Distributed Object Model for the Java System" (PDF). Retrieved 2009-02-11. {{cite journal}}: Cite journal requires |journal= (help)
+Programming WebLogic RMI - an introduction to RMI in Oracle Weblogic.
+General Remote Method Invocation
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Java_remote_method_invocation&oldid=1034602036"
+		Categories: Java platformRemote procedure callHidden categories: Wikipedia articles needing page number citations from September 2017CS1 errors: missing periodicalArticles with example Java code
+	

@@ -1,0 +1,245 @@
+
+Title:
+Reentrancy (computing)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Reentrancy"Â computingÂ âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (April 2011) (Learn how and when to remove this template message)
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (May 2012) (Learn how and when to remove this template message)
+    
+ (Learn how and when to remove this template message)
+
+In computing, a computer program or subroutine is called reentrant if multiple invocations can safely run concurrently on multiple processors, or on a single processor system, where a reentrant procedure can be interrupted in the middle of its execution and then safely be called again ("re-entered") before its previous invocations complete execution. The interruption could be caused by an internal action such as a jump or call, or by an external action such as an interrupt or signal, unlike recursion, where new invocations can only be caused by internal call. 
+This definition originates from multiprogramming environments where multiple processes may be active concurrently and where the flow of control could be interrupted by an interrupt and transferred to an interrupt service routine (ISR) or "handler" subroutine. Any subroutine used by the handler that could potentially have been executing when the interrupt was triggered should be reentrant. Similarly, code shared by two processing and accessing shared data should be reentrant. Often, subroutines accessible via the operating system kernel are not reentrant. Hence, interrupt service routines are limited in the actions they can perform; for instance, they are usually restricted from accessing the file system and sometimes even from allocating memory.
+This definition of reentrancy differs from that of thread-safety in multi-threaded environments. A reentrant subroutine can achieve thread-safety,[1] but being reentrant alone might not be sufficient to be thread-safe in all situations. Conversely, thread-safe code does not necessarily have to be reentrant (see below for examples).
+Other terms used for reentrant programs include "sharable code".[2] Reentrant subroutines are sometimes marked in reference material as being "signal safe".[3] Reentrant programs are often[a] "pure procedures".
+
+Contents
+
+1 Background
+2 Rules for reentrancy
+3 Examples
+
+3.1 Neither reentrant nor thread-safe
+3.2 Thread-safe but not reentrant
+3.3 Reentrant but not thread-safe
+3.4 Reentrant and thread-safe
+
+
+4 Reentrant interrupt handler
+5 Further examples
+6 Notes
+7 See also
+8 References
+
+8.1 Works cited
+
+
+9 Further reading
+
+
+
+Background[edit]
+Reentrancy is not the same thing as idempotence, in which the function may be called more than once yet generate exactly the same output as if it had only been called once. Generally speaking, a function produces output data based on some input data (though both are optional, in general). Shared data could be accessed by any function at any time. If data can be changed by any function (and none keep track of those changes), there is no guarantee to those that share a datum that that datum is the same as at any time before.
+Data has a characteristic called scope, which describes where in a program the data may be used. Data scope is either global (outside the scope of any function and with an indefinite extent) or local (created each time a function is called and destroyed upon exit).
+Local data is not shared by any routines, re-entering or not; therefore, it does not affect re-entrance. Global data is defined outside functions and can be accessed by more than one function, either in the form of global variables (data shared between all functions), or as static variables (data shared by all invocations of the same function). In object-oriented programming, global data is defined in the scope of a class and can be private, making it accessible only to functions of that class. There is also the concept of instance variables, where a class variable is bound to a class instance. For these reasons, in object-oriented programming, this distinction is usually reserved for the data accessible outside of the class (public), and for the data independent of class instances (static).
+Reentrancy is distinct from, but closely related to, thread-safety. A function can be thread-safe and still not reentrant. For example, a function could be wrapped all around with a mutex (which avoids problems in multithreading environments), but, if that function were used in an interrupt service routine, it could starve waiting for the first execution to release the mutex. The key for avoiding confusion is that reentrant refers to only one thread executing. It is a concept from the time when no multitasking operating systems existed.
+
+Rules for reentrancy[edit]
+Reentrant code may not hold any static or global non-constant data  without synchronization.
+Reentrant functions can work with global data. For example, a reentrant interrupt service routine could grab a piece of hardware status to work with (e.g., serial port read buffer) which is not only global, but volatile. Still, typical use of static variables and global data is not advised, in the sense that, except in sections of code that are synchronized, only atomic read-modify-write instructions should be used in these variables (it should not be possible for an interrupt or signal to come during the execution of such an instruction). Note that in C, even a read or write is not guaranteed to be atomic; it may be split into several reads or writes.[4] The C standard and SUSv3 provide sig_atomic_t for this purpose, although with guarantees only for simple reads and writes, not for incrementing or decrementing.[5] More complex atomic operations are available in C11, which provides stdatomic.h.
+Reentrant code may not modify itself without synchronization.
+The operating system might allow a process to modify its code. There are various reasons for this (e.g., blitting graphics quickly) but this generally requires synchronization to avoid problems with reentrancy.It may, however, modify itself if it resides in its own unique memory. That is, if each new invocation uses a different physical machine code location where a copy of the original code is made, it will not affect other invocations even if it modifies itself during execution of that particular invocation (thread).
+Reentrant code may not call non-reentrant computer programs or routines.
+Multiple levels of user, object, or process priority or multiprocessing usually complicate the control of reentrant code. It is important to keep track of any access or side effects that are done inside a routine designed to be reentrant.
+Reentrancy of a subroutine that operates on operating-system resources or non-local data depends on the atomicity of the respective operations. For example, if the subroutine modifies a 64-bit global variable on a 32-bit machine, the operation may be split into two 32-bit operations, and thus, if the subroutine is interrupted while executing, and called again from the interrupt handler, the global variable may be in a state where only 32 bits have been updated. The programming language might provide atomicity guarantees for interruption caused by an internal action such as a jump or call. Then the function f in an expression like (global:=1) + (f()), where the order of evaluation of the subexpressions might be arbitrary in a programming language, would see the global variable either set to 1 or to its previous value, but not in an intermediate state where only part has been updated. (The latter can happen in C, because the expression has no sequence point.) The operating system might provide atomicity guarantees for signals, such as a system call interrupted by a signal not having a partial effect. The processor hardware might provide atomicity guarantees for interrupts, such as interrupted processor instructions not having partial effects.
+
+Examples[edit]
+To illustrate reentrancy, this article uses as an example a C utility function, swap(), that takes two pointers and transposes their values, and an interrupt-handling routine that also calls the swap function.
+
+Neither reentrant nor thread-safe[edit]
+This is an example swap function that fails to be reentrant or thread-safe. Since the tmp variable is globally shared, without synchronization, among any concurrent instances of the function, one instance may interfere with the data relied upon by another. As such, it should not have been used in the interrupt service routine isr():
+
+int tmp;
+
+void swap(int* x, int* y)
+{
+    tmp = *x;
+    *x = *y;
+    /* Hardware interrupt might invoke isr() here. */
+    *y = tmp;    
+}
+
+void isr()
+{
+    int x = 1, y = 2;
+    swap(&x, &y);
+}
+
+Thread-safe but not reentrant[edit]
+The function swap() in the preceding example can be made thread-safe by making tmp thread-local. It still fails to be reentrant, and this will continue to cause problems if isr() is called in the same context as a thread already executing swap():
+
+_Thread_local int tmp;
+
+void swap(int* x, int* y)
+{
+    tmp = *x;
+    *x = *y;
+    /* Hardware interrupt might invoke isr() here. */
+    *y = tmp;    
+}
+
+void isr()
+{
+    int x = 1, y = 2;
+    swap(&x, &y);
+}
+
+Reentrant but not thread-safe[edit]
+The following (somewhat contrived) modification of the swap function, which is careful to leave the global data in a consistent state at the time it exits, is reentrant; however, it is not thread-safe, since there are no locks employed, it can be interrupted at any time:
+
+int tmp;
+
+void swap(int* x, int* y)
+{
+    /* Save global variable. */
+    int s;
+    s = tmp;
+
+    tmp = *x;
+    *x = *y;      /*If hardware interrupt occurs here then it will fail to keep the value of tmp. So this is also not a reentrant example*/
+    *y = tmp;     /* Hardware interrupt might invoke isr() here. */
+
+    /* Restore global variable. */
+    tmp = s;
+}
+
+void isr()
+{
+    int x = 1, y = 2;
+    swap(&x, &y);
+}
+
+Reentrant and thread-safe[edit]
+An implementation of swap() that allocates tmp on the stack instead of globally and that is called only with unshared variables as parameters[b] is both thread-safe and reentrant. Thread-safe because the stack is local to a thread and a function acting just on local data will always produce the expected result. There is no access to shared data therefore no data race.
+
+void swap(int* x, int* y)
+{
+    int tmp;
+    tmp = *x;
+    *x = *y;
+    *y = tmp;    /* Hardware interrupt might invoke isr() here. */
+}
+
+void isr()
+{
+    int x = 1, y = 2;
+    swap(&x, &y);
+}
+
+Reentrant interrupt handler[edit]
+A reentrant interrupt handler is an interrupt handler that re-enables interrupts early in the interrupt handler. This may reduce interrupt latency.[6] In general, while programming interrupt service routines, it is recommended to re-enable interrupts as soon as possible in the interrupt handler. This practice helps to avoid losing interrupts.[7]
+
+Further examples[edit]
+In the following code, neither f nor g functions are reentrant.
+
+int v = 1;
+
+int f()
+{
+    v += 2;
+    return v;
+}
+
+int g()
+{
+    return f() + 2;
+}
+
+In the above, f() depends on a non-constant global variable v; thus, if f() is interrupted during execution by an ISR which modifies v, then reentry into f() will return the wrong value of v. The value of v and, therefore, the return value of f, cannot be predicted with confidence: they will vary depending on whether an interrupt modified v during f's execution. Hence, f is not reentrant. Neither is g, because it calls f, which is not reentrant.
+These slightly altered versions are reentrant:
+
+int f(int i)
+{
+    return i + 2;
+}
+
+int g(int i)
+{
+    return f(i) + 2;
+}
+
+In the following, the function is thread-safe, but not (necessarily) reentrant:
+
+int function()
+{
+    mutex_lock();
+
+    // ...
+    // function body
+    // ...
+
+    mutex_unlock();
+}
+
+In the above, function() can be called by different threads without any problem. But, if the function is used in a reentrant interrupt handler and a second interrupt arises inside the function, the second routine will hang forever. As interrupt servicing can disable other interrupts, the whole system could suffer.
+
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ A program that serializes self-modification may be reentrant, and a pure procedure that updates global data without proper serialization may fail to be reentrant.
+
+^ If isr() called swap() with one or two global variables as parameters then swap() would not be reentrant
+
+
+See also[edit]
+Referential transparency
+References[edit]
+
+
+^ Kerrisk 2010, p.Â 657.
+
+^ Ralston 2000, p.Â 1514â1515.
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"pthread_cond_init()--Initialize Condition Variable". IBM Knowledge Center. Retrieved 2019-10-05.
+
+^ 
+  Preshing, Jeff (2013-06-18). "Atomic vs. Non-Atomic Operations". Preshing on Programming. Archived from the original on 2014-12-03. Retrieved 2018-04-24.
+
+^ Kerrisk 2010, p.Â 428.
+
+^ Sloss et al. 2004, p.Â 342.
+
+^ 
+Regehr, John (2006). "Safe and Structured Use of Interrupts in Real-time and Embedded Software" (PDF). Handbook of Real-Time and Embedded Systems. CRC Press. Archived (PDF) from the original on 2007-08-24 â via the author's website at the University of Utah School of Computing.
+
+
+Works cited[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Kerrisk, Michael (2010). The Linux Programming Interface. No Starch Press.
+Ralston, Anthony, ed. (2000). "Reentrant Program". Encyclopedia of Computer Science (4thÂ ed.). Nature Publishing Group.
+Sloss, Andrew N.; Symes, Dominic; Wright, Chris; Rayfield, John (2004). ARM System Developer's Guide. Morgan Kaufmann Publishers. ISBNÂ 9780080490496.
+
+Further reading[edit]
+
+Chen, Raymond (2004-06-29). "The Difference Between Thread-safety and Re-entrancy". The Old New Thing. Microsoft Developer Network. Archived from the original on 2018-04-24. Retrieved 2018-04-24.
+Ganssle, Jack (2001-03-15). "Introduction to Reentrancy". Embedded.com. Archived from the original on 2013-01-21. Retrieved 2018-04-24.
+IBM (2018). "General Programming Concepts" (PDF). AIX Version 7.2 Manual. p.Â 636â641. Retrieved 2018-04-24.
+Jha, Dipak (2005-01-20). "Use Reentrant Functions for Safer Signal Handling". IBM DeveloperWorks. Archived from the original on 2014-07-07. Retrieved 2018-04-24.
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Reentrancy_(computing)&oldid=1056567349"
+		Categories: Concurrency (computer science)RecursionSubroutinesHidden categories: Articles needing additional references from April 2011All articles needing additional referencesArticles lacking in-text citations from May 2012All articles lacking in-text citationsArticles with multiple maintenance issuesUse dmy dates from March 2020Articles with example C code
+	

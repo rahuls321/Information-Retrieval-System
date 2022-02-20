@@ -1,0 +1,1136 @@
+
+Title:
+HTTP Live Streaming
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		HTTP-based media streaming communications protocol
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}HTTP Live StreamingFilename extension.mw-parser-output .monospaced{font-family:monospace,monospace}
+.m3u8Internet mediaÂ type
+application/vnd.apple.mpegurl or audio/mpegurl[1]DevelopedÂ byApple Inc.Initial releaseMay 2009ExtendedÂ fromextended M3UStandardRFC 8216
+HTTP Live Streaming (also known as HLS) is an HTTP-based adaptive bitrate streaming communications protocol developed by Apple Inc. and released in 2009. Support for the protocol is widespread in media players, web browsers, mobile devices, and streaming media servers. As of 2019, an annual video industry survey has consistently found it to be the most popular streaming format.[2]
+HLS resembles MPEG-DASH in that it works by breaking the overall stream into a sequence of small HTTP-based file downloads, each downloading one short chunk of an overall potentially unbounded transport stream. A list of available streams, encoded at different bit rates, is sent to the client using an extended M3U playlist.[3]
+Based on standard HTTP transactions, HTTP Live Streaming can traverse any firewall or proxy server that lets through standard HTTP traffic, unlike UDP-based protocols such as RTP.  This also allows content to be offered from conventional HTTP servers and delivered over widely available HTTP-based content delivery networks.[4] The standard also includes a standard encryption mechanism[5] and secure-key distribution using HTTPS, which together provide a simple DRM system. Later versions of the protocol also provide for trick-mode fast-forward and rewind and for integration of subtitles.
+Apple has documented HTTP Live Streaming as an Internet Draft (Individual Submission), the first stage in the process of publishing it as a Request for Comments (RFC).  As of December 2015, the authors of that document have requested the RFC Independent Stream Editor (ISE) to publish the document as an informational (non-standard) RFC outside of the IETF consensus process.[6]
+In August 2017, RFC8216 was published to describe version 7 of the protocol.[7]
+
+Contents
+
+1 Architecture
+2 Features
+
+2.1 Adaptability
+2.2 Using fragmented MP4
+2.3 Low Latency HLS
+2.4 Dynamic ad insertion
+
+
+3 Server implementations
+4 Usage
+5 Supported players and servers
+
+5.1 Clients
+5.2 Servers
+5.3 Live Encoders
+5.4 VOD encoders
+
+
+6 See also
+7 References
+
+
+
+Architecture[edit]
+HTTP Live Streaming uses a conventional web server, that implements the support for HTTP Live Streaming (HLS), to distribute audiovisual content and requires specific software, such as OBS to fit into proper format (codec) for transmission in real time over a network.
+The service architecture comprises:
+
+Server
+Codify and encapsulate the input video flow in a proper format for the delivery. Then it is prepared for distribution by segmenting it into different files. In the process of intake, the video is encoded and segmented to generate video fragments and index file.
+Encoder: codify video files in H.264 format and audio in AAC, MP3, AC-3 or EC-3.[8] This is encapsulated by MPEG-2 Transport Stream or MPEG-4_Part_14 to carry it.
+Segmenter: divides the stream into fragments of equal length. It also creates an index file that contains references of the fragmented files, saved as .m3u8.
+Distributor
+Formed by a standard web server, accepts requests from clients and delivers all the resources (.m3u8 playlist file and .ts segment files) needed for streaming.
+Client
+Request and download all the files and resources, assembling them so that they can be presented to the user as a continuous flow video. The client software downloads first the index file through a URL and then the several media files available. The playback software assembles the sequence to allow continued display to the user.
+Features[edit]
+HTTP Live Streaming provides mechanisms for players to adapt to unreliable network conditions without causing user-visible playback stalling. For example, on an unreliable wireless network, HLS allows the player to use a lower quality video, thus reducing bandwidth usage. HLS videos can be made highly available by providing multiple servers for the same video, allowing the player to swap seamlessly if one of the servers fails.
+
+Adaptability[edit]
+To enable a player to adapt to the bandwidth of the network, the original video is encoded in several distinct quality levels. The server serves an index, called a "master playlist", of these encodings, called "variant streams". The player can then choose between the variant streams during playback, changing back and forth seamlessly as network conditions change.
+
+Using fragmented MP4[edit]
+At WWDC 2016 Apple announced[9] the inclusion of byte-range addressing for fragmented MP4 files, or fMP4, allowing content to be played via HLS without the need to multiplex it into MPEG-2 Transport Stream. The industry considered this as a step towards compatibility between HLS and MPEG-DASH.[10][11]
+
+Low Latency HLS[edit]
+Two unrelated HLS extensions with a "Low Latency" name and corresponding acronym exist:
+
+Apple Low Latency HLS (ALHLS) which was announced by Apple at WWDC2019[12]
+"Community LHLS" (LHLS) which predated Apple's publication and is allegedly simpler[13]
+The remainder of this section describes Apple's ALHLS. It reduces the glass-to-glass delay when streaming via HLS by reducing the time to start live stream playbacks and maintain that time during a live streaming event. 
+It works by adding partial media segment files into the mix, much like MPEG-CMAF's fMP4. Unlike CMAF, ALHLS also supports partial MPEG-2 TS transport files.
+HTTP/2 is required to push the segments along with the playlist, reducing the overhead of establishing repeated HTTP/TCP connections.
+Other features include:
+
+Playlist Delta Updates: only sending what changed between playlist, which typically fit in single MTU making it more efficient to load the playlists which, with large DVR windows, can be quite large.
+Blocking of playlist reload: when requesting live media playlists, wait until the first segment is also ready, and return both at same time (saving additional HTTP/TCP requests)
+Rendition Reports: add metadata to other media renditions to make switching between ABR faster
+New tags added:Â EXT-X-SERVER-CONTROL /Â EXT-X-PART / EXT-X-SKIP /Â EXT-X-RENDITION-REPORT
+URL QUERY_STRING ?_HLS callbacks added
+Apple also added new tools: "tsrecompressor" produces and encodes a continuous low latency stream of audio and video. The "mediastreamsegmenter" tool is now available in a low latency version. It is a HLS segmenter which takes in an UDP/MPEG-TS stream from tsrecompressor and generates a media playlist, including the new tags above.
+Support for low-latency HLS is available in tvOS 13 beta, and iOS & iPadOS 14.[14]
+On April 30, 2020, Apple added the low latency specifications to the second edition of the main HLS specification.[15]
+
+Dynamic ad insertion[edit]
+Dynamic ad insertion is supported in HLS using splice information based on SCTE-35 specification. The SCTE-35 splice message is inserted on the media playlist file using the EXT-X-DATERANGE tag. Each SCTE-35 splice_info_section() is represented by an EXT-X-DATERANGE tag with a SCTE35-CMD attribute. A SCTE-35 splice out/in pair signaled by the splice_insert() commands are represented by one or more EXT-X-DATERANGE tags carrying the same ID attribute. The SCTE-35 splice out command should have the SCTE35-OUT attribute and the splice in command should have the SCTE35-IN attribute.
+Between the two EXT-X-DATERANGE tags that contain the SCTE35-OUT and SCTE35-IN attributes respectively there may be a sequence of media segment URIs. These media segments normally represent ad programs which can be replaced by the local or customized ad. The ad replacement does not require the replacement of the media files, only the URIs in the playlist need to be changed to point different ad programs. The ad replacement can be done on the origin server or on the clientâs media playing device.
+
+Server implementations[edit]
+Notable server implementations supporting HTTP Live Streaming include:
+
+Adobe Media Server supports HLS for iOS devices (HLS) and Protected HTTP Live Streaming (PHLS).
+Akamai supports HLS for live and on-demand streams.
+Instart supports HLS for on-demand streams.
+Amazon CloudFront supports HLS for on-demand streams.
+Bitmovin supports HLS for on-demand and live streaming.
+CDNetworks supports HLS for live and on-demand streams.
+Cisco Systems: supports full end to end delivery for Live/TSTV/VOD/HLS and Cloud DVR services.
+Cloudflare supports HLS for live and on-demand streams.
+EdgeCast Networks supports cross-device streaming using HLS.
+Fastly supports HLS for live and on-demand streams.[16]
+Helix Universal Server from RealNetworks supports iPhone OS 3.0 and later for live and on-demand HTTP Live or On-Demand streaming of H.264 and AAC content to iPhone, iPad and iPod.
+IIS Media Services from Microsoft supports live and on-demand Smooth Streaming and HTTP Live Streaming.
+Level 3 supports HLS live and on-demand streams.
+Limelight Networks supports HLS for some accounts.[17]
+Nginx with the nginx-rtmp-module supports HLS in live mode. Commercial version Nginx Plus, which includes ngx_http_hls_module module, also supports HLS/HDS VOD.[18]
+Nimble Streamer supports HLS in live and VOD mode, Apple Low Latency HLS spec is also supported.
+Node.js with the hls-server package supports hls encoding to live mode and local files conversion.[19]
+Storm Streaming Server supports HLS as backup mode for its Media Source Extensions player[20]
+Tata Communications CDN supports HLS for live and on-demand streams.
+TVersity supports HLS in conjunction with on-the-fly transcoding for playback of any video content on iOS devices.
+Unreal Media Server supports low latency HLS as of version 9.5.[21]
+Ustream supports HLS delivery of live broadcasts. The ingested stream is re-transcoded if the original audio and video codec falls outside HLS requirements.
+VLC Media Player supports HLS for serving live and on-demand streams as of version 2.0.
+Wowza Streaming Engine from Wowza Media Systems supports HLS and encrypted HLS for live (with DVR), on-demand streaming and Apple Low Latency HLS spec.
+Usage[edit]
+Google added HTTP Live Streaming support in Android 3.0 (Honeycomb).[22]
+HP added HTTP Live Streaming support in webOS 3.0.5.[23]
+Microsoft added support for HTTP Live Streaming in EdgeHTML rendering engine in Windows 10 in 2015.[24]
+Microsoft added support for HTTP Live Streaming in IIS Media Services 4.0.[25]
+Yospace added HTTP Live Streaming support in Yospace HLS Player and SDK for flash version 1.0.[citation needed]
+Sling Media added HTTP Live Streaming support to its Slingboxes and its SlingPlayer apps.[26]
+In 2014/15, the BBC introduced HLS-AAC streams for its live internet radio and on-demand audio services, and supports those streams with its iPlayer Radio clients.[27]
+Twitch uses HTTP Live Streaming (HLS) to transmit and scale the live streaming to many concurrent viewers, also supporting multiple variants (e.g., 1080p, 720p, etc).[28]
+Supported players and servers[edit]
+This list is incomplete; you can help by adding missing items.  (March 2015)
+HTTP Live Streaming is natively supported in the following operating systems:
+
+Windows 10 version 1507 to 2004 (Microsoft Edge Legacy) (no longer supported)
+Windows 11 Media Player (Only for Windows Insiders in Dev channel as of Jan. 2022)
+macOS 10.6+ (Safari and QuickTime)
+iOS 3.0+ (Safari)
+Android 4.1+[29] (Google Chrome)
+Windows 10 used to have native support for HTTP Live Streaming in EdgeHTML, a proprietary browser engine that was used in Microsoft Edge (now referred to as Edge Legacy) before the transition to the Chromium-based Blink browser engine. Edge Legacy was included in Windows 10 up till version 2004. It was replaced by Edge Chromium in version 20H2. Along with Windows 11, Microsoft released an updated Media Player that supports HLS natively. The Media Player preview is only available to Windows Insiders enrolled in the Windows 11 Dev channel as of January 2022.
+
+Clients[edit]
+
+
+
+Client
+Platform
+Live Streaming
+DRM
+As of Version
+Editor
+
+
+Safari (web browser)
+macOS, iOS
+Yes
+Yes
+6.0+  Has full HLS support.
+Apple
+
+
+Microsoft Edge (web browser)
+Windows 10
+Native support on Edge Legacy.Support via Media Source Extensions on Edge Chromium.
+Yes
+Supported natively on Edge Legacy's engine EdgeHTML from version 12 to 18.  No native support on Edge Chromium from version 79 to present.[30]
+Microsoft
+
+
+Google Chrome (web browser) / Chromium
+Windows, macOS, Linux, Android, iOS
+OS-dependent support on Android/iOS.Support via Media Source Extensions on other OS.
+Yes
+30+  Android and iOS have OS-dependent native support.  Other platforms require Media Source Extensions. 
+Google
+
+
+Firefox (web browser)
+Windows, macOS, Linux, Android, iOS
+OS-dependent support on Android/iOS.Support via Media Source Extensions on other OS.
+Yes
+50.0+ for Android[31] and 57.0 for others,[32] 59.0 has enhanced support for Android[33]  Other platforms require Media Source Extensions.
+Mozilla
+
+
+QuickTime Player (media player)
+macOS
+Yes
+Yes
+10.0+  Has full HLS support. 
+Apple
+
+
+iTunes (music player)
+Windows, macOS
+Yes
+Yes
+10.1+[34]  Has full HLS support.  To play a HLS stream, go to File > Open Stream and replace "http://" with "itls://" (for video streams) or "itals://" (for audio streams) in the stream URL.
+Apple
+
+
+StreamS HiFi Radio (radio player)
+iOS, tvOS iPhone, iPad, and AppleTV 
+Yes
+Yes
+7.3+  Plays Internet Radio Streams  HLS Audio - 100% Compliant  AAC-LC/HE-AAC/xHE-AAC 2.0 Stereo/5.1-7.1 Surround  ES - Elementary Stream ADTS  fMP4 - Fragmented ISO MP4  Displays Synchronous Realtime Metadata and Graphics 
+StreamS/Modulation Index LLC
+
+
+VLC media player (media player)
+Windows, macOS, Linux, Android, iOS, Windows Phone
+Yes
+UnÂ­known
+VLC 2.x[35] has partial support up to HLS version 3 (otherwise will load as M3U playlist, individual chunks sequence).[36]VLC 3.0 has full HLS support.
+VideoLAN
+
+
+Media Player Classic Home Cinema (media player)
+Windows
+Yes
+Yes
+
+Gabest, Doom9 forum users
+
+
+PotPlayer (media player)
+Windows
+Yes
+Yes
+
+Daum Communications
+
+
+MPlayer / SMPlayer / mpv (media player)
+Windows, macOS, Linux, BSD
+Yes
+Yes
+
+Ricardo Villalba
+
+
+GOM Player (media player)
+Windows
+Yes
+Yes
+
+Gretech
+
+
+Cameleon (live video streaming software)
+Windows, macOS
+Yes
+UnÂ­known
+
+Yatko
+
+
+Audacious (software) (music player)
+Windows, Linux
+Yes
+Yes
+
+Audacious
+
+
+Radio Tray (radio player)
+Linux
+Yes
+Yes
+
+Carlos Ribeiro
+
+
+Kodi (software) (home entertainment application)
+Windows, macOS, Linux, Android, iOS
+Yes
+Partial
+12.0 Alpha 5 and later  DRM support requires a monthly/nightly build
+XBMC Foundation
+
+
+MythTV (home entertainment application)
+Windows, macOS, Linux, FreeBSD
+Yes
+Yes
+0.26
+MythTV
+
+
+JRiver Media Center (home entertainment application)
+Windows, macOS
+Yes
+Yes
+
+JRiver
+
+
+XiiaLive (radio player)
+Android, iOS
+Yes
+Yes
+3.0+  Plays internet radio streams (audio only).
+Visual Blasters LLC
+
+
+Tunein radio (radio player)
+Android, iOS
+Yes
+Yes
+3.3+  Plays internet radio streams (audio only).
+TuneIn
+
+
+myTuner Radio (radio player)
+Android, iOS, Windows Phone, Windows 8, macOS
+Yes
+Yes
+Plays internet radio streams (audio only).
+AppGeneration Software
+
+
+Internet Radio Player (radio player)
+Android
+Yes
+Yes
+Plays internet radio streams (audio only).
+MuserTech
+
+
+GuguRadio (radio player)
+iOS
+Yes
+Yes
+Plays internet radio streams (audio only).
+Leon Fan
+
+
+AIMP (media player)
+Windows, Android
+Yes
+UnÂ­known
+4.10+ (build 1827)Plays internet radio streams (audio only).
+Artem Izmaylov
+
+
+Mini Stream Player (media player)
+Android
+Yes
+Yes
+
+JogiApp
+
+
+MX Player (media player)
+Android
+Yes
+Yes
+
+J2 Interactive
+
+
+TV Streams (media player)
+macOS, iOS, tvOS
+Yes
+Yes
+v7.1
+Tiago Martinho
+
+
+HP Touchpad
+WebOS
+Yes
+Yes
+3.0.5
+HP
+
+
+Amino x4x STB
+Amino set-top boxes
+Yes
+Yes
+2.5.2 Aminet
+Aminocom.com
+
+
+Dune HD TV
+Dune HD set-top boxes
+Yes
+Yes
+TV Series
+dunehd.com
+
+
+CTU Systems Ltd
+CTU Systems Ltd Eludo Play Out System
+Yes
+Yes
+TV Series
+ctusystems.com
+
+
+nangu.TV
+Motorola set-top boxes
+Yes
+Yes
+2.0
+nangu.TV
+
+
+Roku Digital Video Player
+Roku set-top boxes
+Yes
+Yes
+Roku OS / SDK 2.6
+Roku
+
+
+Telebreeze Player
+HTML, Android, iOS, Windows, MacOS, Roku, MAG Infomir, Samsung Tizen, LG WebOS, Google Chromecast, tvOS, Amazon Fire TV, AndroidTV
+Yes
+Yes
+
+Telebreeze
+
+
+bitdash (SDK)
+HTML5 or Flash, Web and Mobile
+Yes
+Yes
+Version 3.0+
+bitmovin
+
+
+3ivx (SDK)
+Windows 8, Windows Phone 8[37] & Xbox One[38]
+Yes
+Yes
+2.0
+3ivx
+
+
+THEOplayer[39]
+HTML5, SDK (Android, iOS, Android TV, tvOS, Chromecast, WebOS, FireTV, Tizen)
+Yes
+Yes
+
+THEO Technologies
+
+
+Viblast Player (SDK)
+HTML5, iOS, Android
+Yes
+Partial
+
+Viblast Ltd
+
+
+Flowplayer (SDK)
+Adobe Flash, iOS, Android, HTML5 (hlsjs plugin)
+Yes
+Yes
+The Flash HLS plugin is available from GitHub.
+Flowplayer Ltd
+
+
+JW Player (SDK)
+Adobe Flash, iOS, Android, HTML5
+Yes
+Yes
+HLS is provided in all JW Player versions as of JW8 (latest)
+JW Player
+
+
+Radiant Media Player (SDK)
+Adobe Flash, HTML5
+Yes
+Yes
+1.5.0[40]
+Radiant Media Player
+
+
+Yospace (SDK)
+Adobe Flash
+Yes
+Yes
+2.1
+Yospace
+
+
+Onlinelib (SDK)
+Adobe Flash
+Yes
+Yes
+2.0
+Onlinelib.de
+
+
+VODOBOX HLS Player (online service)
+Adobe Flash, HTML5, iOS, Android
+Yes
+Yes
+
+Vodobox
+
+
+NexPlayer (SDK)
+HTML5 (MSE Browsers), Android (mobile, TV, STB), iOS, Chromecast, Windows, Mac, Linux, Tizen, WebOS
+Yes
+Yes
+
+NexStreaming
+
+
+ffplay/avplay (multimedia framework)
+
+Yes
+Partial
+
+FFmpeg/Libav
+
+
+GPAC (multimedia framework)
+
+Yes
+No
+0.5.0
+Telecom ParisTech inc.
+
+
+QuickPlayer (SDK)
+Android, iOS, Windows 7, 8, 8,1 and 10
+Yes
+Yes
+
+Squadeo
+
+
+hls.js (MSE)
+MSE Browsers
+Yes
+UnÂ­known
+
+Dailymotion open source[41][42]
+
+
+hasplayer.js (MSE)
+MSE Browsers
+Yes
+UnÂ­known
+
+open source[43]
+
+
+Hola Player (video player)
+HTML5, Adobe Flash, iOS, Android
+Yes
+Yes
+All versions
+Hola Ltd open source[44]
+
+
+Shaka Player (SDK)
+HTML5 (MSE Browsers)
+Coming soon
+Partial
+2.1
+Open Source[45][46]
+
+
+Fluid Player (Video Player)
+HTML5 (MSE Browsers)
+Yes
+Yes
+2.2.0+
+Fluid Player OSS[47][48][49]
+
+
+Video.js
+
+MSE Browsers. Flash with flashls source handler fallback.
+Yes
+Yes
+
+
+
+Open source
+
+
+Servers[edit]
+
+
+
+Product
+Technology
+As Of Version
+Editor
+
+Free
+Notes
+
+
+ANEVIA Genova Live
+
+Bundled software for transcoding to H.264 & HEVC, and packaging to HLS, MPEG-DASH, MS Smooth Streaming
+
+
+
+Anevia
+
+No
+
+
+
+
+AvProxy
+Light software for live streamingInput and output streamsÂ : HTTP(S), HLS(S)/AES-128, UDP, RTP, MPTS demux 
+
+2.19[50]
+
+
+
+Yes
+
+Proprietary but free for use
+
+
+bitcodin
+
+SaaS
+bitmovin
+
+No
+[51]
+
+
+VLC
+
+1.2
+
+
+Yes
+
+
+
+Video Cloud
+
+SaaS
+Brightcove
+
+No
+[52]
+
+
+IIS Media Services
+
+4.0[25]
+Microsoft
+
+No
+
+
+
+Antik Media Streamer
+Ingest Module (UDP/HTTP Transport Stream, Backup Stream with auto-switching, stream status monitoring and logging), Stream replication UDP/HTTP, HLS streaming, Video archive with snapshots, Server-side Timeshift, time zone shifting with multiple time zones, Stream Encryption using AES and key-rotation (with Antik Key Server)
+3.0
+Antik technology
+
+No
+
+
+
+Adobe Media Server
+Live and VOD streaming as origin and edge server
+5.0
+Adobe
+
+No
+
+
+
+Evostream Media Server
+Cross-platform including embedded systems such as encoders, IP cameras, DVRs, and more. Supports: Adobe Flash RTMP, RTMPS, LiveFLV, full transcoder for creating lower bitrate streams, HTTP Live Streaming (HLS) for streaming to iPhones, iPads and Androids, HTTP Dynamic Streaming (HDS) for Adobe Air, Microsoft Smooth Streaming (MSS) for Microsoft devices, RTSP with RTP or MPEG-TS, MPEG-TS (unicast/multicast), compatible Live Encoding, strong security for your content ( Verimatrix DRM, HLS AES encryption, Stream Aliasing, Watermarking), built-in clustering mechanism and more.
+1.6.5
+EvoStream
+
+No
+
+
+
+MythTV
+
+0.25
+MythTV
+
+Yes
+
+
+
+MACNETIX VOD-Server
+
+3.0
+MACNETIX
+
+No
+
+
+
+Anevia NEA Live Servers
+Transcapsulation: from one input, several outputs(HLS, MS Smooth Streaming, ADS Flash, MPEG DASH)
+
+Anevia
+
+No
+
+
+
+Packet Ship OverView:Origin Server
+Capture from IPTV multicast and chunking to HLS for multi-bandwidth live streams, with AES encryption
+2.1
+Packet Ship
+
+No
+
+
+
+nangu.TV Streamers
+on-the-fly adaptation: content is stored once enabling several outputs(HLS, MS Smooth Streaming, ADS Flash, MPEG DASH)
+
+nangu.TV
+
+No
+
+
+
+TVersity Media Server
+
+1.9
+TVersity
+
+No
+Pro Edition only
+
+
+Helix Universal Server
+Live + VOD HLS with Verimatrix DRM integration, ABR, Multi-Resolution, AES encryption
+15.0+
+RealNetworks
+
+No
+High performance HLS (12,000+ concurrent devices)
+
+
+Wowza Streaming Engine
+Live and VOD streaming as origin and edge server with DVR, DRM Integration and Transcoding for adaptive delivery. Outputs to MPEG-DASH, HLS, HDS, Smooth Streaming, RTMP, and RTSP. Supports Apple Low Latency HLS.
+2.0+
+Wowza Media Systems
+
+No
+
+
+
+Unified Streaming Platform
+Muxes media content from one unified source to multiple outputs (Smooth Streaming, HDS, HLS and MPEG DASH)
+
+Unified Streaming
+
+No
+
+
+
+VODOBOX Live Server
+Outputs HTTP Live Streaming with Adaptive bitrate streaming (up to 6 simultaneous qualities).Video codecsÂ : AVC H.264 / HEVC H.265Audio codecsÂ : MP3 / AACTransport layersÂ : HTTP / FTP / Amazon AWS S3 / Microsoft Azure Web Storage / writing to disk (NetBios / Samba)HostingsÂ : internal HTTP Web server and/or external Web servers (ex: Apache HTTP server, Microsoft IIS, Nginx, etc.)
+1.0
+Vodobox
+
+Yes
+Supports input live streams from DVB-T devices, satellite receivers (Dreambox), IP streams (RTSP, RTMP, MMS, HTTP), Microsoft DirectShow drivers (video capture cards, live production software, camera). Encoder is compliant with Intel Quick Sync Video and Nvidia NVENC hardware acceleration.
+
+
+Flixwagon Platform Video Server
+
+
+Flixwagon
+
+No
+
+
+
+StreamCoder Live Encoder
+Realtime video encoder (inputsÂ : DVB/IP stream or video signal). Supports multi-bitrates and multi-languages
+
+Ektacom
+
+No
+
+
+
+Apache HTTP Server
+
+
+Apache Software Foundation
+
+Yes
+
+
+
+Unreal Media Server
+
+9.5
+Unreal Streaming Technologies
+
+No
+Latency of live streams can be as low as 2.5 seconds over the Internet
+
+
+Nimble Streamer
+RTMP / RTSP / Icecast / MPEG-TS to ABR HLS. MP4 / MP3 to VOD HLS. Apple Low Latency HLS spec is supported.
+1.0.0-x
+WMSPanel
+
+No
+
+
+
+Nginx-rtmp-module
+Free module for nginx server with support of HLS live streaming. Compliant with iOS and Android.
+0.9.x
+Roman Arutyunyan
+
+Yes
+
+
+
+Nginx Plus
+VOD HLS as origin
+
+NGINX, Inc.
+
+No
+
+
+
+Flussonic Media Server
+Multi-platform support for HTTP, RTSP, RTMP, DASH, Time Shifting, DVR Functions with Unlimited Rewind Capabilities HLS streaming specific to iOS platform support.
+3.0+
+Flussonic, LLC.
+
+No
+Supporting a magnitude of features with full HTTP support.
+
+
+VBrick Distributed Media Engine ("DME")
+
+2.0
+VBrick Systems, Inc.
+
+No
+Live and stored HLS. Live can be transmuxed from several input mux including RTP, RTMP, and MPEG-TS using H.264 encoding
+
+
+Telebreeze Coder / Media Server
+Input streams / interfaces: UDP, TCP, RTP, HLS, HTTP, RTMP (MPEG-TS) Output Streams: HLS, HTTP, UDP Preprocessing: Resize, Deinterlace, Frame Rate Conversion, Audio Resampling, Logo Rendering
+
+Telebreeze
+
+No
+
+
+
+LEADTOOLS Media Streaming Server SDK
+Converts files on the fly to Adobe HDS, Apple HLS, MPEG-DASH, Microsoft Smooth Streaming, RTSP.
+19.0
+LEAD Technologies
+
+No
+
+
+
+MC-ROUTE
+Multifunctional software for live stream routing and protocol conversion
+4.4
+Teracue
+
+No
+Supported protocols: TS over UDP, RTP, TCP, HLS, HTTP, RTSP/RTP
+
+
+Direkt router
+Live hardware decoder with SDI, NDI out and transcoding
+4.1
+Intinor
+
+No
+Supported protocols in: TS over UDP, RTP, TCP, HLS, HTTP, RTMP out: UDP, RTP, TCP, RTMP
+
+
+Elecard CodecWorks
+
+Professional platform for real-time encoding and transcoding into HEVC/H.265, AVC/H.264 and MPEG-2 video supporting adaptive bitrate streaming via HLS and MPEG-DASH protocols.
+
+4.6
+
+Elecard
+
+No
+
+Supported protocols: TS over UDP/RTP/SRT, RTMP Output, HLS, MPEG-DASH output, UDP/RTP/SRT, NDI
+
+
+TAC - Teracue Application Cloud
+
+Professional stream routing and real-time encoding/transcoding platform supporting various audio and video codedc and streaming protocols
+
+1.0
+
+Teracue
+
+No
+
+Supported protocols IN and OUT: UDP, RTP, RTSP, RTMP, TCP (Client/Server), HLS, HTTP, FEC, SRT
+Supported prptpcols IN only: SDVoE and NDI
+
+
+Live Encoders[edit]
+
+
+
+Product
+Technology
+As Of Version
+Editor
+
+Free
+Notes
+
+
+
+ENC-400 Series
+Live hardware encoder with SDI or HDMI
+1.0
+Teracue
+No
+Supported protocols: TS over UDP,RTP, TCP, RTP/RTSP, RTMP push, HLS
+
+
+WELLAV NB100
+Live Streamcast with SDI or HDMI, CVBS
+1.0
+Wellav Technologies
+No
+Supported protocols: TS UDP,RTP, RTP/RTSP, RTMP, HLS;
+
+
+ZyPerMX4
+Live hardware encoder with 4 HDMI inputs
+2.14
+ZeeVee
+No
+Supported protocols: TS over UDP,RTP, H.264/MPEG-4 AVC, HLS, RTMP, RTSP
+
+
+ZyPerMX2
+Live hardware encoder with 2 HDMI inputs
+2.14
+ZeeVee
+No
+Supported protocols: TS over UDP,RTP, H.264/MPEG-4 AVC, HLS, RTMP, RTSP
+
+
+Elecard CodecWorks
+Live software encoder with up to 8 SDI/HDMI or NDI inputs
+4.6
+Elecard
+No
+Supported protocols: TS UDP,RTP,SRT, RTMP push, HLS, Mpeg-DASH
+
+
+StreamS Live Encoder
+Live software/hardware audio encoder with professional interface options
+3.0
+StreamS
+No
+Supported protocols: HLS/DASH ES, fMP4, FTP, FTPS, HTTP, HTTPS, DAV, DAVS, Akamai, Amazon S3, Microsoft BLOB, Google Cloud  AAC-LC/HE-AAC/xHE-AAC - Synchronous Realtime Now Playing and Control Metadata and Graphics
+
+VOD encoders[edit]
+
+
+
+Product
+Technology
+As Of Version
+Editor
+
+Free
+Notes
+
+
+
+VODOBOX HLS Encoder
+Converts video files into pre-encoded HLS Adaptive bitrate streaming, ready to be hosted and broadcast through Apache HTTP server / Microsoft IIS / Nginx Web servers. Supports AVC H.264 / HEVC H.265 / MPEG-TS / Fragmented MP4 / Alternate Audio / Alternate Subtitles.
+1.0
+Vodobox
+
+Yes
+Transcodes classic video files (avi, mp4, m2ts, mkv, ...) into HLS streams with multi-qualities for VOD or replay usage. Hardware encoding can be accelerated by Intel Quick Sync Video and Nvidia NVENC technologies.
+
+
+MediaGoom HLS Packager[53]
+Convert mp4 files encoded with multibitrate to HLS chunks.
+0.1
+Mediagoom
+Yes
+Support both Linux and Windows.
+
+
+See also[edit]
+Adaptive bitrate streaming
+Dynamic Adaptive Streaming over HTTP
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Pantos, R.; May, W. (2017). "Playlists". HTTP Live Streaming. IETF. p.Â 9.Â sec.Â 4. doi:10.17487/RFC8216. ISSNÂ 2070-1721. RFC 8216. Retrieved Jan 15, 2020.
+
+^ Lederer, Stefan. "2019 Video Developer Report". Bitmovin. Retrieved 12 November 2019.
+
+^ Jordan, Larry (10 June 2013). "The Basics of HTTP Live Streaming". Larry's Blog. Larry Jordan & Associates. Retrieved 18 June 2013.
+
+^ "MPEG-DASH vs. Apple HLS vs. Smooth Streaming vs. Adobe HDS".
+
+^ Pantos, R. (30 September 2011). "HTTP Live Streaming". Internet Engineering Task Force. Retrieved 18 June 2013.
+
+^ 
+"History for draft-pantos-http-live-streaming". Retrieved 2017-04-17. Stream changed to ISE from None
+
+^ 
+Pantos, Roger; May, William (August 2017). HTTP Live Streaming. doi:10.17487/RFC8216. RFC 8216. Retrieved 2017-09-05.
+
+^ Roger, Pantos; William, May. "HTTP Live Streaming". tools.ietf.org. Retrieved 2017-01-23.
+
+^ What's New in HTTP Live Streaming. Apple Developer.
+
+^ Siglin, Tim (16 June 2016). "HLS Now Supports Fragmented MP4, Making it Compatible With DASH". StreamingMedia.com.
+
+^ Grandl, Reinhard (15 June 2016). "WWDC16: HLS supports Fragmented MP4 â and gets MPEG-DASH compatible!". Bitmovin.com.
+
+^ Low-Latency HLS. Apple Developer.
+
+^ "The community gave us low-latency live streaming. Then Apple took it away". 2019-06-14. Retrieved 2019-06-17.
+
+^ Speelmans, Pieter-Jan (2020-12-09). "Low-Latency Everywhere: How to implement LL-HLS across platforms". Theo. Retrieved 2021-03-11.
+
+^ Pantos, Roger (2020-04-30). "HTTP Live Streaming 2nd Edition". IETF. Retrieved 2020-04-30.
+
+^ "Video CDN | Video Streaming | Stream Delivery | Fastly". www.fastly.com. Retrieved 2020-10-01.
+
+^ "Encoding Guide". Limelight Orchestrate Video Support. Limelight Networks. Archived from the original on 2013-08-01. Retrieved 14 November 2013.
+
+^ "Module ngx_http_hls_module".
+
+^ "hls-server". npm.
+
+^ "Storm Streaming". Storm Streaming. Retrieved 2021-07-30. Output devices: HLS, MPEG-DASH, WebSocket, RTMP{{cite web}}:  CS1 maint: url-status (link)
+
+^ "Unreal Media Server". umediaserver.net. Retrieved 2021-07-30. Unreal Media Server supports ingesting live streams from wide range of live software and hardware encoders that send streams over WebRTC, RTMP, RTSP, MPEG2-TS, HLS,{{cite web}}:  CS1 maint: url-status (link)
+
+^ "Android 3.0 Platform Highlights". Android Developers. Archived from the original on 2011-01-28.
+
+^ "webOS 3.0.5 Updates". Archived from the original on 2012-01-22.
+
+^ "Simplified Adaptive Video Streaming: Announcing support for HLS and DASH in Windows 10". Internet Explorer Team Blog. 29 January 2015.
+
+^ a b Siglin, Tim (1 November 2010). "First Look: Microsoft IIS Media Services 4". StreamingMedia.com. Retrieved 30 July 2011.
+
+^ Chan, David (November 26, 2010). "iPad App Review: SlingPlayer". Blogcritics. Archived from the original on April 15, 2014. Retrieved April 14, 2014.
+
+^ Scott, Andrew (27 Feb 2015). "Audio Factory: an overview". Internet Blog. BBC. the only on-demand assets will be AAC HLS. ... We are still talking to manufacturers and many are confident that they will be able to provide their users with access to all 57 of our HLS AAC streams at 320kb/s within a few weeks or months.
+
+^ Shen, Yueshi (2017). "Live video transmuxing/transcoding: FFmpeg vs TwitchTranscoder, Part 1".
+
+^ "Supported media formats". Android Developers.
+
+^ HTTP Live Streaming (HLS) | Can I use...
+
+^ "Firefox for Android 50.0, See All New Features, Updates and Fixes". Mozilla.
+
+^ Giles, Ralph; Smole, Martin (28 November 2017). "DASH playback of AV1 video in Firefox". Mozilla Hacks â the Web developer blog.
+
+^ "Firefox for Android Beta 59.0beta, See All New Features, Updates and Fixes". Mozilla.
+
+^ Slivka, Eric (15 November 2010). "Hints of 'iTunes Live Stream' Service Found in iTunes 10.1". MacRumors.
+
+^ "#2943 (Support for HTTP Live Streaming as a client)". VLC bug tracker.
+
+^ "Playing HLS streaming video with VLC player - The VideoLAN Forums". forum.videolan.org.
+
+^ "Windows 8 - HTTP Live Streaming". www.3ivx.com.
+
+^ "3ivx - Xbox Live Developer Partner Program - Component Provider". www.3ivx.com.
+
+^ NV, THEO Technologies. "HTML5 Video Player â THEOplayer". www.theoplayer.com.
+
+^ Player, Radiant Media. "Version History - Radiant Media Player". www.radiantmediaplayer.com.
+
+^ "dailymotion â Medium". Medium.
+
+^ hls.js demo page Archived 2015-11-20 at the Wayback Machine
+
+^ "Orange-OpenSource/hasplayer.js". GitHub.
+
+^ "Spark". Spark.
+
+^ "google/shaka-player". GitHub.
+
+^ "Shaka Player Demo". shaka-player-demo.appspot.com.
+
+^ "Fluid Player - HTML5 video player". www.fluidplayer.com.
+
+^ "Fluid Player Documentation". docs.fluidplayer.com.
+
+^ "fluid-player/fluid-player". GitHub.
+
+^ "marakew/AvProxy". GitHub.
+
+^ Ozer, Jan (2015). "Review: Bitcodin, a Cloud Video Encoding Service From Bitmovin". www.StreamingMediaGlobal.com.
+
+^ "Delivering HLS Video - Brightcove Learning". support.brightcove.com.
+
+^ "MediaGoom. Essential Web Streaming".
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=HTTP_Live_Streaming&oldid=1068233232"
+		Categories: Hypertext Transfer ProtocolMultimediaNetwork protocolsQuickTimeStreaming media systemsHidden categories: CS1 maint: url-statusWebarchive template wayback linksArticles with short descriptionShort description is different from WikidataAll articles with unsourced statementsArticles with unsourced statements from March 2019Articles using small message boxesIncomplete lists from March 2015
+	

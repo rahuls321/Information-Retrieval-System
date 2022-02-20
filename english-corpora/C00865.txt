@@ -1,0 +1,139 @@
+
+Title:
+Peterson's algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Peterson's algorithm (or Peterson's solution) is a concurrent programming algorithm for mutual exclusion that allows two or more processes to share a single-use resource without conflict, using only shared memory for communication. It was formulated by Gary L. Peterson in 1981.[1] While Peterson's original formulation worked with only two processes, the algorithm can be generalized for more than two.[2]
+
+Contents
+
+1 The algorithm
+
+1.1 Mutual exclusion
+1.2 Progress
+1.3 Bounded waiting
+1.4 Filter algorithm: Peterson's algorithm for more than two processes
+
+
+2 Note
+3 See also
+4 Footnotes
+5 External links
+
+
+
+The algorithm[edit]
+The algorithm uses two variables: flag and turn. A flag[n] value of true indicates that the process n wants to enter the critical section. Entrance to the critical section is granted for process P0 if P1 does not want to enter its critical section or if P1 has given priority to P0 by setting turn to 0.
+
+  Peterson's algorithm
+
+
+bool flag[2] = {false, false};
+int turn;
+
+
+
+P0:      flag[0] = true;
+P0_gate: turn = 1;
+         while (flag[1] == true && turn == 1)
+         {
+             // busy wait
+         }
+         // critical section
+         ...
+         // end of critical section
+         flag[0] = false;
+
+
+P1:      flag[1] = true;
+P1_gate: turn = 0;
+         while (flag[0] == true && turn == 0)
+         {
+             // busy wait
+         }
+         // critical section
+         ...
+         // end of critical section
+         flag[1] = false;
+
+
+The algorithm satisfies the three essential criteria to solve the critical-section problem. The while condition works even with preemption.[1]
+The three criteria are mutual exclusion, progress, and bounded waiting.[3]
+Since turn can take on one of two values, it can be replaced by a single bit, meaning that the algorithm requires only three bits of memory.[4]:â22â
+
+Mutual exclusion[edit]
+P0 and P1 can never be in the critical section at the same time: If P0 is in its critical section, then flag[0] is true. In addition, either flag[1] is false (meaning that P1 has left its critical section), or turn is 0 (meaning that P1 is just now trying to enter the critical section, but graciously waiting), or P1 is at label P1_gate (trying to enter its critical section, after setting flag[1] to true but before setting turn to 0 and busy waiting). So if both processes are in their critical sections, then we conclude that the state must satisfy flag[0] and flag[1] and turn = 0 and turn = 1. No state can satisfy both turn = 0 and turn = 1, so there can be no state where both processes are in their critical sections.
+(This recounts an argument that is made rigorous in.[5])
+
+Progress[edit]
+Progress is defined as the following: if no process is executing in its critical section and some processes wish to enter their critical sections, then only those processes that are not executing in their remainder sections can participate in making the decision as to which process will enter its critical section next. Note that for a process or thread, the remainder sections are parts of the code that are not related to the critical section. This selection cannot be postponed indefinitely.[3] A process cannot immediately re-enter the critical section if the other process has set its flag to say that it would like to enter its critical section.
+
+Bounded waiting[edit]
+Bounded waiting, or bounded bypass, means that the number of times a process is bypassed by another process after it has indicated its desire to enter the critical section is bounded by a function of the number of processes in the system.[3][4]:â11â In Peterson's algorithm, a process will never wait longer than one turn for entrance to the critical section.
+
+Filter algorithm: Peterson's algorithm for more than two processes[edit]
+  Snapshot of filter algorithm with 10 processes in progress. Last to enter are shown bold and underlined. (NB: Depending on scheduling, the last to enter may not be "correct".) At any time, updates to the table could be: the insertion of a new process at level 0, a change to the last to enter at a given level, or a process moving up one level (if it is not the last to enter OR there are no other processes at its own level or higher).
+The filter algorithm generalizes Peterson's algorithm to N > 2 processes.[6] Instead of a boolean flag, it requires an integer variable per process, stored in a single-writer/multiple-reader (SWMR) atomic register, and NÂ âÂ 1 additional variables in similar registers. The registers can be represented in pseudocode as arrays:
+
+levelÂ : array of N integers
+last_to_enterÂ : array of N â 1 integers
+
+The .mw-parser-output .monospaced{font-family:monospace,monospace}level variables take on values up to NÂ âÂ 1, each representing a distinct "waiting room" before the critical section.[6] Processes advance from one room to the next, finishing in room NÂ âÂ 1, which is the critical section. Specifically, to acquire a lock, process i executes[4]:â22â
+
+i â ProcessNo
+for â from 0 to N â 1 exclusive
+    level[i] â â
+    last_to_enter[â] â i
+    while last_to_enter[â] = i and there exists k â  i, such that level[k] â¥ â
+        wait
+
+To release the lock upon exiting the critical section, process i sets level[i] to â1.
+That this algorithm achieves mutual exclusion can be proven as follows. Process i exits the inner loop when there is either no process with a higher level than level[i], so the next waiting room is free; or, when i â  last_to_enter[â], so another process joined its waiting room. At level zero, then, even if all N processes were to enter waiting room zero at the same time, no more than NÂ âÂ 1 will proceed to the next room, the final one finding itself the last to enter the room. Similarly, at the next level, NÂ âÂ 2 will proceed, etc., until at the final level, only one process is allowed to leave the waiting room and enter the critical section, giving mutual exclusion.[4]:â22â24â
+The algorithm can also be shown to be starvation-free, meaning that all processes that enter the loop eventually exit it (assuming that they don't stay in the critical section indefinitely). The proof proceeds by induction from NÂ âÂ 1 downward. A process at NÂ âÂ 1 is in the critical section and by assumption will exit it. At all lower levels â, it is impossible for a process i to wait forever, since either another process j will enter the waiting room, setting last_to_enter[â] â j and "liberating" i; or this never happens, but then all processes j that are also in the waiting rooms must be at higher levels and by the inductive hypothesis, they will eventually finish the loop and reset their levels, so that for all k â  i, level[k] < â and i again exits the loop.[4]:â24â25â
+Starvation freedom is in fact the highest liveness guarantee that the algorithm gives; unlike the two-process Peterson algorithm, the filter algorithm does not guarantee bounded waiting.[4]:â25â26â
+
+Note[edit]
+When working at the hardware level, Peterson's algorithm is typically not needed to achieve atomic access. 
+Some processors have special instructions, like test-and-set or compare-and-swap, which, by locking the memory bus, can be used to provide mutual exclusion in SMP systems.
+Most modern CPUs reorder memory accesses to improve execution efficiency (see memory ordering for types of reordering allowed). Such processors invariably give some way to force ordering in a stream of memory accesses, typically through a memory barrier instruction. Implementation of Peterson's and related algorithms on processors that reorder memory accesses generally requires use of such operations to work correctly to keep sequential operations from happening in an incorrect order. Note that reordering of memory accesses can happen even on processors that don't reorder instructions (such as the PowerPC processor in the Xbox 360).[citation needed]
+Most such CPUs also have some sort of guaranteed atomic operation, such as XCHG on x86 processors and load-link/store-conditional on Alpha, MIPS, PowerPC, and other architectures. These instructions are intended to provide a way to build synchronization primitives more efficiently than can be done with pure shared memory approaches.
+
+See also[edit]
+Dekker's algorithm
+Eisenberg & McGuire algorithm
+Lamport's bakery algorithm
+SzymaÅski's algorithm
+Semaphores
+Footnotes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b G. L. Peterson: "Myths About the Mutual Exclusion Problem", Information Processing Letters 12(3) 1981, 115â116
+
+^ As discussed in Operating Systems Review, January 1990 ("Proof of a Mutual Exclusion Algorithm", M Hofri).
+
+^ Jump up to: a b c Silberschatz. Operating Systems Concepts: Seventh Edition. John Wiley and Sons, 2005, Page 194.
+
+^ Jump up to: a b c d e f .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Raynal, Michel (2012). Concurrent Programming: Algorithms, Principles, and Foundations. Springer Science & Business Media. ISBNÂ 3642320279.
+
+^ F. B. Schneider. On Concurrent Programming, Sringer Verlag, 1997, Pages 185â196.
+
+^ Jump up to: a b Herlihy, Maurice; Shavit, Nir (2012). The Art of Multiprocessor Programming. Elsevier. p.Â 28â31. ISBNÂ 9780123977953.
+
+
+External links[edit]
+https://elixir.bootlin.com/linux/latest/source/arch/arm/mach-tegra/sleep.S Peterson's algorithm implementation
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Peterson%27s_algorithm&oldid=1055359466"
+		Categories: Concurrency control algorithmsHidden categories: All articles with unsourced statementsArticles with unsourced statements from May 2015Articles with example C code
+	

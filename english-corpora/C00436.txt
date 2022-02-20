@@ -1,0 +1,481 @@
+
+Title:
+Federated learning
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Decentralized machine learning
+Federated learning (also known as collaborative learning) is a machine learning technique that trains an algorithm across multiple decentralized edge devices or servers holding local data samples, without exchanging them. This approach stands in contrast to traditional centralized machine learning techniques where all the local datasets are uploaded to one server, as well as to more classical decentralized approaches which often assume that local data samples are identically distributed.
+Federated learning enables multiple actors to build a common, robust machine learning model without sharing data, thus allowing to address critical issues such as data privacy, data security, data access rights and access to heterogeneous data. Its applications are spread over a number of industries including defense, telecommunications, IoT, and pharmaceutics.
+
+Contents
+
+1 Definition
+
+1.1 Centralized federated learning
+1.2 Decentralized federated learning
+1.3 Heterogeneous federated learning
+
+
+2 Main features
+
+2.1 Iterative learning
+2.2 Non-iid data
+
+
+3 Algorithmic hyper-parameters
+
+3.1 Network topology
+3.2 Federated learning parameters
+
+
+4 Technical limitations
+5 Federated learning variations
+
+5.1 Federated stochastic gradient descent (FedSGD)
+5.2 Federated averaging
+5.3 Federated Learning with Dynamic Regularization (FedDyn)
+
+
+6 Properties of federated learning
+
+6.1 Privacy
+6.2 Personalization
+
+6.2.1 Personalization through meta learning
+
+
+6.3 Legal upsides of federated learning
+
+
+7 Current research topics
+8 Use cases
+
+8.1 Transportation: self-driving cars
+8.2 Industry 4.0: smart manufacturing
+8.3 Medicine: digital health
+
+
+9 References
+10 External links
+
+
+
+Definition[edit]
+Federated learning aims at training a machine learning algorithm, for instance deep neural networks, on multiple local datasets contained in local nodes without explicitly exchanging data samples. The general principle consists in training local models on local data samples and exchanging parameters (e.g. the weights and biases of a deep neural network) between these local nodes at some frequency to generate a global model shared by all nodes.
+The main difference between federated learning and distributed learning lies in the assumptions made on the properties of the local datasets,[1] as distributed learning originally aims at parallelizing computing power where federated learning originally aims at training on heterogeneous datasets. While distributed learning also aims at training a single model on multiple servers, a common underlying assumption is that the local datasets are independent and identically distributed (i.i.d.) and roughly have the same size. None of these hypotheses are made for federated learning; instead, the datasets are typically heterogeneous and their sizes may span several orders of magnitude. Moreover, the clients involved in federated learning may be unreliable as they are subject to more failures or drop out since they commonly rely on less powerful communication media (i.e. Wi-Fi) and battery-powered systems (i.e. smartphones and IoT devices) compared to distributed learning where nodes are typically datacenters that have powerful computational capabilities and are connected to one another with fast networks.[2]
+
+Centralized federated learning[edit]
+In the centralized federated learning setting, a central server is used to orchestrate the different steps of the algorithms and coordinate all the participating nodes during the learning process. The server is responsible for the nodes selection at the beginning of the training process and for the aggregation of the received model updates. Since all the selected nodes have to send updates to a single entity, the server may become a bottleneck of the system.[2]
+
+Decentralized federated learning[edit]
+In the decentralized federated learning setting, the nodes are able to coordinate themselves to obtain the global model. This setup prevents single point failures as the model updates are exchanged only between interconnected nodes without the orchestration of the central server. Nevertheless, the specific network topology may affect the performances of the learning process.[2] See blockchain-based federated learning[3] and the references therein.
+
+Heterogeneous federated learning[edit]
+An increasing number of application domains involve a large set of heterogeneous clients, e.g., mobile phones and IoT devices.[4] Most of the existing Federated learning strategies assume that local models share the same global model architecture. Recently, a new federated learning framework named HeteroFL was developed to address heterogeneous clients equipped with very different computation and communication capabilities.[5] The HeteroFL technique can enable the training of heterogeneous local models with dynamically-varying computation and non-iid data complexities while still producing a single accurate global inference model.[5][6]
+
+  Federated learning general process in central orchestrator setup
+Main features[edit]
+Iterative learning[edit]
+To ensure good task performance of a final, central machine learning model, federated learning relies on an iterative process broken up into an atomic set of client-server interactions known as a federated learning round. Each round of this process consists in transmitting the current global model state to participating nodes, training local models on these local nodes to produce a set of potential model updates at each node, and then aggregating and processing these local updates into a single global update and applying it to the global model.[2]
+In the methodology below, a central server is used for aggregation, while local nodes perform local training depending on the central server's orders. However, other strategies lead to the same results without central servers, in a peer-to-peer approach, using gossip[7] or consensus methodologies.[8]
+Assuming a federated round composed by one iteration of the learning process, the learning procedure can be summarized as follows:[9]
+
+Initialization: according to the server inputs, a machine learning model (e.g., linear regression, neural network, boosting) is chosen to be trained on local nodes and initialized. Then, nodes are activated and wait for the central server to give the calculation tasks.
+Client selection: a fraction of local nodes is selected to start training on local data. The selected nodes acquire the current statistical model while the others wait for the next federated round.
+Configuration: the central server orders selected nodes to undergo training of the model on their local data in a pre-specified fashion (e.g., for some mini-batch updates of gradient descent).
+Reporting: each selected node sends its local model to the server for aggregation. The central server aggregates the received models and sends back the model updates to the nodes. It also handles failures for disconnected nodes or lost model updates. The next federated round is started returning to the client selection phase.
+Termination: once a pre-defined termination criterion is met (e.g., a maximum number of iterations is reached or the model accuracy is greater than a threshold) the central server aggregates the updates and finalizes the global model.
+The procedure considered before assumes synchronized model updates. Recent federated learning developments introduced novel techniques to tackle asynchronicity during the training process, or training with dynamically varying models.[5] Compared to synchronous approaches where local models are exchanged once the computations have been performed for all layers of the neural network, asynchronous ones leverage the properties of neural networks to exchange model updates as soon as the computations of a certain layer are available. These techniques are also commonly referred to as split learning[10][11] and they can be applied both at training and inference time regardless of centralized or decentralized federated learning settings.[2][5]
+
+Non-iid data[edit]
+In most cases, the assumption of independent and identically distributed samples across local nodes does not hold for federated learning setups. Under this setting, the performances of the training process may vary significantly according to the unbalancedness of local data samples as well as the particular probability distribution of the training examples (i.e., features and labels) stored at the local nodes. To further investigate the effects of non-iid data, the following description considers the main categories presented in the preprint by Peter Kairouz et al. from 2019.[2]
+The description of non-iid data relies on the analysis of the joint probability between features and labels for each node.
+This allows to decouple each contribution according to the specific distribution available at the local nodes.
+The main categories for non-iid data can be summarized as follows:[2]
+
+Covariate shift: local nodes may store examples that have different statistical distributions compared to other nodes. An example occurs in natural language processing datasets where people typically write the same digits/letters with different stroke widths or slants.[2]
+Prior probability shift: local nodes may store labels that have different statistical distributions compared to other nodes. This can happen if datasets are regional and/or demographically partitioned. For example, datasets containing images of animals vary significantly from country to country.[2]
+Concept drift (same label, different features): local nodes may share the same labels but some of them correspond to different features at different local nodes. For example, images that depict a particular object can vary according to the weather condition in which they were captured.[2]
+Concept shift (same features, different labels): local nodes may share the same features but some of them correspond to different labels at different local nodes. For example, in natural language processing, the sentiment analysis may yield different sentiments even if the same text is observed.[2]
+Unbalancedness: the amount of data available at the local nodes may vary significantly in size.[2][5]
+The loss in accuracy due to non-iid data can be bounded through using more sophisticated means of doing data normalization, rather than batch normalization.[12]
+
+Algorithmic hyper-parameters[edit]
+Network topology[edit]
+The way the statistical local outputs are pooled and the way the nodes communicate with each other can change from the centralized model explained in the previous section. This leads to a variety of federated learning approaches: for instance no central orchestrating server, or stochastic communication.[13]
+In particular, orchestrator-less distributed networks are one important variation. In this case, there is no central server dispatching queries to local nodes and aggregating local models. Each local node sends its outputs to several randomly-selected others, which aggregate their results locally. This restrains the number of transactions, thereby sometimes reducing training time and computing cost.[14]
+
+Federated learning parameters[edit]
+Once the topology of the node network is chosen, one can control different parameters of the federated learning process (in opposition to the machine learning model's own hyperparameters) to optimize learning:
+
+Number of federated learning rounds: 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+
+Total number of nodes used in the process: 
+  
+    
+      
+        K
+      
+    
+    {\displaystyle K}
+  
+
+Fraction of nodes used at each iteration for each node: 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+
+Local batch size used at each learning iteration: 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+
+Other model-dependent parameters can also be tinkered with, such as:
+
+Number of iterations for local training before pooling: 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+
+Local learning rate: 
+  
+    
+      
+        Î·
+      
+    
+    {\displaystyle \eta }
+  
+
+Those parameters have to be optimized depending on the constraints of the machine learning application (e.g., available computing power, available memory, bandwidth). For instance, stochastically choosing a limited fraction 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ of nodes for each iteration diminishes computing cost and may prevent overfitting, in the same way that stochastic gradient descent can reduce overfitting.
+
+Technical limitations[edit]
+Federated learning requires frequent communication between nodes during the learning process. Thus, it requires not only enough local computing power and memory, but also high bandwidth connections to be able to exchange parameters of the machine learning model. However, the technology also avoids data communication, which can require significant resources before starting centralized machine learning. Nevertheless, the devices typically employed in federated learning are communication-constrained, for example IoT devices or smartphones are generally connected to Wi-Fi networks, thus, even if the models are commonly less expensive to be transmitted compared to raw data, federated learning mechanisms may not be suitable in their general form.[2]
+Federated learning raises several statistical challenges:
+
+Heterogeneity between the different local datasets: each node may have some bias with respect to the general population, and the size of the datasets may vary significantly;[5]
+Temporal heterogeneity: each local dataset's distribution may vary with time;
+Interoperability of each node's dataset is a prerequisite;
+Each node's dataset may require regular curations;
+Hiding training data might allow attackers to inject backdoors into the global model;[15]
+Lack of access to global training data makes it harder to identify unwanted biases entering the training e.g. age, gender, sexual orientation;
+Partial or total loss of model updates due to node failures affecting the global model;[2]
+Lack of annotations or labels on the client side.[16]
+Federated learning variations[edit]
+In this section, the notation of the paper published by H. Brendan McMahan and al. in 2017 is followed.[17]
+To describe the federated strategies, let us introduce some notations:
+
+
+  
+    
+      
+        K
+      
+    
+    {\displaystyle K}
+  
+Â : total number of clients;
+
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+Â : index of clients;
+
+  
+    
+      
+        
+          n
+          
+            k
+          
+        
+      
+    
+    {\displaystyle n_{k}}
+  
+: number of data samples available during training for client 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+;
+
+  
+    
+      
+        
+          k
+          
+            t
+          
+        
+      
+    
+    {\displaystyle k_{t}}
+  
+: model's weight vector on client 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+, at the federated round 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+;
+
+  
+    
+      
+        â
+        (
+        w
+        ,
+        b
+        )
+      
+    
+    {\displaystyle \ell (w,b)}
+  
+Â : loss function for weights 
+  
+    
+      
+        w
+      
+    
+    {\displaystyle w}
+  
+ and batch 
+  
+    
+      
+        b
+      
+    
+    {\displaystyle b}
+  
+;
+
+  
+    
+      
+        E
+      
+    
+    {\displaystyle E}
+  
+Â : number of local updates;
+Federated stochastic gradient descent (FedSGD)[edit]
+Deep learning training mainly relies on variants of stochastic gradient descent, where gradients are computed on a random subset of the total dataset and then used to make one step of the gradient descent.
+Federated stochastic gradient descent[18] is the direct transposition of this algorithm to the federated setting, but by using a random fraction 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ of the nodes and using all the data on this node. The gradients are averaged by the server proportionally to the number of training samples on each node, and used to make a gradient descent step.
+
+Federated averaging[edit]
+Federated averaging (FedAvg) is a generalization of FedSGD, which allows local nodes to perform more than one batch update on local data and exchanges the updated weights rather than the gradients. The rationale behind this generalization is that in FedSGD, if all local nodes start from the same initialization, averaging the gradients is strictly equivalent to averaging the weights themselves. Further, averaging tuned weights coming from the same initialization does not necessarily hurt the resulting averaged model's performance.[17]
+
+Federated Learning with Dynamic Regularization (FedDyn)[edit]
+Federated learning methods suffer when the device datasets are heterogeneously distributed. Fundamental dilemma in heterogeneously distributed device setting is that minimizing the device loss functions is not the same as minimizing the global loss objective. Recently, Acar et. al.[19] introduced FedDyn method as a solution to heterogenous dataset setting. FedDyn dynamically regularizes each devices loss function so that the modified device losses converges to the actual global loss. Since the local losses are aligned, FedDyn is robust to the different heterogeneity levels and it can safely perform full minimization in each device. Theoretically, FedDyn converges to the optimal (a stationary point for nonconvex losses) by being agnostic to the heterogeneity levels. These claims are verified with extensive experimentations on various datasets.[19]
+Minimizing the number of communications is the gold-standard for comparison in federated learning. We may also want to decrease the local computation levels per device in each round. FedDynOneGD [19] is an extension of FedDyn with less local compute requirements. FedDynOneGD calculates only one gradients per device in each round and update the model with a regularized version of the gradient. Hence, the computation complexity is linear in local dataset size. Moreover, gradient computation can be parallelizable within each device which is different from successive SGD steps. Theoretically, FedDynOneGD achieves the same convergence guarantees as in FedDyn with less local computation.[19]
+
+Properties of federated learning[edit]
+Privacy[edit]
+The main advantage of using federated approaches to machine learning is to ensure data privacy or data secrecy. Indeed, no local data is uploaded externally, concatenated or exchanged. Since the entire database is segmented into local bits, this makes it more difficult to hack into it.
+With federated learning, only machine learning parameters are exchanged. In addition, such parameters can be encrypted before sharing between learning rounds to extend privacy and homomorphic encryption schemes can be used to directly make computations on the encrypted data without decrypting them beforehand. Despite such protective measures, these parameters may still leak information about the underlying data samples, for instance, by making multiple specific queries on specific datasets. Querying capability of nodes thus is a major attention point, which can be addressed using differential privacy and secure aggregation.[20]
+It was found that the privacy issues of federated learning is often due to running estimates, which hinders the usage of advanced deep learning models. A Static Batch Normalization (sBN) for optimizing privacy constrained deep neural networks was developed.[5] During the training phase, sBN does not track running estimates but simply normalizes batch data. Only the statistics of hidden representations from local data after the model converges are calculated. This method is suitable for the FL framework as local models do not need to upload running estimates during training. Local models only upload their statistics once after optimization, which significantly reduces data leakage risk.
+
+Personalization[edit]
+The generated model delivers insights based on the global patterns of nodes. However, if a participating node wishes to learn from global patterns but also adapt outcomes to its peculiar status, the federated learning methodology can be adapted to generate two models at once in a multi-task learning framework. In addition, clustering techniques may be applied to aggregate nodes that share some similarities after the learning process is completed. This allows the generalization of the models learned by the nodes according also to their local data.[5][21]
+In the case of deep neural networks, it is possible to share some layers across the different nodes and keep some of them on each local node. Typically, first layers performing general pattern recognition are shared and trained all datasets. The last layers will remain on each local node and only be trained on the local node's dataset.[22]
+Early personalization methods often introduce additional computation and communication overhead that may not be necessary. To significantly reduce computation and communication costs in FL, a âMasking Trickâ approach was developed.[5] The âMasking Trickâ allows local clients to adaptively contribute to the training of global models much more flexibly and efficiently compared with classical federated learning.
+
+Personalization through meta learning[edit]
+Meta learning can be incorporated in personalizing federated learning methods to the edge users. Recently, PFL [23] method was introduces as a way to combine popular MAML [24] and Proto [25] meta learning frameworks with the heterogeneity agnostic federated learning methods. Extensive experiments [23] show that PFL methods are superior compared to combining meta learning frameworks with FedAvg.
+
+Legal upsides of federated learning[edit]
+Western legal frameworks emphasize more and more on data protection and data traceability. White House 2012 Report[26] recommended the application of a data minimization principle, which is mentioned in European GDPR.[27] In some cases, it is illegal to transfer data from a country to another (e.g., genomic data), however international consortia are sometimes necessary for scientific advances. In such cases federated learning brings solutions to train a global model while respecting security constraints.
+
+Current research topics[edit]
+Federated learning has started to emerge as an important research topic in 2015[1] and 2016,[28] with the first publications on federated averaging in telecommunication settings. Another important aspect of active research is the reduction of the communication burden during the federated learning process. In 2017 and 2018, publications have emphasized the development of resource allocation strategies, especially to reduce communication[17] requirements[29] between nodes with gossip algorithms[30] as well as on the characterization of the robustness to differential privacy attacks.[31] Other research activities focus on the reduction of the bandwidth during training through sparsification and quantization methods,[29] where the machine learning models are sparsified and/or compressed before they are shared with other nodes. Developing ultra-light DNN architectures is essential for device-/edge- learning and recent work recognises both the energy efficiency requirements [32] for future federated learning and the need to compress deep learning, especially during learning.[33]
+Recent research advancements are starting to consider real-word propagating channels[34] as in previous implementations ideal channels were assumed. Another active direction of research is to develop Federated learning for training heterogeneous local models with varying computation complexities and producing a single powerful global inference model.[5]
+A learning framework named Assisted learning was recently developed to improve each agent's learning capabilities without transmitting private data, models, and even learning objectives.[35] Compared with Federated learning that often requires a central controller to orchestrate the learning and optimization, Assisted learning aims to provide protocols for the agents to optimize and learn among themselves without a global model.
+
+Use cases[edit]
+Federated learning typically applies when individual actors need to train models on larger datasets than their own, but cannot afford to share the data in itself with other (e.g., for legal, strategic or economic reasons). The technology yet requires good connections between local servers and minimum computational power for each node.[2]
+
+Transportation: self-driving cars[edit]
+Self-driving cars encapsulate many machine learning technologies to function: computer vision for analyzing obstacles, machine learning for adapting their pace to the environment (e.g., bumpiness of the road). Due to the potential high number of self-driving cars and the need for them to quickly respond to real world situations, traditional cloud approach may generate safety risks. Federated learning can represent a solution for limiting volume of data transfer and accelerating learning processes.[36][37]
+
+Industry 4.0: smart manufacturing[edit]
+In Industry 4.0, there is a widespread adoption of machine learning techniques[38] to improve the efficiency and effectiveness of industrial process while guaranteeing a high level of safety. Nevertheless, privacy of sensitive data for industries and manufacturing companies is of paramount importance. Federated learning algorithms can be applied to these problems as they do not disclose any sensitive data.[28] In addition, FL also implemented for PM2.5 prediction to support Smart city sensing applications.[39]
+
+Medicine: digital health[edit]
+Federated learning seeks to address the problem of data governance and privacy by training algorithms collaboratively without exchanging the data itself. Todayâs standard approach of centralizing data from multiple centers comes at the cost of critical concerns regarding patient privacy and data protection. To solve this problem, the ability to train machine learning models at scale across multiple medical institutions without moving the data is a critical technology. Nature Digital Medicine published the paper "The Future of Digital Health with Federated Learning"[40] in September 2020, in which the authors explore how federated learning may provide a solution for the future of digital health, and highlight the challenges and considerations that need to be addressed. Recently, a collaboration of 20 different institutions around the world validated the utility of training AI models using federated learning. In a paper published in Nature Medicine "Federated learning for predicting clinical outcomes in patients with COVID-19",[41] they showcased the accuracy and generalizability of a federated AI model for the prediction of oxygen needs in patients with COVID-19 infections. Furthermore, in a published paper "A Systematic Review of Federated Learning in the Healthcare Area: From the Perspective of Data Properties and Applications", the authors trying to provide a set of challenges on FL challenges on medical data-centric perspective.[42]
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}KoneÄnÃ½, Jakub; McMahan, Brendan; Ramage, Daniel (2015). "Federated Optimization: Distributed Optimization Beyond the Datacenter". arXiv:1511.03575 [cs.LG].
+
+^ a b c d e f g h i j k l m n o Kairouz, Peter; Brendan McMahan, H.; Avent, Brendan; Bellet, AurÃ©lien; Bennis, Mehdi; Arjun Nitin Bhagoji; Bonawitz, Keith; Charles, Zachary; Cormode, Graham; Cummings, Rachel; D'Oliveira, Rafael G. L.; Salim El Rouayheb; Evans, David; Gardner, Josh; Garrett, Zachary; GascÃ³n, AdriÃ ; Ghazi, Badih; Gibbons, Phillip B.; Gruteser, Marco; Harchaoui, Zaid; He, Chaoyang; He, Lie; Huo, Zhouyuan; Hutchinson, Ben; Hsu, Justin; Jaggi, Martin; Javidi, Tara; Joshi, Gauri; Khodak, Mikhail;  etÂ al. (10 December 2019). "Advances and Open Problems in Federated Learning". arXiv:1912.04977 [cs.LG].
+
+^ Pokhrel, Shiva Raj; Choi, Jinho (2020). "Federated Learning with Blockchain for Autonomous Vehicles: Analysis and Design Challenges". IEEE Transactions on Communications. 68 (8): 4734â4746. doi:10.1109/TCOMM.2020.2990686. S2CIDÂ 219006840.
+
+^ Xu, Zirui; Yu, Fuxun; Xiong, Jinjun; Chen, Xiang (December 2021). "Helios: Heterogeneity-Aware Federated Learning with Dynamically Balanced Collaboration". 2021 58th ACM/IEEE Design Automation Conference (DAC): 997â1002. arXiv:1912.01684. doi:10.1109/DAC18074.2021.9586241. ISBNÂ 978-1-6654-3274-0. S2CIDÂ 243925551.
+
+^ a b c d e f g h i j Diao, Enmao; Ding, Jie; Tarokh, Vahid (2020-10-02). "HeteroFL: Computation and Communication Efficient Federated Learning for Heterogeneous Clients". arXiv:2010.01264 [cs.LG].
+
+^ Yu, Fuxun; Zhang, Weishan; Qin, Zhuwei; Xu, Zirui; Wang, Di; Liu, Chenchen; Tian, Zhi; Chen, Xiang (2021-08-14). "Fed2: Feature-Aligned Federated Learning". Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery & Data Mining. KDD '21. New York, NY, USA: Association for Computing Machinery: 2066â2074. arXiv:2111.14248. doi:10.1145/3447548.3467309. ISBNÂ 978-1-4503-8332-5. S2CIDÂ 240598436.
+
+^ Decentralized Collaborative Learning of Personalized Models over Networks Paul Vanhaesebrouck, AurÃ©lien Bellet, Marc Tommasi, 2017
+
+^ Savazzi, Stefano; Nicoli, Monica; Rampa, Vittorio (May 2020). "Federated Learning With Cooperating Devices: A Consensus Approach for Massive IoT Networks". IEEE Internet of Things Journal. 7 (5): 4641â4654. arXiv:1912.13163. doi:10.1109/JIOT.2020.2964162. S2CIDÂ 209515403.
+
+^ Towards federated learning at scale: system design, Keith Bonawitz Hubert Eichner and al., 2019
+
+^ Gupta, Otkrist; Raskar, Ramesh (14 October 2018). "Distributed learning of deep neural network over multiple agents". arXiv:1810.06060 [cs.LG].
+
+^ Vepakomma, Praneeth; Gupta, Otkrist; Swedish, Tristan; Raskar, Ramesh (3 December 2018). "Split learning for health: Distributed deep learning without sharing raw patient data". arXiv:1812.00564 [cs.LG].
+
+^ Hsieh, Kevin; Phanishayee, Amar; Mutlu, Onur; Gibbons, Phillip (2020-11-21). "The Non-IID Data Quagmire of Decentralized Machine Learning". International Conference on Machine Learning. PMLR: 4387â4398. arXiv:1910.00189.
+
+^ Collaborative Deep Learning in Fixed Topology Networks, Zhanhong Jiang, Aditya Balu, Chinmay Hegde, Soumik Sarkar, 2017
+
+^ GossipGraD: Scalable Deep Learning using Gossip Communication based Asynchronous Gradient Descent, Jeff Daily, Abhinav Vishnu, Charles Siegel, Thomas Warfel, Vinay Amatya, 2018
+
+^ How To Backdoor Federated Learning, Eugene Bagdasaryan, 2018
+
+^ Vahid, Diao, Enmao Ding, Jie Tarokh (2021-06-02). SemiFL: Communication Efficient Semi-Supervised Federated Learning with Unlabeled Clients. OCLCÂ 1269554828.
+
+^ a b c Communication-Efficient Learning of Deep Networks from Decentralized Data, H. Brendan McMahan and al. 2017
+
+^ Privacy Preserving Deep Learning, R. Shokri and V. Shmatikov, 2015
+
+^ a b c d Acar, Durmus Alp Emre; Zhao, Yue; Navarro, Ramon Matas; Mattina, Matthew; Whatmough, Paul N.; Saligrama, Venkatesh (2021). "Federated Learning Based on Dynamic Regularization". ICLR. arXiv:2111.04263.
+
+^ Practical Secure Aggregation for Privacy Preserving Machine Learning, Keith Bonawitz, 2018
+
+^ Sattler, Felix; MÃ¼ller, Klaus-Robert; Samek, Wojciech (4 October 2019). "Clustered Federated Learning: Model-Agnostic Distributed Multi-Task Optimization under Privacy Constraints". arXiv:1910.01991 [cs.LG].
+
+^ Arivazhagan, Manoj Ghuhan; Aggarwal, Vinay; Singh, Aaditya Kumar; Choudhary, Sunav (2 December 2019). "Federated Learning with Personalization Layers". arXiv:1912.00818 [cs.LG].
+
+^ a b Acar, Durmus Alp Emre; Zhao, Yue; Zhu, Ruizhao; Matas, Ramon; Mattina, Matthew; Whatmough, Paul; Saligrama, Venkatesh (2021). "Debiasing Model Updates for Improving Personalized Federated Training". ICML.
+
+^ Finn, Chelsea; Abbeel, Pieter; Levine, Sergey (2017). "Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks". ICML. arXiv:1703.03400.
+
+^ Snell, Jake; Swersky, Kevin; Zemel, Richard S. (2017). "Prototypical Networks for Few-shot Learning". NeurIPS. arXiv:1703.05175.
+
+^ Anonymous (1 March 2013). "Consumer Data Privacy in a Networked World: A Framework for Protecting Privacy and Promoting Innovation in the Global Digital Economy". Journal of Privacy and Confidentiality. doi:10.29012/jpc.v4i2.623.
+
+^ Recital 39 of the Regulation (EU) 2016/679 (General Data Protection Regulation)
+
+^ a b Federated Optimization: Distributed Machine Learning for On-Device Intelligence, Jakub KoneÄnÃ½, H. Brendan McMahan, Daniel Ramage and Peter RichtÃ¡rik, 2016
+
+^ a b KoneÄnÃ½, Jakub; McMahan, H. Brendan; Yu, Felix X.; RichtÃ¡rik, Peter; Suresh, Ananda Theertha; Bacon, Dave (30 October 2017). "Federated Learning: Strategies for Improving Communication Efficiency". arXiv:1610.05492 [cs.LG].
+
+^ Gossip training for deep learning, Michael Blot and al., 2017
+
+^ Differentially Private Federated Learning: A Client Level Perspective Robin C. Geyer and al., 2018
+
+^ Du, Zhiyong; Deng, Yansha; Guo, Weisi; Nallanathan, Arumugam; Wu, Qihui (2021). "Green Deep Reinforcement Learning for Radio Resource Management: Architecture, Algorithm Compression, and Challenges". IEEE Vehicular Technology Magazine. 16: 29â39. doi:10.1109/MVT.2020.3015184. hdl:1826/16378. S2CIDÂ 204401715.
+
+^ "Random sketch learning for deep neural networks in edge computing". Nature Computational Science. 1. 2021.
+
+^ Amiri, Mohammad Mohammadi; Gunduz, Deniz (10 February 2020). "Federated Learning over Wireless Fading Channels". arXiv:1907.09769 [cs.IT].
+
+^ Xian, Xun; Wang, Xinran; Ding, Jie; Ghanadan, Reza (2020). "Assisted Learning: A Framework for Multi-Organization Learning". Advances in Neural Information Processing Systems. 33. arXiv:2004.00566.
+
+^ Pokhrel, Shiva Raj (2020). "Federated learning meets blockchain at 6G edge: a drone-assisted networking for disaster response": 49â54. doi:10.1145/3414045.3415949. S2CIDÂ 222179104. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Elbir, Ahmet M.; Coleri, S. (2 June 2020). "Federated Learning for Vehicular Networks". arXiv:2006.01412 [eess.SP].
+
+^ Cioffi, Raffaele; Travaglioni, Marta; Piscitelli, Giuseppina; Petrillo, Antonella; De Felice, Fabio (2019). "Artificial Intelligence and Machine Learning Applications in Smart Production: Progress, Trends, and Directions". Sustainability. 12 (2): 492. doi:10.3390/su12020492.
+
+^ Putra, Karisma Trinanda; Chen, Hsing-Chung; Prayitno; Ogiela, Marek R.; Chou, Chao-Lung; Weng, Chien-Erh; Shae, Zon-Yin (January 2021). "Federated Compressed Learning Edge Computing Framework with Ensuring Data Privacy for PM2.5 Prediction in Smart City Sensing Applications". Sensors. 21 (13): 4586. Bibcode:2021Senso..21.4586P. doi:10.3390/s21134586. PMCÂ 8271576. PMIDÂ 34283140.
+
+^ Rieke, Nicola; Hancox, Jonny; Li, Wenqi; MilletarÃ¬, Fausto; Roth, Holger R.; Albarqouni, Shadi; Bakas, Spyridon; Galtier, Mathieu N.; Landman, Bennett A.; Maier-Hein, Klaus; Ourselin, SÃ©bastien; Sheller, Micah; Summers, Ronald M.; Trask, Andrew; Xu, Daguang; Baust, Maximilian; Cardoso, M. Jorge (14 September 2020). "The future of digital health with federated learning". NPJ Digital Medicine. 3 (1): 119. arXiv:2003.08119. doi:10.1038/s41746-020-00323-1. PMCÂ 7490367. PMIDÂ 33015372. S2CIDÂ 212747909.
+
+^ Dayan, Ittai; Roth, Holger; [...]; Li, Quanzheng (2021). "Federated learning for predicting clinical outcomes in patients with COVID-19". Nature Medicine. 27 (10): 1735â1743. doi:10.1038/s41591-021-01506-3. PMIDÂ 34526699. S2CIDÂ 237536154.{{cite journal}}:  CS1 maint: numeric names: authors list (link)
+
+^ Prayitno; Shyu, Chi-Ren; Putra, Karisma Trinanda; Chen, Hsing-Chung; Tsai, Yuan-Yu; Hossain, K. S. M. Tozammel; Jiang, Wei; Shae, Zon-Yin (January 2021). "A Systematic Review of Federated Learning in the Healthcare Area: From the Perspective of Data Properties and Applications". Applied Sciences. 11 (23): 11191. doi:10.3390/app112311191.
+
+
+34. Zhou, C., Zhao, Y., & Kotak, C. (2009). The Collaborative Learning Agent (CLA) in Trident Warrior 08 exercise. In Proceedings of the International Conference on Knowledge Discovery and Information Retrieval - Volume 1: KDIR, (IC3K 2009) ISBN 978-989-674-011-5, pages 323-328. DOI: 10.5220/0002332903230328. Madeira, Portugal.  https://www.scitepress.org/Papers/2009/23329/23329.pdf.
+
+External links[edit]
+"Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016" at eur-lex.europa.eu. Retrieved October 18, 2019.
+"Data minimisation and privacy-preserving techniques in AI systems" at UK Information Commissioners Office. Retrieved July 22, 2020
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Federated_learning&oldid=1068725847"
+		Categories: Machine learningDistributed algorithmsMulti-agent systemsHidden categories: CS1 errors: missing periodicalCS1 maint: numeric names: authors listArticles with short descriptionShort description is different from Wikidata
+	

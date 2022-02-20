@@ -1,0 +1,325 @@
+
+Title:
+Composite pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In software engineering, the composite pattern is a partitioning design pattern. The composite pattern describes a group of objects that are treated the same way as a single instance of the same type of object. The intent of a composite is to "compose" objects into tree structures to represent part-whole hierarchies. Implementing the composite pattern lets clients treat individual objects and compositions uniformly.[1]
+
+Contents
+
+1 Overview
+
+1.1 What problems can the Composite design pattern solve?
+1.2 What solution does the Composite design pattern describe?
+
+
+2 Motivation
+3 When to use
+4 Structure
+
+4.1 UML class and object diagram
+4.2 UML class diagram
+
+
+5 Variation
+6 Example
+
+6.1 Java
+
+
+7 See also
+8 References
+9 External links
+
+
+
+Overview[edit]
+The Composite
+[2]
+design pattern is one of the twenty-three well-known 
+GoF design patterns 
+that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+
+What problems can the Composite design pattern solve?[edit]
+A part-whole hierarchy should be represented so that  clients can treat part and whole objects uniformly.
+A part-whole hierarchy should be represented as tree structure.
+When defining (1) Part objects and (2) Whole objects that act as containers for Part objects, clients must treat them separately, which complicates client code.[3]
+
+What solution does the Composite design pattern describe?[edit]
+Define a unified Component interface for both part (Leaf) objects and whole (Composite) objects.
+Individual Leaf objects implement the Component interface directly, and Composite objects forward requests to their child components.
+This enables clients to work through the Component interface to treat Leaf and Composite objects uniformly:
+Leaf objects perform a request directly,
+and Composite objects 
+forward the request to their child components recursively downwards the tree structure.
+This makes client classes easier to implement, change, test, and reuse.
+See also the UML class and object diagram below.
+
+Motivation[edit]
+When dealing with Tree-structured data, programmers often have to discriminate between a leaf-node and a branch. This makes code more complex, and therefore, more error prone. The solution is an interface that allows treating complex and primitive objects uniformly. In object-oriented programming, a composite is an object designed as a composition of one-or-more similar objects, all exhibiting similar functionality. This is known as a "has-a" relationship between objects.[4] The key concept is that you can manipulate a single instance of the object just as you would manipulate a group of them. The operations you can perform on all the composite objects often have a least common denominator relationship. For example, if defining a system to portray grouped shapes on a screen, it would be useful to define resizing a group of shapes to have the same effect (in some sense) as resizing a single shape.
+
+When to use[edit]
+Composite should be used when clients ignore the difference between compositions of objects and individual objects.[1]  If programmers find that they are using multiple objects in the same way, and often have nearly identical code to handle each of them, then composite is a good choice; it is less complex in this situation to treat primitives and composites as homogeneous.
+
+Structure[edit]
+UML class and object diagram[edit]
+  A sample UML class and object diagram for the Composite design pattern. [5]
+In the above UML class diagram, the Client class doesn't refer to the Leaf and Composite classes directly (separately).
+Instead, the Client refers to the common Component interface and can treat Leaf and Composite uniformly.
+
+The Leaf class has no children and implements the Component interface directly.
+
+The Composite class maintains a container of child
+Component objects (children) and forwards requests
+to these children (for each child in children: child.operation()).
+
+The object collaboration diagram 
+shows the run-time interactions: In this example, the Client object sends a request to the top-level Composite object (of type Component) in the tree structure.
+The request is forwarded to (performed on) all child Component objects 
+(Leaf and Composite objects) downwards the tree structure.
+
+Defining Child-Related Operations
+  Defining child-related operations in the Composite design pattern. [6]
+There are two design variants for defining and implementing child-related operations
+like adding/removing a child component to/from the container (add(child)/remove(child)) and accessing a child component (getChild()):
+
+Design for uniformity: Child-related operations are defined in the Component interface. This enables clients to treat Leaf and Composite objects uniformly. But type safety is lost because clients can perform child-related operations on Leaf objects.
+Design for type safety: Child-related operations are defined only in the Composite class. Clients must treat Leaf and Composite objects differently. But type safety is gained because clients cannot perform child-related operations on Leaf objects.
+The Composite design pattern emphasizes uniformity over type safety.
+
+UML class diagram[edit]
+  Composite pattern in UML.
+Component
+is the abstraction for all components, including composite ones
+declares the interface for objects in the composition
+(optional) defines an interface for accessing a component's parent in the recursive structure, and implements it if that's appropriate
+Leaf
+represents leaf objects in the composition
+implements all Component methods
+Composite
+represents a composite Component (component having children)
+implements methods to manipulate children
+implements all Component methods, generally by delegating them to its children
+  Composite pattern in LePUS3.
+Variation[edit]
+As it is described in Design Patterns, the pattern also involves including the child-manipulation methods in the main Component interface, not just the Composite subclass. More recent descriptions sometimes omit these methods.[7]
+
+Example[edit]
+The following example, written in Java, implements a graphic class, which can be either an ellipse or a composition of several graphics. Every graphic can be printed. In Backus-Naur form,
+
+       GraphicÂ ::= ellipse | GraphicList
+       GraphicListÂ ::= empty | Graphic GraphicList
+
+It could be extended to implement several other shapes (rectangle, etc.) and methods (translate, etc.).
+
+Java[edit]
+import java.util.List;
+import java.util.ArrayList;
+
+/** "Component" */
+interface Graphic {
+    //Prints the graphic.
+    public void print();
+}
+
+/** "Composite" */
+class CompositeGraphic implements Graphic {
+    //Collection of child graphics.
+    private final List<Graphic> childGraphics = new ArrayList<>();
+
+    //Adds the graphic to the composition.
+    public void add(Graphic graphic) {
+        childGraphics.add(graphic);
+    }
+    
+    //Prints the graphic.
+    @Override
+    public void print() {
+        for (Graphic graphic : childGraphics) {
+            graphic.print();  //Delegation
+        }
+    }
+}
+
+/** "Leaf" */
+class Ellipse implements Graphic {
+    //Prints the graphic.
+    @Override
+    public void print() {
+        System.out.println("Ellipse");
+    }
+}
+
+/** Client */
+class CompositeDemo {
+    public static void main(String[] args) {
+        //Initialize four ellipses
+        Ellipse ellipse1 = new Ellipse();
+        Ellipse ellipse2 = new Ellipse();
+        Ellipse ellipse3 = new Ellipse();
+        Ellipse ellipse4 = new Ellipse();
+
+        //Creates two composites containing the ellipses
+        CompositeGraphic compositGraphic2 = new CompositeGraphic();
+        compositGraphic2.add(ellipse1);
+        compositGraphic2.add(ellipse2);
+        compositGraphic2.add(ellipse3);
+        
+        CompositeGraphic compositGraphic3 = new CompositeGraphic();
+        compositGraphic3.add(ellipse4);
+        
+        //Create another graphics that contains two graphics
+        CompositeGraphic compositGraphic = new CompositeGraphic();
+        compositGraphic.add(compositGraphic2);
+        compositGraphic.add(compositGraphic3);
+
+        //Prints the complete graphic (Four times the string "Ellipse").
+        compositGraphic.print();
+    }
+}
+
+See also[edit]
+Perl Design Patterns Book
+Mixin
+Law of Demeter
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Gamma, Erich; Richard Helm; Ralph Johnson; John M. Vlissides (1995). Design Patterns: Elements of Reusable Object-Oriented Software. Addison-Wesley. pp.Â 395. ISBNÂ 0-201-63361-2.
+
+^ Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 163ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Composite design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Scott Walters (2004). Perl Design Patterns Book. Archived from the original on 2016-03-08. Retrieved 2010-01-18.
+
+^ "The Composite design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "The Composite design pattern - Implementation". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Geary, David (13 September 2002). "A look at the Composite design pattern". Java Design Patterns. JavaWorld. Retrieved 2020-07-20.
+
+
+External links[edit]
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Composite implementations in various languages
+
+Composite Pattern implementation in Java
+Composite pattern description from the Portland Pattern Repository
+Composite pattern in UML and in LePUS3, a formal modelling language
+Class::Delegation on CPAN
+"The End of Inheritance: Automatic Run-time Interface Building for Aggregated Objects" by Paul Baranowski
+PerfectJPattern Open Source Project, Provides componentized implementation of the Composite Pattern in Java
+[1] A persistent Java-based implementation
+Composite Design Pattern
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Composite_pattern&oldid=1051360338"
+		Categories: Software design patternsHidden categories: CS1 maint: multiple names: authors listArticles with example Java codeArticles with example C Sharp code
+	

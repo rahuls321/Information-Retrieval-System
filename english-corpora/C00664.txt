@@ -1,0 +1,923 @@
+
+Title:
+Higher-order function
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Functor (category theory).
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (September 2013) (Learn how and when to remove this template message)
+In mathematics and computer science, a higher-order function is a function that does at least one of the following:
+
+takes one or more functions as arguments (i.e. a procedural parameter, which is a parameter of a procedure that is itself a procedure),
+returns a function as its result.
+All other functions are first-order functions.  In mathematics higher-order functions are also termed operators or functionals.  The differential operator in calculus is a common example, since it maps a function to its derivative, also a function. Higher-order functions should not be confused with other uses of the word "functor" throughout mathematics, see Functor (disambiguation).
+In the untyped lambda calculus, all functions are higher-order; in a typed lambda calculus, from which most functional programming languages are derived, higher-order functions that take one function as argument are values with types of the form 
+  
+    
+      
+        (
+        
+          Ï
+          
+            1
+          
+        
+        â
+        
+          Ï
+          
+            2
+          
+        
+        )
+        â
+        
+          Ï
+          
+            3
+          
+        
+      
+    
+    {\displaystyle (\tau _{1}\to \tau _{2})\to \tau _{3}}
+  
+.
+
+Contents
+
+1 General examples
+2 Support in programming languages
+
+2.1 Direct support
+
+2.1.1 APL
+2.1.2 C++
+2.1.3 C#
+2.1.4 Clojure
+2.1.5 ColdFusion Markup Language (CFML)
+2.1.6 Common Lisp
+2.1.7 D
+2.1.8 Dart
+2.1.9 Elixir
+2.1.10 Erlang
+2.1.11 F#
+2.1.12 Go
+2.1.13 Haskell
+2.1.14 J
+2.1.15 Java (1.8+)
+2.1.16 JavaScript
+2.1.17 Julia
+2.1.18 Kotlin
+2.1.19 Lua
+2.1.20 MATLAB
+2.1.21 OCaml
+2.1.22 PHP
+2.1.23 Perl
+2.1.24 Python
+2.1.25 R
+2.1.26 Raku
+2.1.27 Ruby
+2.1.28 Rust
+2.1.29 Scala
+2.1.30 Scheme
+2.1.31 Swift
+2.1.32 Tcl
+2.1.33 XACML
+2.1.34 XQuery
+
+
+2.2 Alternatives
+
+2.2.1 Function pointers
+2.2.2 Macros
+2.2.3 Dynamic code evaluation
+2.2.4 Objects
+2.2.5 Defunctionalization
+
+
+
+
+3 See also
+4 References
+
+
+
+General examples[edit]
+map function, found in many functional programming languages, is one example of a higher-order function.  It takes as arguments a function f and a collection of elements, and as the result, returns a new collection with f applied to each element from the collection.
+Sorting functions, which take a comparison function as a parameter, allowing the programmer to separate the sorting algorithm from the comparisons of the items being sorted.  The C standard function qsort is an example of this.
+ filter
+fold
+apply
+Function composition
+Integration
+ Callback
+Tree traversal
+Montague grammar, a semantic theory of natural language, uses higher-order functions
+Support in programming languages[edit]
+Direct support[edit]
+The examples are not intended to compare and contrast programming languages, but to serve as examples of higher-order function syntax
+In the following examples, the higher-order function twice takes a function, and applies the function to some value twice. If twice has to be applied several times for the same f it preferably should return a function rather than a value. This is in line with the "don't repeat yourself" principle.
+
+APL[edit]
+Further information: APL (programming language)
+      twiceâ{âºâº âºâº âµ}
+
+      plusthreeâ{âµ+3}
+
+      gâ{plusthree twice âµ}
+    
+      g 7
+13
+
+Or in a tacit manner:
+
+      twiceââ£2
+
+      plusthreeâ+â3
+
+      gâplusthree twice
+    
+      g 7
+13
+
+C++[edit]
+Further information: C++
+Using std::function in C++11:
+
+#include <iostream>
+#include <functional>
+
+auto twice = [](const std::function<int(int)>& f)
+{
+    return [&f](int x) {
+        return f(f(x));
+    };
+};
+
+auto plus_three = [](int i)
+{
+    return i + 3;
+};
+
+int main()
+{
+    auto g = twice(plus_three);
+
+    std::cout << g(7) << '\n'; // 13
+}
+
+Or, with generic lambdas provided by C++14:
+
+#include <iostream>
+
+auto twice = [](const auto& f)
+{
+    return [&f](int x) {
+        return f(f(x));
+    };
+};
+
+auto plus_three = [](int i)
+{
+    return i + 3;
+};
+
+int main()
+{
+    auto g = twice(plus_three);
+
+    std::cout << g(7) << '\n'; // 13
+}
+
+C#[edit]
+Further information: C Sharp (programming language)
+Using just delegates:
+
+using System;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        Func<Func<int, int>, Func<int, int>> twice = f => x => f(f(x));
+
+        Func<int, int> plusThree = i => i + 3;
+
+        var g = twice(plusThree);
+
+        Console.WriteLine(g(7)); // 13
+    }
+}
+
+Or equivalently, with static methods:
+
+using System;
+
+public class Program
+{
+    private static Func<int, int> Twice(Func<int, int> f)
+    {
+        return x => f(f(x));
+    }
+
+    private static int PlusThree(int i) => i + 3;
+
+    public static void Main(string[] args)
+    {
+        var g = Twice(PlusThree);
+
+        Console.WriteLine(g(7)); // 13
+    }
+}
+
+Clojure[edit]
+Further information: Clojure
+(defn twice [f]
+  (fn [x] (f (f x))))
+
+(defn plus-three [i]
+  (+ i 3))
+
+(def g (twice plus-three))
+
+(println (g 7)) ; 13
+
+ColdFusion Markup Language (CFML)[edit]
+Further information: ColdFusion Markup Language
+twice = function(f) {
+    return function(x) {
+        return f(f(x));
+    };
+};
+
+plusThree = function(i) {
+    return i + 3;
+};
+
+g = twice(plusThree);
+
+writeOutput(g(7)); // 13
+
+Common Lisp[edit]
+Further information: Common Lisp
+(defun twice (f)                                                                
+  (lambda (x) (funcall f (funcall f x))))                                       
+                                                                                
+(defun plus-three (i)                                                           
+  (+ i 3))                                                                      
+                                                                                
+(defvar g (twice #'plus-three))                                                 
+                                                                                
+(print (funcall g 7))
+
+D[edit]
+Further information: D (programming language)
+import std.stdio : writeln;
+
+alias twice = (f) => (int x) => f(f(x));
+
+alias plusThree = (int i) => i + 3;
+
+void main()
+{
+    auto g = twice(plusThree);
+
+    writeln(g(7)); // 13
+}
+
+Dart[edit]
+Further information: Dart (programming language)
+int Function(int) twice(int Function(int) f) {
+    return (x) {
+        return f(f(x));
+    };
+}
+
+int plusThree(int i) {
+    return i + 3;
+}
+
+void main() {
+    final g = twice(plusThree);
+    
+    print(g(7)); // 13
+}
+
+Elixir[edit]
+Further information: Elixir (programming language)
+In Elixir, you can mix module definitions and anonymous functions
+
+defmodule Hof do
+    def twice(f) do
+        fn(x) -> f.(f.(x)) end
+    end
+end
+
+plus_three = fn(i) -> 3 + i end
+
+g = Hof.twice(plus_three)
+
+IO.puts g.(7) # 13
+
+Alternatively, we can also compose using pure anonymous functions.
+
+twice = fn(f) ->
+    fn(x) -> f.(f.(x)) end
+end
+
+plus_three = fn(i) -> 3 + i end
+
+g = twice.(plus_three)
+
+IO.puts g.(7) # 13
+
+Erlang[edit]
+Further information: Erlang (programming language)
+or_else([], _) -> false;
+or_else([F | Fs], X) -> or_else(Fs, X, F(X)).
+
+or_else(Fs, X, false) -> or_else(Fs, X);
+or_else(Fs, _, {false, Y}) -> or_else(Fs, Y);
+or_else(_, _, R) -> R.
+
+or_else([fun erlang:is_integer/1, fun erlang:is_atom/1, fun erlang:is_list/1], 3.23).
+
+In this Erlang example, the higher-order function or_else/2 takes a list of functions (Fs) and argument (X). It evaluates the function F with the argument X as argument. If the function F returns false then the next function in Fs will be evaluated. If the function F returns {false, Y} then the next function in Fs with argument Y will be evaluated. If the function F returns R the higher-order function or_else/2 will return R. Note that X, Y, and R can be functions. The example returns false.
+
+F#[edit]
+Further information: F Sharp (programming language)
+let twice f = f >> f
+
+let plus_three = (+) 3
+
+let g = twice plus_three
+
+g 7 |> printf "%A" // 13
+
+Go[edit]
+Further information: Go (programming language)
+package main
+
+import "fmt"
+
+func twice(f func(int) int) func(int) int {
+	return func(x int) int {
+		return f(f(x))
+	}
+}
+
+func main() {
+	plusThree := func(i int) int {
+		return i + 3
+	}
+
+	g := twice(plusThree)
+
+	fmt.Println(g(7)) // 13
+}
+
+Notice a function literal can be defined either with an identifier (twice) or anonymously (assigned to variable plusThree).
+
+Haskell[edit]
+Further information: Haskell (programming language)
+twice :: (Int -> Int) -> (Int -> Int)
+twice f = f . f
+
+plusThree :: Int -> Int
+plusThree = (+3)
+
+main :: IO ()
+main = print (g 7) -- 13
+  where
+    g = twice plusThree
+
+J[edit]
+Further information: J (programming language)
+Explicitly,
+
+   twice=.     adverb : 'u u y'
+
+   plusthree=. verb   : 'y + 3'
+   
+   g=. plusthree twice
+   
+   g 7
+13
+
+or tacitly,
+
+   twice=. ^:2
+
+   plusthree=. +&3
+   
+   g=. plusthree twice
+   
+   g 7
+13
+
+Java (1.8+)[edit]
+Further information: Java (programming language) and Java version history
+Using just functional interfaces:
+
+import java.util.function.*;
+
+class Main {
+    public static void main(String[] args) {
+        Function<IntUnaryOperator, IntUnaryOperator> twice = f -> f.andThen(f);
+
+        IntUnaryOperator plusThree = i -> i + 3;
+
+        var g = twice.apply(plusThree);
+
+        System.out.println(g.applyAsInt(7)); // 13
+    }
+}
+
+Or equivalently, with static methods:
+
+import java.util.function.*;
+
+class Main {
+    private static IntUnaryOperator twice(IntUnaryOperator f) {
+        return f.andThen(f);
+    }
+
+    private static int plusThree(int i) {
+        return i + 3;
+    }
+
+    public static void main(String[] args) {
+        var g = twice(Main::plusThree);
+
+        System.out.println(g.applyAsInt(7)); // 13
+    }
+}
+
+JavaScript[edit]
+Further information: JavaScript
+"use strict";
+
+const twice = f => x => f(f(x));
+
+const plusThree = i => i + 3;
+
+const g = twice(plusThree);
+
+console.log(g(7)); // 13
+
+Julia[edit]
+Further information: Julia (programming language)
+julia> function twice(f)
+           function result(x)
+               return f(f(x))
+           end
+           return result
+       end
+twice (generic function with 1 method)
+
+julia> plusthree(i) = i + 3
+plusthree (generic function with 1 method)
+
+julia> g = twice(plusthree)
+(::var"#result#3"{typeof(plusthree)}) (generic function with 1 method)
+
+julia> g(7)
+13
+
+Kotlin[edit]
+Further information: Kotlin (programming language)
+fun twice(f: (Int) -> Int): (Int) -> Int {
+    return { f(f(it)) }
+}
+
+fun plusThree(i: Int) = i + 3
+
+fun main() {
+    val g = twice(::plusThree)
+
+    println(g(7)) // 13
+}
+
+Lua[edit]
+Further information: Lua (programming language)
+function twice(f)
+  return function (x)
+    return f(f(x))
+  end
+end
+
+function plusThree(i)
+  return i + 3
+end
+
+local g = twice(plusThree)
+
+print(g(7)) -- 13
+
+MATLAB[edit]
+Further information: MATLAB
+function result = twice(f)
+    result = @inner
+
+    function val = inner(x)
+        val = f(f(x));
+    end
+end
+
+plusthree = @(i) i + 3;
+
+g = twice(plusthree)
+
+disp(g(7)); % 13
+
+OCaml[edit]
+Further information: OCaml (programming language)
+let twice f x =
+  f (f x)
+
+let plus_three =
+  (+) 3
+
+let () =
+  let g = twice plus_three in
+
+  print_int (g 7); (* 13 *)
+  print_newline ()
+
+PHP[edit]
+Further information: PHP
+<?php
+
+declare(strict_types=1);
+
+function twice(callable $f): Closure {
+    return function (int $x) use ($f): int {
+        return $f($f($x));
+    };
+}
+
+function plusThree(int $i): int {
+    return $i + 3;
+}
+
+$g = twice('plusThree');
+
+echo $g(7), "\n"; // 13
+
+or with all functions in variables:
+
+<?php
+
+declare(strict_types=1);
+
+$twice = fn(callable $f): Closure => fn(int $x): int => $f($f($x));
+
+$plusThree = fn(int $i): int => $i + 3;
+
+$g = $twice($plusThree);
+
+echo $g(7), "\n"; // 13
+
+Note that arrow functions implicitly capture any variables that come from the parent scope,[1] whereas anonymous functions require the use keyword to do the same.
+
+Perl[edit]
+Further information: Perl
+use strict;
+use warnings;
+
+sub twice {
+    my ($f) = @_;
+    sub {
+        $f->($f->(@_));
+    };
+}
+
+sub plusThree {
+    my ($i) = @_;
+    $i + 3;
+}
+
+my $g = twice(\&plusThree);
+
+print $g->(7), "\n"; # 13
+
+or with all functions in variables:
+
+use strict;
+use warnings;
+
+my $twice = sub {
+    my ($f) = @_;
+    sub {
+        $f->($f->(@_));
+    };
+};
+
+my $plusThree = sub {
+    my ($x) = @_;
+    $x + 3;
+};
+
+my $g = $twice->($plusThree);
+
+print $g->(7), "\n"; # 13
+
+Python[edit]
+Further information: Python (programming language)
+>>> def twice(f):
+...     def result(x):
+...         return f(f(x))
+...     return result
+
+>>> plus_three = lambda i: i + 3
+
+>>> g = twice(plus_three)
+    
+>>> g(7)
+13
+
+Python decorator syntax is often used to replace a function with the result of passing that function through a higher-order function. E.g., the function g could be implemented equivalently:
+
+>>> @twice
+... def g(i):
+...     return i + 3
+
+>>> g(7)
+13
+
+R[edit]
+Further information: R (programming language)
+twice <- function(f) {
+  return(function(x) {
+    f(f(x))
+  })
+}
+
+plusThree <- function(i) {
+  return(i + 3)
+}
+
+g <- twice(plusThree)
+
+> print(g(7))
+[1] 13
+
+Raku[edit]
+Further information: Raku (programming language)
+sub twice(Callable:D $f) {
+    return sub { $f($f($^x)) };
+}
+
+sub plusThree(Int:D $i) {
+    return $i + 3;
+}
+
+my $g = twice(&plusThree);
+
+say $g(7); # 13
+
+In Raku, all code objects are closures and therefore can reference inner "lexical" variables from an outer scope because the lexical variable is "closed" inside of the function. Raku also supports "pointy block" syntax for lambda expressions which can be assigned to a variable or invoked anonymously.
+
+Ruby[edit]
+Further information: Ruby (programming language)
+def twice(f)
+  ->(x) { f.call(f.call(x)) }
+end
+
+plus_three = ->(i) { i + 3 }
+
+g = twice(plus_three)
+
+puts g.call(7) # 13
+
+Rust[edit]
+Further information: Rust (programming language)
+fn twice(f: impl Fn(i32) -> i32) -> impl Fn(i32) -> i32 {
+    move |x| f(f(x))
+}
+
+fn plus_three(i: i32) -> i32 {
+    i + 3
+}
+
+fn main() {
+    let g = twice(plus_three);
+
+    println!("{}", g(7)) // 13
+}
+
+Scala[edit]
+Further information: Scala (programming language)
+object Main {
+  def twice(f: Int => Int): Int => Int =
+    f compose f
+
+  def plusThree(i: Int): Int =
+    i + 3
+
+  def main(args: Array[String]): Unit = {
+    val g = twice(plusThree)
+
+    print(g(7)) // 13
+  }
+}
+
+Scheme[edit]
+Further information: Scheme (programming language)
+(define (add x y) (+ x y))
+(define (f x)
+  (lambda (y) (+ x y)))
+(display ((f 3) 7))
+(display (add 3 7))
+
+In this Scheme example, the higher-order function (f x) is used to implement currying. It takes a single argument and returns a function. The evaluation of the expression ((f 3) 7) first returns a function after evaluating (f 3). The returned function is (lambda (y) (+ 3 y)). Then, it evaluates the returned function with 7 as the argument, returning 10. This is equivalent to the expression (add 3 7), since (f x) is equivalent to the curried form of (add x y).
+
+Swift[edit]
+Further information: Swift (programming language)
+func twice(_ f: @escaping (Int) -> Int) -> (Int) -> Int {
+    return { f(f($0)) }
+}
+
+let plusThree = { $0 + 3 }
+
+let g = twice(plusThree)
+
+print(g(7)) // 13
+
+Tcl[edit]
+Further information: Tcl
+set twice {{f x} {apply $f [apply $f $x]}}
+set plusThree {{i} {return [expr $i + 3]}}
+
+# result: 13
+puts [apply $twice $plusThree 7]
+
+Tcl uses apply command to apply an anonymous function (since 8.6).
+
+XACML[edit]
+Further information: XACML
+The XACML standard defines higher-order functions in the standard to apply a function to multiple values of attribute bags.
+
+rule allowEntry{
+    permit
+    condition anyOfAny(function[stringEqual], citizenships, allowedCitizenships)
+}
+
+The list of higher-order functions in XACML can be found here.
+
+XQuery[edit]
+Further information: XQuery
+declare function local:twice($f, $x) {
+  $f($f($x))
+};
+
+declare function local:plusthree($i) {
+  $i + 3
+};
+
+local:twice(local:plusthree#1, 7) (: 13Â :)
+
+Alternatives[edit]
+Function pointers[edit]
+Function pointers in languages such as C, C++, and Pascal allow programmers to pass around references to functions. The following C code computes an approximation of the integral of an arbitrary function:
+
+#include <stdio.h>
+
+double square(double x)
+{
+    return x * x;
+}
+
+double cube(double x)
+{
+    return x * x * x;
+}
+
+/* Compute the integral of f() within the interval [a,b] */
+double integral(double f(double x), double a, double b, int n)
+{
+    int i;
+    double sum = 0;
+    double dt = (b - a) / n;
+    for (i = 0;  i < n;  ++i) {
+        sum += f(a + (i + 0.5) * dt);
+    }
+    return sum * dt;
+}
+
+int main()
+{
+    printf("%g\n", integral(square, 0, 1, 100));
+    printf("%g\n", integral(cube, 0, 1, 100));
+    return 0;
+}
+
+The qsort function from the C standard library uses a function pointer to emulate the behavior of a higher-order function.
+
+Macros[edit]
+Macros can also be used to achieve some of the effects of higher-order functions.  However, macros cannot easily avoid the problem of variable capture; they may also result in large amounts of duplicated code, which can be more difficult for a compiler to optimize.  Macros are generally not strongly typed, although they may produce strongly typed code.
+
+Dynamic code evaluation[edit]
+In other imperative programming languages, it is possible to achieve some of the same algorithmic results as are obtained via higher-order functions by dynamically executing code (sometimes called Eval or Execute operations) in the scope of evaluation.  There can be significant drawbacks to this approach:
+
+The argument code to be executed is usually not statically typed; these languages generally rely on dynamic typing to determine the well-formedness and safety of the code to be executed.
+The argument is usually provided as a string, the value of which may not be known until run-time.  This string must either be compiled during program execution (using just-in-time compilation) or evaluated by interpretation, causing some added overhead at run-time, and usually generating less efficient code.
+Objects[edit]
+In object-oriented programming languages that do not support higher-order functions, objects can be an effective substitute. An object's methods act in essence like functions, and a method may accept objects as parameters and produce objects as return values. Objects often carry added run-time overhead compared to pure functions, however, and added boilerplate code for defining and instantiating an object and its method(s). Languages that permit stack-based (versus heap-based) objects or structs can provide more flexibility with this method.
+An example of using a simple stack based record in Free Pascal with a function that returns a function:
+
+program example;
+
+type 
+  int = integer;
+  Txy = record x, y: int; end;
+  Tf = function (xy: Txy): int;
+     
+function f(xy: Txy): int; 
+begin 
+  Result := xy.y + xy.x; 
+end;
+
+function g(func: Tf): Tf; 
+begin 
+  result := func; 
+end;
+
+var 
+  a: Tf;
+  xy: Txy = (x: 3; y: 7);
+
+begin  
+  a := g(@f);     // return a function to "a"
+  writeln(a(xy)); // prints 10
+end.
+
+The function a() takes a Txy record as input and returns the integer value of the sum of the record's x and y fields (3 + 7).
+
+Defunctionalization[edit]
+Defunctionalization can be used to implement higher-order functions in languages that lack  first-class functions:
+
+// Defunctionalized function data structures
+template<typename T> struct Add { T value; };
+template<typename T> struct DivBy { T value; };
+template<typename F, typename G> struct Composition { F f; G g; };
+
+// Defunctionalized function application implementations
+template<typename F, typename G, typename X>
+auto apply(Composition<F, G> f, X arg) {
+    return apply(f.f, apply(f.g, arg));
+}
+
+template<typename T, typename X>
+auto apply(Add<T> f, X arg) {
+    return arg  + f.value;
+}
+
+template<typename T, typename X>
+auto apply(DivBy<T> f, X arg) {
+    return arg / f.value;
+}
+
+// Higher-order compose function
+template<typename F, typename G>
+Composition<F, G> compose(F f, G g) {
+    return Composition<F, G> {f, g};
+}
+
+int main(int argc, const char* argv[]) {
+    auto f = compose(DivBy<float>{ 2.0f }, Add<int>{ 5 });
+    apply(f, 3); // 4.0f
+    apply(f, 9); // 7.0f
+    return 0;
+}
+
+In this case, different types are used to trigger different functions via function overloading. The overloaded function in this example has the signature auto apply.
+
+See also[edit]
+First-class function
+Combinatory logic
+Function-level programming
+Functional programming
+Kappa calculus - a formalism for functions which excludes higher-order functions
+Strategy pattern
+Higher order messages
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"PHP: Arrow Functions - Manual". www.php.net. Retrieved 2021-03-01.
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Higher-order_function&oldid=1062188367"
+		Categories: Functional programmingLambda calculusHigher-order functionsSubroutinesArticles with example Scheme (programming language) codeHidden categories: Articles lacking in-text citations from September 2013All articles lacking in-text citationsArticles with example Python (programming language) codeArticles with example Haskell codeArticles with example JavaScript codeArticles with example C codeArticles with example Pascal codeArticles with example R code
+	

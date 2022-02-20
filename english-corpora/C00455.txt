@@ -1,0 +1,2747 @@
+
+Title:
+Division algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Algorithms for computing the quotient and the remainder of an integer division
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about algorithms for division of integers. For the pencil-and-paper algorithm, see Long division. For the theorem proving the existence of a unique quotient and remainder, see Euclidean division. For the division algorithm for polynomials, see Polynomial long division.
+A division algorithm is an algorithm which, given two integers N and D, computes their quotient and/or remainder, the result of Euclidean division. Some are applied by hand, while others are employed by digital circuit designs and software.
+Division algorithms fall into two main categories: slow division and fast division. Slow division algorithms produce one digit of the final quotient per iteration. Examples of slow division include restoring, non-performing restoring, non-restoring, and SRT division. Fast division methods start with a close approximation to the final quotient and produce twice as many digits of the final quotient on each iteration. NewtonâRaphson and Goldschmidt algorithms fall into this category.
+Variants of these algorithms allow using fast multiplication algorithms. It results that, for large integers, the computer time needed for a division is the same, up to a constant factor, as the time needed for a multiplication, whichever multiplication algorithm is used.
+Discussion will refer to the form 
+  
+    
+      
+        N
+        
+          /
+        
+        D
+        =
+        (
+        Q
+        ,
+        R
+        )
+      
+    
+    {\displaystyle N/D=(Q,R)}
+  
+, where
+
+N = numerator (dividend)
+D = denominator (divisor)
+is the input, and
+
+Q = quotient
+R = remainder
+is the output.
+
+Contents
+
+1 Division by repeated subtraction
+2 Long division
+
+2.1 Integer division (unsigned) with remainder
+
+2.1.1 Example
+
+
+
+
+3 Slow division methods
+
+3.1 Restoring division
+3.2 Non-restoring division
+3.3 SRT division
+
+
+4 Fast division methods
+
+4.1 NewtonâRaphson division
+
+4.1.1 Pseudocode
+4.1.2 Variant NewtonâRaphson division
+
+
+4.2 Goldschmidt division
+
+4.2.1 Binomial theorem
+
+
+
+
+5 Large-integer methods
+6 Division by a constant
+7 Rounding error
+8 See also
+9 Notes
+10 References
+11 Further reading
+
+
+
+Division by repeated subtraction[edit]
+The simplest division algorithm, historically incorporated into a greatest common divisor algorithm presented in Euclid's Elements, Book VII, Proposition 1, finds the remainder given two positive integers using only subtractions and comparisons:
+
+R := N
+while R â¥ D do
+  R := R â D
+end
+return R
+
+The proof that the quotient and remainder exist and are unique (described at Euclidean division) gives rise to a complete division algorithm using additions, subtractions, and comparisons:
+
+function divide(N, D)
+  if D = 0 then error(DivisionByZero) end
+  if D < 0 then (Q, R) := divide(N, âD); return (âQ, R) end
+  if N < 0 then
+    (Q,R) := divide(âN, D)
+    if R = 0 then return (âQ, 0)
+    else return (âQ â 1, D â R) end
+  end
+  -- At this point, N â¥ 0 and D > 0
+  return divide_unsigned(N, D)
+end  
+function divide_unsigned(N, D)
+  Q := 0; R := N
+  while R â¥ D do
+    Q := Q + 1
+    R := R â D
+  end
+  return (Q, R)
+end
+
+This procedure always produces R â¥ 0. Although very simple, it takes Î©(Q) steps, and so is exponentially slower than even slow division algorithms like long division. It is useful if Q is known to be small (being an output-sensitive algorithm), and can serve as an executable specification.
+
+Long division[edit]
+Main article: Long division Â§Â Algorithm for arbitrary base
+Long division is the standard algorithm used for pen-and-paper division of multi-digit numbers expressed in decimal notation. It shifts gradually from the left to the right end of the dividend, subtracting the largest possible multiple of the divisor (at the digit level) at each stage; the multiples then become the digits of the quotient, and the final difference is then the remainder. 
+When used with a binary radix, this method forms the basis for the (unsigned) integer division with remainder algorithm below. Short division is an abbreviated form of long division suitable for one-digit divisors. ChunkingÂ â  also known as the partial quotients method or the hangman methodÂ â  is a less-efficient form of long division which may be easier to understand. By allowing one to subtract more multiples than what one currently has at each stage, a more freeform variant of long division can be developed as well.
+
+Integer division (unsigned) with remainder[edit]
+Main article: Long division Â§Â Binary division
+See also: Binary number Â§Â Division
+The following algorithm, the binary version of the famous long division, will divide N by D, placing the quotient in Q and the remainder in R.  In the following pseudo-code, all values are treated as unsigned integers.
+
+if D = 0 then error(DivisionByZeroException) end
+Q := 0                  -- Initialize quotient and remainder to zero
+R := 0                     
+for i := n â 1 .. 0 do  -- Where n is number of bits in N
+  R := R << 1           -- Left-shift R by 1 bit
+  R(0) := N(i)          -- Set the least-significant bit of R equal to bit i of the numerator
+  if R â¥ D then
+    R := R â D
+    Q(i) := 1
+  end
+end
+
+Example[edit]
+If we take N=11002 (1210) and D=1002 (410)
+Step 1:  Set R=0 and Q=0 
+Step 2:  Take i=3 (one less than the number of bits in N) 
+Step 3:  R=00 (left shifted by 1) 
+Step 4:  R=01 (setting R(0) to N(i))  
+Step 5:  R < D, so skip statement
+Step 2:  Set i=2  
+Step 3:  R=010  
+Step 4:  R=011  
+Step 5:  R < D, statement skipped
+Step 2:  Set i=1  
+Step 3:  R=0110  
+Step 4:  R=0110  
+Step 5:  R>=D, statement entered  
+Step 5b:  R=10 (RâD)  
+Step 5c:  Q=10 (setting Q(i) to 1)
+Step 2:  Set i=0  
+Step 3:  R=100  
+Step 4:  R=100  
+Step 5:  R>=D, statement entered  
+Step 5b:  R=0 (RâD)  
+Step 5c:  Q=11 (setting Q(i) to 1)
+end  
+Q=112 (310) and R=0.
+
+Slow division methods[edit]
+Slow division methods are all based on a standard recurrence equation [1]
+
+
+  
+    
+      
+        
+          R
+          
+            j
+            +
+            1
+          
+        
+        =
+        B
+        Ã
+        
+          R
+          
+            j
+          
+        
+        â
+        
+          q
+          
+            n
+            â
+            (
+            j
+            +
+            1
+            )
+          
+        
+        Ã
+        D
+        ,
+      
+    
+    {\displaystyle R_{j+1}=B\times R_{j}-q_{n-(j+1)}\times D,}
+  
+
+where:
+
+Rj is the j-th partial remainder of the division
+B is the radix (base, usually 2 internally in computers and calculators)
+q n â (j + 1) is the digit of the quotient in position nâ(j+1), where the digit positions are numbered from least-significant 0 to most significant nâ1
+n is number of digits in the quotient
+D is the divisor
+Restoring division[edit]
+Restoring division operates on fixed-point fractional numbers and depends on the assumption 0 < D < N.[citation needed] 
+The quotient digits q are formed from the digit set {0,1}.
+The basic algorithm for binary (radix 2) restoring division is:
+
+R := N
+D := D << n            -- R and D need twice the word width of N and Q
+for i := n â 1 .. 0 do  -- For example 31..0 for 32 bits
+  R := 2 * R â D          -- Trial subtraction from shifted value (multiplication by 2 is a shift in binary representation)
+  if R â¥ 0 then
+    q(i) := 1          -- Result-bit 1
+  else
+    q(i) := 0          -- Result-bit 0
+    R := R + D         -- New partial remainder is (restored) shifted value
+  end
+end
+
+-- Where: N = numerator, D = denominator, n = #bits, R = partial remainder, q(i) = bit #i of quotient
+
+Non-performing restoring division is similar to restoring division except that the value of 2R is saved, so D does not need to be added back in for the case of R < 0.
+
+Non-restoring division[edit]
+Non-restoring division uses the digit set {â1, 1} for the quotient digits instead of {0, 1}.  The algorithm is more complex, but has the advantage when implemented in hardware that there is only one decision and addition/subtraction per quotient bit; there is no restoring step after the subtraction, which potentially cuts down the numbers of operations by up to half and lets it be executed faster.[2]  The basic algorithm for binary (radix 2) non-restoring division of non-negative numbers is:
+
+R := N
+D := D << n            -- R and D need twice the word width of N and Q
+for i = n â 1 .. 0 do  -- for example 31..0 for 32 bits
+  if R >= 0 then
+    q[i] := +1
+    R := 2 * R â D
+  else
+    q[i] := â1
+    R := 2 * R + D
+  end if
+end
+ 
+-- Note: N=numerator, D=denominator, n=#bits, R=partial remainder, q(i)=bit #i of quotient.
+
+Following this algorithm, the quotient is in a non-standard form consisting of digits of â1 and +1. This form needs to be converted to binary to form the final quotient. Example:
+
+
+
+Convert the following quotient to the digit set {0,1}:
+
+
+Start:
+
+  
+    
+      
+        Q
+        =
+        111
+        
+          
+            
+              1
+              Â¯
+            
+          
+        
+        1
+        
+          
+            
+              1
+              Â¯
+            
+          
+        
+        1
+        
+          
+            
+              1
+              Â¯
+            
+          
+        
+      
+    
+    {\displaystyle Q=111{\bar {1}}1{\bar {1}}1{\bar {1}}}
+  
+
+
+
+1. Form the positive term:
+
+  
+    
+      
+        P
+        =
+        11101010
+        
+      
+    
+    {\displaystyle P=11101010\,}
+  
+
+
+
+2. Mask the negative term*:
+
+  
+    
+      
+        M
+        =
+        00010101
+        
+      
+    
+    {\displaystyle M=00010101\,}
+  
+
+
+
+3. Subtract: 
+  
+    
+      
+        P
+        â
+        M
+      
+    
+    {\displaystyle P-M}
+  
+:
+
+  
+    
+      
+        Q
+        =
+        11010101
+        
+      
+    
+    {\displaystyle Q=11010101\,}
+  
+
+
+
+*.( Signed binary notation with one's complement without two's complement)
+
+If the â1 digits of 
+  
+    
+      
+        Q
+      
+    
+    {\displaystyle Q}
+  
+ are stored as zeros (0) as is common, then 
+  
+    
+      
+        P
+      
+    
+    {\displaystyle P}
+  
+ is 
+  
+    
+      
+        Q
+      
+    
+    {\displaystyle Q}
+  
+ and computing 
+  
+    
+      
+        M
+      
+    
+    {\displaystyle M}
+  
+ is trivial: perform a one's complement (bit by bit complement) on the original 
+  
+    
+      
+        Q
+      
+    
+    {\displaystyle Q}
+  
+.
+
+Q := Q â bit.bnot(Q)      -- Appropriate if â1 digits in Q are represented as zeros as is common.
+
+Finally, quotients computed by this algorithm are always odd, and the remainder in R is in the range âD â¤ R < D.  For example, 5 / 2 = 3 R â1.  To convert to a positive remainder, do a single restoring step after Q is converted from non-standard form to standard form:
+
+if R < 0 then
+  Q := Q â 1
+  R := R + D  -- Needed only if the remainder is of interest.
+end if
+
+The actual remainder is R >> n.  (As with restoring division, the low-order bits of R are used up at the same rate as bits of the quotient Q are produced, and it is common to use a single shift register for both.)
+
+SRT division[edit]
+Named for its creators (Sweeney, Robertson, and Tocher), SRT division is a popular method for division in many microprocessor implementations.[3][4] SRT division is similar to non-restoring division, but it uses a lookup table based on the dividend and the divisor to determine each quotient digit.
+The most significant difference is that a redundant representation is used for the quotient.  For example, when implementing radix-4 SRT division, each quotient digit is chosen from five possibilities: { â2, â1, 0, +1, +2 }.  Because of this, the choice of a quotient digit need not be perfect; later quotient digits can correct for slight errors.  (For example, the quotient digit pairs (0, +2) and (1, â2) are equivalent, since 0Ã4+2 = 1Ã4â2.)  This tolerance allows quotient digits to be selected using only a few most-significant bits of the dividend and divisor, rather than requiring a full-width subtraction.  This simplification in turn allows a radix higher than 2 to be used.
+Like non-restoring division, the final steps are a final full-width subtraction to resolve the last quotient bit, and conversion of the quotient to standard binary form.
+The Intel Pentium processor's infamous floating-point division bug was caused by an incorrectly coded lookup table. Five of the 1066 entries had been mistakenly omitted.[5][6]
+
+Fast division methods[edit]
+NewtonâRaphson division[edit]
+NewtonâRaphson uses Newton's method to find the reciprocal of 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+ and multiply that reciprocal by 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ to find the final quotient 
+  
+    
+      
+        Q
+      
+    
+    {\displaystyle Q}
+  
+.
+The steps of NewtonâRaphson division are:
+
+Calculate an estimate 
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+      
+    
+    {\displaystyle X_{0}}
+  
+ for the reciprocal 
+  
+    
+      
+        1
+        
+          /
+        
+        D
+      
+    
+    {\displaystyle 1/D}
+  
+ of the divisor 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+.
+Compute successively more accurate estimates 
+  
+    
+      
+        
+          X
+          
+            1
+          
+        
+        ,
+        
+          X
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          X
+          
+            S
+          
+        
+      
+    
+    {\displaystyle X_{1},X_{2},\ldots ,X_{S}}
+  
+ of the reciprocal. This is where one employs the NewtonâRaphson method as such.
+Compute the quotient by multiplying the dividend by the reciprocal of the divisor: 
+  
+    
+      
+        Q
+        =
+        N
+        
+          X
+          
+            S
+          
+        
+      
+    
+    {\displaystyle Q=NX_{S}}
+  
+.
+In order to apply Newton's method to find the reciprocal of 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+, it is necessary to find a function 
+  
+    
+      
+        f
+        (
+        X
+        )
+      
+    
+    {\displaystyle f(X)}
+  
+ that has a zero at 
+  
+    
+      
+        X
+        =
+        1
+        
+          /
+        
+        D
+      
+    
+    {\displaystyle X=1/D}
+  
+. The obvious such function is 
+  
+    
+      
+        f
+        (
+        X
+        )
+        =
+        D
+        X
+        â
+        1
+      
+    
+    {\displaystyle f(X)=DX-1}
+  
+, but the NewtonâRaphson iteration for this is unhelpful, since it cannot be computed without already knowing the reciprocal of 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+ (moreover it attempts to compute the exact reciprocal in one step, rather than allow for iterative improvements). A function that does work is 
+  
+    
+      
+        f
+        (
+        X
+        )
+        =
+        (
+        1
+        
+          /
+        
+        X
+        )
+        â
+        D
+      
+    
+    {\displaystyle f(X)=(1/X)-D}
+  
+, for which the NewtonâRaphson iteration gives
+
+
+  
+    
+      
+        
+          X
+          
+            i
+            +
+            1
+          
+        
+        =
+        
+          X
+          
+            i
+          
+        
+        â
+        
+          
+            
+              f
+              (
+              
+                X
+                
+                  i
+                
+              
+              )
+            
+            
+              
+                f
+                â²
+              
+              (
+              
+                X
+                
+                  i
+                
+              
+              )
+            
+          
+        
+        =
+        
+          X
+          
+            i
+          
+        
+        â
+        
+          
+            
+              1
+              
+                /
+              
+              
+                X
+                
+                  i
+                
+              
+              â
+              D
+            
+            
+              â
+              1
+              
+                /
+              
+              
+                X
+                
+                  i
+                
+                
+                  2
+                
+              
+            
+          
+        
+        =
+        
+          X
+          
+            i
+          
+        
+        +
+        
+          X
+          
+            i
+          
+        
+        (
+        1
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+        =
+        
+          X
+          
+            i
+          
+        
+        (
+        2
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+        ,
+      
+    
+    {\displaystyle X_{i+1}=X_{i}-{f(X_{i}) \over f'(X_{i})}=X_{i}-{1/X_{i}-D \over -1/X_{i}^{2}}=X_{i}+X_{i}(1-DX_{i})=X_{i}(2-DX_{i}),}
+  
+
+which can be calculated from 
+  
+    
+      
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle X_{i}}
+  
+ using only multiplication and subtraction, or using two fused multiplyâadds.
+From a computation point of view, the expressions 
+  
+    
+      
+        
+          X
+          
+            i
+            +
+            1
+          
+        
+        =
+        
+          X
+          
+            i
+          
+        
+        +
+        
+          X
+          
+            i
+          
+        
+        (
+        1
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle X_{i+1}=X_{i}+X_{i}(1-DX_{i})}
+  
+ and 
+  
+    
+      
+        
+          X
+          
+            i
+            +
+            1
+          
+        
+        =
+        
+          X
+          
+            i
+          
+        
+        (
+        2
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle X_{i+1}=X_{i}(2-DX_{i})}
+  
+ are not equivalent. To obtain a result with a precision of 2n bits while making use of the second expression, one must compute the product between 
+  
+    
+      
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle X_{i}}
+  
+ and 
+  
+    
+      
+        (
+        2
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle (2-DX_{i})}
+  
+ with double the given precision of 
+  
+    
+      
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle X_{i}}
+  
+(n bits).[citation needed] In contrast, the product between 
+  
+    
+      
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle X_{i}}
+  
+ and 
+  
+    
+      
+        (
+        1
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle (1-DX_{i})}
+  
+ need only be computed with a precision of n bits, because the leading n bits (after the binary point) of 
+  
+    
+      
+        (
+        1
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+        )
+      
+    
+    {\displaystyle (1-DX_{i})}
+  
+ are zeros.
+If the error is defined as 
+  
+    
+      
+        
+          Îµ
+          
+            i
+          
+        
+        =
+        1
+        â
+        D
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle \varepsilon _{i}=1-DX_{i}}
+  
+, then:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  Îµ
+                  
+                    i
+                    +
+                    1
+                  
+                
+              
+              
+                
+                =
+                1
+                â
+                D
+                
+                  X
+                  
+                    i
+                    +
+                    1
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                1
+                â
+                D
+                (
+                
+                  X
+                  
+                    i
+                  
+                
+                (
+                2
+                â
+                D
+                
+                  X
+                  
+                    i
+                  
+                
+                )
+                )
+              
+            
+            
+              
+              
+                
+                =
+                1
+                â
+                2
+                D
+                
+                  X
+                  
+                    i
+                  
+                
+                +
+                
+                  D
+                  
+                    2
+                  
+                
+                
+                  X
+                  
+                    i
+                  
+                  
+                    2
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                (
+                1
+                â
+                D
+                
+                  X
+                  
+                    i
+                  
+                
+                
+                  )
+                  
+                    2
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                
+                  
+                    
+                      Îµ
+                      
+                        i
+                      
+                    
+                  
+                  
+                    2
+                  
+                
+                .
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}\varepsilon _{i+1}&=1-DX_{i+1}\\&=1-D(X_{i}(2-DX_{i}))\\&=1-2DX_{i}+D^{2}X_{i}^{2}\\&=(1-DX_{i})^{2}\\&={\varepsilon _{i}}^{2}.\\\end{aligned}}}
+  
+
+This squaring of the error at each iteration stepÂ â  the so-called quadratic convergence of NewtonâRaphson's methodÂ â  has the effect that the number of correct digits in the result roughly doubles for every iteration, a property that becomes extremely valuable when the numbers involved have many digits (e.g. in the large integer domain). But it also means that the initial convergence of the method can be comparatively slow, especially if the initial estimate 
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+      
+    
+    {\displaystyle X_{0}}
+  
+ is poorly chosen.
+For the subproblem of choosing an initial estimate 
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+      
+    
+    {\displaystyle X_{0}}
+  
+, it is convenient to apply a bit-shift to the divisor D to scale it so that 0.5Â â¤Â DÂ â¤Â 1; by applying the same bit-shift to the numerator N, one ensures the quotient does not change. Then one could use a linear approximation in the form
+
+
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+        =
+        
+          T
+          
+            1
+          
+        
+        +
+        
+          T
+          
+            2
+          
+        
+        D
+        â
+        
+          
+            1
+            D
+          
+        
+        
+      
+    
+    {\displaystyle X_{0}=T_{1}+T_{2}D\approx {\frac {1}{D}}\,}
+  
+
+to initialize NewtonâRaphson. To minimize the maximum of the absolute value of the error of this approximation on interval 
+  
+    
+      
+        [
+        0.5
+        ,
+        1
+        ]
+      
+    
+    {\displaystyle [0.5,1]}
+  
+, one should use
+
+
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+        =
+        
+          
+            48
+            17
+          
+        
+        â
+        
+          
+            32
+            17
+          
+        
+        D
+        .
+        
+      
+    
+    {\displaystyle X_{0}={48 \over 17}-{32 \over 17}D.\,}
+  
+
+The coefficients of the linear approximation are determined as follows. The absolute value of the error is 
+  
+    
+      
+        
+          |
+        
+        
+          Îµ
+          
+            0
+          
+        
+        
+          |
+        
+        =
+        
+          |
+        
+        1
+        â
+        D
+        (
+        
+          T
+          
+            1
+          
+        
+        +
+        
+          T
+          
+            2
+          
+        
+        D
+        )
+        
+          |
+        
+      
+    
+    {\displaystyle |\varepsilon _{0}|=|1-D(T_{1}+T_{2}D)|}
+  
+. The minimum of the maximum absolute value of the error is determined by the Chebyshev equioscillation theorem applied to 
+  
+    
+      
+        F
+        (
+        D
+        )
+        =
+        1
+        â
+        D
+        (
+        
+          T
+          
+            1
+          
+        
+        +
+        
+          T
+          
+            2
+          
+        
+        D
+        )
+      
+    
+    {\displaystyle F(D)=1-D(T_{1}+T_{2}D)}
+  
+.  The local minimum of 
+  
+    
+      
+        F
+        (
+        D
+        )
+      
+    
+    {\displaystyle F(D)}
+  
+ occurs when 
+  
+    
+      
+        
+          F
+          â²
+        
+        (
+        D
+        )
+        =
+        0
+      
+    
+    {\displaystyle F'(D)=0}
+  
+, which has solution 
+  
+    
+      
+        D
+        =
+        â
+        
+          T
+          
+            1
+          
+        
+        
+          /
+        
+        (
+        2
+        
+          T
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle D=-T_{1}/(2T_{2})}
+  
+. The function at that minimum must be of opposite sign as the function at the endpoints, namely, 
+  
+    
+      
+        F
+        (
+        1
+        
+          /
+        
+        2
+        )
+        =
+        F
+        (
+        1
+        )
+        =
+        â
+        F
+        (
+        â
+        
+          T
+          
+            1
+          
+        
+        
+          /
+        
+        (
+        2
+        
+          T
+          
+            2
+          
+        
+        )
+        )
+      
+    
+    {\displaystyle F(1/2)=F(1)=-F(-T_{1}/(2T_{2}))}
+  
+.  The two equations in the two unknowns have a unique solution 
+  
+    
+      
+        
+          T
+          
+            1
+          
+        
+        =
+        48
+        
+          /
+        
+        17
+      
+    
+    {\displaystyle T_{1}=48/17}
+  
+ and 
+  
+    
+      
+        
+          T
+          
+            2
+          
+        
+        =
+        â
+        32
+        
+          /
+        
+        17
+      
+    
+    {\displaystyle T_{2}=-32/17}
+  
+, and the maximum error is 
+  
+    
+      
+        F
+        (
+        1
+        )
+        =
+        1
+        
+          /
+        
+        17
+      
+    
+    {\displaystyle F(1)=1/17}
+  
+.  Using this approximation, the absolute value of the error of the initial value is less than
+
+
+  
+    
+      
+        |
+        
+          Îµ
+          
+            0
+          
+        
+        |
+        â¤
+        
+          
+            1
+            17
+          
+        
+        â
+        0.059.
+        
+      
+    
+    {\displaystyle \vert \varepsilon _{0}\vert \leq {1 \over 17}\approx 0.059.\,}
+  
+
+It is possible to generate a polynomial fit of degree larger than 1, computing the coefficients using the Remez algorithm.  The trade-off is that the initial guess requires more computational cycles but hopefully in exchange for fewer iterations of NewtonâRaphson.
+Since for this method the convergence is exactly quadratic, it follows that
+
+
+  
+    
+      
+        S
+        =
+        
+          â
+          
+            
+              log
+              
+                2
+              
+            
+            â¡
+            
+              
+                
+                  P
+                  +
+                  1
+                
+                
+                  
+                    log
+                    
+                      2
+                    
+                  
+                  â¡
+                  17
+                
+              
+            
+          
+          â
+        
+        
+      
+    
+    {\displaystyle S=\left\lceil \log _{2}{\frac {P+1}{\log _{2}17}}\right\rceil \,}
+  
+
+steps are enough to calculate the value up to 
+  
+    
+      
+        P
+        
+      
+    
+    {\displaystyle P\,}
+  
+ binary places. This evaluates to 3 for IEEE single precision and 4 for both double precision and double extended formats.
+
+Pseudocode[edit]
+The following computes the quotient of N and D with a precision of P binary places:
+
+Express D as M Ã 2e where 1 â¤ M < 2 (standard floating point representation)
+D'Â := D / 2e+1   // scale between 0.5 and 1, can be performed with bit shift / exponent subtraction
+N'Â := N / 2e+1
+XÂ := 48/17 â 32/17 Ã D'   // precompute constants with same precision as D
+repeat 
+  
+    
+      
+        
+          â
+          
+            
+              log
+              
+                2
+              
+            
+            â¡
+            
+              
+                
+                  P
+                  +
+                  1
+                
+                
+                  
+                    log
+                    
+                      2
+                    
+                  
+                  â¡
+                  17
+                
+              
+            
+          
+          â
+        
+        
+      
+    
+    {\displaystyle \left\lceil \log _{2}{\frac {P+1}{\log _{2}17}}\right\rceil \,}
+  
+ times   // can be precomputed based on fixed P
+    XÂ := X + X Ã (1 - D' Ã X)
+end
+return N' Ã X
+
+For example, for a double-precision floating-point division, this method uses 10 multiplies, 9 adds, and 2 shifts.
+
+Variant NewtonâRaphson division[edit]
+The Newton-Raphson division method can be modified to be slightly faster as follows. After shifting N and D so that D is in [0.5, 1.0], initialize with
+
+
+  
+    
+      
+        X
+        :=
+        
+          
+            140
+            33
+          
+        
+        +
+        D
+        â
+        
+          (
+          
+            
+              
+                
+                  â
+                  64
+                
+                11
+              
+            
+            +
+            D
+            â
+            
+              
+                256
+                99
+              
+            
+          
+          )
+        
+        .
+      
+    
+    {\displaystyle X:={\frac {140}{33}}+D\cdot \left({\frac {-64}{11}}+D\cdot {\frac {256}{99}}\right).}
+  
+
+This is the best quadratic fit to 1/D and gives an absolute value of the error less than or equal to 1/99. It is chosen to make the error equal to a re-scaled third order Chebyshev polynomial of the first kind. The coefficients should be pre-calculated and hard-coded.
+Then in the loop, use an iteration which cubes the error.
+
+
+  
+    
+      
+        E
+        :=
+        1
+        â
+        D
+        â
+        X
+      
+    
+    {\displaystyle E:=1-D\cdot X}
+  
+
+
+  
+    
+      
+        Y
+        :=
+        X
+        â
+        E
+      
+    
+    {\displaystyle Y:=X\cdot E}
+  
+
+
+  
+    
+      
+        X
+        :=
+        X
+        +
+        Y
+        +
+        Y
+        â
+        E
+        .
+      
+    
+    {\displaystyle X:=X+Y+Y\cdot E.}
+  
+
+The YÂ·E term is new.
+If the loop is performed until X agrees with 1/D on its leading P bits, then the number of iterations will be no more than
+
+
+  
+    
+      
+        
+          â
+          
+            
+              log
+              
+                3
+              
+            
+            â¡
+            
+              (
+              
+                
+                  
+                    P
+                    +
+                    1
+                  
+                  
+                    
+                      log
+                      
+                        2
+                      
+                    
+                    â¡
+                    99
+                  
+                
+              
+              )
+            
+          
+          â
+        
+      
+    
+    {\displaystyle \left\lceil \log _{3}\left({\frac {P+1}{\log _{2}99}}\right)\right\rceil }
+  
+
+which is the number of times 99 must be cubed to get to 2P+1. Then
+
+
+  
+    
+      
+        Q
+        :=
+        N
+        â
+        X
+      
+    
+    {\displaystyle Q:=N\cdot X}
+  
+
+is the quotient to P bits.
+Using higher degree polynomials in either the initialization or the iteration results in a degradation of performance because the extra multiplications required would be better spent on doing more iterations.
+
+Goldschmidt division[edit]
+Goldschmidt division[7] (after Robert Elliott Goldschmidt[8]) uses an iterative process of repeatedly multiplying both the dividend and divisor by a common factor Fi, chosen such that the divisor converges to 1. This causes the dividend to converge to the sought quotient Q:
+
+
+  
+    
+      
+        Q
+        =
+        
+          
+            N
+            D
+          
+        
+        
+          
+            
+              F
+              
+                1
+              
+            
+            
+              F
+              
+                1
+              
+            
+          
+        
+        
+          
+            
+              F
+              
+                2
+              
+            
+            
+              F
+              
+                2
+              
+            
+          
+        
+        
+          
+            
+              F
+              
+                â¦
+              
+            
+            
+              F
+              
+                â¦
+              
+            
+          
+        
+        .
+      
+    
+    {\displaystyle Q={\frac {N}{D}}{\frac {F_{1}}{F_{1}}}{\frac {F_{2}}{F_{2}}}{\frac {F_{\ldots }}{F_{\ldots }}}.}
+  
+
+The steps for Goldschmidt division are:
+
+Generate an estimate for the multiplication factor Fi .
+Multiply the dividend and divisor by Fi .
+If the divisor is sufficiently close to 1, return the dividend, otherwise, loop to step 1.
+Assuming N/D has been scaled so that 0Â <Â DÂ <Â 1, each Fi is based on D:
+
+
+  
+    
+      
+        
+          F
+          
+            i
+            +
+            1
+          
+        
+        =
+        2
+        â
+        
+          D
+          
+            i
+          
+        
+        .
+      
+    
+    {\displaystyle F_{i+1}=2-D_{i}.}
+  
+
+Multiplying the dividend and divisor by the factor yields:
+
+
+  
+    
+      
+        
+          
+            
+              N
+              
+                i
+                +
+                1
+              
+            
+            
+              D
+              
+                i
+                +
+                1
+              
+            
+          
+        
+        =
+        
+          
+            
+              N
+              
+                i
+              
+            
+            
+              D
+              
+                i
+              
+            
+          
+        
+        
+          
+            
+              F
+              
+                i
+                +
+                1
+              
+            
+            
+              F
+              
+                i
+                +
+                1
+              
+            
+          
+        
+        .
+      
+    
+    {\displaystyle {\frac {N_{i+1}}{D_{i+1}}}={\frac {N_{i}}{D_{i}}}{\frac {F_{i+1}}{F_{i+1}}}.}
+  
+
+After a sufficient number k of iterations 
+  
+    
+      
+        Q
+        =
+        
+          N
+          
+            k
+          
+        
+      
+    
+    {\displaystyle Q=N_{k}}
+  
+.
+The Goldschmidt method is used in AMD Athlon CPUs and later models.[9][10] It is also known as Anderson Earle Goldschmidt Powers (AEGP) algorithm and is implemented by various IBM processors.[11][12] Although it converges at the same rate as a NewtonâRaphson implementation, one advantage of the Goldschmidt method is that the multiplications in the numerator and in the denominator can be done in parallel.[12]
+
+Binomial theorem[edit]
+The Goldschmidt method can be used with factors that allow simplifications by the binomial theorem.
+Assume N/D has been scaled by a power of two such that 
+  
+    
+      
+        D
+        â
+        (
+        
+          
+            
+              1
+              2
+            
+          
+        
+        ,
+        1
+        ]
+      
+    
+    {\displaystyle D\in ({\tfrac {1}{2}},1]}
+  
+.
+We choose 
+  
+    
+      
+        D
+        =
+        1
+        â
+        x
+      
+    
+    {\displaystyle D=1-x}
+  
+ and 
+  
+    
+      
+        
+          F
+          
+            i
+          
+        
+        =
+        1
+        +
+        
+          x
+          
+            
+              2
+              
+                i
+              
+            
+          
+        
+      
+    
+    {\displaystyle F_{i}=1+x^{2^{i}}}
+  
+.
+This yields
+
+
+  
+    
+      
+        
+          
+            N
+            
+              1
+              â
+              x
+            
+          
+        
+        =
+        
+          
+            
+              N
+              â
+              (
+              1
+              +
+              x
+              )
+            
+            
+              1
+              â
+              
+                x
+                
+                  2
+                
+              
+            
+          
+        
+        =
+        
+          
+            
+              N
+              â
+              (
+              1
+              +
+              x
+              )
+              â
+              (
+              1
+              +
+              
+                x
+                
+                  2
+                
+              
+              )
+            
+            
+              1
+              â
+              
+                x
+                
+                  4
+                
+              
+            
+          
+        
+        =
+        â¯
+        =
+        
+          Q
+          â²
+        
+        =
+        
+          
+            
+              
+                N
+                â²
+              
+              =
+              N
+              â
+              (
+              1
+              +
+              x
+              )
+              â
+              (
+              1
+              +
+              
+                x
+                
+                  2
+                
+              
+              )
+              â
+              â
+              â
+              (
+              1
+              +
+              
+                x
+                
+                  
+                    2
+                    
+                      (
+                      n
+                      â
+                      1
+                      )
+                    
+                  
+                
+              
+              )
+            
+            
+              
+                D
+                â²
+              
+              =
+              1
+              â
+              
+                x
+                
+                  
+                    2
+                    
+                      n
+                    
+                  
+                
+              
+              â
+              1
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {N}{1-x}}={\frac {N\cdot (1+x)}{1-x^{2}}}={\frac {N\cdot (1+x)\cdot (1+x^{2})}{1-x^{4}}}=\cdots =Q'={\frac {N'=N\cdot (1+x)\cdot (1+x^{2})\cdot \cdot \cdot (1+x^{2^{(n-1)}})}{D'=1-x^{2^{n}}\approx 1}}}
+  
+.
+After 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ steps 
+  
+    
+      
+        (
+        x
+        â
+        [
+        0
+        ,
+        
+          
+            
+              1
+              2
+            
+          
+        
+        )
+        )
+      
+    
+    {\displaystyle (x\in [0,{\tfrac {1}{2}}))}
+  
+, the denominator 
+  
+    
+      
+        1
+        â
+        
+          x
+          
+            
+              2
+              
+                n
+              
+            
+          
+        
+      
+    
+    {\displaystyle 1-x^{2^{n}}}
+  
+ can be rounded to 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ with a relative error
+
+
+  
+    
+      
+        
+          Îµ
+          
+            n
+          
+        
+        =
+        
+          
+            
+              
+                Q
+                â²
+              
+              â
+              
+                N
+                â²
+              
+            
+            
+              Q
+              â²
+            
+          
+        
+        =
+        
+          x
+          
+            
+              2
+              
+                n
+              
+            
+          
+        
+      
+    
+    {\displaystyle \varepsilon _{n}={\frac {Q'-N'}{Q'}}=x^{2^{n}}}
+  
+
+which is maximum at 
+  
+    
+      
+        
+          2
+          
+            â
+            
+              2
+              
+                n
+              
+            
+          
+        
+      
+    
+    {\displaystyle 2^{-2^{n}}}
+  
+ when 
+  
+    
+      
+        x
+        =
+        
+          
+            1
+            2
+          
+        
+      
+    
+    {\displaystyle x={1 \over 2}}
+  
+, thus providing a minimum precision of 
+  
+    
+      
+        
+          2
+          
+            n
+          
+        
+      
+    
+    {\displaystyle 2^{n}}
+  
+ binary digits.
+
+Large-integer methods[edit]
+Methods designed for hardware implementation generally do not scale to integers with thousands or millions of decimal digits; these frequently occur, for example, in modular reductions in cryptography. For these large integers, more efficient division algorithms transform the problem to use a small number of multiplications, which can then be done using an asymptotically efficient multiplication algorithm such as the Karatsuba algorithm, ToomâCook multiplication or the SchÃ¶nhageâStrassen algorithm. The result is that the computational complexity of the division is of the same order (up to a multiplicative constant) as that of the multiplication. Examples include reduction to multiplication by Newton's method as described above,[13] as well as the slightly faster Burnikel-Ziegler division,[14] Barrett reduction and Montgomery reduction algorithms.[15][verification needed] Newton's method is particularly efficient in scenarios where one must divide by the same divisor many times, since after the initial Newton inversion only one (truncated) multiplication is needed for each division.
+
+Division by a constant[edit]
+The division by a constant D is equivalent to the multiplication by its reciprocal. 
+Since the denominator is constant, so is its reciprocal (1/D). Thus it is possible to compute the value of (1/D) once at compile time, and at run time perform the multiplication NÂ·(1/D) rather than the division N/D. In floating-point arithmetic the use of (1/D) presents little problem,[a] but in integer arithmetic the reciprocal will always evaluate to zero (assuming |D| > 1). 
+It is not necessary to use specifically (1/D); any value (X/Y) that reduces to (1/D) may be used.  For example, for division by 3, the factors 1/3, 2/6, 3/9, or 194/582 could be used. Consequently, if Y were a power of two the division step would reduce to a fast right bit shift. The effect of calculating N/D as (NÂ·X)/Y replaces a division with a multiply and a shift. Note that the parentheses are important, as NÂ·(X/Y) will evaluate to zero.
+However, unless D itself is a power of two, there is no X and Y that satisfies the conditions above. Fortunately, (NÂ·X)/Y gives exactly the same result as N/D in integer arithmetic even when (X/Y) is not exactly equal to 1/D, but "close enough" that the error introduced by the approximation is in the bits that are discarded by the shift operation.[16][17][18][b]
+As a concrete fixed-point arithmetic example, for 32-bit unsigned integers, division by 3 can be replaced with a multiply by .mw-parser-output .sfrac{white-space:nowrap}.mw-parser-output .sfrac.tion,.mw-parser-output .sfrac .tion{display:inline-block;vertical-align:-0.5em;font-size:85%;text-align:center}.mw-parser-output .sfrac .num,.mw-parser-output .sfrac .den{display:block;line-height:1em;margin:0 0.1em}.mw-parser-output .sfrac .den{border-top:1px solid}.mw-parser-output .sr-only{border:0;clip:rect(0,0,0,0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}2863311531/233, a multiplication by 2863311531 (hexadecimal 0xAAAAAAAB) followed by a 33 right bit shift.  The value of 2863311531 is calculated as 233/3, then rounded up. Likewise, division by 10 can be expressed as a multiplication by 3435973837 (0xCCCCCCCD) followed by division by 235 (or 35 right bit shift).[20]:âp230-234â OEIS provides sequences of the constants for multiplication as A346495 and for the right shift as A346496.
+For general 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+-bit unsigned integer division where the divisor 
+  
+    
+      
+        D
+      
+    
+    {\displaystyle D}
+  
+ is not a power of 2, the following identity converts the division into two 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+-bit addition/subtraction, one 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+-bit by 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+-bit multiplication (where only the upper half of the result is used) and several shifts, after precomputing 
+  
+    
+      
+        k
+        =
+        x
+        +
+        â
+        
+          log
+          
+            2
+          
+        
+        â¡
+        
+          D
+        
+        â
+      
+    
+    {\displaystyle k=x+\lceil \log _{2}{D}\rceil }
+  
+ and 
+  
+    
+      
+        a
+        =
+        
+          â
+          
+            
+              
+                2
+                
+                  k
+                
+              
+              D
+            
+          
+          â
+        
+        â
+        
+          2
+          
+            x
+          
+        
+      
+    
+    {\displaystyle a=\left\lceil {\frac {2^{k}}{D}}\right\rceil -2^{x}}
+  
+:
+
+  
+    
+      
+        
+          â
+          
+            
+              N
+              D
+            
+          
+          â
+        
+        =
+        
+          â
+          
+            
+              
+                
+                  â
+                  
+                    
+                      
+                        N
+                        â
+                        b
+                      
+                      2
+                    
+                  
+                  â
+                
+                +
+                b
+              
+              
+                2
+                
+                  k
+                  â
+                  x
+                  â
+                  1
+                
+              
+            
+          
+          â
+        
+      
+    
+    {\displaystyle \left\lfloor {\frac {N}{D}}\right\rfloor =\left\lfloor {\frac {\left\lfloor {\frac {N-b}{2}}\right\rfloor +b}{2^{k-x-1}}}\right\rfloor }
+  
+
+where 
+  
+    
+      
+        b
+        =
+        
+          â
+          
+            
+              
+                N
+                a
+              
+              
+                2
+                
+                  x
+                
+              
+            
+          
+          â
+        
+      
+    
+    {\displaystyle b=\left\lfloor {\frac {Na}{2^{x}}}\right\rfloor }
+  
+
+In some cases, division by a constant can be accomplished in even less time by converting the "multiply by a constant" into a series of shifts and adds or subtracts.[21] Of particular interest is division by 10, for which the exact quotient is obtained, with remainder if required.[22]
+
+Rounding error[edit]
+This section needs expansion. You can help by adding to it.  (September 2012)
+Round-off error can be introduced by division operations due to limited precision.
+
+Further information: Floating point
+See also[edit]
+Galley division
+Multiplication algorithm
+Pentium FDIV bug
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Despite how "little" problem the optimization causes, this reciprocal optimization is still usually hidden behind a "fast math" flag in modern compilers as it is inexact.
+
+^ Modern compilers commonly perform this integer multiply-and-shift optimization; for a constant only known at run-time, however, the program must implement the optimization itself.[19]
+
+
+References[edit]
+
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Morris, James E.; Iniewski, Krzysztof (2017-11-22). Nanoelectronic Device Applications Handbook. CRC Press. ISBNÂ 978-1-351-83197-0.
+
+^ Flynn. "Stanford EE486 (Advanced Computer Arithmetic Division)Â â  Chapter 5 Handout (Division)" (PDF). Stanford University.
+
+^ Harris, David L.; Oberman, Stuart F.; Horowitz, Mark A. (9 September 1998). SRT Division: Architectures, Models, and Implementations (PDF) (Technical report). Stanford University.
+
+^ McCann, Mark; Pippenger, Nicholas (2005). "SRT Division Algorithms as Dynamical Systems". SIAM Journal on Computing. 34 (6): 1279â1301. CiteSeerXÂ 10.1.1.72.6993. doi:10.1137/S009753970444106X.
+
+^ "Statistical Analysis of Floating Point Flaw". Intel Corporation. 1994. Retrieved 22 October 2013.
+
+^ Oberman, Stuart F.; Flynn, Michael J. (July 1995). An Analysis of Division Algorithms and Implementations (PDF) (Technical report). Stanford University. CSL-TR-95-675.
+
+^ Goldschmidt, Robert E. (1964). Applications of Division by Convergence (PDF) (Thesis). M.Sc. dissertation. M.I.T. OCLCÂ 34136725.
+
+^ https://web.archive.org/web/20180718114413/https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5392026
+
+^ Oberman, Stuart F. (1999). "Floating Point Division and Square Root Algorithms and Implementation in the AMD-K7 Microprocessor" (PDF). Proceedings of the IEEE Symposium on Computer Arithmetic: 106â115. doi:10.1109/ARITH.1999.762835. S2CIDÂ 12793819.
+
+^ Soderquist, Peter; Leeser, Miriam (JulyâAugust 1997). "Division and Square Root: Choosing the Right Implementation". IEEE Micro. 17 (4): 56â66. doi:10.1109/40.612224.
+
+^ S. F. Anderson, J. G. Earle, R. E. Goldschmidt, D. M. Powers. The IBM 360/370 model 91: floating-point execution unit, IBM Journal of Research and Development, January 1997
+
+^ Jump up to: a b Guy, Even; Peter, Siedel; Ferguson, Warren (1 February 2005). "A parametric error analysis of Goldschmidt's division algorithm". Journal of Computer and System Sciences. 70 (1): 118â139. doi:10.1016/j.jcss.2004.08.004.
+
+^ HasselstrÃ¶m, Karl (2003). Fast Division of Large Integers: A Comparison of Algorithms (PDF) (M.Sc. in Computer Science thesis). Royal Institute of Technology. Archived from the original (PDF) on 8 July 2017. Retrieved 2017-07-08.
+
+^ Joachim Ziegler, Christoph Burnikel (1998), Fast Recursive Division, Max-Planck-Institut fÃ¼r Informatik
+
+^ Barrett, Paul (1987). "Implementing the Rivest Shamir and Adleman public key encryption algorithm on a standard digital signal processor". Proceedings on Advances in cryptology---CRYPTO '86. London, UK: Springer-Verlag. pp.Â 311â323. ISBNÂ 0-387-18047-8.
+
+^ Granlund, TorbjÃ¶rn; Montgomery, Peter L. (June 1994). "Division by Invariant Integers using Multiplication" (PDF). SIGPLAN Notices. 29 (6): 61â72. CiteSeerXÂ 10.1.1.1.2556. doi:10.1145/773473.178249.
+
+^ MÃ¶ller, Niels; Granlund, TorbjÃ¶rn (February 2011). "Improved Division by Invariant Integers" (PDF). IEEE Transactions on Computers. 60 (2): 165â175. doi:10.1109/TC.2010.143. S2CIDÂ 13347152.
+
+^ 
+ridiculous_fish.
+"Labor of Division (Episode III): Faster Unsigned Division by Constants".
+2011.
+
+^ ridiculous_fish. "libdivide, optimized integer division". Retrieved 6 July 2021.
+
+^ Warren Jr., Henry S. (2013). Hacker's Delight (2Â ed.). Addison Wesley - Pearson Education, Inc. ISBNÂ 978-0-321-84268-8.
+
+^ LaBudde, Robert A.; Golovchenko, Nikolai; Newton, James; and Parker, David; Massmind: "Binary Division by a Constant"
+
+^ Vowels, R. A. (1992). "Division by 10". Australian Computer Journal. 24 (3): 81â85.
+
+
+Further reading[edit]
+Savard, John J. G. (2018) [2006]. "Advanced Arithmetic Techniques". quadibloc. Archived from the original on 2018-07-03. Retrieved 2018-07-16.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteNumber-theoretic algorithmsPrimality tests
+AKS
+APR
+BaillieâPSW
+Elliptic curve
+Pocklington
+Fermat
+Lucas
+LucasâLehmer
+LucasâLehmerâRiesel
+Proth's theorem
+PÃ©pin's
+Quadratic Frobenius
+SolovayâStrassen
+MillerâRabin
+Prime-generating
+Sieve of Atkin
+Sieve of Eratosthenes
+Sieve of Sundaram
+Wheel factorization
+Integer factorization
+Continued fraction (CFRAC)
+Dixon's
+Lenstra elliptic curve (ECM)
+Euler's
+Pollard's rho
+p â 1
+p + 1
+Quadratic sieve (QS)
+General number field sieve (GNFS)
+Special number field sieve (SNFS)
+Rational sieve
+Fermat's
+Shanks's square forms
+Trial division
+Shor's
+Multiplication
+Ancient Egyptian
+Long
+Karatsuba
+ToomâCook
+SchÃ¶nhageâStrassen
+FÃ¼rer's
+Euclidean division
+Binary
+Chunking
+Fourier
+Goldschmidt
+Newton-Raphson
+Long
+Short
+SRT
+Discrete logarithm
+Baby-step giant-step
+Pollard rho
+Pollard kangaroo
+PohligâHellman
+Index calculus
+Function field sieve
+Greatest common divisor
+Binary
+Euclidean
+Extended Euclidean
+Lehmer's
+Modular square root
+Cipolla
+Pocklington's
+TonelliâShanks
+Berlekamp
+Kunerth
+Other algorithms
+Chakravala
+Cornacchia
+Exponentiation by squaring
+Integer square root
+Integer relation (LLL; KZ)
+Modular exponentiation
+Montgomery reduction
+Schoof
+
+Italics indicate that algorithm is for numbers of special forms
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Division_algorithm&oldid=1052664843"
+		Categories: Binary arithmeticComputer arithmeticDivision (mathematics)Computer arithmetic algorithmsHidden categories: Articles with short descriptionShort description with empty Wikidata descriptionAll articles with unsourced statementsArticles with unsourced statements from February 2012Articles with unsourced statements from February 2014All pages needing factual verificationWikipedia articles needing factual verification from June 2015Articles to be expanded from September 2012All articles to be expandedArticles using small message boxesArticles with example pseudocode
+	

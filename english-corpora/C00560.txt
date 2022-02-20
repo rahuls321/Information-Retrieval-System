@@ -1,0 +1,330 @@
+
+Title:
+Double-ended queue
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"Deque" redirects here. It is not to be confused with dequeueing, a queue operation.
+Not to be confused with Double-ended priority queue.
+In computer science, a double-ended queue (abbreviated to deque, pronounced deck, like "cheque"[1]) is an abstract data type that generalizes a queue, for which elements can be added to or removed from either the front (head) or back (tail).[2] It is also often called a head-tail linked list, though properly this refers to a specific data structure implementation of a deque (see below).
+
+Contents
+
+1 Naming conventions
+2 Distinctions and sub-types
+3 Operations
+4 Implementations
+
+4.1 Purely functional implementation
+
+4.1.1 Real-time deques via lazy rebuilding and scheduling
+4.1.2 Implementation without laziness
+
+
+
+
+5 Language support
+6 Complexity
+7 Applications
+8 See also
+9 References
+10 External links
+
+
+
+Naming conventions[edit]
+Deque is sometimes written dequeue, but this use is generally deprecated in technical literature or technical writing because dequeue is also a verb meaning "to remove from a queue". Nevertheless, several libraries and some writers, such as Aho, Hopcroft, and Ullman in their textbook Data Structures and Algorithms, spell it dequeue. John Mitchell, author of Concepts in Programming Languages, also uses this terminology.
+
+Distinctions and sub-types[edit]
+This differs from the queue abstract data type or first in first out list (FIFO), where elements can only be added to one end and removed from the other. This general data class has some possible sub-types:
+
+An input-restricted deque is one where deletion can be made from both ends, but insertion can be made at one end only.
+An output-restricted deque is one where insertion can be made at both ends, but deletion can be made from one end only.
+Both the basic and most common list types in computing, queues and stacks can be considered specializations of deques, and can be implemented using deques.
+
+Operations[edit]
+The basic operations on a deque are enqueue and dequeue on either end. Also generally implemented are peek operations, which return the value at that end without dequeuing it.
+Names vary between languages; major implementations include:
+
+
+
+operation
+common name(s)
+Ada
+C++
+Java
+Perl
+PHP
+Python
+Ruby
+
+Rust
+
+JavaScript
+
+
+insert element at back
+inject, snoc, push
+Append
+push_back
+offerLast
+push
+array_push
+append
+push
+
+push_back
+push
+
+
+insert element at front
+push, cons
+Prepend
+push_front
+offerFirst
+unshift
+array_unshift
+appendleft
+unshift
+
+push_front
+unshift
+
+
+remove last element
+eject
+Delete_Last
+pop_back
+pollLast
+pop
+array_pop
+pop
+pop
+
+pop_back
+pop
+
+
+remove first element
+pop
+Delete_First
+pop_front
+pollFirst
+shift
+array_shift
+popleft
+shift
+
+pop_front
+shift
+
+
+examine last element
+peek
+
+Last_Element
+back
+peekLast
+$array[-1]
+end
+<obj>[-1]
+last
+
+back
+<obj>[<obj>.length - 1]
+
+
+examine first element
+
+First_Element
+front
+peekFirst
+$array[0]
+reset
+<obj>[0]
+first
+
+front
+<obj>[0]
+
+Implementations[edit]
+There are at least two common ways to efficiently implement a deque: with a modified dynamic array or with a doubly linked list.
+The dynamic array approach uses a variant of a dynamic array that can grow from both ends, sometimes called array deques. These array deques have all the properties of a dynamic array, such as constant-time random access, good locality of reference, and inefficient insertion/removal in the middle, with the addition of amortized constant-time insertion/removal at both ends, instead of just one end. Three common implementations include:
+
+Storing deque contents in a circular buffer, and only resizing when the buffer becomes full. This decreases the frequency of resizings.
+Allocating deque contents from the center of the underlying array, and resizing the underlying array when either end is reached. This approach may require more frequent resizings and waste more space, particularly when elements are only inserted at one end.
+Storing contents in multiple smaller arrays, allocating additional arrays at the beginning or end as needed. Indexing is implemented by keeping a dynamic array containing pointers to each of the smaller arrays.
+Purely functional implementation[edit]
+Double-ended queues can also be implemented as a purely functional data structure.[3]:â115â Two versions of the implementation exist. The first one, called 'real-time deque, is presented below. It allows the queue to be persistent with operations in O(1) worst-case time, but requires lazy lists with memoization. The second one, with no lazy lists nor memoization is presented at the end of the sections. Its amortized time is O(1) if the persistency is not used; but the worst-time complexity of an operation is O(n) where n is the number of elements in the double-ended queue.
+Let us recall that, for a list l, |l| denotes its length, that NIL represents an empty list and CONS(h, t) represents the list whose head is h and whose tail is t. The functions drop(i, l) and take(i, l) return the list l without its first i elements, and the first i elements of l, respectively. Or, if |l| < i, they return the empty list and l respectively.
+
+Real-time deques via lazy rebuilding and scheduling[edit]
+A double-ended queue is represented as a sextuple (len_front, front, tail_front, len_rear, rear, tail_rear) where front is a linked list which contains the front of the queue of length len_front. Similarly, rear is a linked list which represents the reverse of the rear of the queue, of length len_rear. Furthermore, it is assured that |front| â¤ 2|rear|+1 and |rear| â¤ 2|front|+1 - intuitively, it means that both the front and the rear contains between a third minus one and two thirds plus one of the elements. Finally, tail_front and tail_rear are tails of front and of rear, they allow scheduling the moment where some lazy operations are forced. Note that, when a double-ended queue contains n elements in the front list and n elements in the rear list, then the inequality invariant remains satisfied after i insertions and d deletions when (i+d) â¤ n/2. That is, at most n/2 operations can happen between each rebalancing.
+Let us first give an implementation of the various operations that affect the front of the deque - cons, head and tail. Those implementation do not necessarily respect the invariant. In a second time we'll explain how to modify a deque which does not satisfy the invariant into one which satisfy it. However, they use the invariant, in that if the front is empty then the rear has at most one element. The operations affecting the rear of the list are defined similarly by symmetry. 
+
+empty = (0, NIL, NIL, 0, NIL, NIL)
+fun insert'(x, (len_front, front, tail_front, len_rear, rear, tail_rear)) =
+  (len_front+1, CONS(x, front), drop(2, tail_front), len_rear, rear, drop(2, tail_rear))
+fun head((_, CONS(h, _), _, _, _, _)) = h
+fun head((_, NIL, _, _, CONS(h, NIL), _)) = h
+fun tail'((len_front, CONS(head_front, front), tail_front, len_rear, rear, tail_rear)) =
+  (len_front - 1, front, drop(2, tail_front), len_rear, rear, drop(2, tail_rear))
+fun tail'((_, NIL, _, _, CONS(h, NIL), _)) = empty
+
+It remains to explain how to define a method balance that rebalance the deque if insert' or tail broke the invariant. The method insert and tail can be defined by first applying insert' and tail' and then applying balance.
+
+fun balance(q as (len_front, front, tail_front, len_rear, rear, tail_rear)) =
+  let floor_half_len = (len_front + len_rear) / 2 in
+  let ceil_half_len = len_front + len_rear - floor_half_len in
+  if len_front > 2*len_rear+1 then
+    let val front' = take(ceil_half_len, front)
+        val rear' = rotateDrop(rear, floor_half_len, front)
+    in (ceil_half_len, front', front', floor_half_len, rear', rear')
+  else if len_front > 2*len_rear+1 then
+    let val rear' = take(floor_half_len, rear)
+        val front' = rotateDrop(front, ceil_half_len, rear)
+    in (ceil_half_len, front', front', floor_half_len, rear', rear')
+  else q
+
+where rotateDrop(front, i, rear)) return the concatenation of front and of drop(i, rear). That isfront' = rotateDrop(front, ceil_half_len, rear) put into front' the content of front and the  content of rear that is not already in rear'. Since dropping n elements takes 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ time, we use laziness to ensure that elements are dropped two by two, with two drops being done during each tail' and each insert' operation. 
+
+fun rotateDrop(front, i, rear) =
+  if i < 2 then rotateRev(front, drop(i, rear), $NIL)
+  else let $CONS(x, front') = front in
+    $CONS (x, rotateDrop(front', j-2, drop(2, rear)))
+
+where rotateRev(front, middle, rear) is a function that returns the front, followed by the middle reversed, followed by the rear. This function is also defined using laziness to ensure that it can be computed step by step, with one step executed during each insert' and tail' and taking a constant time. This function uses the invariant that |rear|-2|front| is 2 or 3. 
+
+fun rotateRev(NIL, rear, a)=
+  reverse(rear++a)
+fun rotateRev(CONS(x, front), rear, a)=
+  CONS(x, rotateRev(front, drop(2, rear), reverse (take(2, rear))++a))
+
+where ++ is the function concatenating two lists.
+
+Implementation without laziness[edit]
+Note that, without the lazy part of the implementation, this would be a non-persistent implementation of queue in O(1) amortized time. In this case, the lists tail_front and tail_rear could be removed from the representation of the double-ended queue.
+
+Language support[edit]
+Ada's containers provides the generic packages Ada.Containers.Vectors and Ada.Containers.Doubly_Linked_Lists, for the dynamic array and linked list implementations, respectively.
+C++'s Standard Template Library provides the class templates std::deque and std::list, for the multiple array and linked list implementations, respectively.
+As of Java 6, Java's Collections Framework provides a new Deque interface that provides the functionality of insertion and removal at both ends. It is implemented by classes such as ArrayDeque (also new in Java 6) and LinkedList, providing the dynamic array and linked list implementations, respectively. However, the ArrayDeque, contrary to its name, does not support random access.
+Javascript's Array prototype & Perl's arrays have native support for both removing (shift and pop) and adding (unshift and push) elements on both ends.
+Python 2.4 introduced the collections module with support for deque objects. It is implemented using a doubly linked list of fixed-length subarrays.
+As of PHP 5.3, PHP's SPL extension contains the 'SplDoublyLinkedList' class that can be used to implement Deque datastructures. Previously to make a Deque structure the array functions array_shift/unshift/pop/push had to be used instead.
+GHC's Data.Sequence module implements an efficient, functional deque structure in Haskell. The implementation uses 2â3 finger trees annotated with sizes. There are other (fast) possibilities to implement purely functional (thus also persistent) double queues (most using heavily lazy evaluation).[3][4] Kaplan and Tarjan were the first to implement optimal confluently persistent catenable deques.[5] Their implementation was strictly purely functional in the sense that it did not use lazy evaluation. Okasaki simplified the data structure by using lazy evaluation with a bootstrapped data structure and degrading the performance bounds from worst-case to amortized. Kaplan, Okasaki, and Tarjan produced a simpler, non-bootstrapped, amortized version that can be implemented either using lazy evaluation or more efficiently using mutation in a broader but still restricted fashion. Mihaesau and Tarjan created a simpler (but still highly complex) strictly purely functional implementation of catenable deques, and also a much simpler implementation of strictly purely functional non-catenable deques, both of which have optimal worst-case bounds.
+Rust's std::collections includes VecDeque which implements a double-ended queue using a growable ring buffer.
+
+Complexity[edit]
+In a doubly-linked list implementation and assuming no allocation/deallocation overhead, the time complexity of all deque operations is O(1). Additionally, the time complexity of insertion or deletion in the middle, given an iterator, is O(1); however, the time complexity of random access by index is O(n).
+In a growing array, the amortized time complexity of all deque operations is O(1). Additionally, the time complexity of random access by index is O(1); but the time complexity of insertion or deletion in the middle is O(n).
+Applications[edit]
+One example where a deque can be used is the work stealing algorithm.[6] This algorithm implements task scheduling for several processors. A separate deque with threads to be executed is maintained for each processor. To execute the next thread, the processor gets the first element from the deque (using the "remove first element" deque operation). If the current thread forks, it is put back to the front of the deque ("insert element at front") and a new thread is executed. When one of the processors finishes execution of its own threads (i.e. its deque is empty), it can "steal" a thread from another processor: it gets the last element from the deque of another processor ("remove last element") and executes it. The work stealing algorithm is used by Intel's Threading Building Blocks (TBB) library for parallel programming.
+
+See also[edit]
+Pipe
+Queue
+Priority queue
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jesse Liberty; Siddhartha Rao; Bradley Jones. C++ in One Hour a Day, Sams Teach Yourself, Sixth Edition. Sams Publishing, 2009. .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}ISBNÂ 0-672-32941-7. Lesson 18: STL Dynamic Array Classes, pp. 486.
+
+^ Donald Knuth. The Art of Computer Programming, Volume 1: Fundamental Algorithms, Third Edition. Addison-Wesley, 1997. ISBNÂ 0-201-89683-4. Section 2.2.1: Stacks, Queues, and Deques, pp. 238â243.
+
+^ a b Okasaki, Chris (September 1996). Purely Functional Data Structures (PDF) (Ph.D. thesis). Carnegie Mellon University. CMU-CS-96-177.
+
+^ Adam L. Buchsbaum and Robert E. Tarjan. Confluently persistent deques via data structural bootstrapping. Journal of Algorithms, 18(3):513â547, May 1995. (pp. 58, 101, 125)
+
+^ Haim Kaplan and Robert E. Tarjan. Purely functional representations of catenable sorted lists. In ACM Symposium on Theory of Computing, pages 202â211, May  1996. (pp. 4, 82, 84, 124)
+
+^ Blumofe, Robert D.; Leiserson, Charles E. (1999). "Scheduling multithreaded computations by work stealing" (PDF). J ACM. 46 (5): 720â748. doi:10.1145/324133.324234.
+
+
+External links[edit]
+Type-safe open source deque implementation at Comprehensive C Archive Network
+SGI STL Documentation: deque<T, Alloc>
+Code Project: An In-Depth Study of the STL Deque Container
+Deque implementation in C
+VBScript implementation of stack, queue, deque, and Red-Black Tree
+Multiple implementations of non-catenable deques in Haskell
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Double-ended_queue&oldid=1058169515"
+		Categories: Abstract data types
+	

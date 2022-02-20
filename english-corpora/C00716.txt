@@ -1,0 +1,1325 @@
+
+Title:
+NeedlemanâWunsch algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Method for aligning biological sequences
+This article may be too technical for most readers to understand. Please help improve it to make it understandable to non-experts, without removing the technical details.  (September 2013) (Learn how and when to remove this template message)
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}ClassSequence alignmentWorst-case performance
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+Worst-case space complexity
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+
+The NeedlemanâWunsch algorithm is an algorithm used in  bioinformatics to align protein or nucleotide sequences. It was one of the first applications of dynamic programming to compare biological sequences. The algorithm was developed by Saul B. Needleman and Christian D. Wunsch and published in 1970.[1] The algorithm essentially divides a large problem (e.g. the full sequence) into a series of smaller problems, and it uses the solutions to the smaller problems to find an optimal solution to the larger problem.[2] It is also sometimes referred to as the optimal matching algorithm and the global alignment technique. The NeedlemanâWunsch algorithm is still widely used for optimal global alignment, particularly when the quality of the global alignment is of the utmost importance. The algorithm assigns a score to every possible alignment, and the purpose of the algorithm is to find all possible alignments having the highest score.
+
+  Figure 1: Needleman-Wunsch pairwise sequence alignment
+Contents
+
+1 Introduction
+
+1.1 Constructing the grid
+1.2 Choosing a scoring system
+1.3 Filling in the table
+1.4 Tracing arrows back to origin
+
+
+2 Scoring systems
+
+2.1 Basic scoring schemes
+2.2 Similarity matrix
+2.3 Gap penalty
+
+
+3 Advanced presentation of algorithm
+4 Complexity
+5 Historical notes and algorithm development
+6 Applications outside bioinformatics
+
+6.1 Computer stereo vision
+
+
+7 See also
+8 References
+9 External links
+
+
+
+
+Introduction[edit]
+This algorithm can be used for any two strings. This guide will use two small DNA sequences as examples as shown in Figure 1:
+
+GCATGCG
+GATTACA
+
+Constructing the grid[edit]
+First construct a grid such as one shown in Figure 1 above. Start the first string in the top of the third column and start the other string at the start of the third row. Fill out the rest of the column and row headers as in Figure 1. There should be no numbers in the grid yet.
+
+
+
+
+
+
+G
+C
+A
+T
+G
+C
+G
+
+
+
+
+Â 
+
+
+
+
+
+
+
+
+
+G
+
+
+
+
+
+
+
+
+
+
+
+A
+
+
+
+
+
+
+
+
+
+
+
+T
+
+
+
+
+
+
+
+
+
+
+
+T
+
+
+
+
+
+
+
+
+
+
+
+A
+
+
+
+
+
+
+
+
+
+
+
+C
+
+
+
+
+
+
+
+
+
+
+
+A
+
+
+
+
+
+
+
+
+
+
+Choosing a scoring system[edit]
+Next, decide how to score each individual pair of letters. Using the example above, one possible alignment candidate might be:
+
+12345678
+GCATG-CG
+G-ATTACA
+
+The letters may match, mismatch, or be matched to a gap (a deletion or insertion (indel)):
+
+Match: The two letters at the current index are the same.
+Mismatch: The two letters at the current index are different.
+Indel (INsertion or DELetion): The best alignment involves one letter aligning to a gap in the other string.
+Each of these scenarios is assigned a score and the sum of the scores of all the pairings is the score of the whole alignment candidate. Different systems exist for assigning scores; some have been outlined in the Scoring systems section below. For now, the system used by Needleman and Wunsch[1] will be used:
+
+Match: +1
+Mismatch or Indel: â1
+For the Example above, the score of the alignment would be 0:
+
+GCATG-CG
+G-ATTACA
+
+
++â++ââ+â â> 1*4 + (â1)*4 = 0
+
+Filling in the table[edit]
+Start with a zero in the second row, second column. Move through the cells row by row, calculating the score for each cell. The score is calculated by comparing the scores of the cells neighboring to the left, top or top-left (diagonal) of the cell and adding the appropriate score for match, mismatch or indel. Calculate the candidate scores for each of the three possibilities:
+
+The path from the top or left cell represents an indel pairing, so take the scores of the left and the top cell, and add the score for indel to each of them.
+The diagonal path represents a match/mismatch, so take the score of the top-left diagonal cell and add the score for match if the corresponding bases (letters) in the row and column are matching or the score for mismatch if they do not.
+The resulting score for the cell is the highest of the three candidate scores.
+Given there is no 'top' or 'top-left' cells for the second row only the existing cell to the left can be used to calculate the score of each cell. Hence â1 is added for each shift to the right as this represents an indel from the previous score. This results in the first row being 0, â1, â2, â3, â4, â5, â6, â7. The same applies to the first column as only the existing score above each cell can be used. Thus the resulting table is:
+
+
+
+
+
+
+G
+C
+A
+T
+G
+C
+G
+
+
+
+
+0
+â1
+â2
+â3
+â4
+â5
+â6
+â7
+
+
+G
+
+â1
+
+
+
+
+
+
+
+
+
+A
+
+â2
+
+
+
+
+
+
+
+
+
+T
+
+â3
+
+
+
+
+
+
+
+
+
+T
+
+â4
+
+
+
+
+
+
+
+
+
+A
+
+â5
+
+
+
+
+
+
+
+
+
+C
+
+â6
+
+
+
+
+
+
+
+
+
+A
+
+â7
+
+
+
+
+
+
+
+
+The first case with existing scores in all 3 directions is the intersection of our first letters (in this case G and G). The surrounding cells are below:
+
+
+
+
+
+
+G
+
+
+
+
+0
+â1
+
+
+G
+
+â1
+X
+
+This cell has three possible candidate sums:
+
+The diagonal top-left neighbor has score 0. The pairing of G and G is a match, so add the score for match: 0+1 = 1
+The top neighbor has score â1 and moving from there represents an indel, so add the score for indel: (â1) + (â1) = (â2)
+The left neighbor also has score â1, represents an indel and also produces (â2).
+The highest candidate is 1 and is entered into the cell:
+
+
+
+
+
+
+G
+
+
+
+
+0
+â1
+
+
+G
+
+â1
+1
+
+The cell which gave the highest candidate score must also be recorded. In the completed diagram in figure 1 above, this is represented as an arrow from the cell in row and column 3 to the cell in row and column 2.
+In the next example, the diagonal step for both X and Y represents a mismatch:
+
+
+
+
+
+
+G
+C
+
+
+
+
+0
+â1
+â2
+
+
+G
+
+â1
+1
+X
+
+
+A
+
+â2
+Y
+
+
+X:
+
+Top: (â2)+(â1) = (â3)
+Left: (+1)+(â1) = (0)
+Top-Left: (â1)+(â1) = (â2)
+Y:
+
+Top: (1)+(â1) = (0)
+Left: (â2)+(â1) = (â3)
+Top-Left: (â1)+(â1) = (â2)
+For both X and Y, the highest score is zero:
+
+
+
+
+
+
+G
+C
+
+
+
+
+0
+â1
+â2
+
+
+G
+
+â1
+1
+0
+
+
+A
+
+â2
+0
+
+
+The highest candidate score may be reached by two of the neighboring cells:
+
+
+
+
+
+T
+G
+
+
+T
+
+1
+1
+
+
+A
+
+0
+X
+
+Top: (1)+(â1) = (0)
+Top-Left: (1)+(â1) = (0)
+Left: (0)+(â1) = (â1)
+In this case, all directions reaching the highest candidate score must be noted as possible origin cells in the finished diagram in figure 1, e.g. in the cell in row and column 7.
+Filling in the table in this manner gives the scores of all possible alignment candidates, the score in the cell on the bottom right represents the alignment score for the best alignment.
+
+Tracing arrows back to origin[edit]
+Mark a path from the cell on the bottom right back to the cell on the top left by following the direction of the arrows. From this path, the sequence is constructed by these rules:
+
+A diagonal arrow represents a match or mismatch, so the letter of the column and the letter of the row of the origin cell will align.
+A horizontal or vertical arrow represents an indel. Vertical arrows will align a gap ("-") to the letter of the row (the "side" sequence), horizontal arrows will align a gap to the letter of the column (the "top" sequence).
+If there are multiple arrows to choose from, they represent a branching of the alignments. If two or more branches all belong to paths from the bottom right to the top left cell, they are equally viable alignments. In this case, note the paths as separate alignment candidates.
+Following these rules, the steps for one possible alignment candidate in figure 1 are:
+
+G â CG â GCG â -GCG â T-GCG â AT-GCG â CAT-GCG â GCAT-GCG
+A â CA â ACA â TACA â TTACA â ATTACA â -ATTACA â G-ATTACA
+             â
+    (branch) â TGCG â ...
+             â TACA â ...
+
+Scoring systems[edit]
+Basic scoring schemes[edit]
+The simplest scoring schemes simply give a value for each match, mismatch and indel. The step-by-step guide above uses match = 1, mismatch  = â1, indel = â1. Thus the lower the alignment score the larger the edit distance, for this scoring system one wants a high score. Another scoring system might be:
+
+Match = 0
+Indel = 1
+Mismatch = 1
+For this system the alignment score will represent the edit distance between the two strings.
+Different scoring systems can be devised for different situations, for example if gaps are considered very bad for your alignment you may use a scoring system that penalises gaps heavily, such as:
+
+Match = 0
+Mismatch = 1
+Indel = 10
+Similarity matrix[edit]
+More complicated scoring systems attribute values not only for the type of alteration, but also for the letters that are involved. For example, a match between A and A may be given 1, but a match between T and T may be given 4. Here (assuming the first scoring system) more importance is given to the Ts matching than the As, i.e. the Ts matching is  assumed to be more significant to the alignment. This weighting based on letters also applies to mismatches.
+In order to represent all the possible combinations of letters and their resulting scores  a similarity matrix is used. The similarity matrix for the most basic system is represented as:
+
+
+
+
+
+A
+
+G
+
+C
+
+T
+
+
+A
+
+1
+-1
+-1
+-1
+
+
+G
+
+-1
+1
+-1
+-1
+
+
+C
+
+-1
+-1
+1
+-1
+
+
+T
+
+-1
+-1
+-1
+1
+
+Each score represents a switch from one of the letters the cell matches to the other. Hence this represents all possible matches and mismatches (for an alphabet of ACGT). Note all the matches go along the diagonal, also not all the table needs to be filled, only this triangle because the scores are reciprocal.= (Score for A â C = Score for C â A). If implementing the T-T = 4 rule from above the following similarity matrix is produced:
+
+
+
+
+
+A
+
+G
+
+C
+
+T
+
+
+A
+
+1
+â1
+â1
+â1
+
+
+G
+
+â1
+1
+â1
+â1
+
+
+C
+
+â1
+â1
+1
+â1
+
+
+T
+
+â1
+â1
+â1
+4
+
+Different scoring matrices have been statistically constructed which give weight to different actions appropriate to a particular scenario. Having weighted scoring matrices is particularly important in protein sequence alignment due to the varying frequency of the different amino acids. There are two broad families of scoring matrices, each with further alterations for specific scenarios:
+
+PAM
+BLOSUM
+Gap penalty[edit]
+When aligning sequences there are often gaps (i.e. indels), sometimes large ones. Biologically, a large gap is more likely to occur as one large deletion as opposed to multiple single deletions. Hence two small indels should have a worse score than one large one. The simple and common way to do this is via a large gap-start score for a new indel and a smaller gap-extension score for every letter which extends the indel. For example, new-indel may cost -5 and extend-indel may cost -1. In this way an alignment such as:
+
+GAAAAAAT
+G--A-A-T
+
+which has multiple equal alignments, some with multiple small alignments will now align as:
+
+GAAAAAAT
+GAA----T
+
+or any alignment with a 4 long gap in preference over multiple small gaps.
+
+Advanced presentation of algorithm[edit]
+Scores for aligned characters are specified by a similarity matrix. Here, S(a, b) is the similarity of characters a and b. It uses a linear gap penalty, here called d.
+For example, if the similarity matrix was
+
+
+
+
+
+A
+
+G
+
+C
+
+T
+
+
+A
+
+10
+â1
+â3
+â4
+
+
+G
+
+â1
+7
+â5
+â3
+
+
+C
+
+â3
+â5
+9
+0
+
+
+T
+
+â4
+â3
+0
+8
+
+then the alignment:
+
+AGACTAGTTAC
+CGA---GACGT
+
+with a gap penalty of â5, would have the following score:
+
+S(A,C) + S(G,G) + S(A,A) + (3 Ã d) + S(G,G) + S(T,A) + S(T,C) + S(A,G) + S(C,T)
+= â3 + 7 + 10 â (3 Ã 5) + 7 + (â4) + 0 + (â1) + 0 = 1
+To find the alignment with the highest score, a two-dimensional array (or matrix) F is allocated. The entry in row i and column j is denoted here by
+
+  
+    
+      
+        
+          F
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle F_{ij}}
+  
+. There is one row for each character in sequence A, and one column for each character in sequence B. Thus, if aligning sequences of sizes n and m, the amount of memory used is in 
+  
+    
+      
+        O
+        (
+        n
+        m
+        )
+      
+    
+    {\displaystyle O(nm)}
+  
+. Hirschberg's algorithm only holds a subset of the array in memory and uses 
+  
+    
+      
+        Î
+        (
+        min
+        {
+        n
+        ,
+        m
+        }
+        )
+      
+    
+    {\displaystyle \Theta (\min\{n,m\})}
+  
+ space, but is otherwise similar to Needleman-Wunsch (and still requires 
+  
+    
+      
+        O
+        (
+        n
+        m
+        )
+      
+    
+    {\displaystyle O(nm)}
+  
+ time).
+As the algorithm progresses, the 
+  
+    
+      
+        
+          F
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle F_{ij}}
+  
+ will be assigned to be the optimal score for the alignment of the first 
+  
+    
+      
+        i
+        =
+        0
+        ,
+        â¦
+        ,
+        n
+      
+    
+    {\displaystyle i=0,\dotsc ,n}
+  
+ characters in A and the first 
+  
+    
+      
+        j
+        =
+        0
+        ,
+        â¦
+        ,
+        m
+      
+    
+    {\displaystyle j=0,\dotsc ,m}
+  
+ characters in B. The principle of optimality is then applied as follows:
+
+Basis:
+
+  
+    
+      
+        
+          F
+          
+            0
+            j
+          
+        
+        =
+        d
+        â
+        j
+      
+    
+    {\displaystyle F_{0j}=d*j}
+  
+
+
+  
+    
+      
+        
+          F
+          
+            i
+            0
+          
+        
+        =
+        d
+        â
+        i
+      
+    
+    {\displaystyle F_{i0}=d*i}
+  
+
+Recursion, based on the principle of optimality:
+
+  
+    
+      
+        
+          F
+          
+            i
+            j
+          
+        
+        =
+        max
+        (
+        
+          F
+          
+            i
+            â
+            1
+            ,
+            j
+            â
+            1
+          
+        
+        +
+        S
+        (
+        
+          A
+          
+            i
+          
+        
+        ,
+        
+          B
+          
+            j
+          
+        
+        )
+        ,
+        
+        
+          F
+          
+            i
+            ,
+            j
+            â
+            1
+          
+        
+        +
+        d
+        ,
+        
+        
+          F
+          
+            i
+            â
+            1
+            ,
+            j
+          
+        
+        +
+        d
+        )
+      
+    
+    {\displaystyle F_{ij}=\max(F_{i-1,j-1}+S(A_{i},B_{j}),\;F_{i,j-1}+d,\;F_{i-1,j}+d)}
+  
+
+The pseudo-code for the algorithm to compute the F matrix therefore looks like this:
+
+d â Gap penalty score
+for i = 0 to length(A)
+    F(i,0) â d * i
+for j = 0 to length(B)
+    F(0,j) â d * j
+for i = 1 to length(A)
+    for j = 1 to length(B)
+    {
+        Match â F(iâ1, jâ1) + S(Ai, Bj)
+        Delete â F(iâ1, j) + d
+        Insert â F(i, jâ1) + d
+        F(i,j) â max(Match, Insert, Delete)
+    }
+
+Once the F matrix is computed, the entry 
+  
+    
+      
+        
+          F
+          
+            n
+            m
+          
+        
+      
+    
+    {\displaystyle F_{nm}}
+  
+ gives the maximum score among all possible alignments. To compute an alignment that actually gives this score, you start from the bottom right cell, and compare the value with the three possible sources (Match, Insert, and Delete above) to see which it came from. If Match, then 
+  
+    
+      
+        
+          A
+          
+            i
+          
+        
+      
+    
+    {\displaystyle A_{i}}
+  
+ and 
+  
+    
+      
+        
+          B
+          
+            j
+          
+        
+      
+    
+    {\displaystyle B_{j}}
+  
+ are aligned, if Delete, then 
+  
+    
+      
+        
+          A
+          
+            i
+          
+        
+      
+    
+    {\displaystyle A_{i}}
+  
+ is aligned with a gap, and if Insert, then 
+  
+    
+      
+        
+          B
+          
+            j
+          
+        
+      
+    
+    {\displaystyle B_{j}}
+  
+ is aligned with a gap. (In general, more than one choice may have the same value, leading to alternative optimal alignments.)
+
+AlignmentA â ""
+AlignmentB â ""
+i â length(A)
+j â length(B)
+while (i > 0 or j > 0)
+{
+    if (i > 0 and j > 0 and F(i, j) == F(iâ1, jâ1) + S(Ai, Bj))
+    {
+        AlignmentA â Ai + AlignmentA
+        AlignmentB â Bj + AlignmentB
+        i â i â 1
+        j â j â 1
+    }
+    else if (i > 0 and F(i, j) == F(iâ1, j) + d)
+    {
+        AlignmentA â Ai + AlignmentA
+        AlignmentB â "â" + AlignmentB
+        i â i â 1
+    }
+    else
+    {
+        AlignmentA â "â" + AlignmentA
+        AlignmentB â Bj + AlignmentB
+        j â j â 1
+    }
+}
+
+Complexity[edit]
+Computing the score 
+  
+    
+      
+        
+          F
+          
+            i
+            j
+          
+        
+      
+    
+    {\displaystyle F_{ij}}
+  
+ for each cell in the table is an 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\displaystyle O(1)}
+  
+ operation. Thus the time complexity of the algorithm for two sequences of length 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ and 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ is 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+.[3] It has been shown that it is possible to improve the running time to 
+  
+    
+      
+        O
+        (
+        m
+        n
+        
+          /
+        
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(mn/\log n)}
+  
+ using the Method of Four Russians.[3][4] Since the algorithm fills an 
+  
+    
+      
+        n
+        Ã
+        m
+      
+    
+    {\displaystyle n\times m}
+  
+ table the space complexity is 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+.[3]
+
+Historical notes and algorithm development[edit]
+The original purpose of the algorithm described by Needleman and Wunsch was to find similarities in the amino acid sequences of two proteins.[1]
+Needleman and Wunsch describe their algorithm explicitly for the case when the alignment is penalized solely by the matches and mismatches, and gaps have no penalty (d=0). The original publication from 1970 suggests the recursion
+
+  
+    
+      
+        
+          F
+          
+            i
+            j
+          
+        
+        =
+        
+          max
+          
+            h
+            <
+            i
+            ,
+            k
+            <
+            j
+          
+        
+        {
+        
+          F
+          
+            h
+            ,
+            j
+            â
+            1
+          
+        
+        +
+        S
+        (
+        
+          A
+          
+            i
+          
+        
+        ,
+        
+          B
+          
+            j
+          
+        
+        )
+        ,
+        
+          F
+          
+            i
+            â
+            1
+            ,
+            k
+          
+        
+        +
+        S
+        (
+        
+          A
+          
+            i
+          
+        
+        ,
+        
+          B
+          
+            j
+          
+        
+        )
+        }
+      
+    
+    {\displaystyle F_{ij}=\max _{h<i,k<j}\{F_{h,j-1}+S(A_{i},B_{j}),F_{i-1,k}+S(A_{i},B_{j})\}}
+  
+.
+The corresponding dynamic programming algorithm takes cubic time. The paper also points out that the recursion can accommodate arbitrary gap penalization formulas:
+
+
+A penalty factor, a number subtracted for every gap made, may be assessed as a barrier to allowing the gap. The penalty factor could be a function of the size and/or direction of the gap. [page 444]
+
+
+A better dynamic programming algorithm with quadratic running time for the same problem (no gap penalty) was first introduced[5] by David Sankoff in 1972.
+Similar quadratic-time algorithms were discovered independently
+by T. K. Vintsyuk[6] in 1968 for speech processing
+("time warping"), and by Robert A. Wagner and Michael J. Fischer[7] in 1974 for string matching.
+Needleman and Wunsch formulated their problem in terms of maximizing similarity. Another possibility is to minimize the edit distance between sequences, introduced by Vladimir Levenshtein. Peter H. Sellers showed[8] in 1974 that the two problems are equivalent.
+The NeedlemanâWunsch algorithm is still widely used for optimal global alignment, particularly when the quality of the global alignment is of the utmost importance. However, the algorithm is expensive with respect to time and space, proportional to the product of the length of two sequences and hence is not suitable for long sequences.
+Recent development has focused on improving the time and space cost of the algorithm while maintaining quality. For example, in 2013, a Fast Optimal Global Sequence Alignment Algorithm (FOGSAA),[9] suggested alignment of nucleotide/protein sequences faster than other optimal global alignment methods, including the NeedlemanâWunsch algorithm. The paper claims that when compared to the NeedlemanâWunsch algorithm, FOGSAA achieves a time gain of 70â90% for highly similar nucleotide sequences (with > 80% similarity), and 54â70% for sequences having 30â80% similarity.
+
+Applications outside bioinformatics[edit]
+Computer stereo vision[edit]
+Stereo matching is an essential step in the process of 3D reconstruction from a pair of stereo images. When images have been rectified, an analogy can be drawn between aligning nucleotide and protein sequences and matching pixels belonging to scan lines, since both tasks aim at establishing optimal correspondence between two strings of characters. 
+Although in many applications image rectification can be performed, e.g. by camera resectioning or calibration, it is sometimes impossible or impractical since the computational cost of accurate rectification models prohibit their usage in real-time applications. Moreover, none of these models is suitable when a camera lens displays unexpected distortions, such as those generated by raindrops, weatherproof covers or dust. By extending the NeedlemanâWunsch algorithm, a line in the 'left' image can be associated to a curve in the 'right' image by finding the alignment with the highest score in a three-dimensional array (or matrix). Experiments demonstrated that such extension allows dense pixel matching between unrectified or distorted images.[10]
+
+See also[edit]
+WagnerâFischer algorithm
+SmithâWaterman algorithm
+Sequence mining
+Levenshtein distance
+Dynamic time warping
+Sequence alignment
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Needleman, Saul B. & Wunsch, Christian D. (1970). "A general method applicable to the search for similarities in the amino acid sequence of two proteins". Journal of Molecular Biology. 48 (3): 443â53. doi:10.1016/0022-2836(70)90057-4. PMIDÂ 5420325.
+
+^ "bioinformatics". Retrieved 10 September 2014.
+
+^ Jump up to: a b c Wing-Kin., Sung (2010). Algorithms in bioinformaticsÂ : a practical introduction. Boca Raton: Chapman & Hall/CRC Press. pp.Â 34â35. ISBNÂ 9781420070330. OCLCÂ 429634761.
+
+^ Masek, William; Paterson, Michael (February 1980). "A faster algorithm computing string edit distances". Journal of Computer and System Sciences. 20: 18â31. doi:10.1016/0022-0000(80)90002-1.
+
+^ Sankoff D (1972). "Matching sequences under deletion/insertion constraints". Proceedings of the National Academy of Sciences of the USA. 69 (1): 4â6. Bibcode:1972PNAS...69....4S. doi:10.1073/pnas.69.1.4. PMCÂ 427531. PMIDÂ 4500555.
+
+^ Vintsyuk TK (1968). "Speech discrimination by dynamic programming". Kibernetika. 4: 81â88. doi:10.1007/BF01074755. S2CIDÂ 123081024.
+
+^ Wagner RA, Fischer MJ (1974). "The string-to-string correction problem". Journal of the ACM. 21 (1): 168â173. doi:10.1145/321796.321811. S2CIDÂ 13381535.
+
+^ Sellers PH (1974). "On the theory and computation of evolutionary distances". SIAM Journal on Applied Mathematics. 26 (4): 787â793. doi:10.1137/0126070.
+
+^ Chakraborty, Angana; Bandyopadhyay, Sanghamitra (29 April 2013). "FOGSAA: Fast Optimal Global Sequence Alignment Algorithm". Scientific Reports. 3: 1746. Bibcode:2013NatSR...3E1746C. doi:10.1038/srep01746. PMCÂ 3638164. PMIDÂ 23624407.
+
+^ Thevenon, J; Martinez-del-Rincon, J; Dieny, R; Nebel, J-C (2012). Dense pixel matching between unrectified and distorted images using dynamic programming. International Conference on Computer Vision Theory and Applications. Rome.
+
+
+External links[edit]
+This article's use of external links may not follow Wikipedia's policies or guidelines. Please improve this article by removing excessive or inappropriate external links, and converting useful links where appropriate into footnote references.  (May 2017) (Learn how and when to remove this template message)
+NW-align: A protein sequence-to-sequence alignment program by Needleman-Wunsch algorithm (online server and source code)
+A live Javascript-based demo of NeedlemanâWunsch
+An interactive Javascript-based visual explanation of Needleman-Wunsch Algorithm
+Sequence Alignment Techniques at Technology Blog
+Biostrings R package implementing NeedlemanâWunsch algorithm among others
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=NeedlemanâWunsch_algorithm&oldid=1057194321"
+		Categories: Bioinformatics algorithmsSequence alignment algorithmsComputational phylogeneticsDynamic programmingHidden categories: Articles with short descriptionShort description is different from WikidataWikipedia articles that are too technical from September 2013All articles that are too technicalWikipedia external links cleanup from May 2017Wikipedia spam cleanup from May 2017Articles with example pseudocode
+	

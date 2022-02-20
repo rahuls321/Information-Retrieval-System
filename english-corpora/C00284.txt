@@ -1,0 +1,1256 @@
+
+Title:
+Disjoint-set data structure
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}Disjoint-set/Union-find ForestTypemultiway treeInvented1964Invented byBernard A. Galler and Michael J. FischerTime complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)[1]
+O(n)[1]Search
+
+O(Î±(n))[1]
+O(Î±(n))[1]Merge
+
+O(Î±(n))[1]
+O(Î±(n))[1]
+  MakeSet creates 8 singletons.
+  After some operations of Union, some sets are grouped together.
+In computer science, a disjoint-set data structure, also called a unionâfind data structure or mergeâfind set, is a data structure that stores a collection of disjoint (non-overlapping) sets.  Equivalently, it stores a partition of a set into disjoint subsets.  It provides operations for adding new sets, merging sets (replacing them by their union), and finding a representative member of a set. The last operation allows to find out efficiently if any two elements are in the same or different sets.
+While there are several ways of implementing disjoint-set data structures, in practice they are often identified with a particular implementation called a disjoint-set forest.  This is a specialized type of forest which performs unions and finds in near constant amortized time.  To perform a sequence of m addition, union, or find operations on a disjoint-set forest with n nodes requires total time O(mÎ±(n)), where Î±(n) is the extremely slow-growing inverse Ackermann function.  Disjoint-set forests do not guarantee this performance on a per-operation basis.  Individual union and find operations can take longer than a constant times Î±(n) time, but each operation causes the disjoint-set forest to adjust itself so that successive operations are faster.  Disjoint-set forests are both asymptotically optimal and practically efficient.
+Disjoint-set data structures play a key role in Kruskal's algorithm for finding the minimum spanning tree of a graph.  The importance of minimum spanning trees means that disjoint-set data structures underlie a wide variety of algorithms.  In addition, disjoint-set data structures also have applications to symbolic computation, as well in compilers, especially for register allocation problems.
+
+Contents
+
+1 History
+2 Representation
+3 Operations
+
+3.1 Making new sets
+3.2 Finding set representatives
+3.3 Merging two sets
+
+
+4 Time complexity
+
+4.1 Proof of O(log*(n)) time complexity of Union-Find
+
+
+5 Applications
+6 See also
+7 References
+8 External links
+
+
+
+History[edit]
+Disjoint-set forests were first described by Bernard A. Galler and Michael J. Fischer in 1964.[2] In 1973, their time complexity was bounded to 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            â
+          
+        
+        â¡
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle O(\log ^{*}(n))}
+  
+, the iterated logarithm of 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+, by Hopcroft and Ullman.[3] In 1975, Robert Tarjan was the first to prove the 
+  
+    
+      
+        O
+        (
+        m
+        Î±
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle O(m\alpha (n))}
+  
+ (inverse Ackermann function) upper bound on the algorithm's time complexity,[4] and, in 1979, showed that this was the lower bound for a restricted case.[5] In 1989, Fredman and Saks showed that 
+  
+    
+      
+        Î©
+        (
+        Î±
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle \Omega (\alpha (n))}
+  
+ (amortized) words must be accessed by any disjoint-set data structure per operation,[6] thereby proving the optimality of the data structure.
+In 1991, Galil and Italiano published a survey of data structures for disjoint-sets.[7]
+In 1994, Richard J. Anderson and Heather Woll described a parallelized version of UnionâFind that never needs to block.[8]
+In 2007, Sylvain Conchon and Jean-Christophe FilliÃ¢tre developed a semi-persistent version of the disjoint-set forest data structure and formalized its correctness using the proof assistant Coq.[9] "Semi-persistent" means that previous versions of the structure are efficiently retained, but accessing previous versions of the data structure invalidates later ones. Their fastest implementation achieves performance almost as efficient as the non-persistent algorithm. They do not perform a complexity analysis.
+
+Representation[edit]
+Each node in a disjoint-set forest consists of a pointer and some auxiliary information, either a size or a rank (but not both).  The pointers are used to make parent pointer trees, where each node that is not the root of a tree points to its parent.  To distinguish root nodes from others, their parent pointers have invalid values, such as a circular reference to the node or a sentinel value.  Each tree represents a set stored in the forest, with the members of the set being the nodes in the tree.  Root nodes provide set representatives: Two nodes are in the same set if and only if the roots of the trees containing the nodes are equal.
+Nodes in the forest can be stored in any way convenient to the application, but a common technique is to store them in an array.  In this case, parents can be indicated by their array index.  Every array entry requires Î(log n) bits of storage for the parent pointer.  A comparable or lesser amount of storage is required for the rest of the entry, so the number of bits required to store the forest is Î(n log n).  If an implementation uses fixed size nodes (thereby limiting the maximum size of the forest that can be stored), then the necessary storage is linear in n.
+
+Operations[edit]
+Disjoint-set data structures support three operations: Making a new set containing a new element; Finding the representative of the set containing a given element; and Merging two sets.
+
+Making new sets[edit]
+The MakeSet operation adds a new element.  This element is placed into a new set containing only the new element, and the new set is added to the data structure.  If the data structure is instead viewed as a partition of a set, then the MakeSet operation enlarges the set by adding the new element, and it extends the existing partition by putting the new element into a new subset containing only the new element.
+In a disjoint-set forest, MakeSet initializes the node's parent pointer and the node's size or rank.  If a root is represented by a node that points to itself, then adding an element can be described using the following pseudocode:
+
+function MakeSet(x) is
+    if x is not already in the forest then
+        x.parentÂ := x
+        x.sizeÂ := 1     // if nodes store size
+        x.rankÂ := 0     // if nodes store rank
+    end if
+end function
+
+This operation has constant time complexity.  In particular, initializing a
+disjoint-set forest with n nodes requires O(n)
+time.
+In practice, MakeSet must be preceded by an operation that allocates memory to hold x.  As long as memory allocation is an amortized constant-time operation, as it is for a good dynamic array implementation, it does not change the asymptotic performance of the random-set forest.
+
+Finding set representatives[edit]
+The Find operation follows the chain of parent pointers from a specified query node x until it reaches a root element.  This root element represents the set to which x belongs and may be x itself.  Find returns the root element it reaches.
+Performing a Find operation presents an important opportunity for improving the forest.  The time in a Find operation is spent chasing parent pointers, so a flatter tree leads to faster Find operations.  When a Find is executed, there is no faster way to reach the root than by following each parent pointer in succession.  However, the parent pointers visited during this search can be updated to point closer to the root.  Because every element visited on the way to a root is part of the same set, this does not change the sets stored in the forest.  But it makes future Find operations faster, not only for the nodes between the query node and the root, but also for their descendants.  This updating is an important part of the disjoint-set forest's amortized performance guarantee.
+There are several algorithms for Find that achieve the asymptotically optimal time complexity.  One family of algorithms, known as path compression, makes every node between the query node and the root point to the root.  Path compression can be implemented using a simple recursion as follows:
+
+function Find(x) is
+    if x.parent â  x then
+        x.parentÂ := Find(x.parent)
+        return x.parent
+    else
+        return x
+    end if
+end function
+
+This implementation makes two passes, one up the tree and one back down.  It requires enough scratch memory to store the path from the query node to the root (in the above pseudocode, the path is implicitly represented using the call stack).  This can be decreased to a constant amount memory by performing both passes in the same direction.  The constant memory implementation walks from the query node to the root twice, once to find the root and once to update pointers:
+
+function Find(x) is
+    rootÂ := x
+    while root.parent â  root do
+        rootÂ := root.parent
+    end while
+
+    while x.parent â  root do
+        parentÂ := x.parent
+        x.parentÂ := root
+        xÂ := parent
+    end while
+
+    return root
+end function
+
+Tarjan and Van Leeuwen also developed one-pass Find algorithms that retain the same worst-case complexity but are more efficient in practice.[4]  These are called path splitting and path halving.  Both of these update the parent pointers of nodes on the path between the query node and the root.  Path splitting replaces every parent pointer on that path by a pointer to the node's grandparent:
+
+function Find(x) is
+    while x.parent â  x do
+        (x, x.parent)Â := (x.parent, x.parent.parent)
+    end while
+    return x
+end function
+
+Path halving works similarly but replaces only every other parent pointer:
+
+function Find(x) is
+    while x.parent â  x do
+        x.parentÂ := x.parent.parent
+        xÂ := x.parent
+    end while
+    return x
+end function
+
+Merging two sets[edit]
+The operation Union(x, y) replaces the set containing x and the set containing y with their union.  Union first uses Find to determine the roots of the trees containing x and y.  If the roots are the same, there is nothing more to do.  Otherwise, the two trees must be merged.  This is done by either setting the parent pointer of x's root to y's, or setting the parent pointer of y's root to x's.
+The choice of which node becomes the parent has consequences for the complexity of future operations on the tree. If it is done carelessly, trees can become excessively tall.  For example, suppose that Union always made the tree containing x a subtree of the tree containing y.  Begin with a forest that has just been initialized with elements 
+  
+    
+      
+        1
+        ,
+        2
+        ,
+        3
+        ,
+        â¦
+        ,
+        n
+        ,
+      
+    
+    {\displaystyle 1,2,3,\ldots ,n,}
+  
+ and execute Union(1, 2), Union(2, 3), ..., Union(n - 1, n).  The resulting forest contains a single tree whose root is n, and the path from 1 to n passes through every node in the tree.  For this forest, the time to run Find(1) is O(n).
+In an efficient implementation, tree height is controlled using union by size or union by rank.  Both of these require that a node store information besides just its parent pointer.  This information is used to decide which root becomes the new parent.  Both strategies ensure that trees do not become too deep.
+In the case of union by size, a node stores its size, which is simply its number of descendants (including the node itself).  When the trees with roots x and y are merged, the node with more descendants becomes the parent.  If the two nodes have the same number of descendants, then either one can become the parent.  In both cases, the size of the new parent node is set to its new total number of descendants.
+
+function Union(x, y) is
+    // Replace nodes by roots
+    xÂ := Find(x)
+    yÂ := Find(y)
+
+    if x = y then
+        return  // x and y are already in the same set
+    end if
+
+    // If necessary, rename variables to ensure that
+    // x has at least as many descendants as y
+    if x.size < y.size then
+        (x, y)Â := (y, x)
+    end if
+
+    // Make x the new root
+    y.parentÂ := x
+    // Update the size of x
+    x.sizeÂ := x.size + y.size
+end function
+
+The number of bits necessary to store the size is clearly the number of bits necessary to store n.  This adds a constant factor to the forest's required storage.
+For union by rank, a node stores its rank, which is an upper bound for its height.  When a node is initialized, its rank is set to zero.  To merge trees with roots x and y, first compare their ranks.  If the ranks are different, then the larger rank tree becomes the parent, and the ranks of x and y do not change.  If the ranks are the same, then either one can become the parent, but the new parent's rank is incremented by one.  While the rank of a node is clearly related to its height, storing ranks is more efficient than storing heights.  The height of a node can change during a Find operation, so storing ranks avoids the extra effort of keeping the height correct.  In pseudocode, union by rank is:
+
+function Union(x, y) is
+    // Replace nodes by roots
+    xÂ := Find(x)
+    yÂ := Find(y)
+
+    if x = y then
+        return  // x and y are already in the same set
+    end if
+
+    // If necessary, rename variables to ensure that
+    // x has rank at least as large as that of y
+    if x.rank < y.rank then
+        (x, y)Â := (y, x)
+    end if
+
+    // Make x the new root
+    y.parentÂ := x
+    // If necessary, increment the rank of x
+    if x.rank = y.rank then
+        x.rankÂ := x.rank + 1
+    end if
+end function
+
+It can be shown that every node has rank 
+  
+    
+      
+        â
+        log
+        â¡
+        n
+        â
+      
+    
+    {\displaystyle \lfloor \log n\rfloor }
+  
+ or less.[10]  Consequently the rank can be stored in O(log log n) bits, making it an asymptotically negligible portion of the forest's size.
+It is clear from the above implementations that the size and rank of a node do not matter unless a node is the root of a tree.  Once a node becomes a child, its size and rank are never accessed again.
+
+Time complexity[edit]
+A disjoint-set forest implementation in which Find does not update parent pointers, and in which Union does not attempt to control tree heights, can have trees with height O(n).  In such a situation, the Find and Union operations require O(n) time.
+If an implementation uses path compression alone, then a sequence of n MakeSet operations, followed by up to n â 1 Union operations and f Find operations, has a worst-case running time of 
+  
+    
+      
+        Î
+        (
+        n
+        +
+        f
+        â
+        
+          (
+          
+            1
+            +
+            
+              log
+              
+                2
+                +
+                f
+                
+                  /
+                
+                n
+              
+            
+            â¡
+            n
+          
+          )
+        
+        )
+      
+    
+    {\displaystyle \Theta (n+f\cdot \left(1+\log _{2+f/n}n\right))}
+  
+.[10]
+Using union by rank, but without updating parent pointers during Find, gives a running time of 
+  
+    
+      
+        Î
+        (
+        m
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle \Theta (m\log n)}
+  
+ for m operations of any type, up to n of which are MakeSet operations.[10]
+The combination of path compression, splitting, or halving, with union by size or by rank, reduces the running time for m operations of any type, up to n of which are MakeSet operations, to 
+  
+    
+      
+        Î
+        (
+        m
+        Î±
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle \Theta (m\alpha (n))}
+  
+.[4][5]  This makes the amortized running time of each operation 
+  
+    
+      
+        Î
+        (
+        Î±
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle \Theta (\alpha (n))}
+  
+.  This is asymptotically optimal, meaning that every disjoint set data structure must use 
+  
+    
+      
+        Î©
+        (
+        Î±
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle \Omega (\alpha (n))}
+  
+ amortized time per operation.[6]  Here, the function 
+  
+    
+      
+        Î±
+        (
+        n
+        )
+      
+    
+    {\displaystyle \alpha (n)}
+  
+ is the inverse Ackermann function.  The inverse Ackermann function grows extraordinarily slowly, so this factor is 4 or less for any n that can actually be written in the physical universe.  This makes disjoint-set operations practically amortized constant time.
+
+Proof of O(log*(n)) time complexity of Union-Find[edit]
+The precise analysis of the performance of a disjoint-set forest is somewhat intricate.  However, there is a much simpler analysis that proves that the amortized time for any m Find or Union operations on a disjoint-set forest containing n objects is O(mlog* n), where log* denotes the iterated logarithm.[11][12][13][14]
+Lemma 1: As the find function follows the path along to the root, the rank of node it encounters is increasing.
+
+.mw-parser-output .math_proof{border:thin solid #aaa;margin:1em 2em;padding:0.5em 1em 0.4em;text-align:justify}@media(max-width:500px){.mw-parser-output .math_proof{margin:1em 0;padding:0.5em 0.5em 0.4em}}Proof
+claim that as Find and Union operations are applied to the data set, this fact remains true over time. Initially when each node is the root of its own tree, it's trivially true. The only case when the rank of a node might be changed is when the Union by Rank operation is applied. In this case, a tree with smaller rank will be attached to a tree with greater rank, rather than vice versa. And during the find operation, all nodes visited along the path will be attached to the root, which has larger rank than its children, so this operation won't change this fact either.
+
+
+Lemma 2: A node u which is root of a subtree with rank r has at least 
+  
+    
+      
+        
+          2
+          
+            r
+          
+        
+      
+    
+    {\displaystyle 2^{r}}
+  
+ nodes.
+
+Proof
+Initially when each node is the root of its own tree, it's trivially true. Assume that a node u with rank r has at least 2r nodes. Then when two trees with rank r are merged using the operation Union by Rank, a tree with rank r + 1 results, the root of which has at least 
+  
+    
+      
+        
+          2
+          
+            r
+          
+        
+        +
+        
+          2
+          
+            r
+          
+        
+        =
+        
+          2
+          
+            r
+            +
+            1
+          
+        
+      
+    
+    {\displaystyle 2^{r}+2^{r}=2^{r+1}}
+  
+ nodes.
+
+
+
+Lemma 3: The maximum number of nodes of rank r is at most 
+  
+    
+      
+        
+          
+            n
+            
+              2
+              
+                r
+              
+            
+          
+        
+        .
+      
+    
+    {\displaystyle {\frac {n}{2^{r}}}.}
+  
+
+
+Proof
+From lemma 2, we know that a node u which is root of a subtree with rank r has at least 
+  
+    
+      
+        
+          2
+          
+            r
+          
+        
+      
+    
+    {\displaystyle 2^{r}}
+  
+ nodes. We will get the maximum number of nodes of rank r when each node with rank r is the root of a tree that has exactly 
+  
+    
+      
+        
+          2
+          
+            r
+          
+        
+      
+    
+    {\displaystyle 2^{r}}
+  
+ nodes. In this case, the number of nodes of rank r is 
+  
+    
+      
+        
+          
+            n
+            
+              2
+              
+                r
+              
+            
+          
+        
+        .
+      
+    
+    {\displaystyle {\frac {n}{2^{r}}}.}
+  
+
+
+
+For convenience, we define "bucket" here: a bucket is a set that contains vertices with particular ranks.
+We create some buckets and put vertices into the buckets according to their ranks inductively. That is, vertices with rank 0 go into the zeroth bucket, vertices with rank 1 go into the first bucket, vertices with ranks 2 and 3 go into the second bucket. If the B-th bucket contains vertices with ranks from interval 
+  
+    
+      
+        
+          [
+          
+            r
+            ,
+            
+              2
+              
+                r
+              
+            
+            â
+            1
+          
+          ]
+        
+        =
+        [
+        r
+        ,
+        R
+        â
+        1
+        ]
+      
+    
+    {\displaystyle \left[r,2^{r}-1\right]=[r,R-1]}
+  
+ then the (B+1)st bucket will contain vertices with ranks from interval 
+  
+    
+      
+        
+          [
+          
+            R
+            ,
+            
+              2
+              
+                R
+              
+            
+            â
+            1
+          
+          ]
+        
+        .
+      
+    
+    {\displaystyle \left[R,2^{R}-1\right].}
+  
+
+
+  Proof of 
+  
+    
+      
+        O
+        (
+        
+          log
+          
+            â
+          
+        
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(\log ^{*}n)}
+  
+ Union Find
+We can make two observations about the buckets.
+
+The total number of buckets is at most log*n
+Proof: When we go from one bucket to the next, we add one more two to the power, that is, the next bucket to 
+  
+    
+      
+        
+          [
+          
+            B
+            ,
+            
+              2
+              
+                B
+              
+            
+            â
+            1
+          
+          ]
+        
+      
+    
+    {\displaystyle \left[B,2^{B}-1\right]}
+  
+ will be 
+  
+    
+      
+        
+          [
+          
+            
+              2
+              
+                B
+              
+            
+            ,
+            
+              2
+              
+                
+                  2
+                  
+                    B
+                  
+                
+              
+            
+            â
+            1
+          
+          ]
+        
+      
+    
+    {\displaystyle \left[2^{B},2^{2^{B}}-1\right]}
+  
+
+The maximum number of elements in bucket 
+  
+    
+      
+        
+          [
+          
+            B
+            ,
+            
+              2
+              
+                B
+              
+            
+            â
+            1
+          
+          ]
+        
+      
+    
+    {\displaystyle \left[B,2^{B}-1\right]}
+  
+ is at most 
+  
+    
+      
+        
+          
+            
+              2
+              n
+            
+            
+              2
+              
+                B
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {2n}{2^{B}}}}
+  
+
+Proof: The maximum number of elements in bucket 
+  
+    
+      
+        
+          [
+          
+            B
+            ,
+            
+              2
+              
+                B
+              
+            
+            â
+            1
+          
+          ]
+        
+      
+    
+    {\displaystyle \left[B,2^{B}-1\right]}
+  
+ is at most 
+  
+    
+      
+        
+          
+            n
+            
+              2
+              
+                B
+              
+            
+          
+        
+        +
+        
+          
+            n
+            
+              2
+              
+                B
+                +
+                1
+              
+            
+          
+        
+        +
+        
+          
+            n
+            
+              2
+              
+                B
+                +
+                2
+              
+            
+          
+        
+        +
+        â¯
+        +
+        
+          
+            n
+            
+              2
+              
+                
+                  2
+                  
+                    B
+                  
+                
+                â
+                1
+              
+            
+          
+        
+        â¤
+        
+          
+            
+              2
+              n
+            
+            
+              2
+              
+                B
+              
+            
+          
+        
+        .
+      
+    
+    {\displaystyle {\frac {n}{2^{B}}}+{\frac {n}{2^{B+1}}}+{\frac {n}{2^{B+2}}}+\cdots +{\frac {n}{2^{2^{B}-1}}}\leq {\frac {2n}{2^{B}}}.}
+  
+
+Let F represent the list of "find" operations performed, and let
+
+  
+    
+      
+        
+          T
+          
+            1
+          
+        
+        =
+        
+          â
+          
+            F
+          
+        
+        
+          (link to the root)
+        
+      
+    
+    {\displaystyle T_{1}=\sum _{F}{\text{(link to the root)}}}
+  
+
+
+  
+    
+      
+        
+          T
+          
+            2
+          
+        
+        =
+        
+          â
+          
+            F
+          
+        
+        
+          (number of links traversed where the buckets are different)
+        
+      
+    
+    {\displaystyle T_{2}=\sum _{F}{\text{(number of links traversed where the buckets are different)}}}
+  
+
+
+  
+    
+      
+        
+          T
+          
+            3
+          
+        
+        =
+        
+          â
+          
+            F
+          
+        
+        
+          (number of links traversed where the buckets are the same).
+        
+      
+    
+    {\displaystyle T_{3}=\sum _{F}{\text{(number of links traversed where the buckets are the same).}}}
+  
+
+Then the total cost of m finds is 
+  
+    
+      
+        T
+        =
+        
+          T
+          
+            1
+          
+        
+        +
+        
+          T
+          
+            2
+          
+        
+        +
+        
+          T
+          
+            3
+          
+        
+        .
+      
+    
+    {\displaystyle T=T_{1}+T_{2}+T_{3}.}
+  
+
+Since each find operation makes exactly one traversal that leads to a root, we have T1 = O(m).
+Also, from the bound above on the number of buckets, we have T2 = O(mlog*n).
+For T3, suppose we are traversing an edge from u to v, where u and v have rank in the bucket [B, 2B â 1] and v is not the root (at the time of this traversing, otherwise the traversal would be accounted for in T1). Fix u and consider the sequence 
+  
+    
+      
+        
+          v
+          
+            1
+          
+        
+        ,
+        
+          v
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          v
+          
+            k
+          
+        
+      
+    
+    {\displaystyle v_{1},v_{2},\ldots ,v_{k}}
+  
+ that take the role of v in different find operations. Because of path compression and not accounting for the edge to a root, this sequence contains only different nodes and because of Lemma 1 we know that the ranks of the nodes in this sequence are strictly increasing. By both of the nodes being in the bucket we can conclude that the length k of the sequence (the number of times node u is attached to a different root in the same bucket) is at most the number of ranks in the buckets B, that is, at most 
+  
+    
+      
+        
+          2
+          
+            B
+          
+        
+        â
+        1
+        â
+        B
+        <
+        
+          2
+          
+            B
+          
+        
+        .
+      
+    
+    {\displaystyle 2^{B}-1-B<2^{B}.}
+  
+
+Therefore, 
+  
+    
+      
+        
+          T
+          
+            3
+          
+        
+        â¤
+        
+          â
+          
+            [
+            B
+            ,
+            
+              2
+              
+                B
+              
+            
+            â
+            1
+            ]
+          
+        
+        
+          â
+          
+            u
+          
+        
+        
+          2
+          
+            B
+          
+        
+        .
+      
+    
+    {\displaystyle T_{3}\leq \sum _{[B,2^{B}-1]}\sum _{u}2^{B}.}
+  
+
+From Observations 1 and 2, we can conclude that 
+  
+    
+      
+        
+          T
+          
+            3
+          
+        
+        â¤
+        
+          â
+          
+            B
+          
+        
+        
+          2
+          
+            B
+          
+        
+        
+          
+            
+              2
+              n
+            
+            
+              2
+              
+                B
+              
+            
+          
+        
+        â¤
+        2
+        n
+        
+          log
+          
+            â
+          
+        
+        â¡
+        n
+        .
+      
+    
+    {\textstyle T_{3}\leq \sum _{B}2^{B}{\frac {2n}{2^{B}}}\leq 2n\log ^{*}n.}
+  
+
+Therefore, 
+  
+    
+      
+        T
+        =
+        
+          T
+          
+            1
+          
+        
+        +
+        
+          T
+          
+            2
+          
+        
+        +
+        
+          T
+          
+            3
+          
+        
+        =
+        O
+        (
+        m
+        
+          log
+          
+            â
+          
+        
+        â¡
+        n
+        )
+        .
+      
+    
+    {\displaystyle T=T_{1}+T_{2}+T_{3}=O(m\log ^{*}n).}
+  
+
+
+Applications[edit]
+  A demo for Union-Find when using Kruskal's algorithm to find minimum spanning tree.
+Disjoint-set data structures model the partitioning of a set, for example to keep track of the connected components of an undirected graph. This model can then be used to determine whether two vertices belong to the same component, or whether adding an edge between them would result in a cycle.  The UnionâFind algorithm is used in high-performance implementations of unification.[15]
+This data structure is used by the Boost Graph Library to implement its Incremental Connected Components functionality. It is also a key component in implementing Kruskal's algorithm to find the minimum spanning tree of a graph.
+Note that the implementation as disjoint-set forests does not allow the deletion of edges, even without path compression or the rank heuristic.
+Sharir and Agarwal report connections between the worst-case behavior of disjoint-sets and the length of DavenportâSchinzel sequences, a combinatorial structure from computational geometry.[16]
+
+See also[edit]
+Partition refinement, a different data structure for maintaining disjoint sets, with updates that split sets apart rather than merging them together
+Dynamic connectivity
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d e f .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Tarjan, Robert Endre (1975). "Efficiency of a Good But Not Linear Set Union Algorithm". Journal of the ACM. 22 (2): 215â225. doi:10.1145/321879.321884. hdl:1813/5942. S2CIDÂ 11105749.
+
+^ Galler, Bernard A.; Fischer, Michael J. (May 1964). "An improved equivalence algorithm". Communications of the ACM. 7 (5): 301â303. doi:10.1145/364099.364331. S2CIDÂ 9034016.. The paper originating disjoint-set forests.
+
+^ Hopcroft, J. E.; Ullman, J. D. (1973). "Set Merging Algorithms". SIAM Journal on Computing. 2 (4): 294â303. doi:10.1137/0202024.
+
+^ Jump up to: a b c Tarjan, Robert E.; van Leeuwen, Jan (1984). "Worst-case analysis of set union algorithms". Journal of the ACM. 31 (2): 245â281. doi:10.1145/62.2160. S2CIDÂ 5363073.
+
+^ Jump up to: a b Tarjan, Robert Endre (1979). "A class of algorithms which require non-linear time to maintain disjoint sets". Journal of Computer and System Sciences. 18 (2): 110â127. doi:10.1016/0022-0000(79)90042-4.
+
+^ Jump up to: a b Fredman, M.; Saks, M. (May 1989). "The cell probe complexity of dynamic data structures". Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing: 345â354. doi:10.1145/73007.73040. ISBNÂ 0897913078. S2CIDÂ 13470414. Theorem 5: Any CPROBE(log n) implementation of the set union problem requires Î©(m Î±(m, n)) time to execute m Find's and nâ1 Union's, beginning with n singleton sets.
+
+^ Galil, Z.; Italiano, G. (1991). "Data structures and algorithms for disjoint set union problems". ACM Computing Surveys. 23 (3): 319â344. doi:10.1145/116873.116878. S2CIDÂ 207160759.
+
+^ Anderson, Richard J.; Woll, Heather (1994). Wait-free Parallel Algorithms for the Union-Find Problem. 23rd ACM Symposium on Theory of Computing. pp.Â 370â380.
+
+^ Conchon, Sylvain; FilliÃ¢tre, Jean-Christophe (October 2007). "A Persistent Union-Find Data Structure". ACM SIGPLAN Workshop on ML. Freiburg, Germany.
+
+^ Jump up to: a b c Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2009). "Chapter 21: Data structures for Disjoint Sets". Introduction to Algorithms (ThirdÂ ed.). MIT Press. pp.Â 571â572. ISBNÂ 978-0-262-03384-8.
+
+^ Raimund Seidel, Micha Sharir. "Top-down analysis of path compression", SIAM J. Comput. 34(3):515â525, 2005
+
+^ Tarjan, Robert Endre (1975). "Efficiency of a Good But Not Linear Set Union Algorithm". Journal of the ACM. 22 (2): 215â225. doi:10.1145/321879.321884. hdl:1813/5942. S2CIDÂ 11105749.
+
+^ Hopcroft, J. E.; Ullman, J. D. (1973). "Set Merging Algorithms". SIAM Journal on Computing. 2 (4): 294â303. doi:10.1137/0202024.
+
+^ Robert E. Tarjan and Jan van Leeuwen. Worst-case analysis of set union algorithms. Journal of the ACM, 31(2):245â281, 1984.
+
+^ Knight, Kevin (1989). "Unification: A multidisciplinary survey" (PDF). ACM Computing Surveys. 21: 93â124. doi:10.1145/62029.62030. S2CIDÂ 14619034.
+
+^ Sharir, M.; Agarwal, P. (1995). Davenport-Schinzel sequences and their geometric applications. Cambridge University Press.
+
+
+External links[edit]
+C++ implementation, part of the Boost C++ libraries
+Java applet: A Graphical UnionâFind Implementation, by Rory L. P. McGuire
+A Matlab Implementation which is part of the Tracker Component Library
+Python implementation
+Visual explanation and C# code
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Disjoint-set_data_structure&oldid=1064010135"
+		Categories: Data structuresSearch algorithmsAmortized data structuresHidden categories: Articles with example pseudocode
+	

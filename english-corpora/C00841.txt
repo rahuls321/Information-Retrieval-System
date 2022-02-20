@@ -1,0 +1,1714 @@
+
+Title:
+SmithâWaterman algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Algorithm performs local sequence alignment
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}ClassSequence alignmentWorst-case performance
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+Worst-case space complexity
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+
+  An animated example to show the steps progressively. See here for detailed steps.
+The SmithâWaterman algorithm performs local sequence alignment; that is, for determining similar regions between two strings of nucleic acid sequences or protein sequences. Instead of looking at the entire sequence, the SmithâWaterman algorithm compares segments of all possible lengths and optimizes the similarity measure.
+The algorithm was first proposed by Temple F. Smith and Michael S. Waterman in 1981.[1] Like the NeedlemanâWunsch algorithm, of which it is a variation, SmithâWaterman is a dynamic programming algorithm. As such, it has the desirable property that it is guaranteed to find the optimal local alignment with respect to the scoring system being used (which includes the substitution matrix and the gap-scoring scheme). The main difference to the NeedlemanâWunsch algorithm is that negative scoring matrix cells are set to zero, which renders the (thus positively scoring) local alignments visible. Traceback procedure starts at the highest scoring matrix cell and proceeds until a cell with score zero is encountered, yielding the highest scoring local alignment. Because of its quadratic complexity in time and space, it often cannot be practically applied to large-scale problems and is replaced in favor of less general but computationally more efficient alternatives such as (Gotoh, 1982),[2] (Altschul and Erickson, 1986),[3] and (Myers and Miller, 1988).[4]
+
+Contents
+
+1 History
+2 Motivation
+3 Algorithm
+4 Explanation
+
+4.1 Comparison with the NeedlemanâWunsch algorithm
+4.2 Substitution matrix
+4.3 Gap penalty
+
+4.3.1 Linear
+4.3.2 Affine
+4.3.3 Gap penalty example
+
+
+4.4 Scoring matrix
+
+
+5 Example
+6 Implementation
+7 Accelerated versions
+
+7.1 FPGA
+7.2 GPU
+7.3 SIMD
+7.4 Cell Broadband Engine
+
+
+8 Limitations
+9 See also
+10 References
+11 External links
+
+
+
+History[edit]
+In 1970, Saul B. Needleman and Christian D. Wunsch proposed a heuristic homology algorithm for sequence alignment, also referred to as the NeedlemanâWunsch algorithm.[5] It is a global alignment algorithm that requires 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+ calculation steps (
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ and 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ are the lengths of the two sequences being aligned). It uses the iterative calculation of a matrix for the purpose of showing global alignment. In the following decade, Sankoff,[6] Reichert,[7] Beyer[8] and others formulated alternative heuristic algorithms for analyzing gene sequences. Sellers introduced a system for measuring sequence distances.[9] In 1976, Waterman et al. added the concept of gaps into the original measurement system.[10] In 1981, Smith and Waterman published their SmithâWaterman algorithm for calculating local alignment.
+The SmithâWaterman algorithm is fairly demanding of time: To align two sequences of lengths 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ and 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+, 
+  
+    
+      
+        O
+        (
+        
+          m
+          
+            2
+          
+        
+        n
+        )
+      
+    
+    {\displaystyle O(m^{2}n)}
+  
+ time is required. Gotoh[2] and Altschul[3] optimized the algorithm to 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+ steps. The space complexity was optimized by Myers and Miller[4] from 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+ to 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ (linear), where 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ is the length of the shorter sequence, for the case where only one of the many possible optimal alignments is desired.
+
+Motivation[edit]
+In recent years, genome projects conducted on a variety of organisms generated massive amounts of sequence data for genes and proteins, which requires computational analysis. Sequence alignment shows the relations between genes or between proteins, leading to a better understanding of their homology and functionality. Sequence alignment can also reveal conserved domains and motifs.
+One motivation for local alignment is the difficulty of obtaining correct alignments in regions of low similarity between distantly related biological sequences, because mutations have added too much 'noise' over evolutionary time to allow for a meaningful comparison of those regions. Local alignment avoids such regions altogether and focuses on those with a positive score, i.e. those with an evolutionarily conserved signal of similarity. A prerequisite for local alignment is a negative expectation score. The expectation score is defined as the average score that the scoring system (substitution matrix and gap penalties) would yield for a random sequence.
+Another motivation for using local alignments is that there is a reliable statistical model (developed by Karlin and Altschul) for optimal local alignments. The alignment of unrelated sequences tends to produce optimal local alignment scores which follow an extreme value distribution. This property allows programs to produce an expectation value for the optimal local alignment of two sequences, which is a measure of how often two unrelated sequences would produce an optimal local alignment whose score is greater than or equal to the observed score. Very low expectation values indicate that the two sequences in question might be homologous, meaning they might share a common ancestor.
+
+Algorithm[edit]
+  Scoring method of the SmithâWaterman algorithm
+Let 
+  
+    
+      
+        A
+        =
+        
+          a
+          
+            1
+          
+        
+        
+          a
+          
+            2
+          
+        
+        .
+        .
+        .
+        
+          a
+          
+            n
+          
+        
+      
+    
+    {\displaystyle A=a_{1}a_{2}...a_{n}}
+  
+ and 
+  
+    
+      
+        B
+        =
+        
+          b
+          
+            1
+          
+        
+        
+          b
+          
+            2
+          
+        
+        .
+        .
+        .
+        
+          b
+          
+            m
+          
+        
+      
+    
+    {\displaystyle B=b_{1}b_{2}...b_{m}}
+  
+ be the sequences to be aligned, where 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ and 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ are the lengths of 
+  
+    
+      
+        A
+      
+    
+    {\displaystyle A}
+  
+ and 
+  
+    
+      
+        B
+      
+    
+    {\displaystyle B}
+  
+ respectively.
+
+Determine the substitution matrix and the gap penalty scheme.
+
+  
+    
+      
+        s
+        (
+        a
+        ,
+        b
+        )
+      
+    
+    {\displaystyle s(a,b)}
+  
+ - Similarity score of the elements that constituted the two sequences
+
+  
+    
+      
+        
+          W
+          
+            k
+          
+        
+      
+    
+    {\displaystyle W_{k}}
+  
+ - The penalty of a gap that has length 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+
+Construct a scoring matrix 
+  
+    
+      
+        H
+      
+    
+    {\displaystyle H}
+  
+ and initialize its first row and first column. The size of the scoring matrix is 
+  
+    
+      
+        (
+        n
+        +
+        1
+        )
+        â
+        (
+        m
+        +
+        1
+        )
+      
+    
+    {\displaystyle (n+1)*(m+1)}
+  
+. The matrix uses 0-based indexing.
+
+  
+    
+      
+        
+          H
+          
+            k
+            0
+          
+        
+        =
+        
+          H
+          
+            0
+            l
+          
+        
+        =
+        0
+        
+        f
+        o
+        r
+        
+        0
+        â¤
+        k
+        â¤
+        n
+        
+        a
+        n
+        d
+        
+        0
+        â¤
+        l
+        â¤
+        m
+      
+    
+    {\displaystyle H_{k0}=H_{0l}=0\quad for\quad 0\leq k\leq n\quad and\quad 0\leq l\leq m}
+  
+
+Fill the scoring matrix using the equation below.
+
+  
+    
+      
+        
+          H
+          
+            i
+            j
+          
+        
+        =
+        max
+        
+          
+            {
+            
+              
+                
+                  
+                    H
+                    
+                      i
+                      â
+                      1
+                      ,
+                      j
+                      â
+                      1
+                    
+                  
+                  +
+                  s
+                  (
+                  
+                    a
+                    
+                      i
+                    
+                  
+                  ,
+                  
+                    b
+                    
+                      j
+                    
+                  
+                  )
+                  ,
+                
+              
+              
+                
+                  
+                    max
+                    
+                      k
+                      â¥
+                      1
+                    
+                  
+                  {
+                  
+                    H
+                    
+                      i
+                      â
+                      k
+                      ,
+                      j
+                    
+                  
+                  â
+                  
+                    W
+                    
+                      k
+                    
+                  
+                  }
+                  ,
+                
+              
+              
+                
+                  
+                    max
+                    
+                      l
+                      â¥
+                      1
+                    
+                  
+                  {
+                  
+                    H
+                    
+                      i
+                      ,
+                      j
+                      â
+                      l
+                    
+                  
+                  â
+                  
+                    W
+                    
+                      l
+                    
+                  
+                  }
+                  ,
+                
+              
+              
+                
+                  0
+                
+              
+            
+            
+          
+        
+        
+        (
+        1
+        â¤
+        i
+        â¤
+        n
+        ,
+        1
+        â¤
+        j
+        â¤
+        m
+        )
+      
+    
+    {\displaystyle H_{ij}=\max {\begin{cases}H_{i-1,j-1}+s(a_{i},b_{j}),\\\max _{k\geq 1}\{H_{i-k,j}-W_{k}\},\\\max _{l\geq 1}\{H_{i,j-l}-W_{l}\},\\0\end{cases}}\qquad (1\leq i\leq n,1\leq j\leq m)}
+  
+
+where
+
+  
+    
+      
+        
+          H
+          
+            i
+            â
+            1
+            ,
+            j
+            â
+            1
+          
+        
+        +
+        s
+        (
+        
+          a
+          
+            i
+          
+        
+        ,
+        
+          b
+          
+            j
+          
+        
+        )
+      
+    
+    {\displaystyle H_{i-1,j-1}+s(a_{i},b_{j})}
+  
+ is the score of aligning 
+  
+    
+      
+        
+          a
+          
+            i
+          
+        
+      
+    
+    {\displaystyle a_{i}}
+  
+ and 
+  
+    
+      
+        
+          b
+          
+            j
+          
+        
+      
+    
+    {\displaystyle b_{j}}
+  
+,
+
+  
+    
+      
+        
+          H
+          
+            i
+            â
+            k
+            ,
+            j
+          
+        
+        â
+        
+          W
+          
+            k
+          
+        
+      
+    
+    {\displaystyle H_{i-k,j}-W_{k}}
+  
+ is the score if 
+  
+    
+      
+        
+          a
+          
+            i
+          
+        
+      
+    
+    {\displaystyle a_{i}}
+  
+ is at the end of a gap of length 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+,
+
+  
+    
+      
+        
+          H
+          
+            i
+            ,
+            j
+            â
+            l
+          
+        
+        â
+        
+          W
+          
+            l
+          
+        
+      
+    
+    {\displaystyle H_{i,j-l}-W_{l}}
+  
+ is the score if 
+  
+    
+      
+        
+          b
+          
+            j
+          
+        
+      
+    
+    {\displaystyle b_{j}}
+  
+ is at the end of a gap of length 
+  
+    
+      
+        l
+      
+    
+    {\displaystyle l}
+  
+,
+
+  
+    
+      
+        0
+      
+    
+    {\displaystyle 0}
+  
+ means there is no similarity up to 
+  
+    
+      
+        
+          a
+          
+            i
+          
+        
+      
+    
+    {\displaystyle a_{i}}
+  
+ and 
+  
+    
+      
+        
+          b
+          
+            j
+          
+        
+      
+    
+    {\displaystyle b_{j}}
+  
+.
+Traceback. Starting at the highest score in the scoring matrix 
+  
+    
+      
+        H
+      
+    
+    {\displaystyle H}
+  
+ and ending at a matrix cell that has a score of 0, traceback based on the source of each score recursively to generate the best local alignment.
+Explanation[edit]
+SmithâWaterman algorithm aligns two sequences by matches/mismatches (also known as substitutions), insertions, and deletions. Both insertions and deletions are the operations that introduce gaps, which are represented by dashes. The SmithâWaterman algorithm has several steps:
+
+Determine the substitution matrix and the gap penalty scheme. A substitution matrix assigns each pair of bases or amino acids a score for match or mismatch. Usually matches get positive scores, whereas mismatches get relatively lower scores. A gap penalty function determines the score cost for opening or extending gaps. It is suggested that users choose the appropriate scoring system based on the goals. In addition, it is also a good practice to try different combinations of substitution matrices and gap penalties.
+Initialize the scoring matrix. The dimensions of the scoring matrix are 1+length of each sequence respectively. All the elements of the first row and the first column are set to 0. The extra first row and first column make it possible to align one sequence to another at any position, and setting them to 0 makes the terminal gap free from penalty.
+Scoring. Score each element from left to right, top to bottom in the matrix, considering the outcomes of substitutions (diagonal scores) or adding gaps (horizontal and vertical scores). If none of the scores are positive, this element gets a 0. Otherwise the highest score is used and the source of that score is recorded.
+Traceback. Starting at the element with the highest score, traceback based on the source of each score recursively, until 0 is encountered. The segments that have the highest similarity score based on the given scoring system is generated in this process. To obtain the second best local alignment, apply the traceback process starting at the second highest score outside the trace of the best alignment.
+Comparison with the NeedlemanâWunsch algorithm[edit]
+  Global and local sequence alignment
+The SmithâWaterman algorithm finds the segments in two sequences that have similarities while the NeedlemanâWunsch algorithm aligns two complete sequences. Therefore, they serve different purposes. Both algorithms use the concepts of a substitution matrix, a gap penalty function, a scoring matrix, and a traceback process. Three main differences are:
+
+
+
+
+
+SmithâWaterman algorithm
+NeedlemanâWunsch algorithm
+
+
+Initialization
+First row and first column are set to 0
+First row and first column are subject to gap penalty
+
+
+Scoring
+Negative score is set to 0
+Score can be negative
+
+
+Traceback
+Begin with the highest score, end when 0 is encountered
+Begin with the cell at the lower right of the matrix, end at top left cell
+
+One of the most important distinctions is that no negative score is assigned in the scoring system of the SmithâWaterman algorithm, which enables local alignment. When any element has a score lower than zero, it means that the sequences up to this position have no similarities; this element will then be set to zero to eliminate influence from previous alignment. In this way, calculation can continue to find alignment in any position afterwards.
+The initial scoring matrix of SmithâWaterman algorithm enables the alignment of any segment of one sequence to an arbitrary position in the other sequence. In NeedlemanâWunsch algorithm, however, end gap penalty also needs to be considered in order to align the full sequences.
+
+Substitution matrix[edit]
+Each base substitution or amino acid substitution is assigned a score. In general, matches are assigned positive scores, and mismatches are assigned relatively lower scores. Take DNA sequence as an example. If matches get +1, mismatches get -1, then the substitution matrix is:
+
+
+
+
+A
+G
+C
+T
+
+
+A
+
+1
+-1
+-1
+-1
+
+
+G
+
+-1
+1
+-1
+-1
+
+
+C
+
+-1
+-1
+1
+-1
+
+
+T
+
+-1
+-1
+-1
+1
+
+This substitution matrix can be described as:
+
+  
+    
+      
+        s
+        (
+        
+          a
+          
+            i
+          
+        
+        ,
+        
+          b
+          
+            j
+          
+        
+        )
+        =
+        
+          
+            {
+            
+              
+                
+                  +
+                  1
+                  ,
+                  
+                  
+                    a
+                    
+                      i
+                    
+                  
+                  =
+                  
+                    b
+                    
+                      j
+                    
+                  
+                
+              
+              
+                
+                  â
+                  1
+                  ,
+                  
+                  
+                    a
+                    
+                      i
+                    
+                  
+                  â 
+                  
+                    b
+                    
+                      j
+                    
+                  
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle s(a_{i},b_{j})={\begin{cases}+1,\quad a_{i}=b_{j}\\-1,\quad a_{i}\neq b_{j}\end{cases}}}
+  
+
+Different base substitutions or amino acid substitutions can have different scores. The substitution matrix of amino acids is usually more complicated than that of the bases. See PAM, BLOSUM.
+
+Gap penalty[edit]
+Gap penalty designates scores for insertion or deletion. A simple gap penalty strategy is to use fixed score for each gap. In biology, however, the score needs to be counted differently for practical reasons. On one hand, partial similarity between two sequences is a common phenomenon; on the other hand, a single gene mutation event can result in insertion of a single long gap. Therefore, connected gaps forming a long gap usually is more favored than multiple scattered, short gaps. In order to take this difference into consideration, the concepts of gap opening and gap extension have been added to the scoring system. The gap opening score is usually higher than the gap extension score. For instance, the default parameter in EMBOSS Water are: gap opening = 10, gap extension = 0.5.
+Here we discuss two common strategies for gap penalty. See Gap penalty for more strategies.
+Let 
+  
+    
+      
+        
+          W
+          
+            k
+          
+        
+      
+    
+    {\displaystyle W_{k}}
+  
+ be the gap penalty function for a gap of length 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+:
+
+Linear[edit]
+  Simplified SmithâWaterman algorithm when linear gap penalty function is used
+A linear gap penalty has the same scores for opening and extending a gap:
+
+  
+    
+      
+        
+          W
+          
+            k
+          
+        
+        =
+        k
+        
+          W
+          
+            1
+          
+        
+      
+    
+    {\displaystyle W_{k}=kW_{1}}
+  
+,
+where 
+  
+    
+      
+        
+          W
+          
+            1
+          
+        
+      
+    
+    {\displaystyle W_{1}}
+  
+ is the cost of a single gap.
+The gap penalty is directly proportional to the gap length. When linear gap penalty is used, the SmithâWaterman algorithm can be simplified to:
+
+  
+    
+      
+        
+          H
+          
+            i
+            j
+          
+        
+        =
+        max
+        
+          
+            {
+            
+              
+                
+                  
+                    H
+                    
+                      i
+                      â
+                      1
+                      ,
+                      j
+                      â
+                      1
+                    
+                  
+                  +
+                  s
+                  (
+                  
+                    a
+                    
+                      i
+                    
+                  
+                  ,
+                  
+                    b
+                    
+                      j
+                    
+                  
+                  )
+                  ,
+                
+              
+              
+                
+                  
+                    H
+                    
+                      i
+                      â
+                      1
+                      ,
+                      j
+                    
+                  
+                  â
+                  
+                    W
+                    
+                      1
+                    
+                  
+                  ,
+                
+              
+              
+                
+                  
+                    H
+                    
+                      i
+                      ,
+                      j
+                      â
+                      1
+                    
+                  
+                  â
+                  
+                    W
+                    
+                      1
+                    
+                  
+                  ,
+                
+              
+              
+                
+                  0
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle H_{ij}=\max {\begin{cases}H_{i-1,j-1}+s(a_{i},b_{j}),\\H_{i-1,j}-W_{1},\\H_{i,j-1}-W_{1},\\0\end{cases}}}
+  
+
+The simplified algorithm uses 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+ steps. When an element is being scored, only the gap penalties from the elements that are directly adjacent to this element need to be considered.
+
+Affine[edit]
+An affine gap penalty considers gap opening and extension separately:
+
+  
+    
+      
+        
+          W
+          
+            k
+          
+        
+        =
+        u
+        k
+        +
+        v
+        
+        (
+        u
+        >
+        0
+        ,
+        v
+        >
+        0
+        )
+      
+    
+    {\displaystyle W_{k}=uk+v\quad (u>0,v>0)}
+  
+,
+where 
+  
+    
+      
+        v
+      
+    
+    {\displaystyle v}
+  
+ is the gap opening penalty, and 
+  
+    
+      
+        u
+      
+    
+    {\displaystyle u}
+  
+ is the gap extension penalty. For example, the penalty for a gap of length 2 is 
+  
+    
+      
+        2
+        u
+        +
+        v
+      
+    
+    {\displaystyle 2u+v}
+  
+.
+An arbitrary gap penalty was used in the original SmithâWaterman algorithm paper. It uses 
+  
+    
+      
+        O
+        (
+        
+          m
+          
+            2
+          
+        
+        n
+        )
+      
+    
+    {\displaystyle O(m^{2}n)}
+  
+ steps, therefore is quite demanding of time. Gotoh optimized the steps for an affine gap penalty to 
+  
+    
+      
+        O
+        (
+        m
+        n
+        )
+      
+    
+    {\displaystyle O(mn)}
+  
+,[2] but the optimized algorithm only attempts to find one optimal alignment, and the optimal alignment is not guaranteed to be found.[3] Altschul modified Gotoh's algorithm to find all optimal alignments while maintaining the computational complexity.[3] Later, Myers and Miller pointed out that Gotoh and Altschul's algorithm can be further modified based on the method that was published by Hirschberg in 1975,[11] and applied this method.[4] Myers and Miller's algorithm can align two sequences using 
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+ space, with 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ being the length of the shorter sequence.
+
+Gap penalty example[edit]
+Take the alignment of sequences .mw-parser-output .monospaced{font-family:monospace,monospace}TACGGGCCCGCTAC and TAGCCCTATCGGTCA as an example.
+When linear gap penalty function is used, the result is (Alignments performed by EMBOSS Water. Substitution matrix is DNAfull. Gap opening and extension both are 1.0):
+
+TACGGGCCCGCTA-C
+
+TA---G-CC-CTATC
+
+When affine gap penalty is used, the result is (Gap opening and extension are 5.0 and 1.0 respectively):
+
+TACGGGCCCGCTA
+
+TA---GCC--CTA
+
+This example shows that an affine gap penalty can help avoid scattered small gaps.
+
+Scoring matrix[edit]
+The function of the scoring matrix is to conduct one-to-one comparisons between all components in two sequences and record the optimal alignment results. The scoring process reflects the concept of dynamic programming. The final optimal alignment is found by iteratively expanding the growing optimal alignment. In other words, the current optimal alignment is generated by deciding which path (match/mismatch or inserting gap) gives the highest score from the previous optimal alignment. The size of the matrix is the length of one sequence plus 1 by the length of the other sequence plus 1. The additional first row and first column serve the purpose of aligning one sequence to any positions in the other sequence. Both the first line and the first column are set to 0 so that end gap is not penalized. The initial scoring matrix is:
+
+
+
+
+
+
+
+b1
+
+...
+
+bj
+
+...
+
+bm
+
+
+
+
+0
+0
+...
+0
+...
+0
+
+
+a1
+
+0
+
+
+
+
+
+
+
+...
+
+...
+
+
+
+
+
+
+
+ai
+
+0
+
+
+
+
+
+
+
+...
+
+...
+
+
+
+
+
+
+
+an
+
+0
+
+
+
+
+
+
+Example[edit]
+Take the alignment of DNA sequences TGTTACGG and GGTTGACTA as an example. Use the following scheme:
+
+Substitution matrix: 
+  
+    
+      
+        s
+        (
+        
+          a
+          
+            i
+          
+        
+        ,
+        
+          b
+          
+            j
+          
+        
+        )
+        =
+        
+          
+            {
+            
+              
+                
+                  +
+                  3
+                  ,
+                  
+                  
+                    a
+                    
+                      i
+                    
+                  
+                  =
+                  
+                    b
+                    
+                      j
+                    
+                  
+                
+              
+              
+                
+                  â
+                  3
+                  ,
+                  
+                  
+                    a
+                    
+                      i
+                    
+                  
+                  â 
+                  
+                    b
+                    
+                      j
+                    
+                  
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle s(a_{i},b_{j})={\begin{cases}+3,\quad a_{i}=b_{j}\\-3,\quad a_{i}\neq b_{j}\end{cases}}}
+  
+
+Gap penalty: 
+  
+    
+      
+        
+          W
+          
+            k
+          
+        
+        =
+        2
+        k
+      
+    
+    {\displaystyle W_{k}=2k}
+  
+ (a linear gap penalty of 
+  
+    
+      
+        
+          W
+          
+            1
+          
+        
+        =
+        2
+      
+    
+    {\displaystyle W_{1}=2}
+  
+)
+Initialize and fill the scoring matrix, shown as below. This figure shows the scoring process of the first three elements. The yellow color indicates the bases that are being considered. The red color indicates the highest possible score for the cell being scored.
+
+  Initialization of the scoring matrix (left 1) and the scoring process of the first three elements (left 2â4)
+The finished scoring matrix is shown below on the left. The blue color shows the highest score. An element can receive score from more than one element, each will form a different path if this element is traced back. In case of multiple highest scores, traceback should be done starting with each highest score. The traceback process is shown below on the right. The best local alignment is generated in the reverse direction.
+
+
+
+
+
+
+
+
+
+Finished scoring matrix (the highest score is in blue)
+
+Traceback process and alignment result
+
+The alignment result is:
+
+G T T - A C
+ 
+G T T G A C
+
+Implementation[edit]
+An implementation of the SmithâWaterman Algorithm, SSEARCH, is available in the FASTA sequence analysis package from UVA FASTA Downloads. This implementation includes Altivec accelerated code for PowerPC G4 and G5 processors that speeds up comparisons 10â20-fold, using a modification of the Wozniak, 1997 approach,[12] and an SSE2 vectorization developed by Farrar[13] making optimal protein sequence database searches quite practical. A library, SSW, extends Farrar's implementation to return alignment information in addition to the optimal SmithâWaterman score.[14]
+
+Accelerated versions[edit]
+FPGA[edit]
+Cray demonstrated acceleration of the SmithâWaterman algorithm using a reconfigurable computing platform based on FPGA chips, with results showing up to 28x speed-up over standard microprocessor-based solutions. Another FPGA-based version of the SmithâWaterman algorithm shows FPGA (Virtex-4) speedups up to 100x[15] over a 2.2Â GHz Opteron processor.[16]  The TimeLogic DeCypher and CodeQuest systems also accelerate SmithâWaterman and Framesearch using PCIe FPGA cards.
+A 2011 Master's thesis [17] includes an analysis of FPGA-based SmithâWaterman acceleration.
+In a 2016 publication OpenCL code compiled with Xilinx SDAccel accelerates genome sequencing, beats CPU/GPU performance/W by 12-21x, a very efficient implementation was presented. Using one PCIe FPGA card equipped with a Xilinx Virtex-7 2000T FPGA, the performance per Watt level was better than CPU/GPU by 12-21x.
+
+GPU[edit]
+Lawrence Livermore National Laboratory and the United States (US) Department of Energy's Joint Genome Institute implemented an accelerated version of SmithâWaterman local sequence alignment searches using graphics processing units (GPUs) with preliminary results showing a 2x speed-up over software implementations.[18] A similar method has already been implemented in the Biofacet software since 1997, with the same speed-up factor.[19]
+Several GPU implementations of the algorithm in NVIDIA's CUDA C platform are also available.[20] When compared to the best known CPU implementation (using SIMD instructions on the x86 architecture), by Farrar, the performance tests of this solution using a single NVidia GeForce 8800 GTX card show a slight increase in performance for smaller sequences, but a slight decrease in performance for larger ones. However, the same tests running on dual NVidia GeForce 8800 GTX cards are almost twice as fast as the Farrar implementation for all sequence sizes tested.
+A newer GPU CUDA implementation of SW is now available that is faster than previous versions and also removes limitations on query lengths.  See CUDASW++.
+Eleven different SW implementations on CUDA have been reported, three of which report speedups of 30X.[21]
+
+SIMD[edit]
+In 2000, a fast implementation of the SmithâWaterman algorithm using the single instruction, multiple data (SIMD) technology available in Intel Pentium MMX processors and similar technology was described in a publication by Rognes and Seeberg.[22] In contrast to the Wozniak (1997) approach, the new implementation was based on vectors parallel with the query sequence, not diagonal vectors. The company Sencel Bioinformatics has applied for a patent covering this approach. Sencel is developing the software further and provides executables for academic use free of charge.
+A SSE2 vectorization of the algorithm (Farrar, 2007) is now available providing an 8-16-fold speedup on Intel/AMD processors with SSE2 extensions.[13] When running on Intel processor using the Core microarchitecture the SSE2 implementation achieves a 20-fold increase. Farrar's SSE2 implementation is available as the SSEARCH program in the FASTA sequence comparison package. The SSEARCH is included in the European Bioinformatics Institute's suite of similarity searching programs.
+Danish bioinformatics company CLC bio has achieved speed-ups of close to 200 over standard software implementations with SSE2 on an Intel 2.17Â GHz Core 2 Duo CPU, according to a publicly available white paper.
+Accelerated version of the SmithâWaterman algorithm, on Intel and Advanced Micro Devices (AMD) based Linux servers, is supported by the GenCore 6 package, offered by Biocceleration. Performance benchmarks of this software package show up to 10 fold speed acceleration relative to standard software implementation on the same processor.
+Currently the only company in bioinformatics to offer both SSE and FPGA solutions accelerating SmithâWaterman, CLC bio has achieved speed-ups of more than 110 over standard software implementations with CLC Bioinformatics Cube.[citation needed]
+The fastest implementation of the algorithm on CPUs with SSSE3 can be found the SWIPE software (Rognes, 2011),[23] which is available under the GNU Affero General Public License. In parallel, this software compares residues from sixteen different database sequences to one query residue. Using a 375 residue query sequence a speed of 106 billion cell updates per second (GCUPS) was achieved on a dual Intel Xeon X5650 six-core processor system, which is over six times more rapid than software based on Farrar's 'striped' approach. It is faster than BLAST when using the BLOSUM50 matrix.
+An implementation of SmithâWaterman named diagonalsw, in C and C++, uses SIMD instruction sets (SSE4.1 for the x86 platform and AltiVec for the PowerPC platform). It is released under an open-source MIT License.
+
+Cell Broadband Engine[edit]
+In 2008, Farrar[24] described a port of the Striped SmithâWaterman[13] to the Cell Broadband Engine and reported speeds of 32 and 12 GCUPS on an IBM QS20 blade and a Sony PlayStation 3, respectively.
+
+Limitations[edit]
+Fast expansion of genetic data challenges speed of current DNA sequence alignment algorithms. Essential needs for an efficient and accurate method for DNA variant discovery demand innovative approaches for parallel processing in real time. Optical computing approaches have been suggested as promising alternatives to the current electrical implementations. OptCAM is an example of such approaches and is shown to be faster than the SmithâWaterman algorithm.[25]
+
+See also[edit]
+Bioinformatics
+Sequence alignment
+Sequence mining
+NeedlemanâWunsch algorithm
+Levenshtein distance
+BLAST
+FASTA
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Smith, Temple F. & Waterman, Michael S. (1981). "Identification of Common Molecular Subsequences" (PDF). Journal of Molecular Biology. 147 (1): 195â197. CiteSeerXÂ 10.1.1.63.2897. doi:10.1016/0022-2836(81)90087-5. PMIDÂ 7265238.
+
+^ Jump up to: a b c Osamu Gotoh (1982). "An improved algorithm for matching biological sequences". Journal of Molecular Biology. 162 (3): 705â708. CiteSeerXÂ 10.1.1.204.203. doi:10.1016/0022-2836(82)90398-9. PMIDÂ 7166760.
+
+^ Jump up to: a b c d Stephen F. Altschul & Bruce W. Erickson (1986). "Optimal sequence alignment using affine gap costs". Bulletin of Mathematical Biology. 48 (5â6): 603â616. doi:10.1007/BF02462326. PMIDÂ 3580642. S2CIDÂ 189889143.
+
+^ Jump up to: a b c Miller, Webb; Myers, Eugene (1988). "Optimal alignments in linear space". Bioinformatics. 4 (1): 11â17. CiteSeerXÂ 10.1.1.107.6989. doi:10.1093/bioinformatics/4.1.11. PMIDÂ 3382986.
+
+^ Saul B. Needleman; Christian D. Wunsch (1970). "A general method applicable to the search for similarities in the amino acid sequence of two proteins". Journal of Molecular Biology. 48 (3): 443â453. doi:10.1016/0022-2836(70)90057-4. PMIDÂ 5420325.
+
+^ Sankoff D. (1972). "Matching Sequences under Deletion/Insertion Constraints". Proceedings of the National Academy of Sciences of the United States of America. 69 (1): 4â6. Bibcode:1972PNAS...69....4S. doi:10.1073/pnas.69.1.4. PMCÂ 427531. PMIDÂ 4500555.
+
+^ Thomas A. Reichert; Donald N. Cohen; Andrew K.C. Wong (1973). "An application of information theory to genetic mutations and the matching of polypeptide sequences". Journal of Theoretical Biology. 42 (2): 245â261. Bibcode:1973JThBi..42..245R. doi:10.1016/0022-5193(73)90088-X. PMIDÂ 4762954.
+
+^ William A. Beyer, Myron L. Stein, Temple F. Smith, and Stanislaw M. Ulam (1974). "A molecular sequence metric and evolutionary trees". Mathematical Biosciences. 19 (1â2): 9â25. doi:10.1016/0025-5564(74)90028-5.{{cite journal}}:  CS1 maint: multiple names: authors list (link)
+
+^ Peter H. Sellers (1974). "On the Theory and Computation of Evolutionary Distances". Journal of Applied Mathematics. 26 (4): 787â793. doi:10.1137/0126070.
+
+^ M.S Waterman; T.F Smith; W.A Beyer (1976). "Some biological sequence metrics". Advances in Mathematics. 20 (3): 367â387. doi:10.1016/0001-8708(76)90202-4.
+
+^ D. S. Hirschberg (1975). "A linear space algorithm for computing maximal common subsequences". Communications of the ACM. 18 (6): 341â343. CiteSeerXÂ 10.1.1.348.4774. doi:10.1145/360825.360861. S2CIDÂ 207694727.
+
+^ Wozniak, Andrzej (1997). "Using video-oriented instructions to speed up sequence comparison". Computer Applications in the Biosciences. 13 (2): 145â50. doi:10.1093/bioinformatics/13.2.145. PMIDÂ 9146961.
+
+^ Jump up to: a b c Farrar, Michael S. (2007). "Striped SmithâWaterman speeds database searches six times over other SIMD implementations". Bioinformatics. 23 (2): 156â161. doi:10.1093/bioinformatics/btl582. PMIDÂ 17110365.
+
+^ Zhao, Mengyao; Lee, Wan-Ping; Garrison, Erik P; Marth, Gabor T (4 December 2013). "SSW Library: An SIMD Smith-Waterman C/C++ Library for Use in Genomic Applications". PLOS ONE. 8 (12): e82138. arXiv:1208.6350. Bibcode:2013PLoSO...882138Z. doi:10.1371/journal.pone.0082138. PMCÂ 3852983. PMIDÂ 24324759.
+
+^ FPGA 100x Papers: "Archived copy" (PDF). Archived from the original (PDF) on 2008-07-05. Retrieved 2007-10-17.{{cite web}}:  CS1 maint: archived copy as title (link), "Archived copy" (PDF). Archived from the original (PDF) on 2008-07-05. Retrieved 2007-10-17.{{cite web}}:  CS1 maint: archived copy as title (link), and "Archived copy" (PDF). Archived from the original (PDF) on 2011-07-20. Retrieved 2007-10-17.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ Progeniq Pte. Ltd., "White Paper - Accelerating Intensive Applications at 10Ãâ50Ã Speedup to Remove Bottlenecks in Computational Workflows".
+
+^ Vermij, Erik (2011). Genetic sequence alignment on a supercomputing platform (PDF) (M.Sc. thesis). Delft University of Technology. Archived from the original (PDF) on 2011-09-30. Retrieved 2011-08-17.
+
+^ Liu, Yang; Huang, Wayne; Johnson, John; Vaidya, Sheila (2006). GPU Accelerated SmithâWaterman. Lecture Notes in Computer Science. Vol.Â 3994. SpringerLink. pp.Â 188â195. doi:10.1007/11758549_29. ISBNÂ 978-3-540-34385-1.
+
+^ "Bioinformatics High Throughput Sequence Search and Analysis (white paper)". GenomeQuest. Archived from the original on May 13, 2008. Retrieved 2008-05-09.
+
+^ Manavski, Svetlin A. & Valle, Giorgio (2008). "CUDA compatible GPU cards as efficient hardware accelerators for SmithâWaterman sequence alignment". BMC Bioinformatics. 9 (Suppl 2:S10): S10. doi:10.1186/1471-2105-9-S2-S10. PMCÂ 2323659. PMIDÂ 18387198.
+
+^ "CUDA Zone". Nvidia. Retrieved 2010-02-25.
+
+^ Rognes, TorbjÃ¸rn; Seeberg, Erling (2000). "Six-fold speed-up of SmithâWaterman sequence database searches using parallel processing on common microprocessors". Bioinformatics. 16 (8): 699â706. doi:10.1093/bioinformatics/16.8.699. PMIDÂ 11099256.
+
+^ Rognes, TorbjÃ¸rn (2011). "Faster SmithâWaterman database searches with inter-sequence SIMD parallelisation". BMC Bioinformatics. 12: 221. doi:10.1186/1471-2105-12-221. PMCÂ 3120707. PMIDÂ 21631914.
+
+^ Farrar, Michael S. (2008). "Optimizing SmithâWaterman for the Cell Broadband Engine". Archived from the original on 2012-02-12. {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Maleki, Ehsan; Koohi, Somayyeh; Kavehvash, Zahra; Mashaghi, Alireza (2020). "OptCAM: An ultraâfast allâoptical architecture for DNA variant discovery". Journal of Biophotonics. 13 (1): e201900227. doi:10.1002/jbio.201900227. PMIDÂ 31397961.
+
+
+External links[edit]
+JAligner â an open source Java implementation of the SmithâWaterman algorithm
+B.A.B.A. â an applet (with source) which visually explains the algorithm
+FASTA/SSEARCH â services page at the EBI
+UGENE SmithâWaterman plugin â an open source SSEARCH compatible implementation of the algorithm with graphical interface written in C++
+OPAL â an SIMD C/C++ library for massive optimal sequence alignment
+diagonalsw â an open-source C/C++ implementation with SIMD instruction sets (notably SSE4.1) under the MIT license
+SSW â an open-source C++ library providing an API to an SIMD implemention of the SmithâWaterman algorithm under the MIT license
+melodic sequence alignment â a javascript implementation for melodic sequence alignment
+DRAGMAP A C++ port of the Illumina DRAGEN FPGA implementation
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteBioinformaticsDatabases
+Sequence databases: GenBank, European Nucleotide Archive and DNA Data Bank of Japan
+Secondary databases: UniProt, database of protein sequences grouping together Swiss-Prot, TrEMBL and Protein Information Resource
+Other databases: Protein Data Bank, Ensembl and InterPro
+Specialised genomic databases: BOLD, Saccharomyces Genome Database, FlyBase, VectorBase, WormBase, Rat Genome Database, PHI-base, Arabidopsis Information Resource and Zebrafish Information Network
+Software
+BLAST
+Bowtie
+Clustal
+EMBOSS
+HMMER
+MUSCLE
+SAMtools
+SOAP suite
+TopHat
+Other
+Server: ExPASy
+Ontology: Gene Ontology
+Rosalind (education platform)
+Institutions
+Broad Institute
+China National GeneBank (CNGB)
+Computational Biology Department (CBD)
+Microsoft Research - University of Trento Centre for Computational and Systems Biology (COSBI)
+Database Center for Life Science (DBCLS)
+DNA Data Bank of Japan (DDBJ)
+European Bioinformatics Institute (EMBL-EBI)
+European Molecular Biology Laboratory (EMBL)
+Flatiron Institute
+J. Craig Venter Institute (JCVI)
+Max Planck Institute of Molecular Cell Biology and Genetics (MPI-CBG)
+US National Center for Biotechnology Information (NCBI)
+Japanese Institute of Genetics
+Netherlands Bioinformatics Centre (NBIC)
+Philippine Genome Center (PGC)
+Scripps Research
+Swiss Institute of Bioinformatics (SIB)
+Wellcome Sanger Institute
+Whitehead Institute
+Organizations
+African Society for Bioinformatics and Computational Biology (ASBCB)
+Australia Bioinformatics Resource (EMBL-AR)
+European Molecular Biology network (EMBnet)
+International Nucleotide Sequence Database Collaboration (INSDC)
+International Society for Biocuration (ISB)
+International Society for Computational Biology (ISCB)
+Student Council (ISCB-SC)
+Institute of Genomics and Integrative Biology (CSIR-IGIB)
+Japanese Society for Bioinformatics (JSBi)
+Meetings
+Basel Computational Biology Conferenceâ ([BC2])
+European Conference on Computational Biology (ECCB)
+Intelligent Systems for Molecular Biology (ISMB)
+International Conference on Bioinformatics (InCoB)
+ISCB Africa ASBCB Conference on Bioinformatics
+Pacific Symposium on Biocomputing (PSB)
+Research in Computational Molecular Biology (RECOMB)
+File formats
+CRAM format
+FASTA format
+FASTQ format
+NeXML format
+Nexus format
+Pileup format
+SAM format
+Stockholm format
+VCF format
+Related topics
+Computational biology
+List of biobanks
+List of biological databases
+Molecular phylogenetics
+Sequencing
+Sequence database
+Sequence alignment
+
+ Category
+ Commons
+
+showvteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=SmithâWaterman_algorithm&oldid=1064412696"
+		Categories: Bioinformatics algorithmsComputational phylogeneticsSequence alignment algorithmsDynamic programmingHidden categories: CS1 maint: multiple names: authors listCS1 maint: archived copy as titleCS1 errors: missing periodicalArticles with short descriptionShort description matches WikidataAll articles with unsourced statementsArticles with unsourced statements from November 2011
+	

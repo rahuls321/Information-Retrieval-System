@@ -1,0 +1,1469 @@
+
+Title:
+Regular expression
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Sequence of characters that forms a search pattern
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"Regex" redirects here. For the comic book, see Re:Gex. For using regular expressions on Wikipedia, see Wikipedia:Regex.
+"Find and Replace" redirects here. For the audio drama, see Find and Replace (audio drama).
+  The match results of the pattern (?<=\.) {2,}(?=[A-Z])
+ At least two spaces are matched, but only if they occur directly after a period (.) and before an uppercase letter.
+  Stephen Cole Kleene, who introduced the concept
+  A blacklist on Wikipedia which uses regular expressions to identify bad titles
+A regular expression (shortened as regex or regexp;[1] also referred to as rational expression[2][3]) is a sequence of characters that specifies a search pattern in text. Usually such patterns are used by string-searching algorithms for "find" or "find and replace" operations on strings, or for input validation. It is a technique developed in theoretical computer science and formal language theory.
+The concept of regular expressions began in the 1950s, when the American mathematician Stephen Cole Kleene formalized the description of a regular language. They came into common use with Unix text-processing utilities. Different syntaxes for writing regular expressions have existed since the 1980s, one being the POSIX standard and another, widely used, being the Perl syntax.
+Regular expressions are used in search engines, search and replace dialogs of word processors and text editors, in text processing utilities such as sed and AWK and in lexical analysis. Many programming languages provide regex capabilities either built-in or via libraries, as it has uses in many situations.
+
+Contents
+
+1 History
+2 Patterns
+3 Basic concepts
+4 Formal language theory
+
+4.1 Formal definition
+4.2 Expressive power and compactness
+4.3 Deciding equivalence of regular expressions
+
+
+5 Syntax
+
+5.1 Delimiters
+5.2 Standards
+
+5.2.1 POSIX basic and extended
+5.2.2 POSIX extended
+5.2.3 Character classes
+
+
+5.3 Perl and PCRE
+5.4 Lazy matching
+5.5 Possessive matching
+
+
+6 Patterns for non-regular languages
+7 Implementations and running times
+8 Unicode
+9 Uses
+10 Examples
+11 Induction
+12 See also
+13 Notes
+14 References
+15 External links
+
+
+
+History[edit]
+Regular expressions originated in 1951, when mathematician Stephen Cole Kleene described regular languages using his mathematical notation called regular events.[4][5] These arose in theoretical computer science, in the subfields of automata theory (models of computation) and the description and classification of formal languages. Other early implementations of pattern matching include the SNOBOL language, which did not use regular expressions, but instead its own pattern matching constructs.
+Regular expressions entered popular use from 1968 in two uses: pattern matching in a text editor[6] and lexical analysis in a compiler.[7] Among the first appearances of regular expressions in program form was when Ken Thompson built Kleene's notation into the editor QED as a means to match patterns in text files.[6][8][9][10] For speed, Thompson implemented regular expression matching by just-in-time compilation (JIT) to IBM 7094 code on the Compatible Time-Sharing System, an important early example of JIT compilation.[11] He later added this capability to the Unix editor ed, which eventually led to the popular search tool grep's use of regular expressions ("grep" is a word derived from the command for regular expression searching in the ed editor: g/re/p meaning "Global search for Regular Expression and Print matching lines").[12] Around the same time when Thompson developed QED, a group of researchers including Douglas T. Ross implemented a tool based on regular expressions that is used for lexical analysis in compiler design.[7]
+Many variations of these original forms of regular expressions were used in Unix[10] programs at Bell Labs in the 1970s, including vi, lex, sed, AWK, and expr, and in other programs such as Emacs. Regexes were subsequently adopted by a wide range of programs, with these early forms standardized in the POSIX.2 standard in 1992.
+In the 1980s the more complicated regexes arose in Perl, which originally derived from a regex library written by Henry Spencer (1986), who later wrote an implementation of Advanced Regular Expressions for Tcl.[13] The Tcl library is a hybrid NFA/DFA implementation with improved performance characteristics. Software projects that have adopted Spencer's Tcl regular expression implementation include PostgreSQL.[14] Perl later expanded on Spencer's original library to add many new features.[15] Part of the effort in the design of Raku (formerly named Perl 6) is to improve Perl's regex integration, and to increase their scope and capabilities to allow the definition of parsing expression grammars.[16] The result is a mini-language called Raku rules, which are used to define Raku grammar as well as provide a tool to programmers in the language. These rules maintain existing features of Perl 5.x regexes, but also allow BNF-style definition of a recursive descent parser via sub-rules.
+The use of regexes in structured information standards for document and database modeling started in the 1960s and expanded in the 1980s when industry standards like ISO SGML (precursored by ANSI "GCA 101-1983") consolidated. The kernel of the structure specification language standards consists of regexes. Its use is evident in the DTD element group syntax. Prior to the use of regular expressions, many search languages allowed simple wildcards, for example "*" to match any sequence of characters, and "?" to match a single character. Relics of this can be found today in the glob syntax for filenames, and in the SQL LIKE operator.
+Starting in 1997, Philip Hazel developed PCRE (Perl Compatible Regular Expressions), which attempts to closely mimic Perl's regex functionality and is used by many modern tools including PHP and Apache HTTP Server.
+Today, regexes are widely supported in programming languages, text processing programs (particularly lexers), advanced text editors, and some other programs. Regex support is part of the standard library of many programming languages, including Java and Python, and is built into the syntax of others, including Perl and ECMAScript. Implementations of regex functionality is often called a regex engine, and a number of libraries are available for reuse. In the late 2010s, several companies started to offer hardware, FPGA,[17] GPU[18] implementations of PCRE compatible regex engines that are faster compared to CPU implementations.
+
+Patterns[edit]
+The phrase regular expressions, or regexes, is often used to mean the specific, standard textual syntax for representing patterns for matching text, as distinct from the mathematical notation described below. Each character in a regular expression (that is, each character in the string describing its pattern) is either a metacharacter, having a special meaning, or a regular character that has a literal meaning. For example, in the regex b., 'b' is a literal character that matches just 'b', while '.' is a metacharacter that matches every character except a newline. Therefore, this regex matches, for example, 'b%', or 'bx', or 'b5'. Together, metacharacters and literal characters can be used to identify text of a given pattern or process a number of instances of it. Pattern matches may vary from a precise equality to a very general similarity, as controlled by the metacharacters. For example, . is a very general pattern, [a-z] (match all lower case letters from 'a' to 'z') is less general and b is a precise pattern (matches just 'b'). The metacharacter syntax is designed specifically to represent prescribed targets in a concise and flexible way to direct the automation of text processing of a variety of input data, in a form easy to type using a standard ASCII keyboard.
+A very simple case of a regular expression in this syntax is to locate a word spelled two different ways in a text editor, the regular expression seriali[sz]e matches both "serialise" and "serialize". Wildcard characters also achieve this, but are more limited in what they can pattern, as they have fewer metacharacters and a simple language-base.
+The usual context of wildcard characters is in globbing similar names in a list of files, whereas regexes are usually employed in applications that pattern-match text strings in general. For example, the regex ^[ \t]+|[ \t]+$ matches excess whitespace at the beginning or end of a line. An advanced regular expression that matches any numeral is [+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?.
+
+  Translating the Kleene star(s* means "zero or more of s")
+A regex processor translates a regular expression in the above syntax into an internal representation that can be executed and matched against a string representing the text being searched in. One possible approach is the Thompson's construction algorithm to construct a nondeterministic finite automaton (NFA), which is then made deterministic and the resulting deterministic finite automaton (DFA) is run on the target text string to recognize substrings that match the regular expression.
+The picture shows the NFA scheme N(s*) obtained from the regular expression s*, where s denotes a simpler regular expression in turn, which has already been recursively translated to the NFA N(s).
+
+Basic concepts[edit]
+A regular expression, often called a pattern, specifies a set of strings required for a particular purpose. A simple way to specify a finite set of strings is to list its elements or members. However, there are often more concise ways: for example, the set containing the three strings "Handel", "HÃ¤ndel", and "Haendel" can be specified by the pattern H(Ã¤|ae?)ndel; we say that this pattern matches each of the three strings. However, there can be many ways to write a regular expression for the same set of strings: for example, (HÃ¤n|Han|Haen)del also specifies the same set of three strings in this example.
+Most formalisms provide the following operations to construct regular expressions.
+
+Boolean "or"
+A vertical bar separates alternatives. For example, gray|grey can match "gray" or "grey".
+Grouping
+Parentheses are used to define the scope and precedence of the operators (among other uses). For example, gray|grey and gr(a|e)y are equivalent patterns which both describe the set of "gray" or "grey".
+Quantification
+A quantifier after a token (such as a character) or group specifies how often that a preceding element is allowed to occur. The most common quantifiers are the question mark ?, the asterisk * (derived from the Kleene star), and the plus sign + (Kleene plus).
+
+
+?
+
+The question mark indicates zero or one occurrences of the preceding element. For example, colou?r matches both "color" and "colour".
+
+
+*
+
+The asterisk indicates zero or more occurrences of the preceding element. For example, ab*c matches "ac", "abc", "abbc", "abbbc", and so on.
+
+
++
+
+The plus sign indicates one or more occurrences of the preceding element. For example, ab+c matches "abc", "abbc", "abbbc", and so on, but not "ac".
+
+
+{n}[19]
+
+The preceding item is matched exactly n times.
+
+
+{min,}[19]
+
+The preceding item is matched min or more times.
+
+
+{,max}[19]
+
+The preceding item is matched up to max times.
+
+
+{min,max}[19]
+
+The preceding item is matched at least min times, but not more than max times.
+
+Wildcard
+The wildcard . matches any character. For example, a.b matches any string that contains an "a", and then any character and then "b"; and a.*b matches any string that contains an "a", and then the character "b" at some later point.
+These constructions can be combined to form arbitrarily complex expressions, much like one can construct arithmetical expressions from numbers and the operations +, â, Ã, and Ã·. For example, H(ae?|Ã¤)ndel and H(a|ae|Ã¤)ndel are both valid patterns which match the same strings as the earlier example, H(Ã¤|ae?)ndel.
+The precise syntax for regular expressions varies among tools and with context; more detail is given in Â§Â Syntax.
+
+Formal language theory[edit]
+Regular expressions describe regular languages in formal language theory. They have the same expressive power as regular grammars.
+
+Formal definition[edit]
+Regular expressions consist of constants, which denote sets of strings, and operator symbols, which denote operations over these sets. The following definition is standard, and found as such in most textbooks on formal language theory.[20][21] Given a finite alphabet Î£, the following constants are defined
+as regular expressions:
+
+(empty set) â denoting the set â.
+(empty string) Îµ denoting the set containing only the "empty" string, which has no characters at all.
+(literal character) a in Î£ denoting the set containing only the character a.
+Given regular expressions R and S, the following operations over them are defined
+to produce regular expressions:
+
+(concatenation) (RS) denotes the set of strings that can be obtained by concatenating a string accepted by R and a string accepted by S (in that order). For example, let R denote {"ab", "c"} and S denote {"d", "ef"}. Then, (RS) denotes {"abd", "abef", "cd", "cef"}.
+(alternation) (R|S) denotes the set union of sets described by R and S. For example, if R describes {"ab", "c"} and S describes {"ab", "d", "ef"}, expression (R|S) describes {"ab", "c", "d", "ef"}.
+(Kleene star) (R*) denotes the smallest superset of the set described by R that contains Îµ and is closed under string concatenation. This is the set of all strings that can be made by concatenating any finite number (including zero) of strings from the set described by R. For example, if R denotes {"0", "1"}, (R*) denotes the set of all finite binary strings (including the empty string). If R denotes {"ab", "c"}, (R*) denotes {Îµ, "ab", "c", "abab", "abc", "cab", "cc", "ababab", "abcab", ... }.
+To avoid parentheses it is assumed that the Kleene star has the highest priority, then concatenation and then alternation. If there is no ambiguity then parentheses may be omitted. For example, (ab)c can be written as abc, and a|(b(c*)) can be written as a|bc*.
+Many textbooks use the symbols âª, +, or â¨ for alternation instead of the vertical bar.
+Examples:
+
+a|b* denotes {Îµ, "a", "b", "bb", "bbb", ...}
+(a|b)* denotes the set of all strings with no symbols other than "a" and "b", including the empty string: {Îµ, "a", "b", "aa", "ab", "ba", "bb", "aaa", ...}
+ab*(c|Îµ) denotes the set of strings starting with "a", then zero or more "b"s and finally optionally a "c": {"a", "ac", "ab", "abc", "abb", "abbc", ...}
+(0|(1(01*0)*1))* denotes the set of binary numbers that are multiples of 3: { Îµ, "0", "00", "11", "000", "011", "110", "0000", "0011", "0110", "1001", "1100", "1111", "00000", ... }
+Expressive power and compactness[edit]
+The formal definition of regular expressions is minimal on purpose, and avoids defining ? and +âthese can be expressed as follows: a+ = aa*, and a? = (a|Îµ). Sometimes the complement operator is added, to give a generalized regular expression; here Rc matches all strings over Î£* that do not match R. In principle, the complement operator is redundant, because it doesn't grant any more expressive power. However, it can make a regular expression much more conciseâeliminating a single complement operator can cause a double exponential blow-up of its length.[22][23][24]
+Regular expressions in this sense can express the regular languages, exactly the class of languages accepted by deterministic finite automata. There is, however, a significant difference in compactness. Some classes of regular languages can only be described by deterministic finite automata whose size grows exponentially in the size of the shortest equivalent regular expressions. The standard example here is the languages
+Lk consisting of all strings over the alphabet {a,b} whose kth-from-last letter equalsÂ a. On the one hand, a regular expression describing L4 is given by
+
+  
+    
+      
+        (
+        a
+        â£
+        b
+        
+          )
+          
+            â
+          
+        
+        a
+        (
+        a
+        â£
+        b
+        )
+        (
+        a
+        â£
+        b
+        )
+        (
+        a
+        â£
+        b
+        )
+      
+    
+    {\displaystyle (a\mid b)^{*}a(a\mid b)(a\mid b)(a\mid b)}
+  
+.
+Generalizing this pattern to Lk gives the expression:
+
+  
+    
+      
+        (
+        a
+        â£
+        b
+        
+          )
+          
+            â
+          
+        
+        a
+        
+          
+            
+              
+                (
+                a
+                â£
+                b
+                )
+                (
+                a
+                â£
+                b
+                )
+                â¯
+                (
+                a
+                â£
+                b
+                )
+              
+              â
+            
+          
+          
+            k
+            â
+            1
+            
+              Â times
+            
+          
+        
+        .
+        
+      
+    
+    {\displaystyle (a\mid b)^{*}a\underbrace {(a\mid b)(a\mid b)\cdots (a\mid b)} _{k-1{\text{ times}}}.\,}
+  
+
+On the other hand, it is known that every deterministic finite automaton accepting the language Lk must have at least 2k states. Luckily, there is a simple mapping from regular expressions to the more general nondeterministic finite automata (NFAs) that does not lead to such a blowup in size; for this reason NFAs are often used as alternative representations of regular languages. NFAs are a simple variation of the type-3 grammars of the Chomsky hierarchy.[20]
+In the opposite direction, there are many languages easily described by a DFA that are not easily described by a regular expression. For instance, determining the validity of a given ISBN requires computing the modulus of the integer base 11, and can be easily implemented with an 11-state DFA. However, a regular expression to answer the same problem of divisibility by 11 is at least multiple megabytes in length.[citation needed]
+Given a regular expression, Thompson's construction algorithm computes an equivalent nondeterministic finite automaton. A conversion in the opposite direction is achieved by Kleene's algorithm.
+Finally, it is worth noting that many real-world "regular expression" engines implement features that cannot be described by the regular expressions in the sense of formal language theory; rather, they implement regexes. See below for more on this.
+
+Deciding equivalence of regular expressions[edit]
+As seen in many of the examples above, there is more than one way to construct a regular expression to achieve the same results.
+It is possible to write an algorithm that, for two given regular expressions, decides whether the described languages are equal; the algorithm reduces each expression to a minimal deterministic finite state machine, and determines whether they are isomorphic (equivalent).
+Algebraic laws for regular expressions can be obtained using a method by Gischer which is best explained along an example: In order to check whether (X+Y)* and (X* Y*)* denote the same regular language, for all regular expressions X, Y, it is necessary and sufficient to check whether the particular regular expressions (a+b)* and (a* b*)* denote the same language over the alphabet Î£={a,b}. More generally, an equation E=F between regular-expression terms with variables holds if, and only if, its instantiation with different variables replaced by different symbol constants holds.[25][26]
+Every regular expression can be written solely in terms of the Kleene star and set unions. This is a surprisingly difficult problem. As simple as the regular expressions are, there is no method to systematically rewrite them to some normal form. The lack of axiom in the past led to the star height problem. In 1991, Dexter Kozen axiomatized regular expressions as a Kleene algebra, using equational and Horn clause axioms.[27]
+Already in 1964, Redko had proved that no finite set of purely equational axioms can characterize the algebra of regular languages.[28]
+
+Syntax[edit]
+A regex pattern matches a target string. The pattern is composed of a sequence of atoms. An atom is a single point within the regex pattern which it tries to match to the target string. The simplest atom is a literal, but grouping parts of the pattern to match an atom will require using (Â ) as metacharacters. Metacharacters help form: atoms; quantifiers telling how many atoms (and whether it is a greedy quantifier or not); a logical OR character, which offers a set of alternatives, and a logical NOT character, which negates an atom's existence; and backreferences to refer to previous atoms of a completing pattern of atoms. A match is made, not when all the atoms of the string are matched, but rather when all the pattern atoms in the regex have matched. The idea is to make a small pattern of characters stand for a large number of possible strings, rather than compiling a large list of all the literal possibilities.
+Depending on the regex processor there are about fourteen metacharacters, characters that may or may not have their literal character meaning, depending on context, or whether they are "escaped", i.e. preceded by an escape sequence, in this case, the backslash \. Modern and POSIX extended regexes use metacharacters more often than their literal meaning, so to avoid "backslash-osis" or leaning toothpick syndrome it makes sense to have a metacharacter escape to a literal mode; but starting out, it makes more sense to have the four bracketing metacharacters (Â ) and {Â } be primarily literal, and "escape" this usual meaning to become metacharacters. Common standards implement both. The usual metacharacters are  {}[]()^$.|*+? and \. The usual characters that become metacharacters when escaped are dswDSW and N.
+
+Delimiters[edit]
+When entering a regex in a programming language, they may be represented as a usual string literal, hence usually quoted; this is common in C, Java, and Python for instance, where the regex re is entered as "re". However, they are often written with slashes as delimiters, as in /re/ for the regex re. This originates in ed, where / is the editor command for searching, and an expression /re/ can be used to specify a range of lines (matching the pattern), which can be combined with other commands on either side, most famously g/re/p as in grep ("global regex print"), which is included in most Unix-based operating systems, such as Linux distributions. A similar convention is used in sed, where search and replace is given by s/re/replacement/ and patterns can be joined with a comma to specify a range of lines as in /re1/,/re2/. This notation is particularly well known due to its use in Perl, where it forms part of the syntax distinct from normal string literals. In some cases, such as sed and Perl, alternative delimiters can be used to avoid collision with contents, and to avoid having to escape occurrences of the delimiter character in the contents. For example, in sed the command s,/,X, will replace a / with an X, using commas as delimiters.
+
+Standards[edit]
+The IEEE POSIX standard has three sets of compliance: BRE (Basic Regular Expressions),[29] ERE (Extended Regular Expressions), and SRE (Simple Regular Expressions). SRE is deprecated,[30] in favor of BRE, as both provide backward compatibility. The subsection below covering the character classes applies to both BRE and ERE.
+BRE and ERE work together. ERE adds ?, +, and |, and it removes the need to escape the metacharacters (Â ) and {Â }, which are required in BRE. Furthermore, as long as the POSIX standard syntax for regexes is adhered to, there can be, and often is, additional syntax to serve specific (yet POSIX compliant) applications. Although POSIX.2 leaves some implementation specifics undefined, BRE and ERE provide a "standard" which has since been adopted as the default syntax of many tools, where the choice of BRE or ERE modes is usually a supported option. For example, GNU grep has the following options: "grep -E" for ERE, and "grep -G" for BRE (the default), and "grep -P" for Perl regexes.
+Perl regexes have become a de facto standard, having a rich and powerful set of atomic expressions. Perl has no "basic" or "extended" levels. As in POSIX EREs, (Â ) and {Â } are treated as metacharacters unless escaped; other metacharacters are known to be literal or symbolic based on context alone. Additional functionality includes lazy matching, backreferences, named capture groups, and recursive patterns.
+
+POSIX basic and extended[edit]
+In the POSIX standard, Basic Regular Syntax (BRE) requires that the metacharacters (Â ) and {Â } be designated \(\) and \{\}, whereas Extended Regular Syntax (ERE) does not.
+
+
+
+
+Metacharacter
+
+Description
+
+
+^
+
+Matches the starting position within the string. In line-based tools, it matches the starting position of any line.
+
+
+.
+
+Matches any single character (many applications exclude newlines, and exactly which characters are considered newlines is flavor-, character-encoding-, and platform-specific, but it is safe to assume that the line feed character is included). Within POSIX bracket expressions, the dot character matches a literal dot. For example, a.c matches "abc", etc., but [a.c] matches only "a", ".", or "c".
+
+
+[Â ]
+
+A bracket expression. Matches a single character that is contained within the brackets. For example, [abc] matches "a", "b", or "c". [a-z] specifies a range which matches any lowercase letter from "a" to "z". These forms can be mixed: [abcx-z] matches "a", "b", "c", "x", "y", or "z", as does [a-cx-z].
+The - character is treated as a literal character if it is the last or the first (after the ^, if present) character within the brackets: [abc-], [-abc]. Note that backslash escapes are not allowed. The ] character can be included in a bracket expression if it is the first (after the ^) character: []abc].
+
+
+
+[^Â ]
+
+Matches a single character that is not contained within the brackets. For example, [^abc] matches any character other than "a", "b", or "c". [^a-z] matches any single character that is not a lowercase letter from "a" to "z". Likewise, literal characters and ranges can be mixed.
+
+
+$
+
+Matches the ending position of the string or the position just before a string-ending newline. In line-based tools, it matches the ending position of any line.
+
+
+( )
+
+Defines a marked subexpression. The string matched within the parentheses can be recalled later (see the next entry, \n). A marked subexpression is also called a block or capturing group. BRE mode requires \(Â \).
+
+
+\n
+
+Matches what the nth marked subexpression matched, where n is a digit from 1 to 9. This construct is vaguely defined in the POSIX.2 standard. Some tools allow referencing more than nine capturing groups. Also known as a backreference. backreferences are only supported in BRE mode
+
+
+*
+
+Matches the preceding element zero or more times. For example, ab*c matches "ac", "abc", "abbbc", etc. [xyz]* matches "", "x", "y", "z", "zx", "zyx", "xyzzy", and so on. (ab)* matches "", "ab", "abab", "ababab", and so on.
+
+
+{m,n}
+
+Matches the preceding element at least m and not more than n times. For example, a{3,5} matches only "aaa", "aaaa", and "aaaaa". This is not found in a few older instances of regexes. BRE mode requires \{m,n\}.
+
+Examples:
+
+.at matches any three-character string ending with "at", including "hat", "cat", "bat", "4at", "#at" and " at" (starting with a space).
+[hc]at matches "hat" and "cat".
+[^b]at matches all strings matched by .at except "bat".
+[^hc]at matches all strings matched by .at other than "hat" and "cat".
+^[hc]at matches "hat" and "cat", but only at the beginning of the string or line.
+[hc]at$ matches "hat" and "cat", but only at the end of the string or line.
+\[.\] matches any single character surrounded by "[" and "]" since the brackets are escaped, for example: "[a]", "[b]", "[7]", "[@]", "[]]", and "[ ]" (bracket space bracket).
+s.* matches s followed by zero or more characters, for example: "s", "saw", "seed", "s3w96.7", and "s6#h%(>>>m n mQ".
+POSIX extended[edit]
+The meaning of metacharacters escaped with a backslash is reversed for some characters in the POSIX Extended Regular Expression (ERE) syntax. With this syntax, a backslash causes the metacharacter to be treated as a literal character. So, for example, \(Â \) is now (Â ) and \{Â \} is now {Â }. Additionally, support is removed for \n backreferences and the following metacharacters are added:
+
+
+
+
+Metacharacter
+
+Description
+
+
+?
+
+Matches the preceding element zero or one time. For example, ab?c matches only "ac" or "abc".
+
+
++
+
+Matches the preceding element one or more times. For example, ab+c matches "abc", "abbc", "abbbc", and so on, but not "ac".
+
+
+|
+
+The choice (also known as alternation or set union) operator matches either the expression before or the expression after the operator. For example, abc|def matches "abc" or "def".
+
+Examples:
+
+[hc]?at matches "at", "hat", and "cat".
+[hc]*at matches "at", "hat", "cat", "hhat", "chat", "hcat", "cchchat", and so on.
+[hc]+at matches "hat", "cat", "hhat", "chat", "hcat", "cchchat", and so on, but not "at".
+cat|dog matches "cat" or "dog".
+POSIX Extended Regular Expressions can often be used with modern Unix utilities by including the command line flag -E.
+
+Character classes[edit]
+The character class is the most basic regex concept after a literal match. It makes one small sequence of characters match a larger set of characters. For example, [A-Z] could stand for any uppercase letter in the English alphabet, and \d could mean any digit. Character classes apply to both POSIX levels.
+When specifying a range of characters, such as [a-Z] (i.e. lowercase a to uppercase Z), the computer's locale settings determine the contents by the numeric ordering of the character encoding. They could store digits in that sequence, or the ordering could be abcâ¦zABCâ¦Z, or aAbBcCâ¦zZ. So the POSIX standard defines a character class, which will be known by the regex processor installed. Those definitions are in the following table:
+
+
+
+
+Description
+
+POSIX
+Non-standard
+Perl/Tcl
+Vim
+Java
+ASCII
+
+
+ASCII characters
+
+
+
+[:ascii:][31]
+
+
+
+
+
+\p{ASCII}
+
+[\x00-\x7F]
+
+
+Alphanumeric characters
+
+[:alnum:]
+
+
+
+
+
+
+
+\p{Alnum}
+
+[A-Za-z0-9]
+
+
+Alphanumeric characters plus "_"
+
+
+
+[:word:][31]
+
+\w
+
+\w
+
+\w
+
+[A-Za-z0-9_]
+
+
+Non-word characters
+
+
+
+
+
+\W
+
+\W
+
+\W
+
+[^A-Za-z0-9_]
+
+
+Alphabetic characters
+
+[:alpha:]
+
+
+
+
+
+\a
+
+\p{Alpha}
+
+[A-Za-z]
+
+
+Space and tab
+
+[:blank:]
+
+
+
+
+
+\s
+
+\p{Blank}
+
+[ \t]
+
+
+Word boundaries
+
+
+
+
+
+\b
+
+\< \>
+
+\b
+
+(?<=\W)(?=\w)|(?<=\w)(?=\W)
+
+
+Non-word boundaries
+
+
+
+
+
+
+
+
+
+\B
+
+(?<=\W)(?=\W)|(?<=\w)(?=\w)
+
+
+Control characters
+
+[:cntrl:]
+
+
+
+
+
+
+
+\p{Cntrl}
+
+[\x00-\x1F\x7F]
+
+
+Digits
+
+[:digit:]
+
+
+
+\d
+
+\d
+
+\p{Digit} or \d
+
+[0-9]
+
+
+Non-digits
+
+
+
+
+
+\D
+
+\D
+
+\D
+
+[^0-9]
+
+
+Visible characters
+
+[:graph:]
+
+
+
+
+
+
+
+\p{Graph}
+
+[\x21-\x7E]
+
+
+Lowercase letters
+
+[:lower:]
+
+
+
+
+
+\l
+
+\p{Lower}
+
+[a-z]
+
+
+Visible characters and the space character
+
+[:print:]
+
+
+
+
+
+\p
+
+\p{Print}
+
+[\x20-\x7E]
+
+
+Punctuation characters
+
+[:punct:]
+
+
+
+
+
+
+
+\p{Punct}
+
+[][!"#$%&'()*+,./:;<=>?@\^_`{|}~-]
+
+
+Whitespace characters
+
+[:space:]
+
+
+
+\s
+
+\_s
+
+\p{Space} or \s
+
+[ \t\r\n\v\f]
+
+
+Non-whitespace characters
+
+
+
+
+
+\S
+
+\S
+
+\S
+
+[^ \t\r\n\v\f]
+
+
+Uppercase letters
+
+[:upper:]
+
+
+
+
+
+\u
+
+\p{Upper}
+
+[A-Z]
+
+
+Hexadecimal digits
+
+[:xdigit:]
+
+
+
+
+
+\x
+
+\p{XDigit}
+
+[A-Fa-f0-9]
+
+POSIX character classes can only be used within bracket expressions. For example, [[:upper:]ab] matches the uppercase letters and lowercase "a" and "b".
+An additional non-POSIX class understood by some tools is [:word:], which is usually defined as [:alnum:] plus underscore. This reflects the fact that in many programming languages these are the characters that may be used in identifiers. The editor Vim further distinguishes word and word-head classes (using the notation \w and \h) since in many programming languages the characters that can begin an identifier are not the same as those that can occur in other positions: numbers are generally excluded, so an identifier would look like \h\w* or [[:alpha:]_][[:alnum:]_]* in POSIX notation.
+Note that what the POSIX regex standards call character classes are commonly referred to as POSIX character classes in other regex flavors which support them. With most other regex flavors, the term character class is used to describe what POSIX calls bracket expressions.
+
+Perl and PCRE[edit]
+See also: Perl Compatible Regular Expressions
+Because of its expressive power and (relative) ease of reading, many other utilities and programming languages have adopted syntax similar to Perl's â for example, Java, JavaScript, Julia, Python, Ruby, Qt, Microsoft's .NET Framework, and XML Schema. Some languages and tools such as Boost and PHP support multiple regex flavors. Perl-derivative regex implementations are not identical and usually implement a subset of features found in Perl 5.0, released in 1994. Perl sometimes does incorporate features initially found in other languages. For example, Perl 5.10 implements syntactic extensions originally developed in PCRE and Python.[32]
+
+Lazy matching[edit]
+In Python and some other implementations (e.g. Java), the three common quantifiers (*, + and ?) are greedy by default because they match as many characters as possible.[33] The regex ".+" (including the double-quotes) applied to the string
+
+"Ganymede," he continued, "is the largest moon in the Solar System."
+
+matches the entire line (because the entire line begins and ends with a double-quote) instead of matching only the first part, "Ganymede,". The aforementioned quantifiers may, however, be made lazy or minimal or reluctant, matching as few characters as possible, by appending a question mark: ".+?" matches only "Ganymede,".[33]
+However, the whole sentence can still be matched in some circumstances. The question-mark operator does not change the meaning of the dot operator, so this still can match the double-quotes in the input. A pattern like ".*?" EOF will still match the whole input if this is the string:
+
+"Ganymede," he continued, "is the largest moon in the Solar System." EOF
+
+To ensure that the double-quotes cannot be part of the match, the dot has to be replaced (e.g. "[^"]*"). This will match a quoted text part without additional double-quotes in it. (By removing the possibility of matching the fixed suffix, i.e. ", this has also transformed the lazy-match to a greedy-match, so the ? is no longer needed.)[citation needed]
+
+Possessive matching[edit]
+In Java, quantifiers may be made possessive by appending a plus sign, which disables backing off (in a backtracking engine), even if doing so would allow the overall match to succeed:[34] While the regex ".*" applied to the string
+
+"Ganymede," he continued, "is the largest moon in the Solar System."
+
+matches the entire line, the regex ".*+" does not match at all, because .*+ consumes the entire input, including the final ". Thus, possessive quantifiers are most useful with negated character classes, e.g. "[^"]*+", which matches "Ganymede," when applied to the same string.
+Another common extension serving the same function is atomic grouping, which disables backtracking for a parenthesized group. The typical syntax is .mw-parser-output .monospaced{font-family:monospace,monospace}(?>group). For example, while ^(wi|w)i$ matches both wi and wii, ^(?>wi|w)i$ only matches wii because the engine is forbidden from backtracking and try with setting the group as "w".[35]
+Possessive quantifiers are easier to implement than greedy and lazy quantifiers, and are typically more efficient at runtime.[34]
+
+Patterns for non-regular languages[edit]
+Many features found in virtually all modern regular expression libraries provide an expressive power that exceeds the regular languages. For example, many implementations allow grouping subexpressions with parentheses and recalling the value they match in the same expression (.mw-parser-output .vanchor>:target~.vanchor-text{background-color:#b1d2ff}backreferences). This means that, among other things, a pattern can match strings of repeated words like "papa" or "WikiWiki", called squares in formal language theory. The pattern for these strings is (.+)\1.
+The language of squares is not regular, nor is it context-free, due to the pumping lemma. However, pattern matching with an unbounded number of backreferences, as supported by numerous modern tools, is still context sensitive.[36] The general problem of matching any number of backreferences is NP-complete, growing exponentially by the number of backref groups used.[37]
+However, many tools, libraries, and engines that provide such constructions still use the term regular expression for their patterns. This has led to a nomenclature where the term regular expression has different meanings in formal language theory and pattern matching. For this reason, some people have taken to using the term regex, regexp, or simply pattern to describe the latter. Larry Wall, author of the Perl programming language, writes in an essay about the design of Raku:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}"Regular expressions" [â¦] are only marginally related to real regular expressions. Nevertheless, the term has grown with the capabilities of our pattern matching engines, so I'm not going to try to fight linguistic necessity here. I will, however, generally call them "regexes" (or "regexen", when I'm in an Anglo-Saxon mood).[16]
+
+
+Assertion
+Lookbehind
+Lookahead
+
+
+Positive
+
+(?<=pattern)
+
+(?=pattern)
+
+
+Negative
+
+(?<!pattern)
+
+(?!pattern)
+
+
+Look-behind and look-ahead assertionsin Perl regular expressions
+
+Other features not found in describing regular languages include assertions. These include the ubiquitous ^ and $, as well as some more sophisticated extensions like lookaround. They define the surrounding of a match and don't spill into the match itself, a feature only relevant for the use case of string searching. Some of them can be simulated in a regular language by treating the surroundings as a part of the language as well.[38]
+
+Implementations and running times[edit]
+There are at least three different algorithms that decide whether and how a given regex matches a string.
+The oldest and fastest relies on a result in formal language theory that allows every nondeterministic finite automaton (NFA) to be transformed into a deterministic finite automaton (DFA). The DFA can be constructed explicitly and then run on the resulting input string one symbol at a time. Constructing the DFA for a regular expression of size m has the time and memory cost of O(2m), but it can be run on a string of size n in time O(n).  Note that the size of the expression is the size after abbreviations, such as numeric quantifiers, have been expanded.
+An alternative approach is to simulate the NFA directly, essentially building each DFA state on demand and then discarding it at the next step. This keeps the DFA implicit and avoids the exponential construction cost, but running cost rises to O(mn). The explicit approach is called the DFA algorithm and the implicit approach the NFA algorithm. Adding caching to the NFA algorithm is often called the "lazy DFA" algorithm, or just the DFA algorithm without making a distinction. These algorithms are fast, but using them for recalling grouped subexpressions, lazy quantification, and similar features is tricky.[39][40] Modern implementations include the re1-re2-sregex family based on Cox's code.
+The third algorithm is to match the pattern against the input string by backtracking. This algorithm is commonly called NFA, but this terminology can be confusing. Its running time can be exponential, which simple implementations exhibit when matching against expressions like (a|aa)*b that contain both alternation and unbounded quantification and force the algorithm to consider an exponentially increasing number of sub-cases. This behavior can cause a security problem called Regular expression Denial of Service (ReDoS).
+Although backtracking implementations only give an exponential guarantee in the worst case, they provide much greater flexibility and expressive power. For example, any implementation which allows the use of backreferences, or implements the various extensions introduced by Perl, must include some kind of backtracking. Some implementations try to provide the best of both algorithms by first running a fast DFA algorithm, and revert to a potentially slower backtracking algorithm only when a backreference is encountered during the match. GNU grep (and the underlying gnulib DFA) uses such a strategy.[41]
+Sublinear runtime algorithms have been achieved using Boyer-Moore (BM) based algorithms and related DFA optimization techniques such as the reverse scan.[42] GNU grep, which supports a wide variety of POSIX syntaxes and extensions, uses BM for a first-pass prefiltering, and then uses an implicit DFA. Wu agrep, which implements approximate matching, combines the prefiltering into the DFA in BDM (backward DAWG matching). NR-grep's BNDM extends the BDM technique with Shift-Or bit-level parallelism.[43]
+A few theoretical alternatives to backtracking for backreferences exist, and their "exponents" are tamer in that they are only related to the number of backreferences, a fixed property of some regexp languages such as POSIX. One naive method that duplicates a non-backtracking NFA for each backreference note has a complexity of 
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        
+          n
+          
+            2
+            k
+            +
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle {\mathrm {O} }(n^{2k+2})}
+  
+ time and 
+  
+    
+      
+        
+          
+            O
+          
+        
+        (
+        
+          n
+          
+            2
+            k
+            +
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle {\mathrm {O} }(n^{2k+1})}
+  
+ space for a haystack of length n and k backreferences in the RegExp.[44] A very recent theoretical work based on memory automata gives a tighter bound based on "active" variable nodes used, and a polynomial possibility for some backreferenced regexps.[45]
+
+Unicode[edit]
+In theoretical terms, any token set can be matched by regular expressions as long as it is pre-defined. In terms of historical implementations, regexes were originally written to use ASCII characters as their token set though regex libraries have supported numerous other character sets. Many modern regex engines offer at least some support for Unicode. In most respects it makes no difference what the character set is, but some issues do arise when extending regexes to support Unicode.
+
+Supported encoding. Some regex libraries expect to work on some particular encoding instead of on abstract Unicode characters. Many of these require the UTF-8 encoding, while others might expect UTF-16, or UTF-32. In contrast, Perl and Java are agnostic on encodings, instead operating on decoded characters internally.
+Supported Unicode range. Many regex engines support only the Basic Multilingual Plane, that is, the characters which can be encoded with only 16 bits. Currently (as of 2016) only a few regex engines (e.g., Perl's and Java's) can handle the full 21-bit Unicode range.
+Extending ASCII-oriented constructs to Unicode. For example, in ASCII-based implementations, character ranges of the form [x-y] are valid wherever x and y have code points in the range [0x00,0x7F] and codepoint(x) â¤ codepoint(y). The natural extension of such character ranges to Unicode would simply change the requirement that the endpoints lie in [0x00,0x7F] to the requirement that they lie in [0x0000,0x10FFFF]. However, in practice this is often not the case. Some implementations, such as that of gawk, do not allow character ranges to cross Unicode blocks. A range like [0x61,0x7F] is valid since both endpoints fall within the Basic Latin block, as is [0x0530,0x0560] since both endpoints fall within the Armenian block, but a range like [0x0061,0x0532] is invalid since it includes multiple Unicode blocks. Other engines, such as that of the Vim editor, allow block-crossing but the character values must not be more than 256 apart.[46]
+Case insensitivity. Some case-insensitivity flags affect only the ASCII characters. Other flags affect all characters. Some engines have two different flags, one for ASCII, the other for Unicode. Exactly which characters belong to the POSIX classes also varies.
+Cousins of case insensitivity. As ASCII has case distinction, case insensitivity became a logical feature in text searching. Unicode introduced alphabetic scripts without case like Devanagari. For these, case sensitivity is not applicable. For scripts like Chinese, another distinction seems logical: between traditional and simplified. In Arabic scripts, insensitivity to initial, medial, final, and isolated position may be desired. In Japanese, insensitivity between hiragana and katakana is sometimes useful.
+Normalization. Unicode has combining characters. Like old typewriters, plain base characters (white spaces, punctuations, symbols, digits, or letters) can be followed by one or more non-spacing symbols (usually diacritics, like accent marks modifying letters) to form a single printable character; but Unicode also provides a limited set of precomposed characters, i.e. characters that already include one or more combining characters. A sequence of a base character + combining characters should be matched with the identical single precomposed character (only some of these combining sequences can be precomposed into a single Unicode character, but infinitely many other combining sequences are possible in Unicode, and needed for various languages, using one or more combining characters after an initial base character; these combining sequences may include a base character or combining characters partially precomposed, but not necessarily in canonical order and not necessarily using the canonical precompositions). The process of standardizing sequences of a base character + combining characters by decomposing these canonically equivalent sequences, before reordering them into canonical order (and optionally recomposing some combining characters into the leading base character) is called normalization.
+New control codes. Unicode introduced amongst others, byte order marks and text direction markers. These codes might have to be dealt with in a special way.
+Introduction of character classes for Unicode blocks, scripts, and numerous other character properties. Block properties are much less useful than script properties, because a block can have code points from several different scripts, and a script can have code points from several different blocks.[47] In Perl and the java.util.regex library, properties of the form \p{InX} or \p{Block=X} match characters in block X and \P{InX} or \P{Block=X} matches code points not in that block. Similarly, \p{Armenian}, \p{IsArmenian}, or \p{Script=Armenian} matches any character in the Armenian script. In general, \p{X} matches any character with either the binary property X or the general category X. For example, \p{Lu}, \p{Uppercase_Letter}, or \p{GC=Lu} matches any uppercase letter. Binary properties that are not general categories include \p{White_Space}, \p{Alphabetic}, \p{Math}, and \p{Dash}. Examples of non-binary properties are \p{Bidi_Class=Right_to_Left}, \p{Word_Break=A_Letter}, and \p{Numeric_Value=10}.
+Uses[edit]
+Regexes are useful in a wide variety of text processing tasks, and more generally string processing, where the data need not be textual. Common applications include data validation, data scraping (especially web scraping), data wrangling, simple parsing, the production of syntax highlighting systems, and many other tasks.
+While regexes would be useful on Internet search engines, processing them across the entire database could consume excessive computer resources depending on the complexity and design of the regex. Although in many cases system administrators can run regex-based queries internally, most search engines do not offer regex support to the public. Notable exceptions include Google Code Search and Exalead. However, Google Code Search was shut down in January 2012.[48]
+
+Examples[edit]
+The specific syntax rules vary depending on the specific implementation, programming language, or library in use. Additionally, the functionality of regex implementations can vary between versions.
+Because regexes can be difficult to both explain and understand without examples, interactive websites for testing regexes are a useful resource for learning regexes by experimentation.
+This section provides a basic description of some of the properties of regexes by way of illustration.
+The following conventions are used in the examples.[49]
+
+metacharacter(s)Â ;; the metacharacters column specifies the regex syntax being demonstrated
+=~ m//          Â ;; indicates a regex match operation in Perl
+=~ s///         Â ;; indicates a regex substitution operation in Perl
+
+Also worth noting is that these regexes are all Perl-like syntax. Standard POSIX regular expressions are different.
+Unless otherwise indicated, the following examples conform to the Perl programming language, release 5.8.8, January 31, 2006. This means that other implementations may lack support for some parts of the syntax shown here (e.g. basic vs. extended regex, \( \) vs. (), or lack of \d instead of POSIX [:digit:]).
+The syntax and conventions used in these examples coincide with that of other programming environments as well.[50]
+
+
+
+MetaÂ­character(s)
+
+Description
+
+Example[51]
+
+
+.
+
+Normally matches any character except a newline. Within square brackets the dot is literal.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/...../) {
+  print "$string1 has length >= 5.\n";
+}
+
+Output:
+
+Hello World
+ has length >= 5.
+
+
+
+( )
+
+Groups a series of pattern elements to a single element. When you match a pattern within parentheses, you can use any of $1, $2, ... later to refer to the previously matched pattern. Some implementations may use a backslash notation instead, like \1, \2.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/(H..).(o..)/) {
+  print "We matched '$1' and '$2'.\n";
+}
+
+Output:
+
+We matched 'Hel' and 'o W'.
+
+
+
++
+
+Matches the preceding pattern element one or more times.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/l+/) {
+  print "There are one or more consecutive letter \"l\"'s in $string1.\n";
+}
+
+Output:
+
+There are one or more consecutive letter "l"'s in Hello World.
+
+
+
+?
+
+Matches the preceding pattern element zero or one time.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/H.?e/) {
+  print "There is an 'H' and a 'e' separated by ";
+  print "0-1 characters (e.g., He Hue Hee).\n";
+}
+
+Output:
+
+There is an 'H' and a 'e' separated by 0-1 characters (e.g., He Hue Hee).
+
+
+
+?
+
+Modifies the *, +, ? or {M,N}'d regex that comes before to match as few times as possible.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/(l.+?o)/) {
+  print "The non-greedy match with 'l' followed by one or ";
+  print "more characters is 'llo' rather than 'llo Wo'.\n";
+}
+
+Output:
+
+The non-greedy match with 'l' followed by one or more characters is 'llo' rather than 'llo Wo'.
+
+
+
+*
+
+Matches the preceding pattern element zero or more times.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/el*o/) {
+  print "There is an 'e' followed by zero to many ";
+  print "'l' followed by 'o' (e.g., eo, elo, ello, elllo).\n";
+}
+
+Output:
+
+There is an 'e' followed by zero to many 'l' followed by 'o' (e.g., eo, elo, ello, elllo).
+
+
+
+{M,N}
+
+Denotes the minimum M and the maximum N match count.N can be omitted and M can be 0: {M} matches "exactly" M times; {M,} matches "at least" M times; {0,N} matches "at most" N times.x* y+ z? is thus equivalent to x{0,} y{1,} z{0,1}.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/l{1,2}/) {
+  print "There exists a substring with at least 1 ";
+  print "and at most 2 l's in $string1\n";
+}
+
+Output:
+
+There exists a substring with at least 1 and at most 2 l's in Hello World
+
+
+
+[â¦]
+
+Denotes a set of possible character matches.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/[aeiou]+/) {
+  print "$string1 contains one or more vowels.\n";
+}
+
+Output:
+
+Hello World
+ contains one or more vowels.
+
+
+
+|
+
+Separates alternate possibilities.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/(Hello|Hi|Pogo)/) {
+  print "$string1 contains at least one of Hello, Hi, or Pogo.";
+}
+
+Output:
+
+Hello World
+ contains at least one of Hello, Hi, or Pogo.
+
+
+
+\b
+
+Matches a zero-width boundary between a word-class character (see next) and either a non-word class character or an edge; same as
+(^\w|\w$|\W\w|\w\W).
+
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/llo\b/) {
+  print "There is a word that ends with 'llo'.\n";
+}
+
+Output:
+
+There is a word that ends with 'llo'.
+
+
+
+\w
+
+Matches an alphanumeric character, including "_"; same as [A-Za-z0-9_] in ASCII, and
+[\p{Alphabetic}\p{GC=Mark}\p{GC=Decimal_Number}\p{GC=Connector_Punctuation}]
+in Unicode,[47] where the Alphabetic property contains more than Latin letters, and the Decimal_Number property contains more than Arab digits.
+
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/\w/) {
+  print "There is at least one alphanumeric ";
+  print "character in $string1 (A-Z, a-z, 0-9, _).\n";
+}
+
+Output:
+
+There is at least one alphanumeric character in Hello World
+ (A-Z, a-z, 0-9, _).
+
+
+
+\W
+
+Matches a non-alphanumeric character, excluding "_"; same as [^A-Za-z0-9_] in ASCII, and
+[^\p{Alphabetic}\p{GC=Mark}\p{GC=Decimal_Number}\p{GC=Connector_Punctuation}]
+in Unicode.
+
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/\W/) {
+  print "The space between Hello and ";
+  print "World is not alphanumeric.\n";
+}
+
+Output:
+
+The space between Hello and World is not alphanumeric.
+
+
+
+\s
+
+Matches a whitespace character, which in ASCII are tab, line feed, form feed, carriage return, and space; in Unicode, also matches no-break spaces, next line, and the variable-width spaces (amongst others).
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/\s.*\s/) {
+  print "In $string1 there are TWO whitespace characters, which may";
+  print " be separated by other characters.\n";
+}
+
+Output:
+
+In Hello World
+ there are TWO whitespace characters, which may be separated by other characters.
+
+
+
+\S
+
+Matches anything but a whitespace.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/\S.*\S/) {
+  print "In $string1 there are TWO non-whitespace characters, which";
+  print " may be separated by other characters.\n";
+}
+
+Output:
+
+In Hello World
+ there are TWO non-whitespace characters, which may be separated by other characters.
+
+
+
+\d
+
+Matches a digit; same as [0-9] in ASCII; in Unicode, same as the \p{Digit} or \p{GC=Decimal_Number} property, which itself the same as the \p{Numeric_Type=Decimal} property.
+
+$string1 = "99 bottles of beer on the wall.";
+if ($string1 =~ m/(\d+)/) {
+  print "$1 is the first number in '$string1'\n";
+}
+
+Output:
+
+99 is the first number in '99 bottles of beer on the wall.'
+
+
+
+\D
+
+Matches a non-digit; same as [^0-9] in ASCII or \P{Digit} in Unicode.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/\D/) {
+  print "There is at least one character in $string1";
+  print " that is not a digit.\n";
+}
+
+Output:
+
+There is at least one character in Hello World
+ that is not a digit.
+
+
+
+^
+
+Matches the beginning of a line or string.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/^He/) {
+  print "$string1 starts with the characters 'He'.\n";
+}
+
+Output:
+
+Hello World
+ starts with the characters 'He'.
+
+
+
+$
+
+Matches the end of a line or string.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/rld$/) {
+  print "$string1 is a line or string ";
+  print "that ends with 'rld'.\n";
+}
+
+Output:
+
+Hello World
+ is a line or string that ends with 'rld'.
+
+
+
+\A
+
+Matches the beginning of a string (but not an internal line).
+
+$string1 = "Hello\nWorld\n";
+if ($string1 =~ m/\AH/) {
+  print "$string1 is a string ";
+  print "that starts with 'H'.\n";
+}
+
+Output:
+
+Hello
+World
+ is a string that starts with 'H'.
+
+
+
+\z
+
+Matches the end of a string (but not an internal line).[52]
+
+$string1 = "Hello\nWorld\n";
+if ($string1 =~ m/d\n\z/) {
+  print "$string1 is a string ";
+  print "that ends with 'd\\n'.\n";
+}
+
+Output:
+
+Hello
+World
+ is a string that ends with 'd\n'.
+
+
+
+[^â¦]
+
+Matches every character except the ones inside brackets.
+
+$string1 = "Hello World\n";
+if ($string1 =~ m/[^abc]/) {
+ print "$string1 contains a character other than ";
+ print "a, b, and c.\n";
+}
+
+Output:
+
+Hello World
+ contains a character other than a, b, and c.
+
+
+Induction[edit]
+Main article: Induction of regular languages
+Regular expressions can often be created ("induced" or "learned") based on a set of example strings. This is known as the induction of regular languages, and is part of the general problem of grammar induction in computational learning theory. Formally, given examples of strings in a regular language, and perhaps also given examples of strings not in that regular language, it is possible to induce a grammar for the language, i.e., a regular expression that generates that language. Not all regular languages can be induced in this way (see language identification in the limit), but many can. For example, the set of examples {1, 10, 100}, and negative set (of counterexamples) {11, 1001, 101, 0} can be used to induce the regular expression 1â0* (1 followed by zero or more 0s).
+
+See also[edit]
+Comparison of regular-expression engines
+Extended BackusâNaur form
+Matching wildcards
+Regular tree grammar
+Thompson's construction â converts a regular expression into an equivalent nondeterministic finite automaton (NFA)
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Goyvaerts, Jan. "Regular Expression Tutorial - Learn How to Use Regular Expressions". www.regular-expressions.info. Archived from the original on 2016-11-01. Retrieved 2016-10-31.
+
+^ Mitkov, Ruslan (2003). The Oxford Handbook of Computational Linguistics. Oxford University Press. p.Â 754. ISBNÂ 978-0-19-927634-9. Archived from the original on 2017-02-28. Retrieved 2016-07-25.
+
+^ Lawson, Mark V. (17 September 2003). Finite Automata. CRC Press. pp.Â 98â100. ISBNÂ 978-1-58488-255-8. Archived from the original on 27 February 2017. Retrieved 25 July 2016.
+
+^ Kleene 1951.
+
+^ Leung, Hing (16 September 2010). "Regular Languages and Finite Automata" (PDF). New Mexico State University. Archived from the original (PDF) on 5 December 2013. Retrieved 13 August 2019. The concept of regular events was introduced by Kleene via the definition of regular expressions.
+
+^ Jump up to: a b Thompson 1968.
+
+^ Jump up to: a b Johnson et al. 1968.
+
+^ Kernighan, Brian (2007-08-08). "A Regular Expressions Matcher". Beautiful Code. O'Reilly Media. pp.Â 1â2. ISBNÂ 978-0-596-51004-6. Archived from the original on 2020-10-07. Retrieved 2013-05-15.
+
+^ Ritchie, Dennis M. "An incomplete history of the QED Text Editor". Archived from the original on 1999-02-21. Retrieved 9 October 2013.
+
+^ Jump up to: a b Aho & Ullman 1992, 10.11 Bibliographic Notes for Chapter 10, p. 589.
+
+^ Aycock 2003, 2. JIT Compilation Techniques, 2.1 Genesis, p. 98. sfn error: no target: CITEREFAycock2003 (help)
+
+^ Raymond, Eric S. citing Dennis Ritchie (2003). "Jargon File 4.4.7: grep". Archived from the original on 2011-06-05. Retrieved 2009-02-17.
+
+^ "New Regular Expression Features in Tcl 8.1". Archived from the original on 2020-10-07. Retrieved 2013-10-11.
+
+^ "PostgreSQL 9.3.1 Documentation: 9.7. Pattern Matching". Archived from the original on 2020-10-07. Retrieved 2013-10-12.
+
+^ Wall, Larry and the Perl 5 development team (2006). "perlre: Perl regular expressions". Archived from the original on 2009-12-31. Retrieved 2006-10-10.
+
+^ Jump up to: a b Wall (2002)
+
+^ "GROVF | Big Data Analytics Acceleration". grovf.com. Archived from the original on 2020-10-07. Retrieved 2019-10-22.
+
+^ "CUDA grep". bkase.github.io. Archived from the original on 2020-10-07. Retrieved 2019-10-22.
+
+^ Jump up to: a b c d grep(1) man page
+
+^ Jump up to: a b Hopcroft, Motwani & Ullman (2000)
+
+^ Sipser (1998)
+
+^ Gelade & Neven (2008, p.Â 332, Thm.4.1)
+
+^ Gruber & Holzer (2008)
+
+^ Based on Gelade & Neven (2008), a regular expression of length about 850 such that its complement has a length  about 232 can be found at File:RegexComplementBlowup.png.
+
+^ Jay L. Gischer (1984). (Title unknown) (Technical Report). Stanford Univ., Dept. of Comp. Sc.
+
+^ John E. Hopcroft; Rajeev Motwani & Jeffrey D. Ullman (2003). Introduction to Automata Theory, Languages, and Computation. Upper Saddle River/NJ: Addison Wesley. ISBNÂ 978-0-201-44124-6. Here: Sect.3.4.6, p.117-120. â This property need not hold for extended regular expressions, even if they describe no larger class than regular languages; cf. p.121.
+
+^ Kozen (1991)[pageÂ needed]
+
+^ V.N. Redko (1964). "On defining relations for the algebra of regular events". Ukrainskii Matematicheskii Zhurnal. 16 (1): 120â126. Archived from the original on 2018-03-29. Retrieved 2018-03-28. (In Russian)
+
+^ ISO/IEC 9945-2:1993 Information technology â Portable Operating System Interface (POSIX) â Part 2: Shell and Utilities, successively revised as ISO/IEC 9945-2:2002 Information technology â Portable Operating System Interface (POSIX) â Part 2: System Interfaces, ISO/IEC 9945-2:2003, and currently ISO/IEC/IEEE 9945:2009 Information technology â Portable Operating System Interface (POSIXÂ®) Base Specifications, Issue 7
+
+^ The Single Unix Specification (Version 2)
+
+^ Jump up to: a b "33.3.1.2 Character Classes â Emacs lisp manual â Version 25.1". gnu.org. 2016. Archived from the original on 2020-10-07. Retrieved 2017-04-13.
+
+^ "Perl Regular Expression Documentation". perldoc.perl.org. Archived from the original on December 31, 2009. Retrieved January 8, 2012.
+
+^ Jump up to: a b "Regular Expression Syntax". Python 3.5.0 documentation. Python Software Foundation. Archived from the original on 18 July 2018. Retrieved 10 October 2015.
+
+^ Jump up to: a b "Essential classes: Regular Expressions: Quantifiers: Differences Among Greedy, Reluctant, and Possessive Quantifiers". The Java Tutorials. Oracle. Archived from the original on 7 October 2020. Retrieved 23 December 2016.
+
+^ "Atomic Grouping". Regex Tutorial. Archived from the original on 7 October 2020. Retrieved 24 November 2019.
+
+^ Cezar CÃ¢mpeanu; Kai Salomaa & Sheng Yu (Dec 2003). "A Formal Study of Practical Regular Expressions". International Journal of Foundations of Computer Science. 14 (6): 1007â1018. doi:10.1142/S012905410300214X. Archived from the original on 2015-07-04. Retrieved 2015-07-03. Theorem 3 (p.9)
+
+^ "Perl Regular Expression Matching is NP-Hard". perl.plover.com. Archived from the original on 2020-10-07. Retrieved 2019-11-21.
+
+^ Wandering Logic. "How to simulate lookaheads and lookbehinds in finite state automata?". Computer Science Stack Exchange. Archived from the original on 7 October 2020. Retrieved 24 November 2019.
+
+^ Cox (2007)
+
+^ Laurikari (2009)
+
+^ "gnulib/lib/dfa.c". If the scanner detects a transition on backref, it returns a kind of "semi-success" indicating that the match will have to be verified with a backtracking matcher.
+
+^ Kearns, Steven (August 2013). "Sublinear Matching With Finite Automata Using Reverse Suffix Scanning". arXiv:1308.3822 [cs.DS].
+
+^ Navarro, Gonzalo (10 November 2001). "NRâgrep: a fast and flexible patternâmatching tool" (PDF). Software: Practice and Experience. 31 (13): 1265â1312. doi:10.1002/spe.411. S2CIDÂ 3175806. Archived (PDF) from the original on 7 October 2020. Retrieved 21 November 2019.
+
+^ "travisdowns/polyregex". GitHub. 5 July 2019. Archived from the original on 14 September 2020. Retrieved 21 November 2019.
+
+^ Schmid, Markus L. (March 2019). "Regular Expressions with Backreferences: Polynomial-Time Matching Techniques". arXiv:1903.05896 [cs.FL].
+
+^ "Vim documentation: pattern". Vimdoc.sourceforge.net. Archived from the original on 2020-10-07. Retrieved 2013-09-25.
+
+^ Jump up to: a b "UTS#18 on Unicode Regular Expressions, Annex A: Character Blocks". Archived from the original on 2020-10-07. Retrieved 2010-02-05.
+
+^ Horowitz, Bradley (24 October 2011). "A fall sweep". Google Blog. Archived from the original on 21 October 2018. Retrieved 4 May 2019.
+
+^ The character 'm' is not always required to specify a Perl match operation. For example, m/[^abc]/ could also be rendered as /[^abc]/. The 'm' is only necessary if the user wishes to specify a match operation without using a forward-slash as the regex delimiter. Sometimes it is useful to specify an alternate regex delimiter in order to avoid "delimiter collision". See 'perldoc perlre Archived 2009-12-31 at the Wayback Machine' for more details.
+
+^ E.g., see Java in a Nutshell, p. 213; Python Scripting for Computational Science, p. 320; Programming PHP, p. 106.
+
+^ Note that all the if statements return a TRUE value
+
+^ Conway, Damian (2005). "Regular Expressions, End of String". Perl Best Practices. O'Reilly. p.Â 240. ISBNÂ 978-0-596-00173-5. Archived from the original on 2020-10-07. Retrieved 2017-09-10.
+
+
+References[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Aho, Alfred V. (1990).  van Leeuwen, Jan (ed.). Algorithms for finding patterns in strings. Handbook of Theoretical Computer Science, volume A: Algorithms and Complexity. The MIT Press. pp.Â 255â300.
+Aho, Alfred V.; Ullman, Jeffrey D. (1992). "Chapter 10. Patterns, Automata, and Regular Expressions" (PDF). Foundations of Computer Science. Archived from the original on 2020-10-07. Retrieved 2013-12-14.
+"Regular Expressions". The Single UNIX Specification, Version 2. The Open Group. 1997. Archived from the original on 2020-10-07. Retrieved 2011-12-13.
+"Chapter 9: Regular Expressions". The Open Group Base Specifications. The Open Group (6). 2004. IEEE Std 1003.1, 2004 Edition. Archived from the original on 2011-12-02. Retrieved 2011-12-13.
+Cox, Russ (2007). "Regular Expression Matching Can Be Simple and Fast". Archived from the original on 2010-01-01. Retrieved 2008-04-27.
+Forta, Ben (2004). Sams Teach Yourself Regular Expressions in 10 Minutes. Sams. ISBNÂ 978-0-672-32566-3.
+Friedl, Jeffrey E. F. (2002). Mastering Regular Expressions. O'Reilly. ISBNÂ 978-0-596-00289-3. Archived from the original on 2005-08-30. Retrieved 2005-04-26.
+Gelade, Wouter; Neven, Frank (2008). Succinctness of the Complement and Intersection of Regular Expressions. Proceedings of the 25th International Symposium on Theoretical Aspects of Computer Science (STACS 2008). pp.Â 325â336. arXiv:0802.2869. Archived from the original on 2011-07-18. Retrieved 2009-06-15.
+Goyvaerts, Jan; Levithan, Steven (2009). Regular Expressions Cookbook. [O'reilly]. ISBNÂ 978-0-596-52068-7.
+Gruber, Hermann; Holzer, Markus (2008). Finite Automata, Digraph Connectivity, and Regular Expression Size (PDF). Proceedings of the 35th International Colloquium on Automata, Languages and Programming (ICALP 2008). Vol.Â 5126. pp.Â 39â50. doi:10.1007/978-3-540-70583-3_4. Archived (PDF) from the original on 2011-07-11. Retrieved 2011-02-03.
+Habibi, Mehran (2004). Real World Regular Expressions with Java 1.4. Springer. ISBNÂ 978-1-59059-107-9.
+Hopcroft, John E.; Motwani, Rajeev; Ullman, Jeffrey D. (2000). Introduction to Automata Theory, Languages, and Computation (2ndÂ ed.). Addison-Wesley.
+Johnson, Walter L.; Porter, James H.; Ackley, Stephanie I.; Ross, Douglas T. (1968). "Automatic generation of efficient lexical processors using finite state techniques". Communications of the ACM. 11 (12): 805â813. doi:10.1145/364175.364185. S2CIDÂ 17253809.
+Kleene, Stephen C. (1951).  Shannon, Claude E.; McCarthy, John (eds.). Representation of Events in Nerve Nets and Finite Automata (PDF). Automata Studies. Princeton University Press. pp.Â 3â42. Archived (PDF) from the original on 2020-10-07. Retrieved 2017-12-10.
+Kozen, Dexter (1991). "A Completeness Theorem for Kleene Algebras and the Algebra of Regular Events". [1991] Proceedings Sixth Annual IEEE Symposium on Logic in Computer Science. Proceedings of the 6th Annual IEEE Symposium on Logic in Computer Science (LICS 1991). pp.Â 214â225. doi:10.1109/LICS.1991.151646. hdl:1813/6963. ISBNÂ 978-0-8186-2230-4. S2CIDÂ 19875225.
+Laurikari, Ville (2009). "TRE library 0.7.6". Archived from the original on 2010-07-14. Retrieved 2009-04-01.
+Liger, FranÃ§ois; McQueen, Craig; Wilton, Paul (2002). Visual Basic .NET Text Manipulation Handbook. Wrox Press. ISBNÂ 978-1-86100-730-8.
+Sipser, Michael (1998). "Chapter 1: Regular Languages". Introduction to the Theory of Computation. PWS Publishing. pp.Â 31â90. ISBNÂ 978-0-534-94728-6.
+Stubblebine, Tony (2003). Regular Expression Pocket Reference. O'Reilly. ISBNÂ 978-0-596-00415-6.
+Thompson, Ken (1968). "Programming Techniques: Regular expression search algorithm". Communications of the ACM. 11 (6): 419â422. doi:10.1145/363347.363387. S2CIDÂ 21260384.
+Wall, Larry (2002). "Apocalypse 5: Pattern Matching". Archived from the original on 2010-01-12. Retrieved 2006-10-11.
+
+External links[edit]
+
+
+
+Wikibooks has a book on the topic of: Regular Expressions
+
+
+
+
+The Wikibook R Programming has a page on the topic of: Text Processing
+
+
+
+
+Look up regular expression in Wiktionary, the free dictionary.
+
+ Media related to Regex at Wikimedia Commons
+Regular Expressions at Curlie
+ISO/IEC 9945-2:1993 Information technology â Portable Operating System Interface (POSIX) â Part 2: Shell and Utilities
+ISO/IEC 9945-2:2002 Information technology â Portable Operating System Interface (POSIX) â Part 2: System Interfaces
+ISO/IEC 9945-2:2003 Information technology â Portable Operating System Interface (POSIX) â Part 2: System Interfaces
+ISO/IEC/IEEE 9945:2009 Information technology â Portable Operating System Interface (POSIXÂ®) Base Specifications, Issue 7
+Regular Expression, IEEE Std 1003.1-2017, Open Group
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteAutomata theory: formal languages and formal grammarsChomsky hierarchyGrammarsLanguagesAbstract machines
+Type-0
+â
+Type-1
+â
+â
+â
+â
+â
+Type-2
+â
+â
+Type-3
+â
+â
+
+Unrestricted
+(no common name)
+Context-sensitive
+Positive range concatenation
+Indexed
+â
+Linear context-free rewriting systems
+Tree-adjoining
+Context-free
+Deterministic context-free
+Visibly pushdown
+Regular
+â
+Non-recursive
+
+Recursively enumerable
+Decidable
+Context-sensitive
+Positive range concatenation*
+Indexed*
+â
+Linear context-free rewriting language
+Tree-adjoining
+Context-free
+Deterministic context-free
+Visibly pushdown
+Regular
+Star-free
+Finite
+
+Turing machine
+Decider
+Linear-bounded
+PTIME Turing Machine
+Nested stack
+Thread automaton
+restricted Tree stack automaton
+Embedded pushdown
+Nondeterministic pushdown
+Deterministic pushdown
+Visibly pushdown
+Finite
+Counter-free (with aperiodic finite monoid)
+Acyclic finite
+Each category of languages, except those marked by a *, is a proper subset of the category directly above it. Any language in each category is generated by a grammar and by an automaton in the category in the same line.
+vteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+Authority control General
+Integrated Authority File (Germany)
+National libraries
+France (data)
+United States
+Japan
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Regular_expression&oldid=1069242729"
+		Categories: Automata (computation)Formal languagesPattern matchingProgramming constructsRegular expressions1951 introductionsHidden categories: Harv and Sfn no-target errorsWikipedia articles needing page number citations from February 2015Webarchive template wayback linksArticles with short descriptionShort description matches WikidataArticles with redirect hatnotes impacted by RfDAll articles with unsourced statementsArticles with unsourced statements from February 2018Articles with unsourced statements from May 2020Commons category link is on WikidataArticles with Curlie linksArticles with GND identifiersArticles with BNF identifiersArticles with LCCN identifiersArticles with NDL identifiersArticles with example code
+	

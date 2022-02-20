@@ -1,0 +1,264 @@
+
+Title:
+Template method pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Template processor.
+This article includes a list of general references, but it remains largely unverified because it lacks sufficient corresponding inline citations. Please help to improve this article by introducing more precise citations.  (March 2012) (Learn how and when to remove this template message)
+In object-oriented programming, the template method is one of the behavioral design patterns identified by Gamma et al.[1] in the book Design Patterns.  The template method is a method in a superclass, usually an abstract superclass, and defines the skeleton of an operation in terms of a number of high-level steps.  These steps are themselves implemented by additional helper methods in the same class as the template method.
+The helper methods may be either abstract methods, in which case subclasses are required to provide concrete implementations, or hook methods, which have empty bodies in the superclass. Subclasses can (but are not required to) customize the operation by overriding the hook methods.  The intent of the template method is to define the overall structure of the operation, while allowing subclasses to refine, or redefine, certain steps.[2]
+
+Contents
+
+1 Overview
+2 Structure
+
+2.1 UML class diagram
+
+
+3 Usage
+
+3.1 Use with code generators
+
+
+4 PHP example
+5 See also
+6 References
+7 External links
+
+
+
+Overview[edit]
+This pattern has two main parts:
+
+The "template method" is implemented as a method in a base class (usually an abstract class).  This method contains code for the parts of the overall algorithm that are invariant.  The template ensures that the overarching algorithm is always followed.[1]  In the template method, portions of the algorithm that may vary are implemented by sending self messages that request the execution of additional helper methods.  In the base class, these helper methods are given a default implementation, or none at all (that is, they may be abstract methods).
+Subclasses of the base class "fill in" the empty or "variant" parts of the "template" with specific algorithms that vary from one subclass to another.[3] It is important that subclasses do not override the template method itself.
+At run-time, the algorithm represented by the template method is executed by sending the template message to an instance of one of the concrete subclasses.  Through inheritance, the template method in the base class starts to execute.  When the template method sends a message to self requesting one of the helper methods, the message will be received by the concrete sub-instance. If the helper method has been overridden, the overriding implementation in the sub-instance will execute; if it has not been overridden, the inherited implementation in the base class will execute.  This mechanism ensures that the overall algorithm follows the same steps every time, while allowing the details of some steps to depend on which instance received the original request to execute the algorithm.
+This pattern is an example of inversion of control because the high-level code no longer determines what algorithms to run; a lower-level algorithm is instead selected at run-time.
+Some of the self messages sent by the template method may be to hook methods.  These methods are implemented in the same base class as the template method, but with empty bodies (i.e., they do nothing).  Hook methods exist so that subclasses can override them, and can thus fine-tune the action of the algorithm without the need to override the template method itself. In other words, they provide a "hook" on which to "hang" variant implementations.
+
+Structure[edit]
+UML class diagram[edit]
+  A sample UML class diagram for the Template Method design pattern.[4]
+In the above UML class diagram, the AbstractClass defines a templateMethod() operation that defines the skeleton (template) of a behavior by
+
+implementing the invariant parts of the behavior and
+sending to self the messages  primitive1() and primitive2() , which, because they are implemented in SubClass1 , allow that subclass to provide a variant implementation of those parts of the algorithm.
+  Template Method in LePUS3.[5]
+Usage[edit]
+The template method is used in frameworks, where each implements the invariant parts of a domain's architecture, while providing hook methods for customization. This is an example of inversion of control. The template method is used for the following reasons.[3]
+
+It lets subclasses implement varying behavior (through overriding of the hook methods).[6]
+It avoids duplication in the code: the general workflow of the algorithm is implemented once in the abstract class's template method, and necessary variations are implemented in the subclasses.[6]
+It controls the point(s) at which specialization is permitted.  If the subclasses were to simply override the template method, they could make radical and arbitrary changes to the workflow. In contrast, by overriding only the hook methods, only certain specific details of the workflow can be changed,[6] and the overall workflow is left intact.
+Use with code generators[edit]
+The template pattern is useful when working with auto-generated code. The challenge of working with generated code is that changes to the source code will lead to changes in the generated code; if hand-written modifications have been made to the generated code, these will be lost.  How, then, should the generated code be customized?
+The Template pattern provides a solution.  If the generated code follows the template method pattern, the generated code will all be an abstract superclass. Provided that hand-written customizations are confined to a subclass, the code generator can be run again without risk of over-writing these modifications.  When used with code generation, this pattern is sometimes referred to as the generation gap pattern.[7]
+
+PHP example[edit]
+abstract class Game
+{
+    abstract protected function initialize();
+    abstract protected function startPlay();
+    abstract protected function endPlay();
+
+    /** Template method */
+    public final function play()
+    {
+        /** Primitive */
+        $this->initialize();
+
+        /** Primitive */
+        $this->startPlay();
+
+        /** Primitive */
+        $this->endPlay();
+    }
+}
+
+class Mario extends Game
+{
+    protected function initialize()
+    {
+        echo "Mario Game Initialized! Start playing.", PHP_EOL;
+    }
+
+    protected function startPlay()
+    {
+        echo "Mario Game Started. Enjoy the game!", PHP_EOL;
+    }
+
+    protected function endPlay()
+    {
+        echo "Mario Game Finished!", PHP_EOL;
+    }
+
+}
+
+class Tankfight extends Game
+{
+    protected function initialize()
+    {
+        echo "Tankfight Game Initialized! Start playing.", PHP_EOL;
+    }
+
+    protected function startPlay()
+    {
+        echo "Tankfight Game Started. Enjoy the game!", PHP_EOL;
+    }
+
+    protected function endPlay()
+    {
+        echo "Tankfight Game Finished!", PHP_EOL;
+    }
+
+}
+
+$game = new Tankfight();
+$game->play();
+
+$game = new Mario();
+$game->play();
+
+See also[edit]
+Inheritance (computer science)
+Method overriding (programming)
+GRASP (object-oriented designer)
+Adapter pattern
+Strategy pattern
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Gamma, Erich; Helm, Richard; Johnson, Ralph; Vlissides, John (1994). "Template Method". Design Patterns. Addison-Wesley. pp.Â 325â330. ISBNÂ 0-201-63361-2.
+
+^ Freeman, Eric; Freeman, Elisabeth; Sierra, Kathy; Bates, Bert (2004).  Hendrickson, Mike; Loukides, Mike (eds.). Head First Design Patterns (paperback). Vol.Â 1. O'REILLY. pp.Â 289, 311. ISBNÂ 978-0-596-00712-6. Retrieved 2012-09-12.
+
+^ Jump up to: a b "Template Method Design Pattern". Source Making - teaching IT professional. Retrieved 2012-09-12. Template Method is used prominently in frameworks.
+
+^ "The Template Method design pattern - Structure". w3sDesign.com. Retrieved 2017-08-12.
+
+^ LePUS3 legend.  Retrieved from http://lepus.org.uk/ref/legend/legend.xml.
+
+^ Jump up to: a b c Chung, Carlo (2011). Pro Objective-C Design Patterns for iOS. Berkeley, CA: Apress. p.Â 266. ISBNÂ 978-1-4302-3331-2.
+
+^ Vlissides, John (1998-06-22). Pattern Hatching: Design Patterns Applied. Addison-Wesley Professional. pp.Â 85â101. ISBNÂ 978-0201432930.
+
+
+External links[edit]
+
+
+
+The Wikibook [[wikibooks:|]] has a page on the topic of: Template method
+
+Six common uses of the template pattern
+Working with Template Classes in PHP 5
+Template Method Design Pattern
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Template_method_pattern&oldid=1066545067"
+		Categories: Software design patternsMethod (computer programming)Hidden categories: Articles lacking in-text citations from March 2012All articles lacking in-text citationsArticles with example Java code
+	

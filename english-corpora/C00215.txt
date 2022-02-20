@@ -1,0 +1,1099 @@
+
+Title:
+Priority queue
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Abstract data type in computer science
+In computer science, a priority queue is an  abstract data-type similar to a regular queue or stack data structure in which each element additionally has a "priority" associated with it. In a priority queue, an element with high priority is served before an element with low priority. In some implementations, if two elements have the same priority, they are served according to the order in which they were enqueued; in other implementations ordering of elements with the same priority remains undefined.
+While coders often implement priority queues with heaps, they are conceptually distinct from heaps. A priority queue is a concept like "a list" or "a map"; just as a list can be implemented with a linked list or with an array, a priority queue can be implemented with a heap or with a variety of other methods such as an unordered array.
+
+Contents
+
+1 Operations
+2 Implementation
+
+2.1 Naive implementations
+2.2 Usual implementation
+2.3 Specialized heaps
+2.4 Summary of running times
+
+
+3 Equivalence of priority queues and sorting algorithms
+
+3.1 Using a priority queue to sort
+3.2 Using a sorting algorithm to make a priority queue
+
+
+4 Libraries
+5 Applications
+
+5.1 Bandwidth management
+5.2 Discrete event simulation
+5.3 Dijkstra's algorithm
+5.4 Huffman coding
+5.5 Best-first search algorithms
+5.6 ROAM triangulation algorithm
+5.7 Prim's algorithm for minimum spanning tree
+
+
+6 Parallel priority queue
+
+6.1 Concurrent parallel access
+6.2 K-element operations
+
+
+7 See also
+8 References
+9 Further reading
+10 External links
+
+
+
+Operations[edit]
+A priority queue must at least support the following operations:
+
+is_empty: check whether the queue has no elements.
+insert_with_priority: add an element to the queue with an associated priority.
+pull_highest_priority_element: remove the element from the queue that has the highest priority, and return it.
+This is also known as "pop_element(Off)", "get_maximum_element" or "get_front(most)_element".
+Some conventions reverse the order of priorities, considering lower values to be higher priority, so this may also be known as "get_minimum_element", and is often referred to as "get-min" in the literature.
+This may instead be specified as separate "peek_at_highest_priority_element" and "delete_element" functions, which can be combined to produce "pull_highest_priority_element".
+In addition, peek (in this  context often called find-max or find-min), which returns the highest-priority element but does not modify the queue, is very frequently implemented, and nearly always executes in O(1) time. This operation and its O(1) performance is crucial to many applications of priority queues.
+More advanced implementations may support more complicated operations, such as pull_lowest_priority_element, inspecting the first few highest- or lowest-priority elements, clearing the queue, clearing subsets of the queue, performing a batch insert, merging two or more queues into one, incrementing priority of any element, etc.
+Stacks and queues are different than priority queues.  In a priority queue, the ordering is intrinsic:  it depends on the value being inserted.  In a stack or queue, the ordering is extrinsic:  it depends on the order in which the value is inserted.  In terms of behavioral subtyping, a queue is not a subtype of a priority queue, and a priority queue is not a subtype of a queue.  Neither one can be substituted for the other, nor should either one be a subtype of the other in an inheritance hierarchy.
+
+Implementation[edit]
+Naive implementations[edit]
+There are a variety of simple, usually inefficient, ways to implement a priority queue. They provide an analogy to help one understand what a priority queue is.
+For instance, one can keep all the elements in an unsorted list (O(1) insertion time). Whenever the highest-priority element is requested, search through all elements for the one with the highest priority. (O(n) pull time),
+
+insert(node) {
+  list.append(node)
+}
+
+pull() {
+  highest = list.get_first_element()
+  foreach node in list {
+     if highest.priority < node.priority {
+         highest = node
+     }
+  }
+  list.remove(highest)
+  return highest
+}
+
+In another case, one can keep all the elements in a priority sorted list (O(n) insertion sort time), whenever the highest-priority element is requested, the first one in the list can be returned. (O(1) pull time)
+
+insert(node) {
+  foreach (index, element) in list {
+    if node.priority < element.priority {
+       list.insert_at_index(node,index)
+    }
+  }
+}
+
+pull() {
+    highest = list.get_at_index(list.length-1)
+    list.remove(highest)
+    return highest
+}
+
+Usual implementation[edit]
+To improve performance, priority queues are typically based on a heap, giving O(log n) performance for inserts and removals, and O(n log n) to build the heap initially from a set of n elements. Variants of the basic heap data structure such as pairing heaps or Fibonacci heaps can provide better bounds for some operations.[1]
+Alternatively, when a self-balancing binary search tree is used, insertion and removal also take O(log n) time, although building trees from existing sequences of elements takes O(n log n) time; this is typical where one might already have access to these data structures, such as with third-party or standard libraries. From a space-complexity standpoint, using self-balancing binary search tree with linked list takes more storage, since it requires to store extra references to other nodes.
+From a computational-complexity standpoint, priority queues are congruent to sorting algorithms. The section on the equivalence of priority queues and sorting algorithms, below, describes how efficient sorting algorithms can create efficient priority queues.
+
+Specialized heaps[edit]
+There are several specialized heap data structures that either supply additional operations or outperform heap-based implementations for specific types of keys, specifically integer keys. Suppose the set of possible keys is {1, 2, ..., C}.
+
+When only insert, find-min and extract-min are needed and in case of integer priorities, a bucket queue can be constructed as an array of C linked lists plus a pointer top, initially C. Inserting an item with key k appends the item to the k'th, and updates top â min(top, k), both in constant time. Extract-min deletes and returns one item from the list with index top, then increments top if needed until it again points to a non-empty list; this takes O(C) time in the worst case. These queues are useful for sorting the vertices of a graph by their degree.[2]:â374â
+A van Emde Boas tree supports the minimum, maximum, insert, delete, search, extract-min, extract-max, predecessor and successor operations in O(log log C) time, but has a space cost for small queues of about O(2m/2), where m is the number of bits in the priority value.[3] The space can be reduced significantly with hashing.
+The Fusion tree by Fredman and Willard implements the minimum operation in O(1) time and insert and extract-min operations in 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        n
+        
+          /
+        
+        log
+        â¡
+        log
+        â¡
+        C
+        )
+      
+    
+    {\displaystyle O(\log n/\log \log C)}
+  
+time. However it is stated by the author that, "Our algorithms have theoretical interest only; The constant factors involved in the execution times preclude practicality."[4]
+For applications that do many "peek" operations for every "extract-min" operation, the time complexity for peek actions can be reduced to O(1) in all tree and heap implementations by caching the highest priority element after every insertion and removal. For insertion, this adds at most a constant cost, since the newly inserted element is compared only to the previously cached minimum element. For deletion, this at most adds an additional "peek" cost, which is typically cheaper than the deletion cost, so overall time complexity is not significantly impacted.
+Monotone priority queues are specialized queues that are optimized for the case where no item is ever inserted that has a lower priority (in the case of min-heap) than any item previously extracted. This restriction is met by several practical applications of priority queues.
+
+Summary of running times[edit]
+Here are time complexities[5] of various heap data structures. Function names assume a min-heap.  For the meaning of "O(f)" and "Î(f)" see Big O notation.
+
+
+
+
+Operation
+
+find-min
+
+delete-min
+
+insert
+
+decrease-key
+
+meld
+
+
+Binary[5]
+
+Î(1)
+
+Î(logÂ n)
+
+O(logÂ n)
+
+O(logÂ n)
+
+Î(n)
+
+
+Leftist
+
+Î(1)
+
+Î(log n)
+
+Î(log n)
+
+O(log n)
+
+Î(log n)
+
+
+Binomial[5][6]
+
+Î(1)
+
+Î(log n)
+
+Î(1)[a]
+
+Î(log n)
+
+O(logÂ n)[b]
+
+
+Fibonacci[5][7]
+
+Î(1)
+
+O(logÂ n)[a]
+
+Î(1)
+
+Î(1)[a]
+
+Î(1)
+
+
+Pairing[8]
+
+Î(1)
+
+O(log n)[a]
+
+Î(1)
+
+o(logÂ n)[a][c]
+
+Î(1)
+
+
+Brodal[11][d]
+
+Î(1)
+
+O(logÂ n)
+
+Î(1)
+
+Î(1)
+
+Î(1)
+
+
+Rank-pairing[13]
+
+Î(1)
+
+O(log n)[a]
+
+Î(1)
+
+Î(1)[a]
+
+Î(1)
+
+
+Strict Fibonacci[14]
+
+Î(1)
+
+O(log n)
+
+Î(1)
+
+Î(1)
+
+Î(1)
+
+
+2â3 heap[15]
+
+O(log n)
+
+O(log n)[a]
+
+O(log n)[a]
+
+Î(1)
+
+?
+
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d e f g h i Amortized time.
+
+^ n is the size of the larger heap.
+
+^ Lower bound of 
+  
+    
+      
+        Î©
+        (
+        log
+        â¡
+        log
+        â¡
+        n
+        )
+        ,
+      
+    
+    {\displaystyle \Omega (\log \log n),}
+  
+[9] upper bound of 
+  
+    
+      
+        O
+        (
+        
+          2
+          
+            2
+            
+              
+                log
+                â¡
+                log
+                â¡
+                n
+              
+            
+          
+        
+        )
+        .
+      
+    
+    {\displaystyle O(2^{2{\sqrt {\log \log n}}}).}
+  
+[10]
+
+^ Brodal and Okasaki later describe a persistent variant with the same bounds except for decrease-key, which is not supported.
+Heaps with n elements can be constructed bottom-up in O(n).[12]
+
+
+Equivalence of priority queues and sorting algorithms[edit]
+Using a priority queue to sort[edit]
+The semantics of priority queues naturally suggest a sorting method: insert all the elements to be sorted into a priority queue, and sequentially remove them; they will come out in sorted order. This is actually the procedure used by several sorting algorithms, once the layer of abstraction provided by the priority queue is removed. This sorting method is equivalent to the following sorting algorithms:
+
+
+
+
+Name
+Priority Queue Implementation
+Best
+Average
+Worst
+
+
+Heapsort
+
+Heap
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+Smoothsort
+
+Leonardo Heap
+
+
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+Selection sort
+
+Unordered Array
+
+
+  
+    
+      
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle n^{2}}
+  
+
+
+
+  
+    
+      
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle n^{2}}
+  
+
+
+
+  
+    
+      
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle n^{2}}
+  
+
+
+
+Insertion sort
+
+Ordered Array
+
+
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+
+
+
+  
+    
+      
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle n^{2}}
+  
+
+
+
+  
+    
+      
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle n^{2}}
+  
+
+
+
+Tree sort
+
+Self-balancing binary search tree
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+
+  
+    
+      
+        n
+        log
+        â¡
+        (
+        n
+        )
+      
+    
+    {\displaystyle n\log(n)}
+  
+
+
+Using a sorting algorithm to make a priority queue[edit]
+A sorting algorithm can also be used to implement a priority queue. Specifically, Thorup says:[16]
+
+
+We present a general deterministic linear space reduction from priority queues to sorting implying that if we can sort up to n keys in S(n) time per key, then there is a priority queue supporting delete and insert in O(S(n)) time and find-min in constant time.
+
+
+That is, if there is a sorting algorithm which can sort in O(S) time per key, where S is some function of n and word size,[17] then one can use the given procedure to create a priority queue where pulling the highest-priority element is O(1) time, and inserting new elements (and deleting elements) is O(S) time. For example, if one has an O(nÂ logÂ n) sort algorithm, one can create a priority queue with O(1) pulling and O(nÂ logÂ n) insertion.
+
+Libraries[edit]
+A priority queue is often considered to be a "container data structure".
+The Standard Template Library (STL), and the C++ 1998 standard, specifies std::priority_queue as one of the STL container adaptor class templates. However, it does not specify how two elements with same priority should be served, and indeed, common implementations will not return them according to their order in the queue. It implements a max-priority-queue, and has three parameters: a comparison object for sorting such as a function object (defaults to less<T> if unspecified), the underlying container for storing the data structures (defaults to std::vector<T>), and two iterators to the beginning and end of a sequence. Unlike actual STL containers, it does not allow iteration of its elements (it strictly adheres to its abstract data type definition). STL also has utility functions for manipulating another random-access container as a binary max-heap. The Boost libraries also have an implementation in the library heap.
+Python's heapq module implements a binary min-heap on top of a list.
+Java's library contains a PriorityQueue class, which implements a min-priority-queue.
+.NET's library contains a PriorityQueue class, which implements an array-backed, quaternary min-heap.
+Scala's library contains a PriorityQueue class, which implements a max-priority-queue.
+Go's library contains a container/heap module, which implements a min-heap on top of any compatible data structure.
+The Standard PHP Library extension contains the class SplPriorityQueue.
+Apple's Core Foundation framework contains a CFBinaryHeap structure, which implements a min-heap.
+
+Applications[edit]
+Bandwidth management[edit]
+Priority queuing can be used to manage limited resources such as bandwidth on a transmission line from a network router. In the event of outgoing traffic queuing due to insufficient bandwidth, all other queues can be halted to send the traffic from the highest priority queue upon arrival. This ensures that the prioritized traffic (such as real-time traffic, e.g. an RTP stream of a VoIP connection) is forwarded with the least delay and the least likelihood of being rejected due to a queue reaching its maximum capacity. All other traffic can be handled when the highest priority queue is empty. Another approach used is to send disproportionately more traffic from higher priority queues.
+Many modern protocols for local area networks also include the concept of priority queues at the media access control (MAC) sub-layer to ensure that high-priority applications (such as VoIP or IPTV) experience lower latency than other applications which can be served with best effort service. Examples include IEEE 802.11e (an amendment to IEEE 802.11 which provides quality of service) and ITU-T G.hn (a standard for high-speed local area network using existing home wiring (power lines, phone lines and coaxial cables).
+Usually a limitation (policer) is set to limit the bandwidth that traffic from the highest priority queue can take, in order to prevent high priority packets from choking off all other traffic. This limit is usually never reached due to high level control instances such as the Cisco Callmanager, which can be programmed to inhibit calls which would exceed the programmed bandwidth limit.
+
+Discrete event simulation[edit]
+Another use of a priority queue is to manage the events in a discrete event simulation. The events are added to the queue with their simulation time used as the priority. The execution of the simulation proceeds by repeatedly pulling the top of the queue and executing the event thereon.
+See also: Scheduling (computing), queueing theory
+
+Dijkstra's algorithm[edit]
+When the graph is stored in the form of adjacency list or matrix, priority queue can be used to extract minimum efficiently when implementing Dijkstra's algorithm, although one also needs the ability to alter the priority of a particular vertex in the priority queue efficiently.
+If instead, a graph is stored as node objects, and priority-node pairs are inserted into a heap, altering the priority of a particular vertex is not necessary if one tracks visited nodes. Once a node is visited, if it comes up in the heap again (having had a lower priority number associated with it earlier), it is popped-off and ignored.
+
+Huffman coding[edit]
+Huffman coding requires one to repeatedly obtain the two lowest-frequency trees. A priority queue is one method of doing this.
+
+Best-first search algorithms[edit]
+Best-first search algorithms, like the A* search algorithm, find the shortest path between two vertices or nodes of a weighted graph, trying out the most promising routes first. A priority queue (also known as the fringe) is used to keep track of unexplored routes; the one for which the estimate (a lower bound in the case of A*) of the total path length is smallest is given highest priority. If memory limitations make best-first search impractical, variants like the SMA* algorithm can be used instead, with a double-ended priority queue to allow removal of low-priority items.
+
+ROAM triangulation algorithm[edit]
+The Real-time Optimally Adapting Meshes (ROAM) algorithm computes a dynamically changing triangulation of a terrain. It works by splitting triangles where more detail is needed and merging them where less detail is needed. The algorithm assigns each triangle in the terrain a priority, usually related to the error decrease if that triangle would be split. The algorithm uses two priority queues, one for triangles that can be split and another for triangles that can be merged. In each step the triangle from the split queue with the highest priority is split, or the triangle from the merge queue with the lowest priority is merged with its neighbours.
+
+Prim's algorithm for minimum spanning tree[edit]
+Using min heap priority queue in Prim's algorithm to find the minimum spanning tree of a connected and undirected graph, one can achieve a good running time. This min heap priority queue uses the min heap data structure which supports operations such as insert, minimum, extract-min, decrease-key.[18] In this implementation, the weight of the edges is used to decide the priority of the vertices. Lower the weight, higher the priority and higher the weight, lower the priority.[19]
+
+Parallel priority queue[edit]
+Parallelization can be used to speed up priority queues, but requires some changes to the priority queue interface. The reason for such changes is that a sequential update usually only has 
+  
+    
+      
+        O
+        (
+        1
+        )
+      
+    
+    {\textstyle O(1)}
+  
+ or 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        n
+        )
+      
+    
+    {\textstyle O(\log n)}
+  
+ cost, and there is no practical gain to parallelize such an operation. One possible change is to allow the concurrent access of multiple processors to the same priority queue. The second possible change is to allow batch operations that work on 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ elements, instead of just one element. For example, extractMin will remove the first 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ elements with the highest priority.
+
+Concurrent parallel access[edit]
+If the priority queue allows concurrent access, multiple processes can perform operations concurrently on that priority queue. However, this raises two issues. First of all, the definition of the semantics of the individual operations is no longer obvious. For example, if two processes want to extract the element with the highest priority, should they get the same element or different ones? This restricts parallelism on the level of the program using the priority queue. In addition, because multiple processes have access to the same element, this leads to contention.
+
+  Node 3 is inserted and sets the pointer of node 2 to node 3. Immediately after that, node 2 is deleted and the pointer of node 1 is set to node 4. Now node 3 is no longer reachable.
+The concurrent access to a priority queue can be implemented on a Concurrent Read, Concurrent Write (CRCW) PRAM model. In the following the priority queue is implemented as a skip list.[20][21] In addition, an atomic synchronization primitive, CAS, is used to make the skip list lock-free. The nodes of the skip list consists of a unique key, a priority, an array of pointers, for each level, to the next nodes and a delete mark. The delete mark marks if the node is about to be deleted by a process. This ensures that other processes can react to the deletion appropriately.
+
+insert(e): First, a new node with a key and a priority is created. In addition, the node is assigned a number of levels, which dictates the size of the array of pointers. Then a search is performed to find the correct position where to insert the new node. The search starts from the first node and from the highest level. Then the skip list is traversed down to the lowest level until the correct position is found. During the search, for every level the last traversed node will be saved as parent node for the new node at that level. In addition, the node to which the pointer, at that level, of the parent node points towards, will be saved as the successor node of the new node at that level. Afterwards, for every level of the new node, the pointers of the parent node will be set to the new node. Finally, the pointers, for every level, of the new node will be set to the corresponding successor nodes.
+extract-min: First, the skip list is traversed until a node is reached whose delete mark is not set. This delete mark is than set to true for that node. Finally the pointers of the parent nodes of the deleted node are updated.
+If the concurrent access to a priority queue is allowed, conflicts may arise between two processes. For example, a conflict arises if one process is trying to insert a new node, but at the same time another process is about to delete the predecessor of that node.[20] There is a risk that the new node is added to the skip list, yet it is not longer reachable. (See image)
+
+K-element operations[edit]
+In this setting, operations on a priority queue is generalized to a batch of 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ elements.
+For instance, k_extract-min deletes the 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ smallest elements of the priority queue and returns those. 
+In a shared-memory setting, the parallel priority queue can be easily implemented using parallel binary search trees and join-based tree algorithms.  In particular, k_extract-min corresponds to a split on the binary search tree that has 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        n
+        )
+      
+    
+    {\textstyle O(\log n)}
+  
+ cost and yields a tree that contains the 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ smallest elements.  k_insert can be applied by a union of the original priority queue and the batch of insertions.  If the batch is already sorted by the key, k_insert has 
+  
+    
+      
+        O
+        (
+        k
+        log
+        â¡
+        (
+        1
+        +
+        
+          
+            n
+            k
+          
+        
+        )
+        )
+      
+    
+    {\textstyle O(k\log(1+{\frac {n}{k}}))}
+  
+ cost.  Otherwise, we need to first sort the batch, so the cost will be 
+  
+    
+      
+        O
+        (
+        k
+        log
+        â¡
+        (
+        1
+        +
+        
+          
+            n
+            k
+          
+        
+        )
+        +
+        k
+        log
+        â¡
+        k
+        )
+        =
+        O
+        (
+        k
+        log
+        â¡
+        n
+        )
+      
+    
+    {\textstyle O(k\log(1+{\frac {n}{k}})+k\log k)=O(k\log n)}
+  
+.  Other operations for priority queue can be applied similarly.  For instance, k_decrease-key can be done by first applying difference and then union, which first deletes the elements and then inserts them back with the updated keys.  All these operations are highly parallel, and the theoretical and practical efficiency can be found in related research papers.[22][23]
+The rest of this section discusses a queue-based algorithm on distributed memory. We assume each processor has its own local memory and a local (sequential) priority queue. The elements of the global (parallel) priority queue are distributed across all processors.
+
+  k_extract-min is executed on a priority queue with three processors. The green elements are returned and removed from the priority queue.
+A k_insert operation assigns the elements uniformly random to the processors which insert the elements into their local queues. Note that single elements can still be inserted into the queue. Using this strategy the global smallest elements are in the union of the local smallest elements of every processor with high probability. Thus each processor holds a representative part of the global priority queue.
+This property is used when k_extract-min is executed, as the smallest 
+  
+    
+      
+        m
+      
+    
+    {\textstyle m}
+  
+ elements of each local queue are removed and collected in a result set. The elements in the result set are still associated with their original processor. The number of elements 
+  
+    
+      
+        m
+      
+    
+    {\textstyle m}
+  
+ that is removed from each local queue depends on 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ and the number of processors 
+  
+    
+      
+        p
+      
+    
+    {\textstyle p}
+  
+. 
+[24]
+By parallel selection the 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ smallest elements of the result set are determined. With high probability these are the global 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ smallest elements. If not, 
+  
+    
+      
+        m
+      
+    
+    {\textstyle m}
+  
+ elements are again removed from each local queue and put into the result set. This is done until the global 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ smallest elements are in the result set. Now these 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ elements can be returned. All other elements of the result set are inserted back into their local queues. The running time of k_extract-min is expected 
+  
+    
+      
+        O
+        (
+        
+          
+            k
+            p
+          
+        
+        log
+        â¡
+        (
+        n
+        )
+        )
+      
+    
+    {\textstyle O({\frac {k}{p}}\log(n))}
+  
+, where 
+  
+    
+      
+        k
+        =
+        Î©
+        (
+        p
+        â
+        log
+        â¡
+        (
+        p
+        )
+        )
+      
+    
+    {\textstyle k=\Omega (p\cdot \log(p))}
+  
+ and 
+  
+    
+      
+        n
+      
+    
+    {\textstyle n}
+  
+ is the size of the priority queue.[24]
+The priority queue can be further improved by not moving the remaining elements of the result set directly back into the local queues after a k_extract-min operation. This saves moving elements back and forth all the time between the result set and the local queues.
+By removing several elements at once a considerable speedup can be reached. But not all algorithms can use this kind of priority queue. Dijkstra's algorithm for example can not work on several nodes at once. The algorithm takes the node with the smallest distance from the priority queue and calculates new distances for all its neighbor nodes. If you would take out 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ nodes, working at one node could change the distance of another one of the 
+  
+    
+      
+        k
+      
+    
+    {\textstyle k}
+  
+ nodes. So using k-element operations destroys the label setting property of Dijkstra's algorithm.
+
+See also[edit]
+Batch queue
+Command queue
+Job scheduler
+References[edit]
+
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2001) [1990]. "Chapter 20: Fibonacci Heaps". Introduction to Algorithms (2ndÂ ed.). MIT Press and McGraw-Hill. pp.Â 476â497. ISBNÂ 0-262-03293-7. Third edition, p. 518.
+
+^ Skiena, Steven (2010). The Algorithm Design Manual (2ndÂ ed.). Springer Science+Business Media. ISBNÂ 978-1-849-96720-4.
+
+^ P. van Emde Boas. Preserving order in a forest in less than logarithmic time. In Proceedings of the 16th Annual Symposium on Foundations of Computer Science, pages 75-84. IEEE Computer Society, 1975.
+
+^ Michael L. Fredman and Dan E. Willard. Surpassing the information theoretic bound with fusion trees. Journal of Computer and System Sciences, 48(3):533-551, 1994
+
+^ Jump up to: a b c d Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L. (1990). Introduction to Algorithms (1stÂ ed.). MIT Press and McGraw-Hill. ISBNÂ 0-262-03141-8.
+
+^ "Binomial Heap | Brilliant Math & Science Wiki". brilliant.org. Retrieved 2019-09-30.
+
+^ Fredman, Michael Lawrence; Tarjan, Robert E. (July 1987). "Fibonacci heaps and their uses in improved network optimization algorithms" (PDF). Journal of the Association for Computing Machinery. 34 (3): 596â615. CiteSeerXÂ 10.1.1.309.8927. doi:10.1145/28869.28874.
+
+^ Iacono, John (2000), "Improved upper bounds for pairing heaps", Proc. 7th Scandinavian Workshop on Algorithm Theory (PDF), Lecture Notes in Computer Science, vol.Â 1851, Springer-Verlag, pp.Â 63â77, arXiv:1110.4428, CiteSeerXÂ 10.1.1.748.7812, doi:10.1007/3-540-44985-X_5, ISBNÂ 3-540-67690-2
+
+^ Fredman, Michael Lawrence (July 1999). "On the Efficiency of Pairing Heaps and Related Data Structures" (PDF). Journal of the Association for Computing Machinery. 46 (4): 473â501. doi:10.1145/320211.320214.
+
+^ Pettie, Seth (2005). Towards a Final Analysis of Pairing Heaps (PDF). FOCS '05 Proceedings of the 46th Annual IEEE Symposium on Foundations of Computer Science. pp.Â 174â183. CiteSeerXÂ 10.1.1.549.471. doi:10.1109/SFCS.2005.75. ISBNÂ 0-7695-2468-0.
+
+^ Brodal, Gerth S. (1996), "Worst-Case Efficient Priority Queues" (PDF), Proc. 7th Annual ACM-SIAM Symposium on Discrete Algorithms, pp.Â 52â58
+
+^ Goodrich, Michael T.; Tamassia, Roberto (2004). "7.3.6. Bottom-Up Heap Construction". Data Structures and Algorithms in Java (3rdÂ ed.). pp.Â 338â341. ISBNÂ 0-471-46983-1.
+
+^ Haeupler, Bernhard; Sen, Siddhartha; Tarjan, Robert E. (November 2011). "Rank-pairing heaps" (PDF). SIAM J. Computing. 40 (6): 1463â1485. doi:10.1137/100785351.
+
+^ Brodal, Gerth StÃ¸lting; Lagogiannis, George; Tarjan, Robert E. (2012). Strict Fibonacci heaps (PDF). Proceedings of the 44th symposium on Theory of Computing - STOC '12. pp.Â 1177â1184. CiteSeerXÂ 10.1.1.233.1740. doi:10.1145/2213977.2214082. ISBNÂ 978-1-4503-1245-5.
+
+^ Takaoka, Tadao (1999), Theory of 2â3 Heaps (PDF), p.Â 12
+
+^ Thorup, Mikkel (2007). "Equivalence between priority queues and sorting". Journal of the ACM. 54 (6): 28. doi:10.1145/1314690.1314692. S2CIDÂ 11494634.
+
+^ "Archived copy" (PDF). Archived (PDF) from the original on 2011-07-20. Retrieved 2011-02-10.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2009) [1990]. Introduction to Algorithms (3rdÂ ed.). MIT Press and McGraw-Hill. ISBNÂ 0-262-03384-4.
+
+^ 
+"Prim's Algorithm". Geek for Geeks. Archived from the original on 9 September 2014. Retrieved 12 September 2014.
+
+^ Jump up to: a b Sundell, HÃ¥kan; Tsigas, Philippas (2005). "Fast and lock-free concurrent priority queues for multi-thread systems". Journal of Parallel and Distributed Computing. 65 (5): 609â627. doi:10.1109/IPDPS.2003.1213189. S2CIDÂ 20995116.
+
+^ LindÃ©n, Jonsson (2013), "A Skiplist-Based Concurrent Priority Queue with Minimal Memory Contention", Technical Report 2018-003 (in German)
+
+^ Blelloch, Guy E.; Ferizovic, Daniel; Sun, Yihan (2016), "Just Join for Parallel Ordered Sets", Symposium on Parallel Algorithms and Architectures, Proc. of 28th ACM Symp. Parallel Algorithms and Architectures (SPAA 2016), ACM, pp.Â 253â264, arXiv:1602.02120, doi:10.1145/2935764.2935768, ISBNÂ 978-1-4503-4210-0, S2CIDÂ 2897793
+
+^ Blelloch, Guy E.; Ferizovic, Daniel; Sun, Yihan (2018), "PAM: parallel augmented maps", Proceedings of the 23rd ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming, ACM, pp.Â 290â304
+
+^ Jump up to: a b Sanders, Peter; Mehlhorn, Kurt; Dietzfelbinger, Martin; Dementiev, Roman (2019). Sequential and Parallel Algorithms and Data Structures - The Basic Toolbox. Springer International Publishing. pp.Â 226â229. doi:10.1007/978-3-030-25209-0. ISBNÂ 978-3-030-25208-3. S2CIDÂ 201692657.
+
+
+Further reading[edit]
+Cormen, Thomas H.; Leiserson, Charles E.; Rivest, Ronald L.; Stein, Clifford (2001) [1990]. "Section 6.5: Priority queues". Introduction to Algorithms (2ndÂ ed.). MIT Press and McGraw-Hill. pp.Â 138â142. ISBNÂ 0-262-03293-7.
+External links[edit]
+C++ reference for std::priority_queue
+Descriptions by Lee Killough
+PQlib - Open source Priority Queue library for C
+libpqueue is a generic priority queue (heap) implementation (in C) used by the Apache HTTP Server project.
+Survey of known priority queue structures by Stefan Xenos
+UC Berkeley - Computer Science 61B - Lecture 24: Priority Queues (video) - introduction to priority queues using binary heap
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Priority_queue&oldid=1068243690"
+		Categories: Priority queuesAbstract data typesHidden categories: CS1 maint: archived copy as titleCS1 German-language sources (de)Articles with short descriptionShort description matches Wikidata
+	

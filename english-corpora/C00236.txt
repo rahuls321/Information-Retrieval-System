@@ -1,0 +1,567 @@
+
+Title:
+Observer pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		The observer pattern is a software design pattern in which an object, named the subject, maintains a list of its dependents, called observers, and notifies them automatically of any state changes, usually by calling one of their methods.
+It is mainly used for implementing distributed event handling systems, in "event driven" software. In those systems, the subject is usually named a "stream of events" or "stream source of events", while the observers are called "sinks of events". The stream nomenclature alludes to a physical setup where the observers are physically separated and have no control over the emitted events from the subject/stream-source. This pattern then perfectly suits any process where data arrives from some input that is not available to the CPU at startup, but instead arrives "at random" (HTTP requests, GPIO data, user input from keyboard/mouse/..., distributed databases and blockchains, ...). Most modern programming-languages comprise built-in "event" constructs implementing the observer-pattern components. While not mandatory, most 'observers' implementations would use background threads listening for subject-events and other support mechanisms provided by the kernel (Linux epoll, ...).
+
+Contents
+
+1 Overview
+
+1.1 What problems can the Observer design pattern solve?
+1.2 What solution does the Observer design pattern describe?
+
+
+2 Strong vs. weak reference
+3 Coupling and typical pub-sub implementations
+
+3.1 Uncoupled
+
+
+4 Structure
+
+4.1 UML class and sequence diagram
+4.2 UML class diagram
+
+
+5 Example
+
+5.1 Java
+5.2 Groovy
+5.3 Kotlin
+5.4 Delphi
+5.5 Python
+5.6 C#
+5.7 JavaScript
+
+
+6 See also
+7 References
+8 External links
+
+
+
+Overview[edit]
+The Observer design pattern is a behavioural pattern, among the twenty-three well-known "Gang of Four" design patterns describing how to solve recurring design challenges in order to design flexible and reusable object-oriented software, i.e. objects which are easier to implement, change, test, and reuse.[1]
+
+What problems can the Observer design pattern solve?[edit]
+The Observer pattern addresses the following problems:[2]
+
+A one-to-many dependency between objects should be defined without making the objects tightly coupled.
+It should be ensured that when one object changes state, an open-ended number of dependent objects are updated automatically.
+It should be possible that one object can notify an open-ended number of other objects.
+Defining a one-to-many dependency between objects by defining one object (subject) that updates the state of dependent objects directly is inflexible because it couples the subject to particular dependent objects. Still, it can make sense from a performance point of view or if the object implementation is tightly coupled (think of low-level kernel structures that execute thousands of times a second).
+Tightly coupled objects can be hard to implement in some scenarios, and hard to reuse because they refer to and know about (and how to update) many different objects with different interfaces. In other scenarios, tightly coupled objects can be a better option since the compiler will be able to detect errors at compile-time and optimize the code at the CPU instruction level.
+
+What solution does the Observer design pattern describe?[edit]
+Define Subject and Observer objects.
+so that when a subject changes state, all registered observers are notified and updated automatically (and probably asynchronously).
+The sole responsibility of a subject is to maintain a list of observers and to notify them of state changes by calling their update() operation. The responsibility of observers is to register (and unregister) themselves on a subject (to get notified of state changes) and to update their state (synchronize their state with the subject's state) when they are notified. This makes subject and observers loosely coupled. Subject and observers have no explicit knowledge of each other. Observers can be added and removed independently at run-time. This notification-registration interaction is also known as publish-subscribe.
+See also the UML class and sequence diagram below.
+
+Strong vs. weak reference[edit]
+The observer pattern can cause memory leaks, known as the lapsed listener problem, because in a basic implementation, it requires both explicit registration and explicit deregistration, as in the dispose pattern, because the subject holds strong references to the observers, keeping them alive. This can be prevented by the subject holding weak references to the observers.
+
+Coupling and typical pub-sub implementations[edit]
+Typically, the observer pattern is implemented so the "subject" being "observed" is part of the object for which state changes are being observed (and communicated to the observers). This type of implementation is considered "tightly coupled", forcing both the observers and the subject to be aware of each other and have access to their internal parts, creating possible issues of scalability, speed, message recovery and maintenance (also called event or notification loss), the lack of flexibility in conditional dispersion, and possible hindrance to desired security measures. In some (non-polling) implementations of the publish-subscribe pattern (aka the pub-sub pattern), this is solved by creating a dedicated "message queue" server (and sometimes an extra "message handler" object) as an extra stage between the observer and the object being observed, thus decoupling the components. In these cases, the message queue server is accessed by the observers with the observer pattern, "subscribing to certain messages" knowing only about the expected message (or not, in some cases), while knowing nothing about the message sender itself; the sender also may know nothing about the observers. Other implementations of the publish-subscribe pattern, which achieve a similar effect of notification and communication to interested parties, do not use the observer pattern at all.[3][4] 
+In early implementations of multi-window operating systems like OS/2 and Windows, the terms "publish-subscribe pattern" and "event driven software development" were used as a synonym for the observer pattern.[5] 
+The observer pattern, as described in the  GoF book, is a very basic concept and does not address removing interest in changes to the observed "subject" or special logic to be done by the observed "subject" before or after notifying the observers. The pattern also does not deal with recording when change notifications are sent or guaranteeing that they are being received. These concerns are typically handled in message queueing systems of which the observer pattern is only a small part. 
+Related patterns: Publishâsubscribe pattern, mediator, singleton.
+
+Uncoupled[edit]
+The observer pattern may be used in the absence of publish-subscribe, as in the case where model status is frequently updated.  Frequent updates may cause the view to become unresponsive (e.g., by invoking many repaint calls); such observers should instead use a timer.  Thus instead of being overloaded by change message, the observer will cause the view to represent the approximate state of the model at a regular interval.  This mode of observer is particularly useful for progress bars, where the underlying operation's progress changes with several times per second.
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Observer design pattern. [6]
+In the above UML class diagram, the Subject class does not update the state of dependent objects directly.
+Instead, Subject refers to the Observer interface (update()) for updating state, which makes the Subject independent of how the state of dependent objects is updated.
+The Observer1 and Observer2 classes implement the Observer interface by synchronizing their state with subject's state.
+
+The UML sequence diagram
+shows the run-time interactions: The Observer1 and Observer2 objects call attach(this) on Subject1 to register themselves. Assuming that the state of Subject1 changes,
+Subject1 calls notify() on itself.
+
+notify() calls update() on
+the registered  Observer1 and Observer2
+objects, which request the changed data (getState()) from Subject1 to update (synchronize) their state.
+
+UML class diagram[edit]
+  UML class diagram of Observer pattern
+Example[edit]
+While the library classes java.util.Observer and java.util.Observable exist, they have been deprecated in Java 9 because the model implemented was quite limited.
+Below is an example written in Java that takes keyboard input and treats each input line as an event. When a string is supplied from System.in, the method notifyObservers is then called, in order to notify all observers of the event's occurrence, in the form of an invocation of their 'update' methods.
+
+Java[edit]
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+class EventSource {
+    public interface Observer {
+        void update(String event);
+    }
+  
+    private final List<Observer> observers = new ArrayList<>();
+  
+    private void notifyObservers(String event) {
+        observers.forEach(observer -> observer.update(event));
+    }
+  
+    public void addObserver(Observer observer) {
+        observers.add(observer);
+    }
+  
+    public void scanSystemIn() {
+        Scanner scanner = new Scanner(System.in);
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            notifyObservers(line);
+        }
+    }
+}
+
+public class ObserverDemo {
+    public static void main(String[] args) {
+        System.out.println("Enter TextÂ : ");
+        EventSource eventSource = new EventSource();
+        
+        eventSource.addObserver(event -> {
+            System.out.println("Received response: " + event);
+        });
+
+        eventSource.scanSystemIn();
+    }
+}
+
+Groovy[edit]
+class EventSource {
+    private observers = []
+
+    private notifyObservers(String event) {
+        observers.each { it(event) }
+    }
+
+    void addObserver(observer) {
+        observers += observer
+    }
+
+    void scanSystemIn() {
+        var scanner = new Scanner(System.in)
+        while (scanner) {
+            var line = scanner.nextLine()
+            notifyObservers(line)
+        }
+    }
+}
+
+println 'Enter Text: '
+var eventSource = new EventSource()
+
+eventSource.addObserver { event ->
+    println "Received response: $event"
+}
+
+eventSource.scanSystemIn()
+
+Kotlin[edit]
+import java.util.Scanner
+
+typealias Observer = (event: String) -> Unit;
+
+class EventSource {
+    private var observers = mutableListOf<Observer>()
+
+    private fun notifyObservers(event: String) {
+        observers.forEach { it(event) }
+    }
+
+    fun addObserver(observer: Observer) {
+        observers += observer
+    }
+
+    fun scanSystemIn() {
+        val scanner = Scanner(System.`in`)
+        while (scanner.hasNext()) {
+            val line = scanner.nextLine()
+            notifyObservers(line)
+        }
+    }
+}
+
+fun main(arg: List<String>) {
+    println("Enter Text: ")
+    val eventSource = EventSource()
+
+    eventSource.addObserver { event ->
+        println("Received response: $event")
+    }
+
+    eventSource.scanSystemIn()
+}
+
+Delphi[edit]
+uses
+  System.Generics.Collections, System.SysUtils;
+
+type
+  IObserver = interface
+    ['{0C8F4C5D-1898-4F24-91DA-63F1DD66A692}']
+    procedure Update(const AValue: string);
+  end;
+
+type
+  TObserverManager = class
+  private
+    FObservers: TList<IObserver>;
+  public
+    constructor Create; overload;
+    destructor Destroy; override;
+    procedure NotifyObservers(const AValue: string);
+    procedure AddObserver(const AObserver: IObserver);
+    procedure UnregisterObsrver(const AObserver: IObserver);
+  end;
+
+type
+  TListener = class(TInterfacedObject, IObserver)
+  private
+    FName: string;
+  public
+    constructor Create(const AName: string); reintroduce;
+    procedure Update(const AValue: string);
+  end;
+
+procedure TObserverManager.AddObserver(const AObserver: IObserver);
+begin
+  if not FObservers.Contains(AObserver)
+    then FObservers.Add(AObserver);
+end;
+
+begin
+  FreeAndNil(FObservers);
+  inherited;
+end;
+
+procedure TObserverManager.NotifyObservers(const AValue: string);
+var
+  i: Integer;
+begin
+  for i := 0 to FObservers.Count - 1 do
+    FObservers[i].Update(AValue);
+end;
+
+procedure TObserverManager.UnregisterObsrver(const AObserver: IObserver);
+begin
+  if FObservers.Contains(AObserver)
+    then FObservers.Remove(AObserver);
+end;
+
+constructor TListener.Create(const AName: string);
+begin
+  inherited Create;
+  FName := AName;
+end;
+
+procedure TListener.Update(const AValue: string);
+begin
+  WriteLn(FName + ' listener received notification: ' + AValue);
+end;
+
+procedure TMyForm.ObserverExampleButtonClick(Sender: TObject);
+var
+  LDoorNotify: TObserverManager;
+  LListenerHusband: IObserver;
+  LListenerWife: IObserver;
+begin
+  LDoorNotify := TObserverManager.Create;
+  try
+    LListenerHusband := TListener.Create('Husband');
+    LDoorNotify.AddObserver(LListenerHusband);
+    LListenerWife := TListener.Create('Wife');
+    LDoorNotify.AddObserver(LListenerWife);
+    LDoorNotify.NotifyObservers('Someone is knocking on the door');
+  finally
+    FreeAndNil(LDoorNotify);
+  end;
+end;
+
+Output
+
+Husband listener received notification: Someone is knocking on the door
+Wife listener received notification: Someone is knocking on the door
+
+Python[edit]
+A similar example in Python:
+
+class Observable:
+    def __init__(self):
+        self._observers = []
+
+    def register_observer(self, observer):
+        self._observers.append(observer)
+
+    def notify_observers(self, *args, **kwargs):
+        for obs in self._observers:
+            obs.notify(self, *args, **kwargs)
+
+
+class Observer:
+    def __init__(self, observable):
+        observable.register_observer(self)
+
+    def notify(self, observable, *args, **kwargs):
+        print("Got", args, kwargs, "From", observable)
+
+
+subject = Observable()
+observer = Observer(subject)
+subject.notify_observers("test", kw="python")
+
+# prints: Got ('test',) {'kw': 'python'} From <__main__.Observable object at 0x0000019757826FD0>
+
+C#[edit]
+    public class Payload
+    {
+        public string Message { get; set; }
+    }
+
+    public class Subject : IObservable<Payload>
+    {
+        public IList<IObserver<Payload>> Observers { get; set; }
+
+        public Subject()
+        {
+            Observers = new List<IObserver<Payload>>();
+        }
+
+        public IDisposable Subscribe(IObserver<Payload> observer)
+        {         
+            if (!Observers.Contains(observer))
+            {
+                Observers.Add(observer);
+            }
+            return new Unsubscriber(observer, Observers);
+        }
+
+        public void SendMessage(string message)
+        {
+            foreach (var observer in Observers)
+            {
+                observer.OnNext(new Payload { Message = message });
+            }
+        }
+    }
+
+    public class Unsubscriber : IDisposable
+    {
+        private IObserver<Payload> observer;
+        private IList<IObserver<Payload>> observers;
+        public Unsubscriber(
+            IObserver<Payload> observer,
+            IList<IObserver<Payload>> observers)
+        {
+            this.observer = observer;
+            this.observers = observers;
+        }
+
+        public void Dispose()
+        {
+            if (observer != null && observers.Contains(observer))
+            {
+                observers.Remove(observer);
+            }
+        }
+    }
+
+    public class Observer : IObserver<Payload>
+    {
+        public string Message { get; set; }
+
+        public void OnCompleted()
+        {
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnNext(Payload value)
+        {
+            Message = value.Message;
+        }
+
+        public IDisposable Register(Subject subject)
+        {
+            return subject.Subscribe(this);
+        }
+    }
+
+JavaScript[edit]
+Javascript has a deprecated Object.observe function that was a more accurate implementation of the Observer pattern.[7] This would fire events upon change to the observed object. Without the deprecated Object.observe function, a programmer can still implement the pattern with more explicit code:[8]
+
+let Subject = {
+    _state: 0,
+    _observers: [],
+    add: function(observer) {
+        this._observers.push(observer);
+    },
+    getState: function() {
+        return this._state;
+    },
+    setState: function(value) {
+        this._state = value;
+        for (let i = 0; i < this._observers.length; i++)
+        {
+            this._observers[i].signal(this);
+        }
+    }
+};
+
+let Observer = {
+    signal: function(subject) {
+        let currentValue = subject.getState();
+        console.log(currentValue);
+    }
+}
+
+Subject.add(Observer);
+Subject.setState(10);
+//Output in console.log - 10
+
+See also[edit]
+Implicit invocation
+Clientâserver model
+The observer pattern is often used in the entityâcomponentâsystem pattern
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Erich Gamma; Richard Helm; Ralph Johnson; John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 293ff. ISBNÂ 0-201-63361-2.
+
+^ "The Observer design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Comparison between different observer pattern implementations Moshe Bindler, 2015 (Github)
+
+^ Differences between pub/sub and observer pattern The Observer Pattern by Adi Osmani (Safari books online)
+
+^ The Windows Programming Experience Charles Petzold, Nov 10, 1992, PC Magazine (Google Books)
+
+^ "The Observer design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ "Jquery - Listening for variable changes in JavaScript".
+
+^ "Jquery - Listening for variable changes in JavaScript".
+
+
+External links[edit]
+ Observer implementations in various languages at Wikibooks
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Observer_pattern&oldid=1062685984"
+		Categories: Software design patternsHidden categories: Articles with example Java codeArticles with example Python (programming language) codeArticles with example C Sharp code
+	

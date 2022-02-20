@@ -1,0 +1,331 @@
+
+Title:
+Tabu search
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Local search algorithmTabu search is a metaheuristic search method employing local search methods used for mathematical optimization. It was created by Fred W. Glover in 1986[1] and formalized in 1989.[2][3] 
+Local (neighborhood) searches take a potential solution to a problem and check its immediate neighbors (that is, solutions that are similar except for very few minor details) in the hope of finding an improved solution. Local search methods have a tendency to become stuck in suboptimal regions or on plateaus where many solutions are equally fit.
+Tabu search enhances the performance of local search by relaxing its basic rule. First, at each step  worsening moves can be accepted if no improving move is available (like when the search is stuck at a strict local minimum). In addition, prohibitions (henceforth the term tabu) are introduced to discourage the search from coming back to previously-visited solutions.
+The implementation of tabu search uses memory structures that describe the visited solutions or user-provided sets of rules.[2] If a potential solution has been previously visited within a certain short-term period or if it has violated a rule, it is marked as "tabu" (forbidden) so that the algorithm does not consider that possibility repeatedly.
+
+Contents
+
+1 Background
+2 Basic description
+3 Types of memory
+4 Pseudocode
+5 Example: the traveling salesman problem
+6 References
+7 External links
+
+
+
+Background[edit]
+The word tabu comes from  the Tongan word to indicate things that cannot be touched because they are sacred.[4]
+Tabu search (TS) is a metaheuristic algorithm that can be used for solving combinatorial optimization problems (problems where an optimal ordering and selection of options is desired).
+Current applications of TS span the areas of resource planning, telecommunications, VLSI design, financial analysis, scheduling, space planning, energy distribution, molecular engineering, logistics, pattern classification, flexible manufacturing, waste management, mineral exploration, biomedical analysis, environmental conservation and scores of others.  In recent years, journals in a wide variety of fields have published tutorial articles and computational studies documenting successes by tabu search in extending the frontier of problems that can be handled effectively â yielding solutions whose quality often significantly surpasses that obtained by methods previously applied. A comprehensive list of applications, including summary descriptions of gains achieved from practical implementations, can be found in [5]
+
+Basic description[edit]
+Tabu search uses a local or neighborhood search procedure to iteratively move from one potential solution 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ to an improved solution 
+  
+    
+      
+        
+          x
+          â²
+        
+      
+    
+    {\displaystyle x'}
+  
+ in the neighborhood of 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+, until some stopping criterion has been satisfied (generally, an attempt limit or a score threshold). Local search procedures often become stuck in poor-scoring areas or areas where scores plateau. In order to avoid these pitfalls and explore regions of the search space that would be left unexplored by other local search procedures, tabu search carefully explores the neighborhood of each solution as the search progresses. The solutions admitted to the new neighborhood, 
+  
+    
+      
+        
+          N
+          
+            â
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle N^{*}(x)}
+  
+, are determined through the use of memory structures. Using these memory structures, the search progresses by iteratively moving from the current solution 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ to an improved solution 
+  
+    
+      
+        
+          x
+          â²
+        
+      
+    
+    {\displaystyle x'}
+  
+ in 
+  
+    
+      
+        
+          N
+          
+            â
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle N^{*}(x)}
+  
+. 
+Tabu search has several similarities with simulated annealing, as both involve possible down hills moves. In fact, simulated annealing could be viewed as a special form of TS, where by we use "graduated tenure", that is, a move becomes tabu with a specified probability.
+These memory structures form what is known as the tabu list, a set of rules and banned solutions used to filter which solutions will be admitted to the neighborhood 
+  
+    
+      
+        
+          N
+          
+            â
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle N^{*}(x)}
+  
+ to be explored by the search. In its simplest form, a tabu list is a short-term set of the solutions that have been visited in the recent past (less than 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ iterations ago, where 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+  is the number of previous solutions to be stored â  is also called the tabu tenure). More commonly, a tabu list consists of solutions that have changed by the process of moving from one solution to another. It is convenient, for ease of description, to understand a âsolutionâ to be coded and represented by such attributes.
+
+Types of memory[edit]
+The memory structures used in tabu search can roughly be divided into three categories:[6]
+
+Short-term: The list of solutions recently considered. If a potential solution appears on the tabu list, it cannot be revisited until it reaches an expiration point.
+Intermediate-term: Intensification rules intended to bias the search towards promising areas of the search space.
+Long-term: Diversification rules that drive the search into new regions (i.e. regarding resets when the search becomes stuck in a plateau or a suboptimal dead-end).
+Short-term, intermediate-term and long-term memories can overlap in practice. Within these categories, memory can further be differentiated by measures such as frequency and impact of changes made. One example of an intermediate-term memory structure is one that prohibits or encourages solutions that contain certain attributes (e.g., solutions that include undesirable or desirable values for certain variables) or a memory structure that prevents or induces certain moves (e.g. based on frequency memory applied to solutions sharing features in common with unattractive or attractive solutions found in the past). In short-term memory, selected attributes in solutions recently visited are labelled "tabu-active." Solutions that contain tabu-active elements are banned. Aspiration criteria are employed to override a solution's tabu state, thereby including the otherwise-excluded solution in the allowed set (provided the solution is âgood enoughâ according to a measure of quality or diversity). A simple and commonly used aspiration criterion is to allow solutions which are better than the currently-known best solution.
+
+Short-term memory alone may be enough to achieve solutions superior to those found by conventional local search methods, but intermediate and long-term structures are often necessary for solving harder problems.[7]  Tabu search is often benchmarked against other metaheuristic methods â such as Simulated annealing, genetic algorithms, Ant colony optimization algorithms, Reactive search optimization, Guided Local Search, or greedy randomized adaptive search. In addition, tabu search is sometimes combined with other metaheuristics to create hybrid methods. The most common tabu search hybrid arises by joining TS with Scatter Search,[8][9] a class of population-based procedures which has roots in common with tabu search, and is often employed in solving large non-linear optimization problems.
+
+Pseudocode[edit]
+The following pseudocode presents a simplified version of the tabu search algorithm as described above. This implementation has a rudimentary short-term memory, but contains no intermediate or long-term memory structures. The term "fitness" refers to an evaluation of the candidate solution, as embodied in an objective function for mathematical optimization.
+
+sBest â s0
+bestCandidate â s0
+tabuList â []
+tabuList.push(s0)
+while (not stoppingCondition())
+    sNeighborhood â getNeighbors(bestCandidate)
+    bestCandidate â sNeighborhood[0]
+    for (sCandidate in sNeighborhood)
+        if ( (not tabuList.contains(sCandidate)) and (fitness(sCandidate) > fitness(bestCandidate)) )
+            bestCandidate â sCandidate
+        end
+    end
+    if (fitness(bestCandidate) > fitness(sBest))
+        sBest â bestCandidate
+    end
+    tabuList.push(bestCandidate)
+    if (tabuList.size > maxTabuSize)
+        tabuList.removeFirst()
+    end
+end
+return sBest
+
+Lines 1-4 represent some initial setup, respectively creating an initial solution (possibly chosen at random), setting that initial solution as the best seen to date, and initializing a tabu list with this initial solution. In this example, the tabu list is simply a short term memory structure that will contain a record of the elements of the states visited.
+The core algorithmic loop starts in line 5. This loop will continue searching for an optimal solution until a user-specified stopping condition is met (two examples of such conditions are a simple time limit or a threshold on the fitness score). The neighboring solutions are checked for tabu elements in line 9. Additionally, the algorithm keeps track of the best solution in the neighbourhood, that is not tabu.
+The fitness function is generally a mathematical function, which returns a score or the aspiration criteria are satisfied â for example, an aspiration criterion could be considered as a new search space is found[4]). If the best local candidate has a higher fitness value than the current best (line 13), it is set as the new best (line 14). The local best candidate is always added to the tabu list (line 16) and if the tabu list is full (line 17), some elements will be allowed to expire (line 18). Generally, elements expire from the list in the same order they are added. The procedure will select the best local candidate (although it has worse fitness than the sBest) in order to escape the local optimal.
+This process continues until the user specified stopping criterion is met, at which point, the best solution seen during the search process is returned (line 21).
+
+Example: the traveling salesman problem[edit]
+The traveling salesman problem (TSP) is sometimes used to show the functionality of tabu search.[7] This problem poses a straightforward question â given a list of cities, what is the shortest route that visits every city? For example, if cityÂ A and cityÂ B are next to each other, while cityÂ C is farther away, the total distance traveled will be shorter if cities A andÂ B are visited one after the other before visiting cityÂ C. Since finding an optimal solution is NP-hard, heuristic-based approximation methods (such as local searches) are useful for devising close-to-optimal solutions. To obtain good TSP solutions, it is essential to exploit the graph structure. The value of exploiting problem structure is a recurring theme in metaheuristic methods, and tabu search is well-suited to this. A class of strategies associated with tabu search called ejection chain methods has made it possible to obtain high-quality TSP solutions efficiently [10]
+On the other hand, a simple tabu search can be used to find a satisficing solution for the traveling salesman problem (that is, a solution that satisfies an adequacy criterion, although not with the high quality obtained by exploiting the graph structure). The search starts with an initial solution, which can be generated randomly or according to some sort of nearest neighbor algorithm. To create new solutions, the order that two cities are visited in a potential solution is swapped. The total traveling distance between all the cities is used to judge how ideal one solution is compared to another. To prevent cycles â i.e., repeatedly visiting a particular set of solutions â and to avoid becoming stuck in local optima, a solution is added to the tabu list if it is accepted into the solution neighborhood, 
+  
+    
+      
+        
+          N
+          
+            â
+          
+        
+        (
+        x
+        )
+      
+    
+    {\displaystyle N^{*}(x)}
+  
+.
+New solutions are created until some stopping criterion, such as an arbitrary number of iterations, is met. Once the simple tabu search stops, it returns the best solution found during its execution.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Fred Glover (1986). "Future Paths for Integer Programming and Links to Artificial Intelligence". Computers and Operations Research. 13 (5): 533â549. doi:10.1016/0305-0548(86)90048-1.
+
+^ Jump up to: a b Fred Glover (1989). "Tabu Search â Part 1". ORSA Journal on Computing. 1 (2): 190â206. doi:10.1287/ijoc.1.3.190.
+
+^ Fred Glover (1990). "Tabu Search â Part 2". ORSA Journal on Computing. 2 (1): 4â32. doi:10.1287/ijoc.2.1.4.
+
+^ Jump up to: a b "Courses" (PDF).
+
+^ F. Glover; M. Laguna (1997). Tabu Search. Kluwer Academic Publishers. ISBNÂ 978-1-4613-7987-4.
+
+^ Fred Glover (1990). "Tabu Search: A Tutorial". Interfaces.
+
+^ Jump up to: a b M. Malek; M. Huruswamy; H. Owens; M. Pandya (1989). "Serial and parallel search techniques for the traveling salesman problem". Annals of OR: Linkages with Artificial Intelligence.
+
+^ F. Glover, M. Laguna & R. Marti (2000). "Fundamentals of Scatter Search and Path Relinking". Control and Cybernetics. 29 (3): 653â684.
+
+^ M. Laguna & R. Marti (2003). Scatter Search: Methodology and Implementations in C. Kluwer Academic Publishers. ISBNÂ 9781402073762.
+
+^ D. Gamboa, C. Rego & F. Glover (2005). "Data Structures and Ejection Chains for Solving Large Scale Traveling Salesman Problems". European Journal of Operational Research. 160 (1): 154â171. CiteSeerXÂ 10.1.1.417.9789. doi:10.1016/j.ejor.2004.04.023.
+
+
+External links[edit]
+Visualization of the Tabu search algorithm (Applet)
+Metaheuristic International Conference (MIC 2011) â Udine
+The Reactive Search Community
+LION Conference on Learning and Intelligent Optimization techniques
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteOptimization: Algorithms, methods, and heuristicsUnconstrained nonlinearFunctions
+Golden-section search
+Interpolation methods
+Line search
+NelderâMead method
+Successive parabolic interpolation
+GradientsConvergence
+Trust region
+Wolfe conditions
+QuasiâNewton
+BerndtâHallâHallâHausman
+BroydenâFletcherâGoldfarbâShanno and L-BFGS
+DavidonâFletcherâPowell
+Symmetric rank-one (SR1)
+Other methods
+Conjugate gradient
+GaussâNewton
+Gradient
+LevenbergâMarquardt
+Powell's dog leg method
+Truncated Newton
+Hessians
+Newton's method
+Constrained nonlinearGeneral
+Barrier methods
+Penalty methods
+Differentiable
+Augmented Lagrangian methods
+Sequential quadratic programming
+Successive linear programming
+Convex optimizationConvex minimization
+Cutting-plane method
+Reduced gradient (FrankâWolfe)
+Subgradient method
+Linear andquadraticInterior point
+Affine scaling
+Ellipsoid algorithm of Khachiyan
+Projective algorithm of Karmarkar
+Basis-exchange
+Simplex algorithm of Dantzig
+Revised simplex algorithm
+Criss-cross algorithm
+Principal pivoting algorithm of Lemke
+CombinatorialParadigms
+Approximation algorithm
+Dynamic programming
+Greedy algorithm
+Integer programming
+Branch and bound/cut
+Graph algorithmsMinimum spanning tree
+BorÅ¯vka
+Prim
+Kruskal
+
+    Shortest path
+BellmanâFord
+SPFA
+Dijkstra
+FloydâWarshall
+Network flows
+Dinic
+EdmondsâKarp
+FordâFulkerson
+Pushârelabel maximum flow
+Metaheuristics
+Evolutionary algorithm
+Hill climbing
+Local search
+Simulated annealing
+Tabu search
+
+Software
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Tabu_search&oldid=1067590060"
+		Categories: Metaheuristics1989 introductionsSearch algorithmsHidden categories: Articles with short descriptionShort description is different from Wikidata
+	

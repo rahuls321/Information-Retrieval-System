@@ -1,0 +1,327 @@
+
+Title:
+Radix tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Data structure  An example of a radix tree
+In computer science, a radix tree (also radix trie or compact prefix tree) is a data structure that represents a space-optimized trie (prefix tree) in which each node that is the only child is merged with its parent. The result is that the number of children of every internal node is at most the radix r of the radix tree, where r is a positive integer and a power x of 2, having x â¥ 1. Unlike regular trees, edges can be labeled with sequences of elements as well as single elements. This makes radix trees much more efficient for small sets (especially if the strings are long) and for sets of strings that share long prefixes.
+Unlike regular trees (where whole keys are compared en masse from their beginning up to the point of inequality), the key at each node is compared chunk-of-bits by chunk-of-bits, where the quantity of bits in that chunk at that node is the radix r of the radix trie.  When the r is 2, the radix trie is binary (i.e., compare that node's 1-bit portion of the key), which minimizes sparseness at the expense of maximizing trie depthâi.e., maximizing up to conflation of nondiverging bit-strings in the key.  When r is an integer power of 2 having r â¥ 4, then the radix trie is an r-ary trie, which lessens the depth of the radix trie at the expense of potential sparseness.
+As an optimization, edge labels can be stored in constant size by using two pointers to a string (for the first and last elements).[1]
+Note that although the examples in this article show strings as sequences of characters, the type of the string elements can be chosen arbitrarily; for example, as a bit or byte of the string representation when using multibyte character encodings or Unicode.
+
+Contents
+
+1 Applications
+2 Operations
+
+2.1 Lookup
+2.2 Insertion
+2.3 Deletion
+2.4 Additional operations
+
+
+3 History
+4 Comparison to other data structures
+5 Variants
+6 See also
+7 References
+8 External links
+
+8.1 Implementations
+
+
+
+
+
+Applications[edit]
+Radix trees are useful for constructing associative arrays with keys that can be expressed as strings. They find particular application in the area of IP routing,[2][3][4] where the ability to contain large ranges of values with a few exceptions is particularly suited to the hierarchical organization of IP addresses.[5] They are also used for inverted indexes of text documents in information retrieval.
+
+Operations[edit]
+Radix trees support insertion, deletion, and searching operations. Insertion adds a new string to the trie while trying to minimize the amount of data stored. Deletion removes a string from the trie. Searching operations include (but are not necessarily limited to) exact lookup, find predecessor, find successor, and find all strings with a prefix. All of these operations are O(k) where k is the maximum length of all strings in the set, where length is measured in the quantity of bits equal to the radix of the radix trie.
+
+Lookup[edit]
+  Finding a string in a Patricia trie The lookup operation determines if a string exists in a trie. Most operations modify this approach in some way to handle their specific tasks. For instance, the node where a string terminates may be of importance. This operation is similar to tries except that some edges consume multiple elements.
+The following pseudo code assumes that these classes exist.
+Edge
+
+Node targetNode
+string label
+Node
+
+Array of Edges edges
+function isLeaf()
+function lookup(string x)
+{
+    // Begin at the root with no elements found
+    Node traverseNodeÂ := root;
+    int elementsFoundÂ := 0;
+    
+    // Traverse until a leaf is found or it is not possible to continue
+    while (traverseNodeÂ != null && !traverseNode.isLeaf() && elementsFound < x.length)
+    {
+        // Get the next edge to explore based on the elements not yet found in x
+        Edge nextEdgeÂ := select edge from traverseNode.edges where edge.label is a prefix of x.suffix(elementsFound)
+            // x.suffix(elementsFound) returns the last (x.length - elementsFound) elements of x
+    
+        // Was an edge found?
+        if (nextEdgeÂ != null)
+        {
+            // Set the next node to explore
+            traverseNodeÂ := nextEdge.targetNode;
+        
+            // Increment elements found based on the label stored at the edge
+            elementsFound += nextEdge.label.length;
+        }
+        else
+        {
+            // Terminate loop
+            traverseNodeÂ := null;
+        }
+    }
+    
+    // A match is found if we arrive at a leaf node and have used up exactly x.length elements
+    return (traverseNodeÂ != null && traverseNode.isLeaf() && elementsFound == x.length);
+}
+
+Insertion[edit]
+To insert a string, we search the tree until we can make no further progress. At this point we either add a new outgoing edge labeled with all remaining elements in the input string, or if there is already an outgoing edge sharing a prefix with the remaining input string, we split it into two edges (the first labeled with the common prefix) and proceed. This splitting step ensures that no node has more children than there are possible string elements.
+Several cases of insertion are shown below, though more may exist. Note that r simply represents the root. It is assumed that edges can be labelled with empty strings to terminate strings where necessary and that the root has no incoming edge. (The lookup algorithm described above will not work when using empty-string edges.)
+
+
+		
+			
+			
+Insert 'water' at the root
+
+			
+		
+		
+			
+			
+Insert 'slower' while keeping 'slow'
+
+			
+		
+		
+			
+			
+Insert 'test' which is a prefix of 'tester'
+
+			
+		
+		
+			
+			
+Insert 'team' while splitting 'test' and creating a new edge label 'st'
+
+			
+		
+		
+			
+			
+Insert 'toast' while splitting 'te' and moving previous strings a level lower
+
+			
+		
+
+Deletion[edit]
+To delete a string x from a tree, we first locate the leaf representing x. Then, assuming x exists, we remove the corresponding leaf node. If the parent of our leaf node has only one other child, then that child's incoming label is appended to the parent's incoming label and the child is removed.
+
+Additional operations[edit]
+Find all strings with common prefix: Returns an array of strings that begin with the same prefix.
+Find predecessor: Locates the largest string less than a given string, by lexicographic order.
+Find successor: Locates the smallest string greater than a given string, by lexicographic order.
+History[edit]
+The datastructure was invented in 1968 by Donald R. Morrison,[6] with whom it is primarily associated, and by Gernot Gwehenberger.[7]
+Donald Knuth, pages 498-500 in Volume III of The Art of Computer Programming, calls these "Patricia's trees", presumably after the acronym in the title of Morrison's paper: "PATRICIA - Practical Algorithm to Retrieve Information Coded in Alphanumeric".  Today, Patricia tries are seen as radix trees with radix equals 2, which means that each bit of the key is compared individually and each node is a two-way (i.e., left versus right) branch.
+
+Comparison to other data structures[edit]
+(In the following comparisons, it is assumed that the keys are of length k and the data structure contains n members.)
+Unlike balanced trees, radix trees permit lookup, insertion, and deletion in O(k) time rather than O(log n). This does not seem like an advantage, since normally k â¥ log n, but in a balanced tree every comparison is a string comparison requiring O(k) worst-case time, many of which are slow in practice due to long common prefixes (in the case where comparisons begin at the start of the string). In a trie, all comparisons require constant time, but it takes m comparisons to look up a string of length m. Radix trees can perform these operations with fewer comparisons, and require many fewer nodes.
+Radix trees also share the disadvantages of tries, however: as they can only be applied to strings of elements or elements with an efficiently reversible mapping to strings, they lack the full generality of balanced search trees, which apply to any data type with a total ordering. A reversible mapping to strings can be used to produce the required total ordering for balanced search trees, but not the other way around. This can also be problematic if a data type only provides a comparison operation, but not a (de)serialization operation.
+Hash tables are commonly said to have expected O(1) insertion and deletion times, but this is only true when considering computation of the hash of the key to be a constant-time operation.  When hashing the key is taken into account, hash tables have expected O(k) insertion and deletion times, but may take longer in the worst case depending on how collisions are handled.  Radix trees have worst-case O(k) insertion and deletion. The successor/predecessor operations of radix trees are also not implemented by hash tables.
+
+Variants[edit]
+A common extension of radix trees uses two colors of nodes, 'black' and 'white'. To check if a given string is stored in the tree, the search starts from the top and follows the edges of the input string until no further progress can be made.  If the search string is consumed and the final node is a black node, the search has failed; if it is white, the search has succeeded. This enables us to add a large range of strings with a common prefix to the tree, using white nodes, then remove a small set of "exceptions" in a space-efficient manner by inserting them using black nodes.
+The HAT-trie is a cache-conscious data structure based on radix trees that offers efficient string storage and retrieval, and ordered iterations.  Performance, with respect to both time and space, is 
+comparable to the cache-conscious hashtable.[8][9] See HAT trie implementation notes at [1]
+A PATRICIA trie is a special variant of the radix 2 (binary) trie, in which rather than explicitly store every bit of every key, the nodes store only the position of the first bit which differentiates two sub-trees. During traversal the algorithm examines the indexed bit of the search key and chooses the left or right sub-tree as appropriate. Notable features of the PATRICIA trie include that the trie only requires one node to be inserted for every unique key stored, making PATRICIA much more compact than a standard binary trie. Also, since the actual keys are no longer explicitly stored it is necessary to perform one full key comparison on the indexed record in order to confirm a match. In this respect PATRICIA bears a certain resemblance to indexing using a hash table.[10]
+The adaptive radix tree is a radix tree variant that integrates adaptive node sizes to the radix tree.  One major drawback of the usual radix trees is the use of space, because it uses a constant node size in every level. The major difference between the radix tree and the adaptive radix tree is its variable size for each node based on the number of child elements, which grows while adding new entries.  Hence, the adaptive radix tree leads to a better use of space without reducing its speed.[11][12][13]
+A common practice is to relax the criteria of disallowing parents with only one child in situations where the parent represents a valid key in the data set. This variant of radix tree achieves a higher space efficiency than the one which only allows internal nodes with at least two children.[14]
+
+See also[edit]
+.mw-parser-output .portalbox{float:right;border:solid #aaa 1px;padding:0}.mw-parser-output .portalbox.tleft{margin:0.5em 1em 0.5em 0}.mw-parser-output .portalbox.tright{margin:0.5em 0 0.5em 1em}.mw-parser-output .portalbox>ul{display:table;box-sizing:border-box;padding:0.1em;max-width:175px;background:#f9f9f9;font-size:85%;line-height:110%;font-style:italic;font-weight:bold}.mw-parser-output .portalbox>ul>li{display:table-row}.mw-parser-output .portalbox>ul>li>span:first-child{display:table-cell;padding:0.2em;vertical-align:middle;text-align:center}.mw-parser-output .portalbox>ul>li>span:last-child{display:table-cell;padding:0.2em 0.2em 0.2em 0.3em;vertical-align:middle}
+
+Computer programming portal
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Prefix tree (also known as a Trie)
+Deterministic acyclic finite state automaton (DAFSA)
+Ternary search tries
+Hash trie
+Deterministic finite automata
+Judy array
+Search algorithm
+Extendible hashing
+Hash array mapped trie
+Prefix hash tree
+Burstsort
+LuleÃ¥ algorithm
+Huffman coding
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Morin, Patrick. "Data Structures for Strings" (PDF). Retrieved 15 April 2012.
+
+^ "rtfree(9)". www.freebsd.org. Retrieved 2016-10-23.
+
+^ The Regents of the University of California (1993). "/sys/net/radix.c". BSD Cross Reference. NetBSD. Retrieved 2019-07-25. Routines to build and maintain radix trees for routing lookups.
+
+^ "Lockless, atomic and generic Radix/Patricia trees". NetBSD. 2011.
+
+^ Knizhnik, Konstantin. "Patricia Tries: A Better Index For Prefix Searches", Dr. Dobb's Journal, June, 2008.
+
+^ Morrison, Donald R. PATRICIA -- Practical Algorithm to Retrieve Information Coded in Alphanumeric
+
+^ G. Gwehenberger,  Anwendung einer binÃ¤ren Verweiskettenmethode beim Aufbau von Listen. Elektronische Rechenanlagen 10 (1968), pp. 223â226
+
+^ Askitis, Nikolas; Sinha, Ranjan (2007). HAT-trie: A Cache-conscious Trie-based Data Structure for Strings. Proceedings of the 30th Australasian Conference on Computer science. Vol.Â 62. pp.Â 97â105. ISBNÂ 1-920682-43-0.
+
+^ 
+  Askitis, Nikolas; Sinha, Ranjan (October 2010). "Engineering scalable, cache and space efficient tries for strings". The VLDB Journal. 19 (5): 633â660. doi:10.1007/s00778-010-0183-9.
+
+^ Morrison, Donald R. Practical Algorithm to Retrieve Information Coded in Alphanumeric
+
+^ 
+  Kemper, Alfons; Eickler, AndrÃ© (2013). Datenbanksysteme, Eine EinfÃ¼hrung. Vol.Â 9. pp.Â 604â605. ISBNÂ 978-3-486-72139-3.
+
+^ "armon/libart: Adaptive Radix Trees implemented in C". GitHub. Retrieved 17 September 2014.
+
+^ http://www-db.in.tum.de/~leis/papers/ART.pdf
+
+^ Can a node of Radix tree which represents a valid key have one child?
+
+
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Radix tree.
+
+Algorithms and Data Structures Research & Reference Material: PATRICIA, by Lloyd Allison, Monash University
+Patricia Tree, NIST Dictionary of Algorithms and Data Structures
+Crit-bit trees, by Daniel J. Bernstein
+Radix Tree API in the Linux Kernel, by Jonathan Corbet
+Kart (key alteration radix tree), by Paul Jarc
+The Adaptive Radix Tree: ARTful Indexing for Main-Memory Databases, by Viktor Leis, Alfons Kemper, Thomas Neumann, Technical University of Munich
+Implementations[edit]
+FreeBSD Implementation, used for paging, forwarding and other things.
+Linux Kernel Implementation, used for the page cache, among other things.
+GNU C++ Standard library has a trie implementation
+Java implementation of Concurrent Radix Tree, by Niall Gallagher
+C# implementation of a Radix Tree
+Practical Algorithm Template Library, a C++ library on PATRICIA tries (VC++ >=2003, GCC G++ 3.x), by Roman S. Klyujkov
+Patricia Trie C++ template class implementation, by Radu Gruian
+Haskell standard library implementation "based on big-endian patricia trees". Web-browsable source code.
+Patricia Trie implementation in Java, by Roger Kapsi and Sam Berlin
+Crit-bit trees forked from C code by Daniel J. Bernstein
+Patricia Trie implementation in C, in libcprops
+Patricia TreesÂ : efficient sets and maps over integers in OCaml, by Jean-Christophe FilliÃ¢tre
+Radix DB (Patricia trie) implementation in C, by G. B. Versiani
+Libart - Adaptive Radix Trees implemented in C, by Armon Dadgar with other contributors (Open Source, BSD 3-clause license)
+Nim implementation of a crit-bit tree
+rax, a radix tree implementation in ANSI C by Salvatore Sanfilippo (the creator of REDIS)
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Radix_tree&oldid=1059403849"
+		Categories: Trees (data structures)String data structuresHidden categories: Articles with short descriptionShort description is different from WikidataCommons category link from Wikidata
+	

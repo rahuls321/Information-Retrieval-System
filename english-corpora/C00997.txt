@@ -1,0 +1,549 @@
+
+Title:
+Apache Flink
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Framework and distributed processing engine
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}Apache FlinkDeveloper(s)Apache Software FoundationInitial releaseMayÂ 2011; 10Â years agoÂ (2011-05)Stable release1.14.3[1]Â 
+   / 17 January 2022; 16 days agoÂ (17 January 2022)[2]
+Repositorygithub.com/apache/flink 
+Written inJava and ScalaOperating systemCross-platformTypeData analyticsmachine learning algorithmsLicenseApache License 2.0Websiteflink.apache.orgÂ 
+Apache Flink is an open-source, unified stream-processing and batch-processing framework developed by the Apache Software Foundation. The core of Apache Flink is a distributed streaming data-flow engine written in Java and Scala.[3][4] Flink executes arbitrary dataflow programs in a data-parallel and pipelined (hence task parallel) manner.[5] Flink's pipelined runtime system enables the execution of bulk/batch and stream processing programs.[6][7] Furthermore, Flink's runtime supports the execution of iterative algorithms natively.[8]
+Flink provides a high-throughput, low-latency streaming engine[9] as well as support for event-time processing and state management. Flink applications are fault-tolerant in the event of machine failure and support exactly-once semantics.[10] Programs can be written in Java, Scala,[11] Python,[12] and SQL[13] and are automatically compiled and optimized[14] into dataflow programs that are executed in a cluster or cloud environment.[15]
+Flink does not provide its own data-storage system, but provides data-source and sink connectors to systems such as Amazon Kinesis, Apache Kafka, HDFS, Apache Cassandra, and ElasticSearch.[16]
+
+Contents
+
+1 Development
+2 Overview
+
+2.1 Programming Model and Distributed Runtime
+2.2 State: Checkpoints, Savepoints, and Fault-tolerance
+2.3 DataStream API
+
+2.3.1 Apache Beam - Flink Runner
+
+
+2.4 DataSet API
+2.5 Table API and SQL
+
+
+3 Flink Forward
+4 History
+5 See also
+6 References
+7 External links
+
+
+
+Development[edit]
+Apache Flink is developed under the Apache License 2.0[17] by the Apache Flink Community within the Apache Software Foundation. The project is driven by over 25 committers and over 340 contributors.
+
+Overview[edit]
+Apache Flink's dataflow programming model provides event-at-a-time processing on both finite and infinite datasets. At a basic level, Flink programs consist of streams and transformations. âConceptually, a stream is a (potentially never-ending) flow of data records, and a transformation is an operation that takes one or more streams as input, and produces one or more output streams as a result.â[18]
+Apache Flink includes two core APIs: a DataStream API for bounded or unbounded streams of data and a DataSet API for bounded data sets. Flink also offers a Table API, which is a SQL-like expression language for relational stream and batch processing that can be easily embedded in Flink's DataStream and DataSet APIs. The highest-level language supported by Flink is SQL, which is semantically similar to the Table API and represents programs as SQL query expressions.
+
+Programming Model and Distributed Runtime[edit]
+Upon execution, Flink programs are mapped to streaming dataflows.[18] Every Flink dataflow starts with one or more sources (a data input, e.g., a message queue or a file system) and ends with one or more sinks (a data output, e.g., a message queue, file system, or database). An arbitrary number of transformations can be performed on the stream. These streams can be arranged as a directed, acyclic dataflow graph, allowing an application to branch and merge dataflows.
+Flink offers ready-built source and sink connectors with Apache Kafka, Amazon Kinesis, HDFS, Apache Cassandra, and more.[16]
+Flink programs run as a distributed system within a cluster and can be deployed in a standalone mode as well as on YARN, Mesos, Docker-based setups along with other resource management frameworks.[19]
+
+State: Checkpoints, Savepoints, and Fault-tolerance[edit]
+Apache Flink includes a lightweight fault tolerance mechanism based on distributed checkpoints.[10] A checkpoint is an automatic, asynchronous snapshot of the state of an application and the position in a source stream. In the case of a failure, a Flink program with checkpointing enabled will, upon recovery, resume processing from the last completed checkpoint, ensuring that Flink maintains exactly-once state semantics within an application. The checkpointing mechanism exposes hooks for application code to include external systems into the checkpointing mechanism as well (like opening and committing transactions with a database system).
+Flink also includes a mechanism called savepoints, which are manually-triggered checkpoints.[20] A user can generate a savepoint, stop a running Flink program, then resume the program from the same application state and position in the stream. Savepoints enable updates to a Flink program or a Flink cluster without losing the application's state . As of Flink 1.2, savepoints also allow to restart an application with a different parallelismâallowing users to adapt to changing workloads.
+
+DataStream API[edit]
+Flink's DataStream API enables transformations (e.g. filters, aggregations, window functions) on bounded or unbounded streams of data. The DataStream API includes more than 20 different types of transformations and is available in Java and Scala.[21]
+
+A simple example of a stateful stream processing program is an application that emits a word count from a continuous input stream and groups the data in 5-second windows:import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.windowing.time.Time
+
+case class WordCount(word: String, count: Int)
+
+object WindowWordCount {
+  def main(args: Array[String]) {
+
+    val env = StreamExecutionEnvironment.getExecutionEnvironment
+    val text = env.socketTextStream("localhost", 9999)
+
+    val counts = text.flatMap { _.toLowerCase.split("\\W+") filter { _.nonEmpty } }
+      .map { WordCount(_, 1) }
+      .keyBy("word")
+      .timeWindow(Time.seconds(5))
+      .sum("count")
+
+    counts.print
+
+    env.execute("Window Stream WordCount")
+  }
+}
+
+Apache Beam - Flink Runner[edit]
+Apache Beam âprovides an advanced unified programming model, allowing (a developer) to implement batch and streaming data processing jobs that can run on any execution engine.â[22] The Apache Flink-on-Beam runner is the most feature-rich according to a capability matrix maintained by the Beam community.[23]
+data Artisans, in conjunction with the Apache Flink community, worked closely with the Beam community to develop a Flink runner.[24]
+
+DataSet API[edit]
+Flink's DataSet API enables transformations (e.g., filters, mapping, joining, grouping) on bounded datasets. The DataSet API includes more than 20 different types of transformations.[25] The API is available in Java, Scala and an experimental Python API. Flink's DataSet API is conceptually similar to the DataStream API.
+
+Table API and SQL[edit]
+Flink's Table API is a SQL-like expression language for relational stream and batch processing that can be embedded in Flink's Java and Scala DataSet and DataStream APIs. The Table API and SQL interface operate on a relational Table abstraction. Tables can be created from external data sources or from existing DataStreams and DataSets. The Table API supports relational operators such as selection, aggregation, and joins on Tables.
+Tables can also be queried with regular SQL. The Table API and SQL offer equivalent functionality and can be mixed in the same program. When a Table is converted back into a DataSet or DataStream, the logical plan, which was defined by relational operators and SQL queries, is optimized using Apache Calcite and is transformed into a DataSet or DataStream program.[26]
+
+Flink Forward[edit]
+Flink Forward is an annual conference about Apache Flink. The first edition of Flink Forward took place in 2015 in Berlin. The two-day conference had over 250 attendees from 16 countries. Sessions were organized in two tracks with over 30 technical presentations from Flink developers and one additional track with hands-on Flink training.
+In 2016, 350 participants joined the conference and over 40 speakers presented technical talks in 3 parallel tracks. On the third day, attendees were invited to participate in hands-on training sessions.
+In 2017, the event expands to San Francisco, as well. The conference day is dedicated to technical talks on how Flink is used in the enterprise, Flink system internals, ecosystem integrations with Flink, and the future of the platform. It features keynotes, talks from Flink users in industry and academia, and hands-on training sessions on Apache Flink.
+In 2020, following the COVID-19 pandemic, Flink Forward's spring edition which was supposed to be hosted in San Francisco was canceled. Instead, the conference was hosted virtually, starting on April 22nd and concluding on April 24th, featuring live keynotes, Flink use cases, Apache Flink internals, and other topics on stream processing and real-time analytics.[27]
+
+History[edit]
+In 2010, the research project "Stratosphere: Information Management on the Cloud"[28] led by Volker Markl (funded by the German Research Foundation (DFG)[29]) was started as a collaboration of Technical University Berlin, Humboldt-UniversitÃ¤t zu Berlin, and Hasso-Plattner-Institut Potsdam. Flink started from a fork of Stratosphere's distributed execution engine and it became an Apache Incubator project in March 2014.[30] In December 2014, Flink was accepted as an Apache top-level project.[31][32][33][34]
+
+
+
+
+Version
+
+Original release date
+
+Latest version
+
+Release date
+
+
+Old version, no longer maintained: 0.9
+
+2015-06-24
+
+0.9.1
+
+2015-09-01
+
+
+Old version, no longer maintained: 0.10
+
+2015-11-16
+
+0.10.2
+
+2016-02-11
+
+
+Old version, no longer maintained: 1.0
+
+2016-03-08
+
+1.0.3
+
+2016-05-11
+
+
+Old version, no longer maintained: 1.1
+
+2016-08-08
+
+1.1.5
+
+2017-03-22
+
+
+Old version, no longer maintained: 1.2
+
+2017-02-06
+
+1.2.1
+
+2017-04-26
+
+
+Old version, no longer maintained: 1.3
+
+2017-06-01
+
+1.3.3
+
+2018-03-15
+
+
+Old version, no longer maintained: 1.4
+
+2017-12-12
+
+1.4.2
+
+2018-03-08
+
+
+Old version, no longer maintained: 1.5
+
+2018-05-25
+
+1.5.6
+
+2018-12-26
+
+
+Old version, no longer maintained: 1.6
+
+2018-08-08
+
+1.6.3
+
+2018-12-22
+
+
+Old version, no longer maintained: 1.7
+
+2018-11-30
+
+1.7.2
+
+2019-02-15
+
+
+Old version, no longer maintained: 1.8
+
+2019-04-09
+
+1.8.3
+
+2019-12-11
+
+
+Old version, no longer maintained: 1.9
+
+2019-08-22
+
+1.9.2
+
+2020-01-30
+
+
+Old version, no longer maintained: 1.10
+
+2020-02-11
+
+1.10.3
+
+2021-01-29
+
+
+Old version, no longer maintained: 1.11
+
+2020-07-06
+
+1.11.6
+
+2021-12-16
+
+
+Old version, no longer maintained: 1.12
+
+2020-12-10
+
+1.12.7
+
+2021-12-16
+
+
+Older version, yet still maintained: 1.13
+
+2021-05-03
+
+1.13.5
+
+2021-12-16
+
+
+Current stable version: 1.14
+
+2021-09-29
+
+1.14.3
+
+2022-01-17
+
+
+Release Dates
+
+09/2021: Apache Flink 1.14 (09/2021: v1.14.0; 12/2021: v1.14.2; 01/2022: v1.14.3)
+05/2021: Apache Flink 1.13 (05/2021: v1.13.1; 08/2021: v1.13.2; 10/2021: v1.13.3; 12/2021: v1.13.5)
+12/2020: Apache Flink 1.12 (01/2021: v1.12.1; 03/2021: v1.12.2; 04/2021: v1.12.3; 05/2021: v1.12.4; 08/2021: v1.12.5; 12/2021: v1.12.7)
+07/2020: Apache Flink 1.11 (07/2020: v1.11.1; 09/2020: v1.11.2; 12/2020: v1.11.3; 08/2021: v1.11.4; 12/2021: v1.11.6)
+02/2020: Apache Flink 1.10 (05/2020: v1.10.1; 08/2020: v1.10.2; 01/2021: v1.10.3)
+08/2019: Apache Flink 1.9 (10/2019: v1.9.1; 01/2020: v1.9.2)
+04/2019: Apache Flink 1.8 (07/2019: v1.8.1; 09/2019: v1.8.2; 12/2019: v1.8.3)
+11/2018: Apache Flink 1.7 (12/2018: v1.7.1; 02/2019: v1.7.2)
+08/2018: Apache Flink 1.6 (09/2018: v1.6.1; 10/2018: v1.6.2; 12/2018: v1.6.3; 02/2019: v1.6.4)
+05/2018: Apache Flink 1.5 (07/2018: v1.5.1; 07/2018: v1.5.2; 08/2018: v1.5.3; 09/2018: v1.5.4; 10/2018: v1.5.5; 12/2018: v1.5.6)
+12/2017: Apache Flink 1.4 (02/2018: v1.4.1; 03/2018: v1.4.2)
+06/2017: Apache Flink 1.3 (06/2017: v1.3.1; 08/2017: v1.3.2; 03/2018: v1.3.3)
+02/2017: Apache Flink 1.2 (04/2017: v1.2.1)
+08/2016: Apache Flink 1.1 (08/2016: v1.1.1; 09/2016: v1.1.2; 10/2016: v1.1.3; 12/2016: v1.1.4; 03/2017: v1.1.5)
+03/2016: Apache Flink 1.0 (04/2016: v1.0.1; 04/2016: v1.0.2; 05/2016: v1.0.3)
+11/2015: Apache Flink 0.10 (11/2015: v0.10.1; 02/2016: v0.10.2)
+06/2015: Apache Flink 0.9 (09/2015: v0.9.1)
+04/2015: Apache Flink 0.9-milestone-1
+Apache Incubator Release Dates
+
+01/2015: Apache Flink 0.8-incubating
+11/2014: Apache Flink 0.7-incubating
+08/2014: Apache Flink 0.6-incubating (09/2014: v0.6.1-incubating)
+05/2014: Stratosphere 0.5 (06/2014: v0.5.1; 07/2014: v0.5.2)
+Pre-Apache Stratosphere Release Dates
+
+01/2014: Stratosphere 0.4 (version 0.3 was skipped)
+08/2012: Stratosphere 0.2
+05/2011: Stratosphere 0.1 (08/2011: v0.1.1)
+The 1.14.1, 1.13.4, 1.12.6, 1.11.5 releases, which were supposed to only contain a Log4j upgrade to 2.15.0, were skipped because CVE-.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}2021-45046 was discovered during the release publication.[35]
+
+See also[edit]
+List of Apache Software Foundation projects
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ https://flink.apache.org/news/2022/01/17/release-1.14.3.html.
+
+^ "All stable Flink releases". flink.apache.org. Apache Software Foundation. Retrieved 2021-12-20.
+
+^ "Apache Flink: Scalable Batch and Stream Data Processing". apache.org.
+
+^ "apache/flink". GitHub. 29 January 2022.
+
+^ Alexander Alexandrov, Rico Bergmann, Stephan Ewen, Johann-Christoph Freytag, Fabian Hueske, Arvid Heise, Odej Kao, Marcus Leich, Ulf Leser, Volker Markl, Felix Naumann, Mathias Peters, Astrid RheinlÃ¤nder, Matthias J. Sax, Sebastian Schelter, Mareike HÃ¶ger, Kostas Tzoumas, and Daniel Warneke. 2014. The Stratosphere platform for big data analytics. The VLDB Journal 23, 6 (December 2014), 939-964. DOI
+
+^ Ian Pointer (7 May 2015). "Apache Flink: New Hadoop contender squares off against Spark". InfoWorld.
+
+^ "On Apache Flink. Interview with Volker Markl". odbms.org.
+
+^ Stephan Ewen, Kostas Tzoumas, Moritz Kaufmann, and Volker Markl. 2012. Spinning fast iterative data flows. Proc. VLDB Endow. 5, 11 (July 2012), 1268-1279. DOI
+
+^ "Benchmarking Streaming Computation Engines at Yahoo!". Yahoo Engineering. Retrieved 2017-02-23.
+
+^ Jump up to: a b Carbone, Paris; FÃ³ra, Gyula; Ewen, Stephan; Haridi, Seif; Tzoumas, Kostas (2015-06-29). "Lightweight Asynchronous Snapshots for Distributed Dataflows". arXiv:1506.08603 [cs.DC].
+
+^ "Apache Flink 1.2.0 Documentation: Flink DataStream API Programming Guide". ci.apache.org. Retrieved 2017-02-23.
+
+^ "Apache Flink 1.2.0 Documentation: Python Programming Guide". ci.apache.org. Retrieved 2017-02-23.
+
+^ "Apache Flink 1.2.0 Documentation: Table and SQL". ci.apache.org. Retrieved 2017-02-23.
+
+^ Fabian Hueske, Mathias Peters, Matthias J. Sax, Astrid RheinlÃ¤nder, Rico Bergmann, Aljoscha Krettek, and Kostas Tzoumas. 2012. Opening the black boxes in data flow optimization. Proc. VLDB Endow. 5, 11 (July 2012), 1256-1267. DOI
+
+^ Daniel Warneke and Odej Kao. 2009. Nephele: efficient parallel data processing in the cloud. In Proceedings of the 2nd Workshop on Many-Task Computing on Grids and Supercomputers (MTAGS '09). ACM, New York, NY, USA, Article 8, 10 pages. DOI
+
+^ Jump up to: a b "Apache Flink 1.2.0 Documentation: Streaming Connectors". ci.apache.org. Retrieved 2017-02-23.
+
+^ "ASF Git Repos - flink.git/blob - LICENSE". apache.org. Archived from the original on 2017-10-23. Retrieved 2015-04-12.
+
+^ Jump up to: a b "Apache Flink 1.2.0 Documentation: Dataflow Programming Model". ci.apache.org. Retrieved 2017-02-23.
+
+^ "Apache Flink 1.2.0 Documentation: Distributed Runtime Environment". ci.apache.org. Retrieved 2017-02-24.
+
+^ "Apache Flink 1.2.0 Documentation: Distributed Runtime Environment - Savepoints". ci.apache.org. Retrieved 2017-02-24.
+
+^ "Apache Flink 1.2.0 Documentation: Flink DataStream API Programming Guide". ci.apache.org. Retrieved 2017-02-24.
+
+^ "Apache Beam". beam.apache.org. Retrieved 2017-02-24.
+
+^ "Apache Beam Capability Matrix". beam.apache.org. Retrieved 2017-02-24.
+
+^ "Why Apache Beam? A Google Perspective | Google Cloud Big Data and Machine Learning Blog | Google Cloud Platform". Google Cloud Platform. Retrieved 2017-02-24.
+
+^ "Apache Flink 1.2.0 Documentation: Flink DataSet API Programming Guide". ci.apache.org. Retrieved 2017-02-24.
+
+^ "Stream Processing for Everyone with SQL and Apache Flink". flink.apache.org. Retrieved 2020-01-08.
+
+^ "Flink Forward Virtual Conference 2020".
+
+^ "Stratosphere". stratosphere.eu.
+
+^ "DFG - Deutsche Forschungsgemeinschaft -". dfg.de.
+
+^ "Stratosphere". apache.org.
+
+^ "Project Details for Apache Flink". apache.org.
+
+^ "The Apache Software Foundation Announces Apacheâ¢ Flinkâ¢ as a Top-Level ProjectÂ : The Apache Software Foundation Blog". apache.org.
+
+^ "Will the mysterious Apache Flink find a sweet spot in the enterprise?". siliconangle.com. 9 February 2015.
+
+^ (in German)
+
+^ "Apache Flink Log4j emergency releases". flink.apache.org. Apache Software Foundation. Retrieved 2021-12-22.
+
+
+External links[edit]
+Official website 
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteThe Apache Software FoundationTop-levelprojects
+Accumulo
+ActiveMQ
+Airflow
+Ambari
+Ant
+Aries
+Arrow
+Apache HTTP Server
+APR
+Avro
+Axis
+Axis2
+Beam
+Bloodhound
+Brooklyn
+Buildr
+Calcite
+Camel
+CarbonData
+Cassandra
+Cayenne
+Chemistry
+CloudStack
+Cocoon
+Cordova
+CouchDB
+cTAKES
+CXF
+Derby
+Directory
+Drill
+Druid
+Empire-db
+Felix
+Flex
+Flink
+Flume
+Geronimo
+Giraph
+Gump
+Hadoop
+HBase
+Helix
+Hive
+Impala
+Jackrabbit
+James
+Jena
+Jini
+JMeter
+Kafka
+Kudu
+Kylin
+Lucene
+Mahout
+Maven
+MINA
+mod_perl
+MyFaces
+NetBeans
+Nutch
+OFBiz
+Oozie
+OpenEJB
+OpenJPA
+OpenNLP
+OÑenOffice
+ORC
+PDFBox
+Parquet
+Phoenix
+POI
+Pig
+Pinot
+Pivot
+Qpid
+Roller
+RocketMQ
+Samza
+ServiceMix
+Shiro
+SINGA
+Sling
+Solr
+Spark
+Storm
+SpamAssassin
+Struts 1
+Struts 2
+Subversion
+Superset
+SystemDS
+Tapestry
+Thrift
+Tika
+Tomcat
+Trafodion
+Traffic Server
+UIMA
+Velocity
+Wicket
+Xalan
+Xerces
+XMLBeans
+Yetus
+ZooKeeper
+Commons
+BCEL
+BSF
+Daemon
+Jelly
+Logging
+Incubator
+MXNet
+NuttX
+Taverna
+Other projects
+Batik
+Chainsaw
+FOP
+Ivy
+Log4j
+Attic
+Abdera
+Apex
+AxKit
+Beehive
+Bluesky
+iBATIS
+C++ Standard Library
+Cactus
+Click
+Continuum
+Deltacloud
+Etch
+Excalibur
+Forrest
+Hama
+Harmony
+HiveMind
+Jakarta
+Lenya
+Marmotta
+ODE
+Shale
+Shindig
+Slide
+Sqoop
+Stanbol
+Tuscany
+Wave
+Wink
+Licenses
+Apache License
+
+ Category
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Apache_Flink&oldid=1068565169"
+		Categories: Apache Software Foundation projectsFree software programmed in Java (programming language)Software using the Apache licenseFree system softwareDistributed stream processingHidden categories: Articles with short descriptionShort description is different from WikidataArticles with example Scala code
+	

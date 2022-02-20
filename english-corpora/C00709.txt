@@ -1,0 +1,616 @@
+
+Title:
+Parsing expression grammar
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Type of grammar for describing formal languages
+In computer science, a parsing expression grammar (PEG), is a type of analytic formal grammar, i.e. it describes a formal language in terms of a set of rules for recognizing strings in the language. The formalism was introduced by Bryan Ford in 2004[1] and is closely related to the family of top-down parsing languages introduced in the early 1970s.
+Syntactically, PEGs also look similar to context-free grammars (CFGs), but they have a different interpretation: the choice operator selects the first match in PEG, while it is ambiguous in CFG. This is closer to how string recognition tends to be done in practice, e.g. by a recursive descent parser.
+Unlike CFGs, PEGs cannot be ambiguous; if a string parses, it has exactly one valid parse tree. It is conjectured that there exist context-free languages that cannot be recognized by a PEG, but this is not yet proven.[1] PEGs are well-suited to parsing computer languages (and artificial human languages such as Lojban), but not natural languages where the performance of PEG algorithms is comparable to general CFG algorithms such as the Earley algorithm.[2]
+
+Contents
+
+1 Definition
+
+1.1 Syntax
+1.2 Semantics
+1.3 Operational interpretation of parsing expressions
+1.4 Examples
+
+
+2 Implementing parsers from parsing expression grammars
+3 Advantages
+4 Disadvantages
+
+4.1 Memory consumption
+4.2 Indirect left recursion
+4.3 Expressive power
+4.4 Ambiguity detection and influence of rule order on language that is matched
+
+
+5 Bottom-up PEG parsing
+6 See also
+7 References
+8 External links
+
+
+
+Definition[edit]
+Syntax[edit]
+Formally, a parsing expression grammar consists of:
+
+A finite set N of nonterminal symbols.
+A finite set Î£ of terminal symbols that is disjoint from N.
+A finite set P of parsing rules.
+An expression eS termed the starting expression.
+Each parsing rule in P has the form A â e, where A is a nonterminal symbol and e is a parsing expression. A parsing expression is a hierarchical expression similar to a regular expression, which is constructed in the following fashion:
+
+An atomic parsing expression consists of:
+any terminal symbol,
+any nonterminal symbol, or
+the empty string Îµ.
+Given any existing parsing expressions e, e1, and e2, a new parsing expression can be constructed using the following operators:
+Sequence: e1 e2
+Ordered choice: e1 / e2
+Zero-or-more: e*
+One-or-more: e+
+Optional: e?
+And-predicate: &e
+Not-predicate:Â !e
+Semantics[edit]
+The fundamental difference between context-free grammars and parsing expression grammars is that the PEG's choice operator is ordered. If the first alternative succeeds, the second alternative is ignored. Thus ordered choice is not commutative, unlike unordered choice as in context-free grammars. Ordered choice is analogous to soft cut operators available in some logic programming languages.
+The consequence is that if a CFG is transliterated directly to a PEG, any ambiguity in the former is resolved by deterministically picking one parse tree from the possible parses. By carefully choosing the order in which the grammar alternatives are specified, a programmer has a great deal of control over which parse tree is selected.
+Like boolean context-free grammars, parsing expression grammars also add the and- and not- syntactic predicates. Because they can use an arbitrarily complex sub-expression to "look ahead" into the input string without actually consuming it, they provide a powerful syntactic lookahead and disambiguation facility, in particular when reordering the alternatives cannot specify the exact parse tree desired.
+
+Operational interpretation of parsing expressions[edit]
+Each nonterminal in a parsing expression grammar essentially represents a parsing function in a recursive descent parser, and the corresponding parsing expression represents the "code" comprising the function. Each parsing function conceptually takes an input string as its argument, and yields one of the following results:
+
+success, in which the function may optionally move forward or consume one or more characters of the input string supplied to it, or
+failure, in which case no input is consumed.
+An atomic parsing expression consisting of a single terminal (i.e. literal) succeeds if the first character of the input string matches that terminal, and in that case consumes the input character; otherwise the expression yields a failure result. An atomic parsing expression consisting of the empty string always trivially succeeds without consuming any input.
+An atomic parsing expression consisting of a nonterminal A represents a recursive call to the nonterminal-function A. A nonterminal may succeed without actually consuming any input, and this is considered an outcome distinct from failure.
+The sequence operator e1 e2 first invokes e1, and if e1 succeeds, subsequently invokes e2 on the remainder of the input string left unconsumed by e1, and returns the result. If either e1 or e2 fails, then the sequence expression e1 e2 fails (consuming no input).
+The choice operator e1 / e2 first invokes e1, and if e1 succeeds, returns its result immediately. Otherwise, if e1 fails, then the choice operator backtracks to the original input position at which it invoked e1, but then calls e2 instead, returning e2's result.
+The zero-or-more, one-or-more, and optional operators consume zero or more, one or more, or zero or one consecutive repetitions of their sub-expression e, respectively. Unlike in context-free grammars and regular expressions, however, these operators always behave greedily, consuming as much input as possible and never backtracking. (Regular expression matchers may start by matching greedily, but will then backtrack and try shorter matches if they fail to match.) For example, the expression a* will always consume as many a's as are consecutively available in the input string, and the expression (a* a) will always fail because the first part (a*) will never leave any a's for the second part to match.
+The and-predicate expression &e invokes the sub-expression e, and then succeeds if e succeeds and fails if e fails, but in either case never consumes any input.
+The not-predicate expressionÂ !e succeeds if e fails and fails if e succeeds, again consuming no input in either case.
+
+Examples[edit]
+This is a PEG that recognizes mathematical formulas that apply the basic five operations to non-negative integers.
+
+Expr    â Sum
+Sum     â Product (('+' / '-') Product)*
+Product â Power (('*' / '/') Power)*
+Power   â Value ('^' Power)?
+Value   â [0-9]+ / '(' Expr ')'
+
+In the above example, the terminal symbols are characters of text, represented by characters in single quotes, such as '(' and ')'. The range [0-9] is also a shortcut for ten characters, indicating any one of the digits 0 through 9. (This range syntax is the same as the syntax used by regular expressions.) The nonterminal symbols are the ones that expand to other rules: Value, Power, Product, Sum, and Expr. Note that rules Sum and Product don't lead to desired left-associativity of these operations (they don't deal with associativity at all, and it has to be handled in post-processing step after parsing), and the Power rule (by referring to itself on the right) results in desired right-associativity of exponent. Also note that a rule like Sum â Sum (('+' / '-') Product)? (with intention to achieve left-associativity) would cause infinite recursion, so it cannot be used in practice even though it can be expressed in the grammar.
+The following recursive rule matches standard C-style if/then/else statements in such a way that the optional "else" clause always binds to the innermost "if", because of the implicit prioritization of the '/' operator. (In a context-free grammar, this construct yields the classic dangling else ambiguity.)
+
+S â 'if' C 'then' S 'else' S / 'if' C 'then' S
+
+The following recursive rule matches Pascal-style nested comment syntax, (* which can (* nest *) like this *). The comment symbols appear in single quotes to distinguish them from PEG operators.
+
+Begin â '(*'
+End   â '*)'
+C     â Begin N* End
+N     â C / (!Begin !End Z)
+Z     â any single character
+
+The parsing expression foo &(bar) matches and consumes the text "foo" but only if it is followed by the text "bar". The parsing expression foo !(bar) matches the text "foo" but only if it is not followed by the text "bar".  The expression !(a+ b) a matches a single "a" but only if it is not part of an arbitrarily long sequence of a's followed by a b.
+The parsing expression ('a'/'b')* matches and consumes an arbitrary-length sequence of a's and b's. The production rule S â 'a' ''S''? 'b' describes the simple context-free "matching language" 
+  
+    
+      
+        {
+        
+          a
+          
+            n
+          
+        
+        
+          b
+          
+            n
+          
+        
+        :
+        n
+        â¥
+        1
+        }
+      
+    
+    {\displaystyle \{a^{n}b^{n}:n\geq 1\}}
+  
+.
+The following parsing expression grammar describes the classic non-context-free language 
+  
+    
+      
+        {
+        
+          a
+          
+            n
+          
+        
+        
+          b
+          
+            n
+          
+        
+        
+          c
+          
+            n
+          
+        
+        :
+        n
+        â¥
+        1
+        }
+      
+    
+    {\displaystyle \{a^{n}b^{n}c^{n}:n\geq 1\}}
+  
+:
+
+S â &(A 'c') 'a'+ B !.
+A â 'a' A? 'b'
+B â 'b' B? 'c'
+
+Implementing parsers from parsing expression grammars[edit]
+Any parsing expression grammar can be converted directly into a recursive descent parser.[3] Due to the unlimited lookahead capability that the grammar formalism provides, however, the resulting parser could exhibit exponential time performance in the worst case.
+It is possible to obtain better performance for any parsing expression grammar by converting its recursive descent parser into a packrat parser, which always runs in linear time, at the cost of substantially greater storage space requirements. A packrat parser[3]
+is a form of parser similar to a recursive descent parser in construction, except that during the parsing process it memoizes the intermediate results of all invocations of the mutually recursive parsing functions, ensuring that each parsing function is only invoked at most once at a given input position. Because of this memoization, a packrat parser has the ability to parse many context-free grammars and any parsing expression grammar (including some that do not represent context-free languages) in linear time. Examples of memoized recursive descent parsers are known from at least as early as 1993.[4]
+This analysis of the performance of a packrat parser assumes that enough memory is available to hold all of the memoized results; in practice, if there is not enough memory, some parsing functions might have to be invoked more than once at the same input position, and consequently the parser could take more than linear time.
+It is also possible to build LL parsers and LR parsers from parsing expression grammars, with better worst-case performance than a recursive descent parser, but the unlimited lookahead capability of the grammar formalism is then lost.  Therefore, not all languages that can be expressed using parsing expression grammars can be parsed by LL or LR parsers.
+
+Advantages[edit]
+Compared to pure regular expressions (i.e. without back-references), PEGs are strictly more powerful, but require significantly more memory. For example, a regular expression inherently cannot find an arbitrary number of matched pairs of parentheses, because it is not recursive, but a PEG can.  However, a PEG will require an amount of memory proportional to the length of the input, while a regular expression matcher will require only a constant amount of memory.
+Any PEG can be parsed in linear time by using a packrat parser, as described above.
+Many CFGs contain ambiguities, even when they're intended to describe unambiguous languages. The "dangling else" problem in C, C++, and Java is one example. These problems are often resolved by applying a rule outside of the grammar. In a PEG, these ambiguities never arise, because of prioritization.
+
+Disadvantages[edit]
+Memory consumption[edit]
+PEG parsing is typically carried out via packrat parsing, which uses memoization[5][6] to eliminate redundant parsing steps. Packrat parsing requires storage proportional to the total input size, rather than the depth of the parse tree as with LR parsers. This is a significant difference in many domains: for example, hand-written source code has an effectively constant expression nesting depth independent of the length of the programâexpressions nested beyond a certain depth tend to get refactored.
+For some grammars and some inputs, the depth of the parse tree can be proportional to the input size,[7]
+so both an LR parser and a packrat parser will appear to have the same worst-case asymptotic performance. A more accurate analysis would take the depth of the parse tree into account separately from the input size. This is similar to a situation which arises in graph algorithms: the BellmanâFord algorithm and FloydâWarshall algorithm appear to have the same running time (
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          
+            |
+          
+          
+            3
+          
+        
+        )
+      
+    
+    {\displaystyle O(|V|^{3})}
+  
+) if only the number of vertices is considered. However, a more precise analysis which accounts for the number of edges as a separate parameter assigns the BellmanâFord algorithm a time of 
+  
+    
+      
+        O
+        (
+        
+          |
+        
+        V
+        
+          |
+        
+        â
+        
+          |
+        
+        E
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle O(|V|*|E|)}
+  
+, which is quadratic for sparse graphs with 
+  
+    
+      
+        
+          |
+        
+        E
+        
+          |
+        
+        â
+        O
+        (
+        
+          |
+        
+        V
+        
+          |
+        
+        )
+      
+    
+    {\displaystyle |E|\in O(|V|)}
+  
+.
+
+Indirect left recursion[edit]
+A PEG is called well-formed[1] if it contains no left-recursive rules, i.e., rules that allow a nonterminal to expand to an expression in which the same nonterminal occurs as the leftmost symbol. For a left-to-right top-down parser, such rules cause infinite regress: parsing will continually expand the same nonterminal without moving forward in the string.
+Therefore, to allow packrat parsing, left recursion must be eliminated. For example, in the arithmetic grammar above, it would be tempting to move some rules around so that the precedence order of products and sums could be expressed in one line:
+
+Value   â [0-9.]+ / '(' Expr ')'
+Product â Expr (('*' / '/') Expr)*
+Sum     â Expr (('+' / '-') Expr)*
+Expr    â Product / Sum / Value
+
+In this new grammar, matching an Expr requires testing if a Product matches while matching a Product requires testing if an Expr matches. Because the term appears in the leftmost position, these rules make up a circular definition that cannot be resolved.  (Circular definitions that can be resolved existâsuch as in the original formulation from the first exampleâbut such definitions are required not to exhibit pathological recursion.)  However, left-recursive rules can always be rewritten to eliminate left-recursion.[2][8] For example, the following left-recursive CFG rule:
+
+string-of-a â string-of-a 'a' | 'a'
+
+can be rewritten in a PEG using the plus operator:
+
+string-of-a â 'a'+
+
+The process of rewriting indirectly left-recursive rules is complex in some packrat parsers, especially when semantic actions are involved.
+With some modification, traditional packrat parsing can support direct left recursion,[3][9][10] but doing so results in a loss of the linear-time parsing property[9] which is generally the justification for using PEGs and packrat parsing in the first place.  Only the OMeta parsing algorithm[9] supports full direct and indirect left recursion without additional attendant complexity (but again, at a loss of the linear time complexity), whereas all GLR parsers support left recursion.
+
+Expressive power[edit]
+PEG packrat parsers cannot recognize some unambiguous nondeterministic CFG rules, such as the following:[2]
+
+S â 'x' S 'x' | 'x'
+
+Neither LL(k) nor LR(k) parsing algorithms are capable of recognizing this example. However, this grammar can be used by a general CFG parser like the CYK algorithm. However, the language in question can be recognised by all these types of parser, since it is in fact a regular language (that of strings of an odd number of x's).
+It is an open problem to give a concrete example of a context-free language which cannot be recognized by a parsing expression grammar.[1]
+
+Ambiguity detection and influence of rule order on language that is matched[edit]
+LL(k) and LR(k) parser generators will fail to complete when the input grammar is ambiguous. This is a feature in the common case that the grammar is intended to be unambiguous but is defective. A PEG parser generator will resolve unintended ambiguities earliest-match-first, which may be arbitrary and lead to surprising parses.
+The ordering of productions in a PEG grammar affects not only the resolution of ambiguity, but also the language matched. For example, consider the first PEG example in Ford's paper[1]
+(example rewritten in pegjs.org/online notation, and labelled 
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+      
+    
+    {\displaystyle G_{1}}
+  
+ and 
+  
+    
+      
+        
+          G
+          
+            2
+          
+        
+      
+    
+    {\displaystyle G_{2}}
+  
+):
+
+
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+      
+    
+    {\displaystyle G_{1}}
+  
+:Â Â A = "a" "b" / "a"
+
+  
+    
+      
+        
+          G
+          
+            2
+          
+        
+      
+    
+    {\displaystyle G_{2}}
+  
+:Â Â A = "a" / "a" "b"
+Ford notes that The second alternative in the latter PEG rule will never succeed because the first choice is always taken if the input string ... begins with 'a'..[1] 
+Specifically, 
+  
+    
+      
+        L
+        (
+        
+          G
+          
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle L(G_{1})}
+  
+ (i.e., the language matched by 
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+      
+    
+    {\displaystyle G_{1}}
+  
+) includes the input "ab", but 
+  
+    
+      
+        L
+        (
+        
+          G
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle L(G_{2})}
+  
+ does not. 
+Thus, adding a new option to a PEG grammar can remove strings from the language matched, e.g. 
+  
+    
+      
+        
+          G
+          
+            2
+          
+        
+      
+    
+    {\displaystyle G_{2}}
+  
+ is the addition of a rule to the single-production grammarÂ A = "a" "b", which contains a string not matched by 
+  
+    
+      
+        
+          G
+          
+            2
+          
+        
+      
+    
+    {\displaystyle G_{2}}
+  
+.
+Furthermore, constructing a grammar to match 
+  
+    
+      
+        L
+        (
+        
+          G
+          
+            1
+          
+        
+        )
+        âª
+        L
+        (
+        
+          G
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle L(G_{1})\cup L(G_{2})}
+  
+ from PEG grammars 
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+      
+    
+    {\displaystyle G_{1}}
+  
+ and 
+  
+    
+      
+        
+          G
+          
+            2
+          
+        
+      
+    
+    {\displaystyle G_{2}}
+  
+ is not always a trivial task.
+This is in stark contrast to CFG's, in which the addition of a new production cannot remove strings (though, it can introduce problems in the form of ambiguity),
+and a (potentially ambiguous) grammar for 
+  
+    
+      
+        L
+        (
+        
+          G
+          
+            1
+          
+        
+        )
+        âª
+        L
+        (
+        
+          G
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle L(G_{1})\cup L(G_{2})}
+  
+ can be constructed
+
+S â start(G1) | start(G2)
+
+Bottom-up PEG parsing[edit]
+A pika parser[11] uses dynamic programming to apply PEG rules bottom-up and right to left, which is the inverse of the normal recursive descent order of top-down, left to right. Parsing in reverse order solves the left recursion problem, allowing left-recursive rules to be used directly in the grammar without being rewritten into non-left-recursive form, and also conveys optimal error recovery capabilities upon the parser, which historically proved difficult to achieve for recursive descent parsers.
+
+See also[edit]
+Compiler Description Language (CDL)
+Formal grammar
+Regular expression
+Top-down parsing language
+Comparison of parser generators
+Parser combinator
+Python
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d e f 
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Ford, Bryan (January 2004). "Parsing Expression Grammars: A Recognition Based Syntactic Foundation" (PDF). Proceedings of the 31st ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages. ACM. pp.Â 111â122. doi:10.1145/964001.964011. ISBNÂ 1-58113-729-X.
+
+^ Jump up to: a b c 
+Ford, Bryan (September 2002). "Packrat parsing: simple, powerful, lazy, linear time, functional pearl" (PDF). ACM SIGPLAN Notices. 37 (9). doi:10.1145/583852.581483.
+
+^ Jump up to: a b c Ford, Bryan (September 2002). Packrat Parsing: a Practical Linear-Time Algorithm with Backtracking (Thesis). Massachusetts Institute of Technology. Retrieved 2007-07-27.
+
+
+^ 
+Merritt, Doug (November 1993). "Transparent Recursive Descent". Usenet group comp.compilers. Retrieved 2009-09-04.
+
+^ Ford, Bryan. "The Packrat Parsing and Parsing Expression Grammars Page". BFord.info. Retrieved 23 Nov 2010.
+
+^ Jelliffe, Rick (10 March 2010). "What is a Packrat Parser? What are Brzozowski Derivatives?". Archived from the original on 28 July 2011.
+
+^ for example, the LISP expression (x (x (x (x ....))))
+
+^ Aho, A.V.; Sethi, R.; Ullman, J.D. (1986). Compilers: Principles, Techniques, and Tools. Boston, MA, USA: Addison-Wesley Longman. ISBNÂ 0-201-10088-6.
+
+^ Jump up to: a b c 
+Warth, Alessandro; Douglass, James R.; Millstein, Todd (January 2008). "Packrat Parsers Can Support Left Recursion" (PDF). Proceedings of the 2008 ACM SIGPLAN symposium on Partial evaluation and semantics-based program manipulation. PEPM '08. ACM. pp.Â 103â110. doi:10.1145/1328408.1328424. Retrieved 2008-10-02.
+
+^ 
+Steinmann, Ruedi (March 2009). "Handling Left Recursion in Packrat Parsers" (PDF). n.ethz.ch. Archived from the original (PDF) on 2011-07-06.
+
+^ Hutchison, Luke A. D. (2020). "Pika parsing: parsing in reverse solves the left recursion and error recovery problems". arXiv:2005.06444 [cs.PL].
+
+
+External links[edit]
+Converting a string expression into a lambda expression using an expression parser
+The Packrat Parsing and Parsing Expression Grammars Page
+The constructed language Lojban has a fairly large PEG grammar allowing unambiguous parsing of Lojban text.
+An illustrative implementation of a PEG in Guile scheme
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteParsing algorithmsTop-down
+LL
+Recursive descent
+Tail recursive
+Pratt parser
+Bottom-up
+Precedence
+Simple
+Operator
+Shunting-yard
+Bounded-context
+LR
+Simple
+Look-ahead
+Canonical
+Generalized
+CYK
+Recursive ascent
+Shift-reduce
+Mixed, other
+Combinator
+Chart
+Earley
+Related topics
+PEG
+Definite clause grammar
+Deterministic parsing
+Dynamic programming
+Memoization
+Parser generator
+LALR
+Parse tree
+AST
+Scannerless parsing
+History of compiler construction
+Comparison of parser generators
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Parsing_expression_grammar&oldid=1068821556"
+		Categories: Formal languagesHidden categories: Articles with short descriptionShort description is different from Wikidata
+	

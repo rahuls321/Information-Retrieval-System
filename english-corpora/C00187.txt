@@ -1,0 +1,981 @@
+
+Title:
+Trie
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}This article is about a tree data structure. For the French commune, see Trie-sur-BaÃ¯se.
+K-ary search tree data structure
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}TrieTypetreeInvented1960Invented byEdward Fredkin, Axel Thue, and RenÃ© de la BriandaisTime complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)
+O(n)Search
+
+O(n)
+O(n)Insert
+
+O(n)
+O(n)Delete
+
+O(n)
+O(n)
+  A trie for keys "A", "to", "tea", "ted", "ten", "i", "in", and "inn". Each complete English word has an arbitrary integer value associated with it.
+In computer science, a trie, also called digital tree or prefix tree, is a type of k-ary search tree, a tree data structure used for locating specific keys from within a set. These keys are most often strings, with links between nodes defined not by the entire key, but by individual characters. In order to access a key (to recover its value, change it, or remove it), the trie is traversed depth-first, following the links between nodes, which represent each character in the key.
+Unlike a binary search tree, nodes in the trie do not store their associated key. Instead, a node's position in the trie defines the key with which it is associated. This distributes the value of each key across the data structure, and means that not every node necessarily has an associated value.
+All the children of a node have a common prefix of the string associated with that parent node, and the root is associated with the empty string. This task of storing data accessible by its prefix can be accomplished in a memory-optimized way by employing a radix tree.
+Though tries can be keyed by character strings, they need not be. The same algorithms can be adapted for ordered lists of any underlying type, e.g. permutations of digits or shapes. In particular, a bitwise trie is keyed on the individual bits making up a piece of fixed-length binary data, such as an integer or memory address.
+
+Contents
+
+1 History, etymology, and pronunciation
+2 Operations
+
+2.1 Searching
+2.2 Insertion
+2.3 Deletion
+
+
+3 Replacing other data structures
+
+3.1 Replacement for hash tables
+3.2 DFSA representation
+
+
+4 Implementation strategies
+
+4.1 Bitwise tries
+4.2 Compressed tries
+4.3 External memory tries
+
+
+5 Applications
+
+5.1 Sorting
+5.2 Full-text search
+5.3 Web search engines
+5.4 Bioinformatics
+5.5 Internet routing
+
+
+6 See also
+7 References
+8 External links
+
+
+
+History, etymology, and pronunciation[edit]
+The idea of a trie for representing a set of strings was first abstractly described by Axel Thue in 1912.[1][2] Tries were first described in a computer context by RenÃ© de la Briandais in 1959.[3][2][4]:â336â The idea was independently described in 1960 by Edward Fredkin,[5] who coined the term trie, pronouncing it /ËtriË/ (as "tree"), after the middle syllable of retrieval.[6][7] However, other authors pronounce it /ËtraÉª/ (as "try"), in an attempt to distinguish it verbally from "tree".[6][7][2]
+
+Operations[edit]
+  Fig. 1: Trie representation of sea, sells, and she.
+Tries support various operations: insertion, deletion, and lookup of a string key. Tries are composed of 
+  
+    
+      
+        
+          nodes
+        
+      
+    
+    {\displaystyle {\text{nodes}}}
+  
+ that contain links that are either references to other child suffix child nodes, or 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ . Except for root, each node is pointed to by just one other node, called the parent. Each node contains 
+  
+    
+      
+        
+          R
+        
+      
+    
+    {\displaystyle {\text{R}}}
+  
+ links, where 
+  
+    
+      
+        
+          R
+        
+      
+    
+    {\displaystyle {\text{R}}}
+  
+ is the cardinality of the set of alphabets, although tries have a substantial number of 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ links. In most cases, the size of 
+  
+    
+      
+        
+          Children
+        
+      
+    
+    {\displaystyle {\text{Children}}}
+  
+ array is bitlength of the character encoding - 256 in the case of (unsigned) ASCII.[8]:â732â
+The 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ links within 
+  
+    
+      
+        
+          Children
+        
+      
+    
+    {\displaystyle {\text{Children}}}
+  
+ in 
+  
+    
+      
+        
+          Node
+        
+      
+    
+    {\displaystyle {\text{Node}}}
+  
+ emphasizes the following charactertics:[8]:â734â[4]:â336â
+
+Characters and string keys are implicitly stored in the trie data structure representation, and include a character sentinel value indicating string-termination.
+Each node contains one possiable link to a prefix of strong keys of the set.
+A basic structure type of nodes in the trie is as follows; 
+  
+    
+      
+        
+          Node
+        
+      
+    
+    {\displaystyle {\text{Node}}}
+  
+ may contain an optional 
+  
+    
+      
+        
+          Value
+        
+      
+    
+    {\displaystyle {\text{Value}}}
+  
+, which is associated with each key stored in the last character of string, or terminal node.
+
+
+
+
+
+ structure Node
+   Children Node[Alphabet-Size]
+   Is-Terminal Boolean
+   Value Data-Type
+ end structure
+
+
+Searching[edit]
+Searching a 
+  
+    
+      
+        
+          Value
+        
+      
+    
+    {\displaystyle {\text{Value}}}
+  
+ in a trie is guided by the characters in the search string key, as each node in the trie contains a corresponding link to each possible character in the given string. Thus, following the string within the trie yields the associated 
+  
+    
+      
+        
+          Value
+        
+      
+    
+    {\displaystyle {\text{Value}}}
+  
+ for the given string key. A 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ link within search execution indicates the inexistence of the key.[8]:â732-733â
+Following pseudocode implements the search procedure for a given string key (
+  
+    
+      
+        
+          key
+        
+      
+    
+    {\displaystyle {\text{key}}}
+  
+) in a rooted trie (
+  
+    
+      
+        
+          x
+        
+      
+    
+    {\displaystyle {\text{x}}}
+  
+).[9]:â135â
+
+
+
+
+
+ Trie-Find(x, key)
+   for 0 â¤ i < key.length do
+     if x.Children[key[i]] = nil then
+       return false
+     end if
+     xÂ := x.Children[key[i]]
+   repeat
+   return x.Value
+
+
+In the above pseudocode, 
+  
+    
+      
+        
+          x
+        
+      
+    
+    {\displaystyle {\text{x}}}
+  
+ and 
+  
+    
+      
+        
+          key
+        
+      
+    
+    {\displaystyle {\text{key}}}
+  
+ correspond to the pointer of trie's root node and the string key respectively. The worse case performance of search is 
+  
+    
+      
+        O
+        (
+        m
+        )
+      
+    
+    {\displaystyle O(m)}
+  
+ where 
+  
+    
+      
+        
+          m
+        
+      
+    
+    {\displaystyle {\text{m}}}
+  
+ is the length of the string key, on average tries take 
+  
+    
+      
+        O
+        (
+        l
+        o
+        
+          g
+          
+            m
+          
+        
+        n
+        )
+      
+    
+    {\displaystyle O(log_{m}n)}
+  
+, where 
+  
+    
+      
+        
+          n
+        
+      
+    
+    {\displaystyle {\text{n}}}
+  
+ and 
+  
+    
+      
+        
+          m
+        
+      
+    
+    {\displaystyle {\text{m}}}
+  
+ are the total number of keys and the alphabet set respectively;[10]:â410â binary search trees, on the other hand, take 
+  
+    
+      
+        O
+        (
+        m
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(m\log n)}
+  
+, since the search depends on the height (
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+) of the BST, which is logarathmic in number of keys in a balanced tree. Additionally, tries also occupy less space in comparation with BST.[11]:â358â The terminal node of the tree contains a non-nil 
+  
+    
+      
+        
+          Value
+        
+      
+    
+    {\displaystyle {\text{Value}}}
+  
+, and it's a search hit if the associated value is found in the trie, and search miss if it isn't.[8]:â733â
+
+Insertion[edit]
+Insertion into trie is guided by using the character sets as the indexes into the 
+  
+    
+      
+        
+          Children
+        
+      
+    
+    {\displaystyle {\text{Children}}}
+  
+ array until last character of the string key is reached.[8]:â733-734â Each node in the trie corresponds to one call of the radix sorting routine, as the trie structure reflects the execution of patten of the top-down radix sort.[9]:â135â
+
+
+
+
+
+1    Trie-Insert(x, key, value)
+2      for 0 â¤ i < key.length do
+3        if x.Children[key[i]] = nil then
+4          x.Children[key[i]]Â := Node()
+5        end if
+6        xÂ := x.Children[key[i]]
+7      repeat
+8      x.ValueÂ := value
+9      x.Is-TerminalÂ := True
+
+
+If a 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ link is encountered prior to reaching the last character of the string key, a new 
+  
+    
+      
+        
+          Node
+        
+      
+    
+    {\displaystyle {\text{Node}}}
+  
+ is created, such along lines 3-5.[8]:â745â 
+  
+    
+      
+        
+          x.Value
+        
+      
+    
+    {\displaystyle {\text{x.Value}}}
+  
+ gets assigned to input 
+  
+    
+      
+        
+          value
+        
+      
+    
+    {\displaystyle {\text{value}}}
+  
+; if 
+  
+    
+      
+        
+          x.Value
+        
+      
+    
+    {\displaystyle {\text{x.Value}}}
+  
+ wasn't 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ at the time of insertion, the value associated with the given string key gets subsituted with the current one.
+
+Deletion[edit]
+Deletion of a key-value pair from a trie involves finding the terminal node with the corresponding string key, marking the terminal indicator and value to false and 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ correspondingly.[8]:â740â
+Following is a recursive procedure for removing a string key (
+  
+    
+      
+        
+          key
+        
+      
+    
+    {\displaystyle {\text{key}}}
+  
+) from rooted trie (
+  
+    
+      
+        
+          x
+        
+      
+    
+    {\displaystyle {\text{x}}}
+  
+).
+
+
+
+
+
+1    Trie-Delete(x, key)
+2      if key = nil then
+3        if x.Is-Terminal = True then
+4          x.Is-TerminalÂ := False
+5          x.ValueÂ := nil
+6        end if
+7        return nil
+8      end if
+9      x.Children[key[0]]Â := Trie-Delete(x.Children[key[0]], key[1:])
+10     return x
+
+
+The procedures begins by examining the 
+  
+    
+      
+        
+          key
+        
+      
+    
+    {\displaystyle {\text{key}}}
+  
+; 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+ denotes the arrival of a terminal node or end of string key. If terminal, the node gets removed from the trie (line 9 assign the character index to 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+). However, an end of string key without the node being terminal indicates that the key doesn't exist, thus the procedure doesn't modify the trie. The recursion proceeds by incrementing 
+  
+    
+      
+        
+          key
+        
+      
+    
+    {\displaystyle {\text{key}}}
+  
+'s index.
+
+Replacing other data structures[edit]
+Replacement for hash tables[edit]
+A trie can be used to replace a hash table, over which it has the following advantages:[11]:â358â
+
+Searching for a node with an associated key of size 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ has the complexity of 
+  
+    
+      
+        O
+        (
+        m
+        )
+      
+    
+    {\displaystyle O(m)}
+  
+, whereas an imperfect hash function may have numerous colliding keys, and the worst-case lookup speed of such a table would be 
+  
+    
+      
+        O
+        (
+        N
+        )
+      
+    
+    {\displaystyle O(N)}
+  
+, where 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ denotes the total number of nodes within the table.
+Tries do not need a hash function for the operation, unlike a hash table; there are also no collisions of different keys in a trie.
+Buckets in a trie, which are analogous to hash table buckets that store key collisions, are necessary only if a single key is associated with more than one value.
+String keys within the trie can be sorted using a predetermined alphabetical ordering.
+However, tries are less efficient than a hash table when the data is directly accessed on a secondary storage device such as a hard disk drive that has higher random access time than the main memory.[5] Tries are also disadvantageous when the key value cannot be easily represented as string, such as floating point numbers.[11]:â359â
+
+DFSA representation[edit]
+A trie can be seen as a tree-shaped deterministic finite automaton. Each finite language is generated by a trie automaton, and each trie can be compressed into a deterministic acyclic finite state automaton.
+
+Implementation strategies[edit]
+  A trie implemented as a left-child right-sibling binary tree: vertical arrows are .mw-parser-output .monospaced{font-family:monospace,monospace}child pointers, dashed horizontal arrows are next pointers. The set of strings stored in this trie is {baby, bad, bank, box, dad, dance}. The lists are sorted to allow traversal in lexicographic order.
+Tries can be represented in several ways, corresponding to different trade-offs between memory use and speed of the operations.[4]:â341â Using a vector for representing a trie consumes enormous space; however, memory space can be reduced at the expense of running time if a singly linked list is used for each node vector, as most entries of the vector contains 
+  
+    
+      
+        
+          nil
+        
+      
+    
+    {\displaystyle {\text{nil}}}
+  
+.[2]:â495â 
+Techniques such as alphabet reduction may alleviate the high space complexity by reinterpreting the original string as a long string over a smaller alphabet i.e. a string of n bytes can alternatively be regarded as a string of 2n four-bit units and stored in a trie with sixteen pointers per node. However, lookups need to visit twice as many nodes in the worst-case, although space requirements go down by a factor of eight.[4]:â347â352â Other techniques include storing a vector of 256 ASCII pointers as a bitmap of 256 bits representing ASCII alphabet, which reduces the size of individual nodes dramatically.[12]
+
+Bitwise tries[edit]
+See also: x-fast trie
+Bitwise tries are used to address the enormous space requirement for the trie nodes in the simple pointer vector implementations. Each character in the string key set is represented via individual bits, which are used to traverse the trie over a string key. The implementations for these types of trie use vectorized CPU instructions to find the first set bit in a fixed-length key input (e.g. GCC's __builtin_clz() intrinsic function). Accordingly, the set bit is used to index the first item, or child node, in the 32- or 64-entry based bitwise tree. Search then proceeds by testing each subsequent bit in the key.
+This procedure is also cache-local and highly parallelizable due to register independency, and thus performant on out-of-order execution CPUs.
+
+Compressed tries[edit]
+Main article: Radix tree
+Radix tree, also known as a compressed trie, is a space-optimized variant of a trie in which nodes with only one child get merged with its parents; elimination of branches of the nodes with a single child results in better in both space and time metrics.[13]:â452â This works best under the following conditions where the trie remains static and set of keys stored are very sparse within their representation space.[14]:â3-16â
+One more approach is to "pack" the trie, in which a space-efficient implementation of a sparse packed trie applied to automatic hyphenation, in which the descendants of each node may be interleaved in memory.[7]
+
+External memory tries[edit]
+Several trie variants are suitable for maintaining sets of strings in external memory, including suffix trees. A combination of trie and B-tree,  called the B-trie has also been suggested for this task; compared to suffix trees, they are limited in the supported operations but also more compact while performing update operations faster.[15]
+
+Applications[edit]
+Trie data structures are commonly used in predictive text or autocomplete dictionaries, and approximate matching algorithms.[16] Tries enable faster searches, occupy less space, especially when the set contains large number of short strings, thus used in spell checking, hyphenation applications and longest prefix match algorithms.[7][11]:â358â However, if storing dictionary words is all that is required (i.e. there is no need to store metadata associated with each word), a minimal deterministic acyclic finite state automaton (DAFSA) or radix tree would use less storage space than a trie. This is because DAFSAs and radix trees can compress identical branches from the trie which correspond to the same suffixes (or parts) of different words being stored. String dictionaries are also utilized in natural language processing, such as finding lexicon of a text corpus.[17]:â73â
+
+Sorting[edit]
+Lexicographic sorting of a set of string keys can be implemented by building a trie for the given keys and traversing the tree in pre-order fashion;[18] this is also a form of radix sort.[19] Tries are also fundamental data structures for burstsort, which is notable for being the fastest string sorting algorithm as of 2007,[20] which is accompanied for its efficient use of CPU cache.[21]
+
+Full-text search[edit]
+A special kind of trie, called a suffix tree, can be used to index all suffixes in a text to carry out fast full-text searches.[22]
+
+Web search engines[edit]
+A specialized kind of trie called a compressed trie, is used in web search engines for storing the indexes - a collection of all searchable words. Each terminal node is associated with a list of URLsâcalled occurrence listâto pages that match the keyword. The trie is stored in the main memory, whereas the occurrence is kept in an external storage, frequently in large clusters.[23]:â368â
+
+Bioinformatics[edit]
+Tries are used in Bioinformatics, notably in sequence alignment software applications such as BLAST, which indexes all the different substring of length k (called k-mers) of a text by storing the positions of their occurrences in a compressed trie sequence databases.[17]:â75â
+
+Internet routing[edit]
+Compressed variants of tries, such as databases for managing Forwarding Information Base (FIB), are used in storing IP address prefixes within routers and bridges for prefix-based lookup to resolve mask-based operations in IP routing.[17]:â75â
+
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Directed acyclic word graph (aka DAWG)
+Hash trie
+Deterministic finite automata
+Judy array
+Search algorithm
+Extendible hashing
+Hash array mapped trie
+Prefix hash tree
+Burstsort
+LuleÃ¥ algorithm
+Huffman coding
+Ctrie
+HAT-trie
+Bitwise trie with bitmap
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Thue, Axel (1912). "Ãber die gegenseitige Lage gleicher Teile gewisser Zeichenreihen". Skrifter udgivne af Videnskabs-Selskabet i Christiania. 1912 (1): 1â67. Cited by Knuth.
+
+^ Jump up to: a b c d Knuth, Donald (1997). "6.3: Digital Searching". The Art of Computer Programming Volume 3: Sorting and Searching (2ndÂ ed.). Addison-Wesley. p.Â 492. ISBNÂ 0-201-89685-0.
+
+^ de la Briandais, RenÃ© (1959). File searching using variable length keys (PDF). Proc. Western J. Computer Conf. pp.Â 295â298. Archived from the original (PDF) on 2020-02-11. Cited by Brass and by Knuth.
+
+^ Jump up to: a b c d Brass, Peter (8 September 2008). Advanced Data Structures. UK: Cambridge University Press. doi:10.1017/CBO9780511800191. ISBNÂ 978-0521880374.
+
+^ Jump up to: a b Edward Fredkin (1960). "Trie Memory". Communications of the ACM. 3 (9): 490â499. doi:10.1145/367390.367400.
+
+^ Jump up to: a b Black, Paul E. (2009-11-16). "trie". Dictionary of Algorithms and Data Structures. National Institute of Standards and Technology. Archived from the original on 2011-04-29.
+
+^ Jump up to: a b c d Franklin Mark Liang (1983). Word Hy-phen-a-tion By Com-put-er (PDF) (Doctor of Philosophy thesis). Stanford University. Archived (PDF) from the original on 2005-11-11. Retrieved 2010-03-28.
+
+^ Jump up to: a b c d e f g Sedgewick, Robert; Wayne, Kevin (3 April 2011). Algorithms (4Â ed.). Addison-Wesley, Princeton University. ISBNÂ 978-0321573513.
+
+^ Jump up to: a b Gonnet, Gaston H.; Yates, GRicardo Baeza (1 May 1991). Handbook of Algorithms and Data Structures in Pascal and C (2Â ed.). Boston, United States: Addison-Wesley, ETH Zurich. ISBNÂ 978-0201416077.
+
+^ Maly, Kurth (1 July 1976). "Compressed tries". Communications of the ACM. New York City, United States: University of Minnesota. 19 (7). doi:10.1145/360248.360258.
+
+^ Jump up to: a b c d Thareja, Reema (13 October 2018). "Hashing and Collision". Data Structures Using C (2Â ed.). Oxford University Press. ISBNÂ 9780198099307.
+
+^ Bellekens, Xavier (2014). "A Highly-Efficient Memory-Compression Scheme for GPU-Accelerated Intrusion Detection Systems". Proceedings of the 7th International Conference on Security of Information and Networks - SIN '14. Glasgow, Scotland, UK: ACM. pp.Â 302:302â302:309. arXiv:1704.02272. doi:10.1145/2659651.2659723. ISBNÂ 978-1-4503-3033-6.
+
+^ Mehta, Dinesh P.; Sahni, Sartaj (7 March 2018). "Tries". Handbook of Data Structures and Applications (2Â ed.). Chapman & Hall, University of Florida. ISBNÂ 978-1498701853.
+
+^ Jan Daciuk; Stoyan Mihov; Bruce W. Watson; Richard E. Watson (1 March 2000). "Incremental Construction of Minimal Acyclic Finite-State Automata". Computational Linguistics. MIT Press. 26 (1). doi:10.1162/089120100561601.
+
+^ Askitis, Nikolas; Zobel, Justin (2008). "B-tries for Disk-based String Management" (PDF). VLDB Journal: 1â26. ISSNÂ 1066-8888.
+
+^ Aho, Alfred V.; Corasick, Margaret J. (Jun 1975). "Efficient String Matching: An Aid to Bibliographic Search" (PDF). Communications of the ACM. 18 (6): 333â340. doi:10.1145/360825.360855.
+
+^ Jump up to: a b c Martinez-Prieto, Miguel A.; Brisaboa, Nieves; Canovas, Rodrigo; Claude, Francisco; Navarro, Gonzalo (March 2016). "Practical compressed string dictionaries". Information Systems. Elsevier. 56. doi:10.1016/j.is.2015.08.008. ISSNÂ 0306-4379.
+
+^ KÃ¤rkkÃ¤inen, Juha. "Lecture 2" (PDF). University of Helsinki. The preorder of the nodes in a trie is the same as the lexicographical order of the strings they represent assuming the children of a node are ordered by the edge labels.
+
+^ Kallis, Rafael (2018). "The Adaptive Radix Tree (Report #14-708-887)" (PDF). University of Zurich: Department of Informatics, Research Publications.
+
+^ Ranjan Sinha and Justin Zobel and David Ring (Feb 2006). "Cache-Efficient String Sorting Using Copying" (PDF). ACM Journal of Experimental Algorithmics. 11: 1â32. doi:10.1145/1187436.1187439.
+
+^ J. KÃ¤rkkÃ¤inen and T. Rantala (2008). "Engineering Radix Sort for Strings".  In A. Amir and A. Turpin and A. Moffat (ed.). String Processing and Information Retrieval, Proc. SPIRE. Lecture Notes in Computer Science. Vol.Â 5280. Springer. pp.Â 3â14. doi:10.1007/978-3-540-89097-3_3.
+
+^ "A Generalization of the Suffix Tree to Square Matrices, with Applications". SIAM Journal on Computing. Society for Industrial and Applied Mathematics. 24 (3): 520â562. 28 May 1992. doi:10.1137/S0097539792231982. ISSNÂ 0097-5397.
+
+^ Thenmozhi, M.; Srimathi, H. (February 2015). "An Analysis on the Performance of Tree and Trie based Dictionary Implementations with Different Data Usage Models" (PDF). Indian Journal of Law and Technology. SRM Institute of Science and Technology. 8 (4). doi:10.17485/ijst/2015/v8i4/59865. Archived (PDF) from the original on 22 January 2022. Retrieved 22 January 2022.
+
+
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Trie.
+
+
+
+
+Look up trie in Wiktionary, the free dictionary.
+
+NIST's Dictionary of Algorithms and Data Structures: Trie
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+showvteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+showvteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Trie&oldid=1069212645"
+		Categories: Trees (data structures)Finite automataHidden categories: Articles with short descriptionShort description is different from WikidataCommons category link from WikidataArticles with example Python (programming language) code
+	

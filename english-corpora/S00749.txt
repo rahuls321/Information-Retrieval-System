@@ -1,0 +1,459 @@
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Method for visualizing vector fields
+  LIC visualization of a flow field.
+In scientific visualization, line integral convolution (LIC) is a technique proposed by Brian Cabral and Leith Leedom to visualize a vector field, such as fluid motion.[1] Compared to other integration-based techniques that compute field lines of the input vector field, LIC has the advantage that all structural features of the vector field are displayed, without the need to adapt the start and end points of field lines to the specific vector field. LIC is a method from the texture advection family.
+
+Contents
+
+1 Principle
+
+1.1 Intuition
+1.2 Algorithm
+1.3 Mathematical description
+
+
+2 Animated version
+3 Time-varying vector fields
+4 Parallel versions
+5 Usability
+6 References
+7 External links
+
+
+
+Principle[edit]
+  LIC visualization with color denoting velocity magnitude.
+Intuition[edit]
+Intuitively, the flow of a vector field in some domain is visualized by adding a static random pattern of dark and light paint sources. As the flow passes by the sources, each parcel of fluid picks up some of the source color, averaging it with the color it has already acquired in a manner similar to throwing paint in a river. The result is a random striped texture where points along the same streamline tend to have similar color.
+
+Algorithm[edit]
+Algorithmically, the technique starts by generating in the domain of the vector field a random gray level image at the desired output resolution. Then, for every pixel in this image, the forward and backward streamline of a fixed arc length is calculated. The value assigned to the current pixel is computed by a convolution of a suitable convolution kernel with the gray levels of all the pixels lying on a segment of this streamline. This creates a gray level LIC image.
+
+Mathematical description[edit]
+Although the input vector field and the result image are discretized, it pays to look at it from a continuous viewpoint.[2] Let 
+  
+    
+      
+        
+          v
+        
+      
+    
+    {\displaystyle \mathbf {v} }
+  
+ be the vector field given in some domain 
+  
+    
+      
+        Ω
+      
+    
+    {\displaystyle \Omega }
+  
+. Although the input vector field is typically discretized, we regard the field 
+  
+    
+      
+        
+          v
+        
+      
+    
+    {\displaystyle \mathbf {v} }
+  
+ as defined in every point of 
+  
+    
+      
+        Ω
+      
+    
+    {\displaystyle \Omega }
+  
+, i.e. we assume an interpolation. Streamlines, or more generally field lines, are tangent to the vector field in each point. They end either at the boundary of 
+  
+    
+      
+        Ω
+      
+    
+    {\displaystyle \Omega }
+  
+ or at critical points where 
+  
+    
+      
+        
+          v
+        
+        =
+        
+          0
+        
+      
+    
+    {\displaystyle \mathbf {v} =\mathbf {0} }
+  
+. For the sake of simplicity, in the following critical points and boundaries are ignored. A field line 
+  
+    
+      
+        
+          σ
+        
+      
+    
+    {\displaystyle {\boldsymbol {\sigma }}}
+  
+, parametrized by arc length 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+, is defined as 
+  
+    
+      
+        
+          
+            
+              d
+              
+                σ
+              
+              (
+              s
+              )
+            
+            
+              d
+              s
+            
+          
+        
+        =
+        
+          
+            
+              
+                v
+              
+              (
+              
+                σ
+              
+              (
+              s
+              )
+              )
+            
+            
+              
+                |
+              
+              
+                v
+              
+              (
+              
+                σ
+              
+              (
+              s
+              )
+              )
+              
+                |
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\frac {d{\boldsymbol {\sigma }}(s)}{ds}}={\frac {\mathbf {v} ({\boldsymbol {\sigma }}(s))}{|\mathbf {v} ({\boldsymbol {\sigma }}(s))|}}}
+  
+. Let 
+  
+    
+      
+        
+          
+            σ
+          
+          
+            
+              r
+            
+          
+        
+        (
+        s
+        )
+      
+    
+    {\displaystyle {\boldsymbol {\sigma }}_{\mathbf {r} }(s)}
+  
+ be the field line that passes through the point 
+  
+    
+      
+        
+          r
+        
+      
+    
+    {\displaystyle \mathbf {r} }
+  
+ for 
+  
+    
+      
+        s
+        =
+        0
+      
+    
+    {\displaystyle s=0}
+  
+. Then the image gray value at 
+  
+    
+      
+        
+          r
+        
+      
+    
+    {\displaystyle \mathbf {r} }
+  
+ is set to
+
+
+  
+    
+      
+        D
+        (
+        
+          r
+        
+        )
+        =
+        
+          ∫
+          
+            −
+            L
+            
+              /
+            
+            2
+          
+          
+            L
+            
+              /
+            
+            2
+          
+        
+        k
+        (
+        s
+        )
+        N
+        (
+        
+          
+            σ
+          
+          
+            
+              r
+            
+          
+        
+        (
+        s
+        )
+        )
+        d
+        s
+      
+    
+    {\displaystyle D(\mathbf {r} )=\int _{-L/2}^{L/2}k(s)N({\boldsymbol {\sigma }}_{\mathbf {r} }(s))ds}
+  
+
+where 
+  
+    
+      
+        k
+        (
+        s
+        )
+      
+    
+    {\displaystyle k(s)}
+  
+ is the convolution kernel, 
+  
+    
+      
+        N
+        (
+        
+          r
+        
+        )
+      
+    
+    {\displaystyle N(\mathbf {r} )}
+  
+ is the noise image, and 
+  
+    
+      
+        L
+      
+    
+    {\displaystyle L}
+  
+ is the length of field line segment that is followed.
+
+  
+    
+      
+        D
+        (
+        
+          r
+        
+        )
+      
+    
+    {\displaystyle D(\mathbf {r} )}
+  
+ has to be computed for each pixel in the LIC image. If carried out naively, this is quite expensive. First, the field lines have to be computed using a numerical method for solving ordinary differential equations, like a Runge–Kutta method, and then for each pixel the convolution along a field line segment has to be calculated. The computation can be significantly accelerated by re-using parts of already computed field lines, specializing to a box function as convolution kernel 
+  
+    
+      
+        k
+        (
+        s
+        )
+      
+    
+    {\displaystyle k(s)}
+  
+ and avoiding redundant computations during convolution.[2] The resulting fast LIC method can be generalized to convolution kernels that are arbitrary polynomials.[3]
+Note that 
+  
+    
+      
+        Ω
+      
+    
+    {\displaystyle \Omega }
+  
+ does not have to be a 2D domain: the method is applicable to higher dimensional domains using multidimensional noise fields. However, the visualization of the higher-dimensional LIC texture is problematic; one way is to use interactive exploration with 2D slices that are manually positioned and rotated. The domain 
+  
+    
+      
+        Ω
+      
+    
+    {\displaystyle \Omega }
+  
+ does not have to be flat either; the LIC texture can be computed also for arbitrarily shaped 2D surfaces in 3D space.[4]
+The output image will normally be colored in some way. Typically some scalar field in 
+  
+    
+      
+        Ω
+      
+    
+    {\displaystyle \Omega }
+  
+ is used, like the vector length, to determine the hue, while the gray-scale LIC image determines the brightness of the color.
+Different choices of convolution kernels and random noise produce different textures: for example pink noise produces a cloudy pattern where areas of higher flow stand out as smearing, suitable for weather visualization. Further refinements in the convolution can improve the quality of the image.[5]
+
+Animated version[edit]
+  Illustration on how to animate. Above: Normal Box Filter (average). Middle: Sinusoidal Filter at 
+  
+    
+      
+        t
+      
+    
+    {\displaystyle t}
+  
+. Bottom: Sinusoidal Filter at 
+  
+    
+      
+        t
+        +
+        δ
+        t
+      
+    
+    {\displaystyle t+\delta t}
+  
+
+LIC images can be animated by using a kernel that changes over time. Samples at a constant time from the streamline would still be used, but instead of averaging all pixels in a streamline with a static kernel, a ripple-like kernel constructed from a periodic function multiplied by a Hann function acting as a window (in order to prevent artifacts) is used. The periodic function is then shifted along the period to create an animation.
+
+Time-varying vector fields[edit]
+For time-dependent vector fields, a variant (UFLIC) has been designed that maintains the coherence of the flow animation.[6]
+
+Parallel versions[edit]
+Since the computation of a LIC image is expensive but inherently parallel, it has also been parallelized[7] and, with availability of GPU-based implementations, it has become interactive on PCs. Also for UFLIC an interactive GPU-based implementation has been presented.[8]
+
+Usability[edit]
+While a LIC image conveys the orientation of the field vectors, it does do not indicate their direction; for stationary fields this can be remedied by animation. Basic LIC images without color and animation do not show the length of the vectors (or the strength of the field). If this information is to be conveyed, it is usually coded in color; alternatively, animation can be used.[1][2]
+In user testing, LIC was found to be particularly good for identifying critical points.[9] With the availability of high-performance GPU-based implementations, the former disadvantage of limited interactivity is no longer present.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Cabral, Brian; Leedom, Leith Casey (August 2–6, 1993). "Imaging Vector Fields Using Line Integral Convolution". Proceedings of the 20th annual conference on Computer graphics and interactive techniques. SIGGRAPH '93. Anaheim, California. pp. 263–270. CiteSeerX 10.1.1.115.1636. doi:10.1145/166117.166151. ISBN 0-89791-601-8.
+
+^ Jump up to: a b c Stalling, Detlev; Hege, Hans-Christian (August 6–11, 1995). "Fast and Resolution Independent Line Integral Convolution". Proceedings of the 22nd Annual Conference on Computer Graphics and Interactive Techniques. SIGGRAPH '95. Los Angeles, California. pp. 249–256. CiteSeerX 10.1.1.45.5526. doi:10.1145/218380.218448. ISBN 0-89791-701-4.
+
+^ Hege, Hans-Christian; Stalling, Detlev (1998), "Fast LIC with piecewise polynomial filter kernels",  in Hege, Hans-Christian; Polthier, Konrad (eds.), Mathematical Visualization, Berlin, Heidelberg: Springer-Verlag, pp. 295–314, CiteSeerX 10.1.1.31.504, doi:10.1007/978-3-662-03567-2_22, ISBN 978-3-642-08373-0
+
+^ Battke, Henrik; Stalling, Detlev; Hege, Hans-Christian (1997). "Fast Line Integral Convolution for Arbitrary Surfaces in 3D".  In Hege, Hans-Christian; Polthier, Konrad (eds.). Visualization and Mathematics: Experiments, Simulations, and Environments. Berlin, New York: Springer. pp. 181–195. CiteSeerX 10.1.1.71.7228. doi:10.1007/978-3-642-59195-2_12. ISBN 3-540-61269-6.
+
+^ Weiskopf, Daniel (2009). "Iterative Twofold Line Integral Convolution for Texture-Based Vector Field Visualization".  In Möller, Torsten; Hamann, Bernd; Russell, Robert D. (eds.). Mathematical Foundations of Scientific Visualization, Computer Graphics, and Massive Data Exploration. Mathematics and Visualization. Berlin, New York: Springer. pp. 191–211. CiteSeerX 10.1.1.66.3013. doi:10.1007/b106657_10. ISBN 978-3-540-25076-0.
+
+^ Shen, Han-Wei; Kam, David L. (1998). "A New Line Integral Convolution Algorithm for Visualizing Time-Varying Flow Fields" (PDF). IEEE Trans Vis Comput Graph. Los Alamitos: IEEE. 4 (2): 98–108. doi:10.1109/2945.694952. ISSN 1077-2626.
+
+^ Zöckler, Malte; Stalling, Detlev; Hege, Hans-Christian (1997). "Parallel Line Integral Convolution" (PDF). Parallel Computing. Amsterdam: North Holland. 23 (7): 975–989. doi:10.1016/S0167-8191(97)00039-2. ISSN 0167-8191.
+
+^ Ding, Zi'ang; Liu, Zhanping; Yu, Yang; Chen, Wei (2015). "Parallel unsteady flow line integral convolution for high-performance dense visualization". 2015 IEEE Pacific Visualization Symposium, PacificVis 2015. Hangzhou, China. pp. 25–30.
+
+^ Laidlaw, David H.; Kirby, Robert M.; Davidson, J. Scott; Miller, Timothy S.; da Silva, Marco; Warren, William H.; Tarr, Michael J. (October 21–26, 2001). "Quantitative Comparative Evaluation of 2D Vector Field Visualization Methods". IEEE Visualization 2001, VIS '01. Proceedings. San Diego, CA, USA. pp. 143–150.
+
+
+External links[edit]
+Tutorial including a lot of sample pictures
+Siggraph 1997 tutorial about the fast LIC method
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Line_integral_convolution&oldid=1000165727"
+		Categories: Numerical function drawingHidden categories: Articles with short descriptionShort description matches Wikidata
+	

@@ -1,0 +1,641 @@
+
+Title:
+Adapter pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article may contain indiscriminate, excessive, or irrelevant examples. Please improve the article by adding more descriptive text and removing less pertinent examples. See Wikipedia's guide to writing better articles for further suggestions.  (January 2011)
+In software engineering, the adapter pattern is a software design pattern (also known as wrapper, an alternative naming shared with the decorator pattern) that allows the interface of an existing class to be used as another interface.[1] It is often used to make existing classes work with others without modifying their source code.
+An example is an adapter that converts the interface of a Document Object Model of an XML document into a tree structure that can be displayed.
+
+Contents
+
+1 Overview
+2 Definition
+3 Usage
+4 Structure
+
+4.1 UML class diagram
+4.2 Object adapter pattern
+4.3 Class adapter pattern
+4.4 A further form of runtime adapter pattern
+
+4.4.1 Motivation from compile time solution
+4.4.2 Run-time adapter solution
+
+
+4.5 Implementation of the adapter pattern
+
+4.5.1 Java
+4.5.2 Python
+4.5.3 C#
+
+
+
+
+5 See also
+6 References
+
+
+
+Overview[edit]
+The adapter[2] design pattern is one of the twenty-three well-known Gang of Four design patterns that describe how to solve recurring design problems to design flexible and reusable object-oriented software, that is, objects that are easier to implement, change, test, and reuse.
+The adapter design pattern solves problems like:[3]
+
+How can a class be reused that does not have an interface that a client requires?
+How can classes that have incompatible interfaces work together?
+How can an alternative interface be provided for a class?
+Often an (already existing) class can't be reused only because its interface doesn't conform to the interface clients require.
+The adapter design pattern describes how to solve such problems:
+
+Define a separate adapter class that converts the (incompatible) interface of a class (adaptee) into another interface (target) clients require.
+Work through an adapter to work with (reuse) classes that do not have the required interface.
+The key idea in this pattern is to work through a separate adapter that adapts the interface of an (already existing) class without changing it.
+Clients don't know whether they work with a target class directly or through an adapter with a class that does not have the target interface.
+See also the UML class diagram below.
+
+Definition[edit]
+An adapter allows two incompatible interfaces to work together. This is the real-world definition for an adapter. Interfaces may be incompatible, but the inner functionality should suit the need. The adapter design pattern allows otherwise incompatible classes to work together by converting the interface of one class into an interface expected by the clients.
+
+Usage[edit]
+An adapter can be used when the wrapper must respect a particular interface and must support polymorphic behavior. Alternatively, a decorator makes it possible to add or alter behavior of an interface at run-time, and a facade is used when an easier or simpler interface to an underlying object is desired.[4]
+
+
+
+Pattern
+Intent
+
+
+Adapter or wrapper
+Converts one interface to another so that it matches what the client is expecting
+
+
+Decorator
+Dynamically adds responsibility to the interface by wrapping the original code
+
+
+Delegation
+Support "composition over inheritance"
+
+
+Facade
+Provides a simplified interface
+
+Structure[edit]
+UML class diagram[edit]
+  A sample UML class diagram for the adapter design pattern.[5]
+In the above UML class diagram, the client class that requires a target interface cannot reuse the adaptee class directly because its interface doesn't conform to the target interface.
+Instead, the client works through an adapter class that implements the target interface in terms of adaptee:
+
+The object adapter way implements the target interface by delegating to an adaptee object at run-time (adaptee.specificOperation()).
+The class adapter way implements the target interface by inheriting from an adaptee class at compile-time (specificOperation()).
+Object adapter pattern[edit]
+In this adapter pattern, the adapter contains an instance of the class it wraps. In this situation, the adapter makes calls to the instance of the wrapped object.
+
+  The object adapter pattern expressed in UML
+  The object adapter pattern expressed in LePUS3
+Class adapter pattern[edit]
+This adapter pattern uses multiple polymorphic interfaces implementing or inheriting both the interface that is expected and the interface that is pre-existing. It is typical for the expected interface to be created as a pure interface class, especially in languages such as Java (before JDK 1.8) that do not support multiple inheritance of classes.[1]
+
+  The class adapter pattern expressed in UML.
+  The class adapter pattern expressed in LePUS3
+A further form of runtime adapter pattern[edit]
+Motivation from compile time solution[edit]
+It is desired for classA to supply classB with some data, let us suppose some String data. A compile time solution is:
+
+classB.setStringData(classA.getStringData());
+
+However, suppose that the format of the string data must be varied. A compile time solution is to use inheritance:
+
+public class Format1ClassA extends ClassA {
+    @Override
+    public String getStringData() {
+        return format(toString());
+    }
+}
+
+and perhaps create the correctly "formatting" object at runtime by means of the factory pattern.
+
+Run-time adapter solution[edit]
+A solution using "adapters" proceeds as follows:
+
+Define an intermediary "provider" interface, and write an implementation of that provider interface that wraps the source of the data, ClassA in this example, and outputs the data formatted as appropriate:
+public interface StringProvider {
+    public String getStringData();
+}
+
+public class ClassAFormat1 implements StringProvider {
+    private ClassA classA = null;
+
+    public ClassAFormat1(final ClassA a) {
+        classA = a;
+    }
+
+    public String getStringData() {
+        return format(classA.getStringData());
+    }
+
+    private String format(final String sourceValue) {
+        // Manipulate the source string into a format required 
+        // by the object needing the source object's data
+        return sourceValue.trim();
+    }
+}
+Write an adapter class that returns the specific implementation of the provider:
+public class ClassAFormat1Adapter extends Adapter {
+    public Object adapt(final Object anObject) {
+        return new ClassAFormat1((ClassA) anObject);
+    }
+}
+Register the adapter with a global registry, so that the adapter can be looked up at runtime:
+AdapterFactory.getInstance().registerAdapter(ClassA.class, ClassAFormat1Adapter.class, "format1");
+In code, when wishing to transfer data from ClassA to ClassB, write:
+Adapter adapter =
+    AdapterFactory.getInstance()
+        .getAdapterFromTo(ClassA.class, StringProvider.class, "format1");
+StringProvider provider = (StringProvider) adapter.adapt(classA);
+String string = provider.getStringData();
+classB.setStringData(string);
+
+or more concisely:
+
+classB.setStringData(
+    ((StringProvider)
+            AdapterFactory.getInstance()
+                .getAdapterFromTo(ClassA.class, StringProvider.class, "format1")
+                .adapt(classA))
+        .getStringData());
+The advantage can be seen in that, if it is desired to transfer the data in a second format, then look up the different adapter/provider:
+Adapter adapter =
+    AdapterFactory.getInstance()
+        .getAdapterFromTo(ClassA.class, StringProvider.class, "format2");
+And if it is desired to output the data from ClassA as, say, image data in Class C:
+Adapter adapter =
+    AdapterFactory.getInstance()
+        .getAdapterFromTo(ClassA.class, ImageProvider.class, "format2");
+ImageProvider provider = (ImageProvider) adapter.adapt(classA);
+classC.setImage(provider.getImage());
+In this way, the use of adapters and providers allows multiple "views" by ClassB and ClassC into ClassA without having to alter the class hierarchy. In general, it permits a mechanism for arbitrary data flows between objects that can be retrofitted to an existing object hierarchy.
+Implementation of the adapter pattern[edit]
+When implementing the adapter pattern, for clarity, one can apply the class name [ClassName]To[Interface]Adapter to the provider implementation; for example, DAOToProviderAdapter. It should have a constructor method with an adaptee class variable as a parameter. This parameter will be passed to an instance member of [ClassName]To[Interface]Adapter. When the clientMethod is called, it will have access to the adaptee instance that allows for accessing the required data of the adaptee and performing operations on that data that generates the desired output.
+
+Java[edit]
+interface LightningPhone {
+    void recharge();
+    void useLightning();
+}
+
+interface MicroUsbPhone {
+    void recharge();
+    void useMicroUsb();
+}
+
+class Iphone implements LightningPhone {
+    private boolean connector;
+
+    @Override
+    public void useLightning() {
+        connector = true;
+        System.out.println("Lightning connected");
+    }
+
+    @Override
+    public void recharge() {
+        if (connector) {
+            System.out.println("Recharge started");
+            System.out.println("Recharge finished");
+        } else {
+            System.out.println("Connect Lightning first");
+        }
+    }
+}
+
+class Android implements MicroUsbPhone {
+    private boolean connector;
+
+    @Override
+    public void useMicroUsb() {
+        connector = true;
+        System.out.println("MicroUsb connected");
+    }
+
+    @Override
+    public void recharge() {
+        if (connector) {
+            System.out.println("Recharge started");
+            System.out.println("Recharge finished");
+        } else {
+            System.out.println("Connect MicroUsb first");
+        }
+    }
+}
+/* exposing the target interface while wrapping source object */
+class LightningToMicroUsbAdapter implements MicroUsbPhone {
+    private final LightningPhone lightningPhone;
+
+    public LightningToMicroUsbAdapter(LightningPhone lightningPhone) {
+        this.lightningPhone = lightningPhone;
+    }
+
+    @Override
+    public void useMicroUsb() {
+        System.out.println("MicroUsb connected");
+        lightningPhone.useLightning();
+    }
+
+    @Override
+    public void recharge() {
+        lightningPhone.recharge();
+    }
+}
+
+public class AdapterDemo {
+    static void rechargeMicroUsbPhone(MicroUsbPhone phone) {
+        phone.useMicroUsb();
+        phone.recharge();
+    }
+
+    static void rechargeLightningPhone(LightningPhone phone) {
+        phone.useLightning();
+        phone.recharge();
+    }
+
+    public static void main(String[] args) {
+        Android android = new Android();
+        Iphone iPhone = new Iphone();
+
+        System.out.println("Recharging android with MicroUsb");
+        rechargeMicroUsbPhone(android);
+
+        System.out.println("Recharging iPhone with Lightning");
+        rechargeLightningPhone(iPhone);
+
+        System.out.println("Recharging iPhone with MicroUsb");
+        rechargeMicroUsbPhone(new LightningToMicroUsbAdapter (iPhone));
+    }
+}
+
+Output
+
+Recharging android with MicroUsb
+MicroUsb connected
+Recharge started
+Recharge finished
+Recharging iPhone with Lightning
+Lightning connected
+Recharge started
+Recharge finished
+Recharging iPhone with MicroUsb
+MicroUsb connected
+Lightning connected
+Recharge started
+Recharge finished
+
+Python[edit]
+"""
+Adapter pattern example.
+"""
+from abc import ABCMeta, abstractmethod
+
+NOT_IMPLEMENTED = "You should implement this."
+
+RECHARGE = ["Recharge started.", "Recharge finished."]
+
+POWER_ADAPTERS = {"Android": "MicroUSB", "iPhone": "Lightning"}
+
+CONNECTED = "{} connected."
+CONNECT_FIRST = "Connect {} first."
+
+class RechargeTemplate:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def recharge(self):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+class FormatIPhone(RechargeTemplate):
+    @abstractmethod
+    def use_lightning(self):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+class FormatAndroid(RechargeTemplate):
+    @abstractmethod
+    def use_micro_usb(self):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+class IPhone(FormatIPhone):
+    __name__ = "iPhone"
+
+    def __init__(self):
+        self.connector = False
+
+    def use_lightning(self):
+        self.connector = True
+        print(CONNECTED.format(POWER_ADAPTERS[self.__name__]))
+
+    def recharge(self):
+        if self.connector:
+            for state in RECHARGE:
+                print(state)
+        else:
+            print(CONNECT_FIRST.format(POWER_ADAPTERS[self.__name__]))
+
+class Android(FormatAndroid):
+    __name__ = "Android"
+
+    def __init__(self):
+        self.connector = False
+
+    def use_micro_usb(self):
+        self.connector = True
+        print(CONNECTED.format(POWER_ADAPTERS[self.__name__]))
+
+    def recharge(self):
+        if self.connector:
+            for state in RECHARGE:
+                print(state)
+        else:
+            print(CONNECT_FIRST.format(POWER_ADAPTERS[self.__name__]))
+
+class IPhoneAdapter(FormatAndroid):
+    def __init__(self, mobile):
+        self.mobile = mobile
+
+    def recharge(self):
+        self.mobile.recharge()
+
+    def use_micro_usb(self):
+        print(CONNECTED.format(POWER_ADAPTERS["Android"]))
+        self.mobile.use_lightning()
+
+class AndroidRecharger:
+    def __init__(self):
+        self.phone = Android()
+        self.phone.use_micro_usb()
+        self.phone.recharge()
+
+class IPhoneMicroUSBRecharger:
+    def __init__(self):
+        self.phone = IPhone()
+        self.phone_adapter = IPhoneAdapter(self.phone)
+        self.phone_adapter.use_micro_usb()
+        self.phone_adapter.recharge()
+
+class IPhoneRecharger:
+    def __init__(self):
+        self.phone = IPhone()
+        self.phone.use_lightning()
+        self.phone.recharge()
+
+print("Recharging Android with MicroUSB recharger.")
+AndroidRecharger()
+print()
+
+print("Recharging iPhone with MicroUSB using adapter pattern.")
+IPhoneMicroUSBRecharger()
+print()
+
+print("Recharging iPhone with iPhone recharger.")
+IPhoneRecharger()
+
+C#[edit]
+public interface ILightningPhone
+{
+	void ConnectLightning();
+	void Recharge();
+}
+
+public interface IUsbPhone
+{
+	void ConnectUsb();
+	void Recharge();
+}
+
+public sealed class AndroidPhone : IUsbPhone
+{
+	private bool isConnected;
+	
+	public void ConnectUsb()
+	{
+		this.isConnected = true;
+		Console.WriteLine("Android phone connected.");
+	}
+
+	public void Recharge()
+	{
+		if (this.isConnected)
+		{
+			Console.WriteLine("Android phone recharging.");
+		}
+		else
+		{
+			Console.WriteLine("Connect the USB cable first.");
+		}
+	}
+}
+
+public sealed class ApplePhone : ILightningPhone
+{
+	private bool isConnected;
+	
+	public void ConnectLightning()
+	{
+		this.isConnected = true;
+		Console.WriteLine("Apple phone connected.");
+	}
+
+	public void Recharge()
+	{
+		if (this.isConnected)
+		{
+			Console.WriteLine("Apple phone recharging.");
+		}
+		else
+		{
+			Console.WriteLine("Connect the Lightning cable first.");
+		}
+	}
+}
+
+public sealed class LightningToUsbAdapter : IUsbPhone
+{
+	private readonly ILightningPhone lightningPhone;
+	
+	private bool isConnected;
+	
+	public LightningToUsbAdapter(ILightningPhone lightningPhone)
+	{
+		this.lightningPhone = lightningPhone;
+		this.lightningPhone.ConnectLightning();
+	}
+	
+	public void ConnectUsb()
+	{
+		this.isConnected = true;
+		Console.WriteLine("Adapter cable connected.");
+	}
+
+	public void Recharge()
+	{
+		if (this.isConnected)
+		{
+			this.lightningPhone.Recharge();
+		}
+		else
+		{
+			Console.WriteLine("Connect the USB cable first.");
+		}
+	}
+}
+
+public void Main()
+{
+	ILightningPhone applePhone = new ApplePhone();
+	IUsbPhone adapterCable = new LightningToUsbAdapter(applePhone);
+	adapterCable.ConnectUsb();
+	adapterCable.Recharge();
+}
+Output:Apple phone connected.
+Adapter cable connected.
+Apple phone recharging.
+
+See also[edit]
+Adapter Java Design Patterns - Adapter
+Delegation, strongly relevant to the object adapter pattern.
+Dependency inversion principle, which can be thought of as applying the adapter pattern, when the high-level class defines its own (adapter) interface to the low-level module (implemented by an adaptee class).
+Ports and adapters architecture
+Shim
+Wrapper function
+Wrapper library
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Freeman, Eric; Freeman, Elisabeth; Sierra, Kathy; Bates, Bert (2004). Head First Design Patterns. O'Reilly Media. p.Â 244. ISBNÂ 978-0-596-00712-6. OCLCÂ 809772256. Archived from the original (paperback) on 2013-05-04. Retrieved 2013-04-30.
+
+^ Gamma, Erich; Helm, Richard; Johnson, Ralph; Vlissides, John (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 139ff. ISBNÂ 0-201-63361-2.
+
+^ "The Adapter design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Freeman, Eric; Freeman, Elisabeth; Sierra, Kathy; Bates, Bert (2004).  Hendrickson, Mike; Loukides, Mike (eds.). Head First Design Patterns (paperback). Vol.Â 1. O'Reilly Media. pp.Â 243, 252, 258, 260. ISBNÂ 978-0-596-00712-6. Retrieved 2012-07-02.
+
+^ "The Adapter design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+
+
+
+
+Wikimedia Commons has media related to Adapter pattern.
+
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Adapter implementations in various languages
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Adapter_pattern&oldid=1058749512"
+		Categories: Software design patternsHidden categories: Articles with too many examples from January 2011All articles with too many examplesWikipedia articles with style issues from January 2011Articles with example Java codeCommons category link is on Wikidata
+	

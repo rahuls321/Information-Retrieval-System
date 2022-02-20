@@ -1,0 +1,299 @@
+
+Title:
+Longest palindromic substring
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In computer science, the longest palindromic substring or longest symmetric factor problem is the problem of finding a maximum-length contiguous substring of a given string that is also a palindrome. For example, the longest palindromic substring of "bananas" is "anana". The longest palindromic substring is not guaranteed to be unique; for example, in the string "abracadabra", there is no palindromic substring with length greater than three, but there are two palindromic substrings with length three, namely, "aca" and "ada". In some applications it may be necessary to return all maximal palindromic substrings (that is, all substrings that are themselves palindromes and cannot be extended to larger palindromic substrings) rather than returning only one substring or returning the maximum length of a palindromic substring.
+Manacher (1975) invented a linear time algorithm for listing all the palindromes that appear at the start of a given string. However, as observed e.g., by Apostolico, Breslauer & Galil (1995), the same algorithm can also be used to find all maximal palindromic substrings anywhere within the input string, again in linear time. Therefore, it provides a linear time solution to the longest palindromic substring problem. Alternative linear time solutions were provided by Jeuring (1994), and by Gusfield (1997), who described a solution based on suffix trees. Efficient parallel algorithms are also known for the problem.[1]
+The longest palindromic substring problem should not be confused with the different problem of finding the longest palindromic subsequence.
+
+Contents
+
+1 Slow algorithm
+2 Manacher's algorithm
+
+2.1 Special Cases
+2.2 Runtime
+
+
+3 Notes
+4 References
+5 External links
+
+
+
+Slow algorithm[edit]
+This algorithm is slower than Manacher's algorithm, but is a good stepping stone for understanding Manacher's algorithm.  It looks at each character as the center of a palindrome and loops to determine the largest palindrome with that center.
+The loop at the center of the function only works for palindromes where the length is an odd number.  The function works for even-length palindromes by modifying the input string.  The character '|' is inserted between every character in the inputs string, and at both ends.  So the input "book" becomes "|b|o|o|k|".  The even-length palindrome "oo" in "book" becomes the odd-length palindrome "|o|o|".      
+
+    Longest_Palindrome_SLOW(string S) {
+        string S' = S with a bogus character (eg. '|') inserted between each character (including outer boundaries)
+        array PalindromeRadii = [0,...,0] // The radius of the longest palindrome centered on each place in S'
+        // note: length(S') = length(PalindromeRadii) = 2 Ã length(S) + 1
+        
+        Center = 0
+        while Center < length(S') {
+            // Determine the longest palindrome starting at Center-Radius and going to Center+Radius
+            Radius = 0
+            while Center-(Radius+1) >= 0 and Center+(Radius+1) < length(S') and S'[Center-(Radius+1)] = S'[Center+(Radius+1)] {
+                Radius = Radius+1
+            }
+            
+            // Save the radius of the longest palindrome in the array
+            PalindromeRadii[Center] = Radius
+            
+            Center = Center+1
+        }   
+                 
+        longest_palindrome_in_S' = 2*max(PalindromeRadii)+1
+        longest_palindrome_in_S = (longest_palindrome_in_S'-1)/2
+        return longest_palindrome_in_S 
+    }
+
+The runtime of this algorithm is 
+  
+    
+      
+        O
+        (
+        
+          n
+          
+            2
+          
+        
+        )
+      
+    
+    {\displaystyle O(n^{2})}
+  
+.  The outer loop runs 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ times and the inner loop can run up to 
+  
+    
+      
+        n
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle n/2}
+  
+ times.  
+
+Manacher's algorithm[edit]
+Below is the pseudocode for Manacher's algorithm.  The algorithm is faster than the previous algorithm because it exploits when a palindrome happens inside another palindrome.  
+For example, consider the input string "abacaba".  By the time it gets to the "c", Manacher's algorithm will have identified the length of every palindrome centered on the letters before the "c".  At the "c", it runs a loop to identify the largest palindrome centered on the "c": "abacaba".  With that knowledge, everything after the "c" looks like the reflection of everything before the "c".  The "a" after the "c" has the same longest palindrome as the "a" before the "c".  Similarly, the "b" after the "c" has a longest palindrome that is at least the length of the longest palindrome centered on the "b" before the "c".  There are some special cases to consider, but that trick speeds up the computation dramatically.    
+
+    Longest_Palindrome(string S) {
+        string S' = S with a bogus character (eg. '|') inserted between each character (including outer boundaries)
+        array PalindromeRadii = [0,...,0] // The radius of the longest palindrome centered on each place in S'
+        // note: length(S') = length(PalindromeRadii) = 2 Ã length(S) + 1
+        
+        Center = 0
+        Radius = 0
+        
+        while Center < length(S') {
+            // At the start of the loop, Radius is already set to a lower-bound for the longest radius.
+            // In the first iteration, Radius is 0, but it can be higher.
+            
+            // Determine the longest palindrome starting at Center-Radius and going to Center+Radius
+            while Center-(Radius+1) >= 0 and Center+(Radius+1) < length(S') and S'[Center-(Radius+1)] = S'[Center+(Radius+1)] {
+                Radius = Radius+1
+            }             
+         
+            // Save the radius of the longest palindrome in the array
+            PalindromeRadii[Center] = Radius
+            
+            // Below, Center is incremented.
+            // If any precomputed values can be reused, they are.
+            // Also, Radius may be set to a value greater than 0
+            
+            OldCenter = Center
+            OldRadius = Radius
+            Center = Center+1
+            // Radius' default value will be 0, if we reach the end of the following loop. 
+            Radius = 0 
+            while Center <= OldCenter + OldRadius {
+                // Because Center lies inside the old palindrome and every character inside
+                // a palindrome has a "mirrored" character reflected across its center, we
+                // can use the data that was precomputed for the Center's mirrored point. 
+                MirroredCenter = OldCenter - (Center - OldCenter)
+                MaxMirroredRadius = OldCenter + OldRadius - Center
+                if PalindromeRadii[MirroredCenter] < MaxMirroredRadius {
+                    PalindromeRadii[Center] = PalindromeRadii[MirroredCenter]
+                    Center = Center+1
+                }   
+                else if PalindromeRadii[MirroredCenter] > MaxMirroredRadius {
+                    PalindromeRadii[Center] = MaxMirroredRadius
+                    Center = Center+1
+                }   
+                else { // PalindromeRadii[MirroredCenter] = MaxMirroredRadius
+                    Radius = MaxMirroredRadius
+                    break  // exit while loop early
+                }   
+            }      
+        }
+        
+        longest_palindrome_in_S' = 2*max(PalindromeRadii)+1
+        longest_palindrome_in_S = (longest_palindrome_in_S'-1)/2
+        return longest_palindrome_in_S 
+    }
+
+Special Cases[edit]
+Manacher's algorithm is faster because it reuses precomputed data when a palindrome exists inside another palindrome.  There are 3 cases of this.  They are represented by the "if / else if / else" statement in the pseudocode.  
+The first case is when the palindrome at MirroredCenter lies completely inside the "Old" palindrome.  In this situation, the palindrome at Center will have the same length as the one at MirroredCenter.  For example, if the "Old" palindrome is "abcbpbcba", we can see that the palindrome centered on "c" after the "p" must have the same length as the palindrome centered on the "c" before the "p".  
+The second case is when the palindrome at MirroredCenter extends outside the "Old" palindrome. That is, it extends "to the left" (or, contains characters with a lower index than any inside the "Old" palindrome).  Because the "Old" palindrome is the largest possible palindrome centered on OldCenter, we know the characters before and after it are different.  Thus, the palindrome at Center will run exactly up to the border of the "Old" palindrome, because the next character will be different than the one inside the palindrome at MirroredCenter.  For example, if the string was "ababc", the "Old" palindrome could be "bab" with the Center being the second "b" and the MirroredCenter being the first "b".  Since the palindrome at the MirroredCenter is "aba" and extends beyond the boundaries of the "Old" palindrome, we know the longest palindrome at the second "b" can only extend up to the border of the "Old" palindrome.  We know this because if the character after the "Old" palindrome had been an "a" instead of a "c", the "Old" palindrome would have been longer.  
+The third and last case is when the palindrome at MirroredCenter extends exactly up to the border of the "Old" palindrome.  In this case, we don't know if the character after the "Old" palindrome might make the palindrome at Center longer than the one at MirroredCenter.  But we do know that the palindrome at Center is at least as long as the one at MirroredCenter.  In this case, Radius is initialized to the radius of the palindrome at MirroredCenter and the search starts from there.  An example string would be "abcbpbcbp" where the "Old" palindrome is "bcbpbcb" and the Center is on the second "c".  The MirroredCenter is the first "c" and it has a longest palindrome of "bcb".  The longest palindrome at the Center on the second "c" has to be at least that long and, in this case, is longer.
+
+Runtime[edit]
+The algorithm runs in linear time.  This can be seen by putting bounds on how many iterations are run of each loop.  The outer loop and second inner loop increment Center by 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ for every iteration.  Since Center is bounded by the length of the string, we know these loops run 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ times.  The first inner loop increments Radius by 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ for every iteration and the second inner loop, when it stops, decrements Radius by at most 
+  
+    
+      
+        1
+      
+    
+    {\displaystyle 1}
+  
+ for every iteration.  Since the second inner loop can run at most 
+  
+    
+      
+        n
+      
+    
+    {\displaystyle n}
+  
+ times and the value for Radius cannot exceed 
+  
+    
+      
+        n
+        
+          /
+        
+        2
+        ,
+      
+    
+    {\displaystyle n/2,}
+  
+ the first inner loop can run at most 
+  
+    
+      
+        n
+        +
+        n
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle n+n/2}
+  
+ times.  The overall runtime is 
+  
+    
+      
+        O
+        
+          (
+          
+            n
+            +
+            n
+            +
+            n
+            
+              /
+            
+            2
+          
+          )
+        
+        =
+        O
+        (
+        n
+        )
+        .
+      
+    
+    {\displaystyle O\left(n+n+n/2\right)=O(n).}
+  
+
+
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Crochemore & Rytter (1991), Apostolico, Breslauer & Galil (1995).
+
+
+References[edit]
+.mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Apostolico, Alberto; Breslauer, Dany; Galil, Zvi (1995), "Parallel detection of all palindromes in a string", Theoretical Computer Science, 141 (1â2): 163â173, doi:10.1016/0304-3975(94)00083-U.
+Crochemore, Maxime; Rytter, Wojciech (1991), "Usefulness of the KarpâMillerâRosenberg algorithm in parallel computations on strings and arrays", Theoretical Computer Science, 88 (1): 59â82, doi:10.1016/0304-3975(91)90073-B, MRÂ 1130372.
+Crochemore, Maxime; Rytter, Wojciech (2003), "8.1 Searching for symmetric words", Jewels of Stringology: Text Algorithms, World Scientific, pp.Â 111â114, ISBNÂ 978-981-02-4897-0.
+Gusfield, Dan (1997), "9.2 Finding all maximal palindromes in linear time", Algorithms on Strings, Trees, and Sequences, Cambridge: Cambridge University Press, pp.Â 197â199, doi:10.1017/CBO9780511574931, ISBNÂ 0-521-58519-8, MRÂ 1460730.
+Jeuring, Johan (1994), "The derivation of on-line algorithms, with an application to finding palindromes", Algorithmica, 11 (2): 146â184, doi:10.1007/BF01182773, hdl:1874/20926, MRÂ 1272521, S2CIDÂ 7032332.
+Manacher, Glenn (1975), "A new linear-time "on-line" algorithm for finding the smallest initial palindrome of a string", Journal of the ACM, 22 (3): 346â351, doi:10.1145/321892.321896, S2CIDÂ 10615419.
+External links[edit]
+Longest Palindromic Substring Part II., 2011-11-20, archived from the original on 2018-12-08. A description of Manacherâs algorithm for finding the longest palindromic substring in linear time.
+Akalin, Fred (2007-11-28), Finding the longest palindromic substring in linear time, retrieved 2016-10-01. An explanation and Python implementation of Manacher's linear-time algorithm.
+Jeuring, Johan (2007â2010), Palindromes, retrieved 2011-11-22. Haskell implementation of Jeuring's linear-time algorithm.
+Palindromes. Java implementation of Manacher's linear-time algorithm.
+This article incorporates text from Longest palindromic substring on PEGWiki under a Creative Commons Attribution (CC-BY-3.0) license.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Longest_palindromic_substring&oldid=1050784691"
+		Categories: Problems on stringsPalindromes
+	

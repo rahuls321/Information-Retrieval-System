@@ -1,0 +1,312 @@
+
+Title:
+Stack machine
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}For stack machines in automata theory, see Pushdown automaton.
+This article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article is written like a personal reflection, personal essay, or argumentative essay that states a Wikipedia editor's personal feelings or presents an original argument about a topic. Please help improve it by rewriting it in an encyclopedic style.  (August 2011) (Learn how and when to remove this template message)
+This section possibly contains original research. Please improve it by verifying the claims made and adding inline citations. Statements consisting only of original research should be removed.  (February 2016) (Learn how and when to remove this template message)
+    
+ (Learn how and when to remove this template message)
+In computer science, computer engineering and programming language implementations, a stack machine is a computer processor or a virtual machine in which the primary interaction is moving short-lived temporary values to and from a push down stack. In the case of a hardware processor, a hardware stack is used. The use of a stack significantly reduces the required number of processor registers. Stack machines extend push-down automaton with additional load/store operations or multiple stacks and hence are Turing-complete.
+
+Contents
+
+1 Design
+
+1.1 Stack storage
+
+
+2 History and implementations
+
+2.1 Commercial stack machines
+2.2 Virtual stack machines
+2.3 Hybrid machines
+2.4 Computers using call stacks and stack frames
+
+
+3 Comparison with register machines
+
+3.1 Instructions
+3.2 Temporary / local values
+3.3 Common subexpressions
+3.4 Pipelining
+3.5 Out-of-order execution
+3.6 Hides a faster register machine inside
+3.7 Interrupts
+3.8 Interpreters
+
+
+4 See also
+5 References
+6 External links
+
+
+
+Design[edit]
+Most or all stack machine instructions assume that operands will be from the stack, and results placed in the stack. The stack easily holds more than two inputs or more than one result, so a rich set of operations can be computed. In stack machine code (sometimes called p-code), instructions will frequently have only an opcode commanding an operation, with no additional fields identifying a constant, register or memory cell, known as a zero address format.[1] This greatly simplifies instruction decoding. Branches, load immediates, and load/store instructions require an argument field, but stack machines often arrange that the frequent cases of these still fit together with the opcode into a compact group of bits. The selection of operands from prior results is done implicitly by ordering the instructions. Some stack machine instruction sets are intended for interpretive execution of a virtual machine, rather than driving hardware directly.
+Integer constant operands are pushed by Push or Load Immediate instructions. Memory is often accessed by separate Load or Store instructions containing a memory address or calculating the address from values in the stack. All practical stack machines have variants of the loadâstore opcodes for accessing local variables and formal parameters without explicit address calculations. This can be by offsets from the current top-of-stack address, or by offsets from a stable frame-base register.
+The instruction set carries out most ALU actions with postfix (reverse Polish notation) operations that work only on the expression stack, not on data registers or main memory cells. This can be very convenient for executing high-level languages, because most arithmetic expressions can be easily translated into postfix notation.
+
+  Binary syntax tree for the expression A*(B-C) + (D+E)
+For example, consider the expression A*(B-C)+(D+E), written in reverse Polish notation as A B C - * D E + +. Compiling and running this on a simple imaginary stack machine would take the form:
+
+                 # stack contents (leftmost = top = most recent):
+ push A          #           A
+ push B          #     B     A
+ push C          # C   B     A
+ subtract        #     B-C   A
+ multiply        #           A*(B-C)
+ push D          #     D     A*(B-C)
+ push E          # E   D     A*(B-C)
+ add             #     D+E   A*(B-C)
+ add             #           A*(B-C)+(D+E)
+
+The arithmetic operations 'subtract', 'multiply', and 'add' act on the two topmost operands of the stack. The computer takes both operands from the topmost (most recent) values of the stack. The computer replaces those two values with the calculated difference, sum, or product. In other words the instruction's operands are "popped" off the stack, and its result(s) are then "pushed" back onto the stack, ready for the next instruction. 
+Stack machines may have their expression stack and their call-return stack separated or as one integrated structure. If they are separated, the instructions of the stack machine can be pipelined with fewer interactions and less design complexity, so it will usually run faster.
+Optimisation of compiled stack code is quite possible. Back-end optimisation of compiler output has been demonstrated to significantly improve code,[2][3] and potentially performance, whilst global optimisation within the compiler itself achieves further gains.[4]
+
+Stack storage[edit]
+Some stack machines have a stack of limited size, implemented as a register file. The ALU will access this with an index. A large register file uses a lot of transistors and hence this method is only suitable for small systems. A few machines have both an expression stack in memory and a separate register stack. In this case, software, or an interrupt may move data between them. Some machines have a stack of unlimited size, implemented as an array in RAM, which is cached by some number "top of stack" address registers to reduce memory access. Except for explicit "load from memory" instructions, the order of operand usage is identical with the order of the operands in the data stack, so excellent prefetching can be accomplished easily.
+Consider X+1. It compiles to Load X; Load 1; Add. With a stack stored completely in RAM, this does implicit writes and reads of the in-memory stack:
+
+Load X, push to memory
+Load 1, push to memory
+Pop 2 values from memory, add, and push result to memory
+for a total of 5 data cache references.
+The next step up from this is a stack machine or interpreter with a single top-of-stack register. The above code then does:
+
+Load X into empty TOS register (if hardware machine) or Push TOS register to memory, Load X into TOS register (if interpreter)
+Push TOS register to memory, Load 1 into TOS register
+Pop left operand from memory, add to TOS register and leave it there
+for a total of 5 data cache references, worst-case. Generally, interpreters don't track emptiness, because they don't have toâanything below the stack pointer is a non-empty value, and the TOS cache register is always kept hot. Typical Java interpreters do not buffer the top-of-stack this way, however, because the program and stack have a mix of short and wide data values.
+If the hardwired stack machine has 2 or more top-stack registers, or a register file, then all memory access is avoided in this example and there is only 1 data cache cycle.
+
+History and implementations[edit]
+Description of such a method requiring only two values at a time to be held in registers, with a limited set of pre-defined operands that were able to be extended by definition of further operands, functions and subroutines, was first provided at conference by Robert S. Barton in 1961.[5][6]
+
+Commercial stack machines[edit]
+See also: High-level language computer architecture
+Examples of stack instruction sets directly executed in hardware include
+
+The F18A architecture of the 144-processor GA144 chip from GreenArrays, Inc.[7][8][9]
+the Z4 computer by Konrad Zuse.[10]
+the Burroughs large systems architecture (since 1961)
+the Xerox Dandelion introduced April 27, 1981, utilized a stack machine architecture to save memory.[11][12]
+the English Electric KDF9 machine. First delivered in 1964, the KDF9 had a 19-deep pushdown stack of arithmetic registers, and a 17-deep stack for subroutine return addresses
+the Collins Radio Collins Adaptive Processing System minicomputer (CAPS, since 1969) and Rockwell Collins Advanced Architecture Microprocessor (AAMP, since 1981).[13]
+the UCSD Pascal p-machine (as the Pascal MicroEngine and many others) supported a complete student programming environment on early 8-bit microprocessors with poor instruction sets and little RAM, by compiling to a virtual stack machine.
+MU5 and ICL 2900 Series. Hybrid stack and accumulator machines. The accumulator register buffered the memory stack's top data value. Variants of load and store opcodes controlled when that register was spilled to the memory stack or reloaded from there.
+HP 3000 (Classic, not PA-RISC)
+Tandem Computers T/16. Like HP 3000, except that compilers, not microcode, controlled when the register stack spilled to the memory stack or was refilled from the memory stack.
+the Atmel MARC4 microcontroller[14]
+Several "Forth chips"[15] such as the RTX2000, the RTX2010, the F21[16] and the PSC1000[17][18]
+The Setun Ternary computer performed balanced ternary using a stack.
+The 4stack processor by Bernd Paysan has four stacks.[19]
+Patriot Scientific's Ignite stack machine designed by Charles H. Moore holds a leading functional density benchmark.
+Saab Ericsson Space Thor radiation hardened microprocessor[20]
+Inmos transputers.
+ZPU A physically-small CPU designed to supervise FPGA systems.[21]
+Some technical handheld calculators use reverse Polish notation in their keyboard interface, instead of having parenthesis keys. This is a form of stack machine. The Plus key relies on its two operands already being at the correct topmost positions of the user-visible stack.
+Virtual stack machines[edit]
+Examples of virtual stack machines interpreted in software:
+
+the Whetstone ALGOL 60 interpretive code,[22] on which some features of the Burroughs B6500 were based
+the Burroughs B5000
+the UCSD Pascal p-machine; which closely resembled Burroughs
+the Niklaus Wirth p-code machine
+Smalltalk
+the Java virtual machine instruction set
+the WebAssembly bytecode
+the Virtual Execution System (VES) for the Common Intermediate Language (CIL) instruction set of the .NET Framework (ECMA 335)
+the Forth programming language, especially the integral virtual machine
+Adobe's PostScript
+Parakeet programming language
+Sun Microsystems' SwapDrop programming language for Sun Ray smartcard identification
+Adobe's ActionScript Virtual Machine 2 (AVM2)
+Ethereum's EVM
+the CPython bytecode interpreter
+the Ruby YARV bytecode interpreter
+the Rubinius virtual machine
+the bs (programming language) in Unix uses a virtual stack machine to process commands, after first transposing provided input language form, into reverse-polish notation
+the Lua (programming language) C API
+Hybrid machines[edit]
+(These should not be confused with hybrid computers that combine both digital and analogue features, e.g. an otherwise digital computer that accesses analogue multiplication or differential equation solving by memory mapping and conversion to and from an analogue device's inputs and outputs.)
+Pure stack machines are quite inefficient for procedures which access multiple fields from the same object. The stack machine code must reload the object pointer for each pointer+offset calculation. A common fix for this is to add some register-machine features to the stack machine: a visible register file dedicated to holding addresses, and register-style instructions for doing loads and simple address calculations. It is uncommon to have the registers be fully general purpose, because then there is no strong reason to have an expression stack and postfix instructions.
+Another common hybrid is to start with a register machine architecture, and add another memory address mode which emulates the push or pop operations of stack machines: 'memaddress = reg; reg += instr.displ'. This was first used in DEC's PDP-11 minicomputer. This feature was carried forward in VAX computers and in Motorola 6800 and M68000 microprocessors. This allowed the use of simpler stack methods in early compilers. It also efficiently supported virtual machines using stack interpreters or threaded code. However, this feature did not help the register machine's own code to become as compact as pure stack machine code. Also, the execution speed was less than when compiling well to the register architecture. It is faster to change the top-of-stack pointer only occasionally (once per call or return) rather than constantly stepping it up and down throughout each program statement, and it is even faster to avoid memory references entirely.
+More recently, so-called second-generation stack machines have adopted a dedicated collection of registers to serve as address registers, off-loading the task of memory addressing from the data stack. For example, MuP21 relies on a register called "A", while the more recent GreenArrays processors relies on two registers: A and B.[8]
+The Intel x86 family of microprocessors have a register-style (accumulator) instruction set for most operations, but use stack instructions for its x87, Intel 8087 floating point arithmetic, dating back to the iAPX87 (8087) coprocessor for the 8086 and 8088. That is, there are no programmer-accessible floating point registers, but only an 80-bit wide, 8 deep stack. The x87 relies heavily on the x86 CPU for assistance in performing its operations.
+
+Computers using call stacks and stack frames[edit]
+Most current computers (of any instruction set style) and most compilers use a large call-return stack in memory to organize the short-lived local variables and return links for all currently active procedures or functions. Each nested call creates a new stack frame in memory, which persists until that call completes. This call-return stack may be entirely managed by the hardware via specialized address registers and special address modes in the instructions. Or it may be merely a set of conventions followed by the compilers, using generic registers and register+offset address modes. Or it may be something in between.
+Since this technique is now nearly universal, even on register machines, it is not helpful to refer to all these machines as stack machines. That term is commonly reserved for machines which also use an expression stack and stack-only arithmetic instructions to evaluate the pieces of a single statement.
+Computers commonly provide direct, efficient access to the program's global variables and to the local variables of only the current innermost procedure or function, the topmost stack frame. 'Up level' addressing of the contents of callers' stack frames is usually not needed and not supported as directly by the hardware. If needed, compilers support this by passing in frame pointers as additional, hidden parameters.
+Some Burroughs stack machines do support up-level refs directly in the hardware, with specialized address modes and a special 'display' register file holding the frame addresses of all outer scopes. No subsequent computer lines have done this in hardware. When Niklaus Wirth developed the first Pascal compiler for the CDC 6000, he found that it was faster overall to pass in the frame pointers as a chain, rather than constantly updating complete arrays of frame pointers. This software method also adds no overhead for common languages like C which lack up-level refs.
+The same Burroughs machines also supported nesting of tasks or threads. The task and its creator share the stack frames that existed at the time of task creation, but not the creator's subsequent frames nor the task's own frames.  This was supported by a cactus stack, whose layout diagram resembled the trunk and arms of a Saguaro cactus. Each task had its own memory segment holding its stack and the frames that it owns. The base of this stack is linked to the middle of its creator's stack. In machines with a conventional flat address space, the creator stack and task stacks would be separate heap objects in one heap.
+In some programming languages, the outer-scope data environments are not always nested in time. These languages organize their procedure 'activation records' as separate heap objects rather than as stack frames appended to a linear stack.
+In simple languages like Forth that lack local variables and naming of parameters, stack frames would contain nothing more than return branch addresses and frame management overhead. So their return stack holds bare return addresses rather than frames. The return stack is separate from the data value stack, to improve the flow of call setup and returns.
+
+Comparison with register machines[edit]
+Stack machines are often compared to register machines, which hold values in an array of registers. Register machines may store stack-like structures in this array, but a register machine has instructions which circumvent the stack interface. Register machines routinely outperform stack machines,[23] and stack machines have remained a niche player in hardware systems. But stack machines are often used in implementing virtual machines because of their simplicity and ease of implementation.[24] 
+
+Instructions[edit]
+Stack machines have higher code density. In contrast to common stack machine instructions which can easily fit in 6 bits or less, register machines require two or three register-number fields per ALU instruction to select operands; the densest register machines average about 16 bits per instruction plus the operands. Register machines also use a wider offset field for load-store opcodes. A stack machine's compact code naturally fits more instructions in cache, and therefore could achieve better cache efficiency, reducing memory costs or permitting faster memory systems for a given cost. In addition, most stack-machine instruction is very simple, made from only one opcode field or one operand field. Thus, stack-machines require very little electronic resources to decode each instruction.
+A program has to execute more instructions when compiled to a stack machine than when compiled to a register machine or memory-to-memory machine. Every variable load or constant requires its own separate Load instruction, instead of being bundled within the instruction which uses that value. The separated instructions may be simple and faster running, but the total instruction count is still higher.
+Most register interpreters specify their registers by number. But a host machine's registers can't be accessed in an indexed array, so a memory array is allotted for virtual registers. Therefore, the instructions of a register interpreter must use memory for passing generated data to the next instruction. This forces register interpreters to be much slower on microprocessors made with a fine process rule (i.e. faster transistors without improving circuit speeds, such as the Haswell x86). These require several clocks for memory access, but only one clock for register access. In the case of a stack machine with a data forwarding circuit instead of a register file, stack interpreters can allot the host machine's registers for the top several operands of the stack instead of the host machine's memory
+In a stack machine, the operands used in the instructions are always at a known offset (set in the stack pointer), from a fixed location (the bottom of the stack, which in a hardware design might always be at memory location zero), saving precious in-cache or in-CPU storage from being used to store quite so many memory addresses or index numbers. This may preserve such registers and cache for use in non-flow computation.[citation needed]
+
+Temporary / local values[edit]
+Some in the industry believe that stack machines execute more data cache cycles for temporary values and local variables than do register machines.[25]
+On stack machines, temporary values often get spilled into memory, whereas on machines with many registers these temps usually remain in registers. (However, these values often need to be spilled into "activation frames" at the end of a procedure's definition, basic block, or at the very least, into a memory buffer during interrupt processing). Values spilled to memory add more cache cycles. This spilling effect depends on the number of hidden registers used to buffer top-of-stack values, upon the frequency of nested procedure calls, and upon host computer interrupt processing rates.
+On register machines using optimizing compilers, it is very common for the most-used local variables to remain in registers rather than in stack frame memory cells. This eliminates most data cache cycles for reading and writing those values. The development of "stack scheduling" for performing live-variable analysis, and thus retaining key variables on the stack for extended periods, helps this concern.
+On the other hand, register machines must spill many of their registers to memory across nested procedure calls. The decision of which registers to spill, and when, is made statically at compile time rather than on the dynamic depth of the calls. This can lead to more data cache traffic than in an advanced stack machine implementation.
+
+Common subexpressions[edit]
+In register machines, a common subexpression (a subexpression which is used multiple times with the same result value) can be evaluated just once and its result saved in a fast register. The subsequent reuses have no time or code cost, just a register reference. This optimization speeds simple expressions (for example, loading variable X or pointer P) as well as less-common complex expressions.
+With stack machines, in contrast, results can be stored in one of two ways. Firstly, results can be stored using a temporary variable in memory. Storing and subsequent retrievals cost additional instructions and additional data cache cycles. Doing this is only a win if the subexpression computation costs more in time than fetching from memory, which in most stack CPUs, almost always is the case. It is never worthwhile for simple variables and pointer fetches, because those already have the same cost of one data cache cycle per access. It is only marginally worthwhile for expressions such as X+1. These simpler expressions make up the majority of redundant, optimizable expressions in programs written in non-concatenative languages. An optimizing compiler can only win on redundancies that the programmer could have avoided in the source code.
+The second way leaves a computed value on the data stack, duplicating it as needed. This uses operations to copy stack entries. The stack must be depth shallow enough for the CPU's available copy instructions. Hand-written stack code often uses this approach, and achieves speeds like general-purpose register machines.[26][27][28] Unfortunately, algorithms for optimal "stack scheduling" are not in wide use by programming languages.
+
+Pipelining[edit]
+In modern machines, the time to fetch a variable from the data cache is often several times longer than the time needed for basic ALU operations. A program runs faster without stalls if its memory loads can be started several cycles before the instruction that needs that variable. Complex machines can do this with a deep pipeline and "out-of-order execution" that examines and runs many instructions at once. Register machines can even do this with much simpler "in-order" hardware, a shallow pipeline, and slightly smarter compilers. The load step becomes a separate instruction, and that instruction is statically scheduled much earlier in the code sequence. The compiler puts independent steps in between.
+Scheduling memory accesses requires explicit, spare registers. It is not possible on stack machines without exposing some aspect of the micro-architecture to the programmer. For the expression A B -, B must be evaluated and pushed immediately prior to the Minus step. Without stack permutation or hardware multithreading, relatively little useful code can be put in between while waiting for the Load B to finish. Stack machines can work around the memory delay by either having a deep out-of-order execution pipeline covering many instructions at once, or more likely, they can permute the stack such that they can work on other workloads while the load completes, or they can interlace the execution of different program threads, as in the Unisys A9 system.[29] Today's increasingly parallel computational loads suggests, however, this might not be the disadvantage it's been made out to be in the past.
+Stack machines can omit the operand fetching stage of a register machine.[26] For example, in the Java Optimized Processor (JOP) microprocessor the top 2 operands of stack directly enter a data forwarding circuit that is faster than the register file.[30]
+
+Out-of-order execution[edit]
+The Tomasulo algorithm finds instruction-level parallelism by issuing instructions as their data becomes available. Conceptually, the addresses of positions in a stack are no different than the register indexes of a register file. This view permits the out-of-order execution of the Tomasulo algorithm to be used with stack machines.
+Out-of-order execution in stack machines seems to reduce or avoid many theoretical and practical difficulties.[31] The cited research shows that such a stack machine can exploit instruction-level parallelism, and the resulting hardware must cache data for the instructions. Such machines effectively bypass most memory accesses to the stack. The result achieves throughput (instructions per clock) comparable to RISC register machines, with much higher code densities (because operand addresses are implicit).
+One issue brought up in the research was that it takes about 1.88 stack-machine instructions to do the work of a register machine's RISC instruction. Competitive out-of-order stack machines therefore require about twice as many electronic resources to track instructions ("issue stations"). This might be compensated by savings in instruction cache and memory and instruction decoding circuits.
+
+Hides a faster register machine inside[edit]
+Some simple stack machines have a chip design which is fully customized all the way down to the level of individual registers. The top of stack address register and the N top of stack data buffers are built from separate individual register circuits, with separate adders and ad hoc connections.
+However, most stack machines are built from larger circuit components where the N data buffers are stored together within a register file and share read/write buses. The decoded stack instructions are mapped into one or more sequential actions on that hidden register file. Loads and ALU ops act on a few topmost registers, and implicit spills and fills act on the bottommost registers. The decoder allows the instruction stream to be compact. But if the code stream instead had explicit register-select fields which directly manipulated the underlying register file, the compiler could make better use of all registers and the program would run faster.
+Microprogrammed stack machines are an example of this. The inner microcode engine is some kind of RISC-like register machine or a VLIW-like machine using multiple register files. When controlled directly by task-specific microcode, that engine gets much more work completed per cycle than when controlled indirectly by equivalent stack code for that same task.
+The object code translators for the HP 3000 and Tandem T/16 are another example.[32][33] They translated stack code sequences into equivalent sequences of RISC code. Minor 'local' optimizations removed much of the overhead of a stack architecture. Spare registers were used to factor out repeated address calculations. The translated code still retained plenty of emulation overhead from the mismatch between original and target machines. Despite that burden, the cycle efficiency of the translated code matched the cycle efficiency of the original stack code. And when the source code was recompiled directly to the register machine via optimizing compilers, the efficiency doubled. This shows that the stack architecture and its non-optimizing compilers were wasting over half of the power of the underlying hardware.
+Register files are good tools for computing because they have high bandwidth and very low latency, compared to memory references via data caches. In a simple machine, the register file allows reading two independent registers and writing of a third, all in one ALU cycle with one-cycle or less latency. Whereas the corresponding data cache can start only one read or one write (not both) per cycle, and the read typically has a latency of two ALU cycles. That's one third of the throughput at twice the pipeline delay. In a complex machine like Athlon that completes two or more instructions per cycle, the register file allows reading of four or more independent registers and writing of two others, all in one ALU cycle with one-cycle latency. Whereas the corresponding dual-ported data cache can start only two reads or writes per cycle, with multiple cycles of latency. Again, that's one third of the throughput of registers. It is very expensive to build a cache with additional ports.
+Since a stack is a component of most software programs, even when the software used is not strictly a stack machine, a hardware stack machine might more closely mimic the inner workings of its programs. Processor registers have a high thermal cost, and a stack machine might claim higher energy efficiency.[7] 
+
+Interrupts[edit]
+Responding to an interrupt involves saving the registers to a stack, and then branching to the interrupt handler code. Often stack machines respond more quickly to interrupts, because most parameters are already on a stack and there is no need to push them there. Some register machines deal with this by having multiple register files that can be instantly swapped[34] but this increases costs and slows down the register file.
+
+Interpreters[edit]
+Interpreters for virtual stack machines are easier to build than interpreters for register machines; the logic for handling memory address modes is in just one place rather than repeated in many instructions. Stack machines also tend to have fewer variations of an opcode; one generalized opcode will handle both frequent cases and obscure corner cases of memory references or function call setup. (But code density is often improved by adding short and long forms for the same operation.)
+Interpreters for virtual stack machines are often slower than interpreters for other styles of virtual machine.[35] This slowdown is worst when running on host machines with deep execution pipelines, such as current x86 chips.
+In some interpreters, the interpreter must execute a N-way switch jump to decode the next opcode and branch to its steps for that particular opcode. Another method for selecting opcodes is threaded code. The host machine's prefetch mechanisms are unable to predict and fetch the target of that indexed or indirect jump. So the host machine's execution pipeline must restart each time the hosted interpreter decodes another virtual instruction. This happens more often for virtual stack machines than for other styles of virtual machine.[36]
+One example is the Java programming language. 
+Its canonical virtual machine is specified as an 8-bit stack machine. However, the Dalvik virtual machine for Java used on Android smartphones is a 16-bit virtual-register machine - a choice made for efficiency reasons. Arithmetic instructions directly fetch or store local variables via 4-bit (or larger) instruction fields.[37] Similarly version 5.0 of Lua replaced its virtual stack machine with a faster virtual register machine.[38][39]
+Since Java virtual machine became popular, microprocessors have employed advanced branch predictors for indirect jumps.[40] This advance avoids most of pipeline restarts from N-way jumps and eliminates much of the instruction count costs that affect stack interpreters.
+
+See also[edit]
+Stack-oriented programming language
+Concatenative programming language
+Comparison of application virtual machines
+SECD machine
+Accumulator machine
+Belt machine
+Random-access machine
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Beard, Bob (Autumn 1997). "The KDF9 Computer - 30 Years On". Computer RESURRECTION.
+
+^ Koopman, Philip (1994). "A Preliminary Exploration of Optimized Stack Code Generation" (PDF). Journal of Forth Applications and Research. 6 (3).
+
+^ Bailey, Chris (2000). "Inter-Boundary Scheduling of Stack Operands: A preliminary Study" (PDF). Proceedings of Euroforth 2000 Conference.
+
+^ Shannon, Mark; Bailey C (2006). "Global Stack AllocationÂ : Register Allocation for Stack Machines" (PDF). Proceedings of Euroforth Conference 2006.
+
+^ Barton, Robert S. (1961). "A new approach to the functional design of a digital computer". IRE-AIEE-ACM '61 (Western): Papers Presented at the May 9â11, 1961, Western Joint IRE-AIEE-ACM Computer Conference: 393. doi:10.1145/1460690.1460736. S2CIDÂ 29044652.
+
+^ Barton, Robert S. (1987). "A new approach to the functional design of a digital computer". IEEE Annals of the History of Computing. 9: 11â15. doi:10.1109/MAHC.1987.10002.
+
+^ Jump up to: a b "GreenArrays, Inc. - Documents". Greenarraychips.com. Retrieved 8 October 2017.
+
+^ Jump up to: a b ""Instruction set of the F18A cores (named colorForth for historical reasons)."". Colorforth.com. Archived from the original on 2016-03-10. Retrieved 8 October 2017.
+
+^ ""GreenArrays, Inc."". Greenarraychips.com. Retrieved 8 October 2017.
+
+^ http://fpgacpu.ca/publications/Second-Generation_Stack_Computer_Architecture.pdf
+
+^ "Mesa Processor Principles of Operation". DigiBarn Computer Museum. Xerox. Retrieved 23 December 2019.
+
+^ "DigiBarn: The Xerox Star 8010 "Dandelion"". DigiBarn Computer Museum. Retrieved 23 December 2019.
+
+^ "The World's First Java Processor", by David A. Greve and Matthew M. Wilding, Electronic Engineering Times, January 12, 1998,
+
+^ [1]
+
+^ "Forth chips". Colorforth.com. Archived from the original on 15 February 2006. Retrieved 8 October 2017.
+
+^ "F21 Microprocessor Overview". Ultratechnology.com. Retrieved 8 October 2017.
+
+^ "ForthFreak wiki". GitHub.com. 25 August 2017. Retrieved 8 October 2017.
+
+^ "A Java chip available -- now! - Developer.com". Developer.com. Retrieved 8 October 2017.
+
+^ "4stack Processor". bernd-paysan.de. Retrieved 8 October 2017.
+
+^ "Archived copy" (PDF). Archived from the original (PDF) on 2011-08-20. Retrieved 2011-03-30.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ "ZPU - the world's smallest 32-bit CPU with a GCC tool-chain: Overview". opencores.org. Retrieved 7 February 2015.
+
+^ Randell, Brian and Russell, Lawford John "Algol 60 Implementation" London: Academic Press, 1964. ISBNÂ 0-12-578150-4.
+
+^ Shi, Yunhe; Gregg, David; Beatty, Andrew; Ertl, M. Anton (2005). "Virtual machine showdown: stack versus registers". Proceedings of the 1st ACM/USENIX International Conference on Virtual Execution Environments - VEE '05: 153. doi:10.1145/1064979.1065001. S2CIDÂ 811512.
+
+^ Hyde, Randall (2004). Write Great Code, Vol. 2: Thinking Low-Level, Writing High-Level. No Starch Press. p.Â 391. ISBNÂ 978-1-59327-065-0. Retrieved 30 June 2021.
+
+^ "Computer Architecture: A Quantitative Approach", John L Hennessy, David A Patterson; See the discussion of stack machines.
+
+^ Jump up to: a b "Stack Computers: the new wave -- an on-line book". Ece.cmu.edu. Retrieved 8 October 2017.
+
+^ "Second-Generation Stack Computer Architecture" (PDF). Fpgacpu.ca. Retrieved 8 October 2017.
+
+^ "Archived copy" (PDF). Archived from the original (PDF) on 2011-07-18. Retrieved 2010-11-01.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ "Archived copy" (PDF). Archived from the original (PDF) on 2011-03-21. Retrieved 2011-03-29.{{cite web}}:  CS1 maint: archived copy as title (link)
+
+^ "Design and Implementation of an Efficient Stack Machine" (PDF). Jopdesign.com. Retrieved 8 October 2017.
+
+^ Chatterji, Satrajit; Ravindran, Kaushik. "BOOST: Berkeley's Out of Order Stack Thingie". Research Gate. Kaushik Ravindran. Retrieved 16 February 2016.
+
+^ Bergh, Arndt; Keilman, Keith; Magenheimer, Daniel; Miller, James (December 1987). "HP3000 Emulation on HP Precision Architecture Computers" (PDF). Hewlett-Packard Journal: 87â89. Retrieved 8 October 2017.
+
+^ Migrating a CISC Computer Family onto RISC via Object Code Translation, K. Andrews and D. Sand, Proceedings of ASPLOS-V, October, 1992
+
+^ 8051 CPU Manual, Intel, 1980
+
+^ Shi, Yunhe; Gregg, David; Beatty, Andrew; Ertle, M. Anton. ""Virtual Machine Showdown: Stack vs. Register Machine"" (PDF). Usenix.org. Retrieved 8 October 2017.
+
+^ Davis, Brian; Beatty, Andrew; Casey, Kevin; Gregg, David; Waldron, John. "'The Case for Virtual Register Machines'" (PDF). Scss.tcd.ie. Retrieved 8 October 2017.
+
+^ Bornstein, Dan (2008-05-29). "Presentation of Dalvik VM Internals" (PDF). p.Â 22. Retrieved 2010-08-16.
+
+^ "The Implementation of Lua 5.0" (PDF). Lua.org. Retrieved 8 October 2017.
+
+^ "The Virtual Machine of Lua 5.0" (PDF). Inf.puc-rio.br. Retrieved 8 October 2017.
+
+^ "Branch Prediction and the Performance of Interpreters - Don't Trust Folklore". Hal.inria.fr. Retrieved 8 October 2017.
+
+
+External links[edit]
+Stack Computers: the new wave book by Philip J. Koopman, Jr. 1989
+Homebrew CPU in an FPGA â homebrew stack machine using FPGA
+Mark 1 FORTH Computer â homebrew stack machine using discrete logical circuits
+Mark 2 FORTH Computer â homebrew stack machine using bitslice/PLD
+Second-Generation Stack Computer Architecture â Thesis about the history and design of stack machines.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Stack_machine&oldid=1056963785"
+		Categories: Models of computationStack machinesMicroprocessorsHidden categories: CS1 maint: archived copy as titleWikipedia articles with style issues from August 2011All articles with style issuesArticles that may contain original research from February 2016All articles that may contain original researchArticles with multiple maintenance issuesAll articles with unsourced statementsArticles with unsourced statements from September 2020
+	

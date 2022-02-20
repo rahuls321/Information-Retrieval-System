@@ -1,0 +1,282 @@
+
+Title:
+Timsort
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		
+
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}TimsortClassSorting algorithmData structureArrayWorst-case performance
+  
+    
+      
+        O
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(n\log n)}
+  
+[1][2]Best-case performance
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+[3]Average performance
+  
+    
+      
+        O
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(n\log n)}
+  
+Worst-case space complexity
+  
+    
+      
+        O
+        (
+        n
+        )
+      
+    
+    {\displaystyle O(n)}
+  
+
+Timsort is a hybrid stable sorting algorithm, derived from merge sort and insertion sort, designed to perform well on many kinds of real-world data. It was implemented by Tim Peters in 2002 for use in the Python programming language. The algorithm finds subsequences of the data that are already ordered (runs) and uses them to sort the remainder more efficiently. This is done by merging runs until certain criteria are fulfilled. Timsort has been Python's standard sorting algorithm since version 2.3. It is also used to sort arrays of non-primitive type in Java SE 7,[4] on the Android platform,[5] in GNU Octave,[6] on V8,[7] Swift,[8] and Rust.[9]
+It uses techniques from Peter McIlroy's 1993 paper "Optimistic Sorting and Information Theoretic Complexity".[10]
+
+Contents
+
+1 Operation
+
+1.1 Merge criteria
+1.2 Merge space overhead
+1.3 Merge direction
+1.4 Galloping mode during merge
+1.5 Descending runs
+1.6 Minimum run size
+
+
+2 Analysis
+3 Formal verification
+4 References
+5 Further reading
+6 External links
+
+
+
+Operation[edit]
+Timsort was designed to take advantage of runs of consecutive ordered elements that already exist in most real-world data, natural runs. It iterates over the data collecting elements into runs and simultaneously putting those runs in a stack. Whenever the runs on the top of the stack match a merge criterion, they are merged. This goes on until all data is traversed; then, all runs are merged two at a time and only one sorted run remains. The advantage of merging ordered runs instead of merging fixed size sub-lists (as done by traditional mergesort) is that it decreases the total number of comparisons needed to sort the entire list.
+Each run has a minimum size, which is based on the size of the input and it is defined at the start of the algorithm. If a run is smaller than this minimum run size, insertion sort is used to add more elements to the run until the minimum run size is reached.
+
+Merge criteria[edit]
+  The runs are inserted in a stack. If |Z| â¤ |Y| + |X|, then X and Y are merged and replaced on the stack. In this way, merging is continued until all runs satisfy i. |Z| > |Y| + |X| and ii. |Y| > |X|.
+Timsort is a stable sorting algorithm (order of elements with same key is kept) and strives to perform balanced merges (a merge thus merges runs of similar sizes). 
+In order to achieve sorting stability, only consecutive runs are merged. Between two non-consecutive runs, there can be an element with the same key inside the runs. Merging those two runs would change the order of equal keys. Example of this situation ([] are ordered runs):  [1 2 2] 1 4 2 [0 1 2] 
+In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the invariants:
+
+|Z| > |Y| + |X||Y| > |X|[11]
+If any of these invariants are violated, Y is merged with the smaller of X or Z and the invariants are checked again. Once the invariants hold, the search for a new run in the data can start.[12] These invariants maintain merges as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting fresh occurrence of runs in cache memory and making merge decisions relatively simple.
+
+Merge space overhead[edit]
+  To merge, Timsort copies the elements of the smaller array (X in this illustration) to temporary memory, then sorts and fills elements in final order into the combined space of X and Y.
+The original merge sort implementation is not in-place and it has a space overhead of N (data size). In-place merge sort implementations exist, but have a high time overhead. In order to achieve a middle term, Timsort performs a merge sort with a small time overhead and smaller space overhead than N.
+First, Timsort performs a binary search to find the location where the first element of the second run would be inserted in the first ordered run, keeping it ordered. Then, it performs the same algorithm to find the location where the last element of the first run would be inserted in the second ordered run, keeping it ordered. Elements before and after these locations are already in their correct place and do not need to be merged. Then, the smaller of the remaining elements of the two runs is copied into temporary memory, and elements are merged with the larger run into the now free space.  If the first run is smaller, the merge starts at the beginning; if the second is smaller, the merge starts at the end. This optimization reduces the number of required element movements, the running time and the temporary space overhead in the general case. 
+Example: two runs [1, 2, 3, 6, 10] and [4, 5, 7, 9, 12, 14, 17] must be merged. Note that both runs are already sorted individually. The smallest element of the second run is 4 and it would have to be added at the fourth position of the first run in order to preserve its order (assuming that the first position of a run is 1). The largest element of the first run is 10 and it would have to be added at the fifth position of the second run in order to preserve its order. Therefore, [1, 2, 3] and [12, 14, 17] are already in their final positions and the runs in which elements movements are required are [6, 10] and [4, 5, 7, 9]. With this knowledge, we only need to allocate a temporary buffer of size 2 instead of 4.
+
+Merge direction[edit]
+Merging can be done in both directions: left-to-right, as in the traditional mergesort, or right-to-left.
+
+Galloping mode during merge[edit]
+  Elements (pointed to by blue arrow) are compared and the smaller element is moved to its final position (pointed to by red arrow).
+An individual merge of runs R1 and R2 keeps the count of consecutive elements selected from a run. When this number reaches the minimum galloping threshold (min_gallop), Timsort considers that it is likely that many consecutive elements may still be selected from that run and switches to the galloping mode. Let us assume that R1 is responsible for triggering it. In this mode, the algorithm performs an exponential search, also known as galloping search, for the next element x of the run R2 in the run R1. This is done in two stages: the first one finds the range (2k â 1, 2k+1 - 1) where x is. The second stage performs a binary search for the element x in the range found in the first stage. The galloping mode is an attempt to adapt the merge algorithm to the pattern of intervals between elements in runs.
+
+  All red elements are smaller than blue (here, 21). Thus they can be moved in a chunk to the final array.
+Galloping is not always efficient. In some cases galloping mode requires more comparisons than a simple linear search. According to benchmarks done by the developer, galloping is beneficial only when the initial element of one run is not one of the first seven elements of the other run. This implies an initial threshold of 7. To avoid the drawbacks of galloping mode, two actions are taken: (1) When galloping is found to be less efficient than binary search, galloping mode is exited. (2)
+The success or failure of galloping is used to adjust min_gallop. If the selected element is from the same array that returned an element previously, min_gallop is reduced by one, thus encouraging the return to galloping mode. Otherwise, the value is incremented by one, thus discouraging a return to galloping mode. In the case of random data, the value of min_gallop becomes so large that galloping mode never recurs.[13]
+
+Descending runs[edit]
+In order to also take advantage of data sorted in descending order, Timsort inverses strictly descending runs when it finds them and adds them to the stack of runs. Since descending runs are later blindly reversed, excluding runs with equal elements maintains the algorithm's stability; i.e., equal elements won't be reversed. 
+
+Minimum run size[edit]
+  Timsort algorithm searches for minimum-size ordered sequences, minruns, to perform its sort.
+Because merging is most efficient when the number of runs is equal to, or slightly less than, a power of two, and notably less efficient when the number of runs is slightly more than a power of two, Timsort chooses minrun to try to ensure the former condition.[11]
+Minrun is chosen from the range 32 to 64 inclusive, such that the size of the data, divided by minrun, is equal to, or slightly less than, a power of two.  The final algorithm takes the six most significant bits of the size of the array, adds one if any of the remaining bits are set, and uses that result as the minrun.  This algorithm works for all arrays, including those smaller than 64; for arrays of size 63 or less, this sets minrun equal to the array size and Timsort reduces to an insertion sort.[11]
+
+Analysis[edit]
+In the worst case, Timsort takes 
+  
+    
+      
+        O
+        (
+        n
+        log
+        â¡
+        n
+        )
+      
+    
+    {\displaystyle O(n\log n)}
+  
+ comparisons to sort an array of n elements. In the best case, which occurs when the input is already sorted, it runs in linear time, meaning that it is an adaptive sorting algorithm.[3]
+It is advantageous over Quicksort for sorting object references or pointers because these require expensive memory indirection to access data and perform comparisons and Quicksort's cache coherence benefits are greatly reduced.
+
+Formal verification[edit]
+In 2015, Dutch and German researchers in the EU FP7 ENVISAGE project found a bug in the standard implementation of Timsort.[14] It was fixed in 2015 in Python, Java and Android.
+Specifically, the invariants on stacked run sizes ensure a tight upper bound on the maximum size of the required stack.  The implementation preallocated a stack sufficient to sort 264 bytes of input, and avoided further overflow checks.
+However, the guarantee requires the invariants to apply to every group of three consecutive runs, but the implementation only checked it for the top three.[14]  Using the KeY tool for formal verification of Java software, the researchers found that this check is not sufficient, and they were able to find run lengths (and inputs which generated those run lengths) which would result in the invariants being violated deeper in the stack after the top of the stack was merged.[15]
+As a consequence, for certain inputs the allocated size is not sufficient to hold all unmerged runs. In Java, this generates for those inputs an array-out-of-bound exception. The smallest input that triggers this exception in Java and Android v7 is of size 67108864 (226). (Older Android versions already triggered this exception for certain inputs of size 65536 (216))
+The Java implementation was corrected by increasing the size of the preallocated stack based on an updated worst-case analysis.  The article also showed by formal methods how to establish the intended invariant by checking that the four topmost runs in the stack satisfy the two rules above.  This approach was adopted by Python[16] and Android.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Peters, Tim. "[Python-Dev] Sorting". Python Developers Mailinglist. Retrieved 24 February 2011. [Timsort] also has good aspects: It's stable (items that compare equal retain their relative order, so, e.g., if you sort first on zip code, and a second time on name, people with the same name still appear in order of increasing zip code; this is important in apps that, e.g., refine the results of queries based on user input). ... It has no bad cases (O(N log N) is worst case; Nâ1 compares is best).
+
+^ "[DROPS]". Retrieved 1 September 2018. TimSort is an intriguing sorting algorithm designed in 2002 for Python, whose worst-case complexity was announced, but not proved until our recent preprint.
+
+^ Jump up to: a b Chandramouli, Badrish; Goldstein, Jonathan (2014). Patience is a Virtue: Revisiting Merge and Sort on Modern Processors. SIGMOD/PODS.
+
+^ "[#JDK-6804124] (coll) Replace "modified mergesort" in java.util.Arrays.sort with timsort". JDK Bug System. Retrieved 11 June 2014.
+
+^ 
+"Class: java.util.TimSort<T>". Android Gingerbread Documentation. Archived from the original on 16 July 2015. Retrieved 24 February 2011.
+
+^ 
+"liboctave/util/oct-sort.cc". Mercurial repository of Octave source code. Lines 23-25 of the initial comment block. Retrieved 18 February 2013. Code stolen in large part from Python's, listobject.c, which itself had no license header. However, thanks to Tim Peters for the parts of the code I ripped-off.
+
+^ "Getting things sorted in V8 Â· V8". v8.dev. Retrieved 21 December 2018.
+
+^ "Is sort() stable in Swift 5?". Swift Forums. 4 July 2019. Retrieved 4 July 2019.
+
+^ "slice - Rust". doc.rust-lang.org. Retrieved 17 September 2020. The current algorithm is an adaptive, iterative merge sort inspired by timsort. It is designed to be very fast in cases where the slice is nearly sorted, or consists of two or more sorted sequences concatenated one after another.
+
+^ McIlroy, Peter (January 1993). "Optimistic Sorting and Information Theoretic Complexity". Proceedings of the Fourth Annual ACM-SIAM Symposium on Discrete Algorithms. pp.Â 467â474. ISBNÂ 0-89871-313-7.
+
+^ Jump up to: a b c "listsort.txt". Python source code. 10 February 2017.
+
+^ MacIver, David R. (11 January 2010). "Understanding timsort, Part 1: Adaptive Mergesort". Retrieved 5 December 2015.
+
+^ Peters, Tim. "listsort.txt". CPython git repository. Retrieved 5 December 2019.
+
+^ Jump up to: a b de Gouw, Stijn; Rot, Jurriaan; de Boer, Frank S.; Bubel, Richard; HÃ¤hnle, Reiner (July 2015). "OpenJDK's Java.utils.Collection.sort() Is Broken: The Good, the Bad and the Worst Case" (PDF). Computer Aided Verification: 273â289. doi:10.1007/978-3-319-21690-4_16.
+
+^ de Gouw, Stijn (24 February 2015). "Proving that Android's, Java's and Python's sorting algorithm is broken (and showing how to fix it)". Retrieved 6 May 2017.
+
+^ Python Issue Tracker â Issue 23515: Bad logic in timsort's merge_collapse
+
+
+Further reading[edit]
+Auger, Nicolas; Nicaud, Cyril; Pivoteau, Carine (2015). "Merge Strategies: from Merge Sort to TimSort". hal-01212839.
+Auger, JugÃ©, Nicaud, Pivoteau (2018). "On the Worst-Case Complexity of TimSort". ESA 2018.
+Sam Buss, Alexander Knop. "Strategies for Stable Merge Sorting." SODA 2019.
+External links[edit]
+timsort.txt â original explanation by Tim Peters
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSorting algorithmsTheory
+Computational complexity theory
+Big O notation
+Total order
+Lists
+Inplacement
+Stability
+Comparison sort
+Adaptive sort
+Sorting network
+Integer sorting
+X + Y sorting
+Transdichotomous model
+Quantum sort
+Exchange sorts
+Bubble sort
+Cocktail shaker sort
+Oddâeven sort
+Comb sort
+Gnome sort
+Proportion extend sort
+Quicksort
+Slowsort
+Stooge sort
+Bogosort
+Selection sorts
+Selection sort
+Heapsort
+Smoothsort
+Cartesian tree sort
+Tournament sort
+Cycle sort
+Weak-heap sort
+Insertion sorts
+Insertion sort
+Shellsort
+Splaysort
+Tree sort
+Library sort
+Patience sorting
+Merge sorts
+Merge sort
+Cascade merge sort
+Oscillating merge sort
+Polyphase merge sort
+Distribution sorts
+American flag sort
+Bead sort
+Bucket sort
+Burstsort
+Counting sort
+Interpolation sort
+Pigeonhole sort
+Proxmap sort
+Radix sort
+Flashsort
+Concurrent sorts
+Bitonic sorter
+Batcher oddâeven mergesort
+Pairwise sorting network
+Samplesort
+Hybrid sorts
+Block merge sort
+Kirkpatrick-Reisch sort
+Timsort
+Introsort
+Spreadsort
+Merge-insertion sort
+Other
+Topological sorting
+Pre-topological order
+Pancake sorting
+Spaghetti sort
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Timsort&oldid=1065277889"
+		Categories: Sorting algorithmsComparison sortsStable sortsHidden categories: Use dmy dates from April 2016
+	

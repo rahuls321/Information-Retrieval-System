@@ -1,0 +1,497 @@
+
+Title:
+Hamming weight
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Hamming weight"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (January 2009) (Learn how and when to remove this template message)
+
+The Hamming weight of a string is the number of symbols that are different from the zero-symbol of the alphabet used. It is thus equivalent to the Hamming distance from the all-zero string of the same length. For the most typical case, a string of bits, this is the number of 1's in the string, or the digit sum of the binary representation of a given number and the ââ norm of a bit vector. In this binary case, it is also called the population count,[1] popcount, sideways sum,[2] or bit summation.[3]
+
+
+Examples
+
+
+String
+
+Hamming weight
+
+
+11101
+
+4
+
+
+11101000
+
+4
+
+
+00000000
+
+0
+
+
+678012340567
+
+10
+
+
+
+
+@media all and (max-width:720px){body.skin-minerva .mw-parser-output .mw-graph{min-width:100%!important;max-width:100%;overflow-x:auto;overflow-y:visible}}.mw-parser-output .mw-graph-img{width:inherit;height:inherit}
+
+
+A plot for the population count (Hamming weight for binary numbers) for (decimal) numbers 0 to 256.[4][5][6]
+
+Contents
+
+1 History and usage
+2 Efficient implementation
+3 Minimum weight
+4 Language support
+5 Processor support
+6 See also
+7 References
+8 Further reading
+9 External links
+
+
+
+History and usage[edit]
+The Hamming weight is named after Richard Hamming although he did not originate the notion.[7] The Hamming weight of binary numbers was already used in 1899 by James W. L. Glaisher to give a formula for the number of odd binomial coefficients in a single row of Pascal's triangle.[8] Irving S. Reed introduced a concept, equivalent to Hamming weight in the binary case, in 1954.[9]
+Hamming weight is used in several disciplines including information theory, coding theory, and cryptography. Examples of applications of the Hamming weight include:
+
+In modular exponentiation by squaring, the number of modular multiplications required for an exponent e is log2 e + weight(e). This is the reason that the public key value e used in RSA is typically chosen to be a number of low Hamming weight.
+The Hamming weight determines path lengths between nodes in Chord distributed hash tables.[10]
+IrisCode lookups in biometric databases are typically implemented by calculating the Hamming distance to each stored record.
+In computer chess programs using a bitboard representation, the Hamming weight of a bitboard gives the number of pieces of a given type remaining in the game, or the number of squares of the board controlled by one player's pieces, and is therefore an important contributing term to the value of a position.
+Hamming weight can be used to efficiently compute find first set using the identity ffs(x) = pop(x ^ (x - 1)). This is useful on platforms such as SPARC that have hardware Hamming weight instructions but no hardware find first set instruction.[11][1]
+The Hamming weight operation can be interpreted as a conversion from the unary numeral system to binary numbers.[12]
+In implementation of some succinct data structures like bit vectors and wavelet trees.
+Efficient implementation[edit]
+The population count of a bitstring is often needed in cryptography and other applications. The Hamming distance of two words A and B can be calculated as the Hamming weight of A xor B.[1]
+The problem of how to implement it efficiently has been widely studied. A single operation for the calculation, or parallel operations on bit vectors are available on some processors. For processors lacking those features, the best solutions known are based on adding counts in a tree pattern. For example, to count the number of 1 bits in the 16-bit binary number aÂ =Â 0110Â 1100Â 1011Â 1010, these operations can be done:
+
+
+
+Expression
+
+Binary
+
+Decimal
+
+Comment
+
+
+a
+
+01
+
+10
+
+11
+
+00
+
+10
+
+11
+
+10
+
+10
+
+27834
+
+The original number
+
+
+b0 = (a >> 0) & 01 01 01 01 01 01 01 01
+
+01
+
+00
+
+01
+
+00
+
+00
+
+01
+
+00
+
+00
+
+1, 0, 1, 0, 0, 1, 0, 0
+
+Every other bit from a
+
+
+b1 = (a >> 1) & 01 01 01 01 01 01 01 01
+
+00
+
+01
+
+01
+
+00
+
+01
+
+01
+
+01
+
+01
+
+0, 1, 1, 0, 1, 1, 1, 1
+
+The remaining bits from a
+
+
+c = b0 + b1
+
+01
+
+01
+
+10
+
+00
+
+01
+
+10
+
+01
+
+01
+
+1, 1, 2, 0, 1, 2, 1, 1
+
+Count of 1s in each 2-bit slice of a
+
+
+d0 = (c >> 0) & 0011 0011 0011 0011
+
+0001
+
+0000
+
+0010
+
+0001
+
+1, 0, 2, 1
+
+Every other count from c
+
+
+d2 = (c >> 2) & 0011 0011 0011 0011
+
+0001
+
+0010
+
+0001
+
+0001
+
+1, 2, 1, 1
+
+The remaining counts from c
+
+
+e = d0 + d2
+
+0010
+
+0010
+
+0011
+
+0010
+
+2, 2, 3, 2
+
+Count of 1s in each 4-bit slice of a
+
+
+f0 = (e >> 0) & 00001111  00001111
+
+00000010
+
+00000010
+
+2, 2
+
+Every other count from e
+
+
+f4 = (e >> 4) & 00001111 00001111
+
+00000010
+
+00000011
+
+2, 3
+
+The remaining counts from e
+
+
+g = f0 + f4
+
+00000100
+
+00000101
+
+4, 5
+
+Count of 1s in each 8-bit slice of a
+
+
+h0 = (g >> 0) & 0000000011111111
+
+0000000000000101
+
+5
+
+Every other count from g
+
+
+h8 = (g >> 8) & 0000000011111111
+
+0000000000000100
+
+4
+
+The remaining counts from g
+
+
+i = h0 + h8
+
+0000000000001001
+
+9
+
+Count of 1s in entire 16-bit word
+
+Here, the operations are as in C programming language, so X >> Y means to shift X right by Y bits, X & Y means the bitwise AND of X and Y, and + is ordinary addition.  The best algorithms known for this problem are based on the concept illustrated above and are given here:[1]
+
+//types and constants used in the functions below
+//uint64_t is an unsigned 64-bit integer variable type (defined in C99 version of C language)
+const uint64_t m1  = 0x5555555555555555; //binary: 0101...
+const uint64_t m2  = 0x3333333333333333; //binary: 00110011..
+const uint64_t m4  = 0x0f0f0f0f0f0f0f0f; //binary:  4 zeros,  4 ones ...
+const uint64_t m8  = 0x00ff00ff00ff00ff; //binary:  8 zeros,  8 ones ...
+const uint64_t m16 = 0x0000ffff0000ffff; //binary: 16 zeros, 16 ones ...
+const uint64_t m32 = 0x00000000ffffffff; //binary: 32 zeros, 32 ones
+const uint64_t h01 = 0x0101010101010101; //the sum of 256 to the power of 0,1,2,3...
+
+//This is a naive implementation, shown for comparison,
+//and to help in understanding the better functions.
+//This algorithm uses 24 arithmetic operations (shift, add, and).
+int popcount64a(uint64_t x)
+{
+    x = (x & m1 ) + ((x >>  1) & m1 ); //put count of each  2 bits into those  2 bits 
+    x = (x & m2 ) + ((x >>  2) & m2 ); //put count of each  4 bits into those  4 bits 
+    x = (x & m4 ) + ((x >>  4) & m4 ); //put count of each  8 bits into those  8 bits 
+    x = (x & m8 ) + ((x >>  8) & m8 ); //put count of each 16 bits into those 16 bits 
+    x = (x & m16) + ((x >> 16) & m16); //put count of each 32 bits into those 32 bits 
+    x = (x & m32) + ((x >> 32) & m32); //put count of each 64 bits into those 64 bits 
+    return x;
+}
+
+//This uses fewer arithmetic operations than any other known  
+//implementation on machines with slow multiplication.
+//This algorithm uses 17 arithmetic operations.
+int popcount64b(uint64_t x)
+{
+    x -= (x >> 1) & m1;             //put count of each 2 bits into those 2 bits
+    x = (x & m2) + ((x >> 2) & m2); //put count of each 4 bits into those 4 bits 
+    x = (x + (x >> 4)) & m4;        //put count of each 8 bits into those 8 bits 
+    x += x >>  8;  //put count of each 16 bits into their lowest 8 bits
+    x += x >> 16;  //put count of each 32 bits into their lowest 8 bits
+    x += x >> 32;  //put count of each 64 bits into their lowest 8 bits
+    return x & 0x7f;
+}
+
+//This uses fewer arithmetic operations than any other known  
+//implementation on machines with fast multiplication.
+//This algorithm uses 12 arithmetic operations, one of which is a multiply.
+int popcount64c(uint64_t x)
+{
+    x -= (x >> 1) & m1;             //put count of each 2 bits into those 2 bits
+    x = (x & m2) + ((x >> 2) & m2); //put count of each 4 bits into those 4 bits 
+    x = (x + (x >> 4)) & m4;        //put count of each 8 bits into those 8 bits 
+    return (x * h01) >> 56;  //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ... 
+}
+
+The above implementations have the best worst-case behavior of any known algorithm.  However, when a value is expected to have few nonzero bits, it may instead be more efficient to use algorithms that count these bits one at a time. As Wegner described in 1960,[13] the bitwise AND of x with xÂ âÂ 1 differs from x only in zeroing out the least significant nonzero bit: subtracting 1 changes the rightmost string of 0s to 1s, and changes the rightmost 1 to a 0. If x originally had n bits that were 1, then after only n iterations of this operation, x will be reduced to zero. The following implementation is based on this principle.
+
+//This is better when most bits in x are 0
+//This algorithm works the same for all data sizes.
+//This algorithm uses 3 arithmetic operations and 1 comparison/branch per "1" bit in x.
+int popcount64d(uint64_t x)
+{
+    int count;
+    for (count=0; x; count++)
+        x &= x - 1;
+    return count;
+}
+
+If greater memory usage is allowed, we can calculate the Hamming weight faster than the above methods.  With unlimited memory, we could simply create a large lookup table of the Hamming weight of every 64 bit integer.  If we can store a lookup table of the hamming function of every 16 bit integer, we can do the following to compute the Hamming weight of every 32 bit integer.
+
+static uint8_t wordbits[65536] = { /* bitcounts of integers 0 through 65535, inclusive */ };
+//This algorithm uses 3 arithmetic operations and 2 memory reads.
+int popcount32e(uint32_t x)
+{
+    return wordbits[x & 0xFFFF] + wordbits[x >> 16];
+}
+
+//Optionally, the wordbits[] table could be filled using this function
+int popcount32e_init(void)
+{
+    uint32_t i;
+    uint16_t x;
+    int count;
+    for (i=0; i <= 0xFFFF; i++)
+    {
+        x = i;
+        for (count=0; x; count++) // borrowed from popcount64d() above
+            x &= x - 1;
+        wordbits[i] = count;
+    }
+}
+
+MuÅa et al.[14] have shown that a vectorized version of popcount64b can run faster than dedicated instructions (e.g., popcnt on x64 processors).
+
+Minimum weight[edit]
+In error-correcting coding, the minimum Hamming weight, commonly referred to as the minimum weight wmin of a code is the weight of the lowest-weight non-zero code word.  The weight w of a code word is the number of 1s in the word. For example, the word 11001010 has a weight of 4.
+In a linear block code the minimum weight is also the minimum Hamming distance (dmin) and defines the error correction capability of the code. If wminÂ =Â n, then dminÂ =Â n and the code will correct up to dmin/2 errors.[15]
+
+Language support[edit]
+Some C compilers provide intrinsic functions that provide bit counting facilities. For example, GCC (since version 3.4 in April 2004) includes a builtin function __builtin_popcount that will use a processor instruction if available or an efficient library implementation otherwise.[16] LLVM-GCC has included this function since version 1.5 in June 2005.[17]
+In C++ STL, the bit-array data structure bitset has a count() method that counts the number of bits that are set. In C++20, a new header <bit> was added, containing functions std::popcount and std::has_single_bit, taking arguments of unsigned integer types.
+In Java, the growable bit-array data structure BitSet has a BitSet.cardinality() method that counts the number of bits that are set. In addition, there are Integer.bitCount(int) and Long.bitCount(long) functions to count bits in primitive 32-bit and 64-bit integers, respectively. Also, the BigInteger arbitrary-precision integer class also has a BigInteger.bitCount() method that counts bits.
+In Python, the int type has a bit_count() method to count the number of bits set. This functionality was introduced in Python 3.10, released in October 2021.[18]
+In Common Lisp, the function logcount, given a non-negative integer, returns the number of 1 bits. (For negative integers it returns the number of 0 bits in 2's complement notation.) In either case the integer can be a BIGNUM.
+Starting in GHC 7.4, the Haskell base package has a popCount function available on all types that are instances of the Bits class (available from the Data.Bits module).[19]
+MySQL version of SQL language provides BIT_COUNT() as a standard function.[20]
+Fortran 2008 has the standard, intrinsic, elemental function popcnt returning the number of nonzero bits within an integer (or integer array).[21]
+Some programmable scientific pocket calculators feature special commands to calculate the number of set bits, e.g. #B on the HP-16C[3][22] and WPÂ 43S,[23][24] #BITS[25][26] or BITSUM[27][28] on HP-16C emulators, and nBITS on the WPÂ 34S.[29][30]
+FreePascal implements popcnt since version 3.0.[31]
+
+Processor support[edit]
+The IBM STRETCH computer in the 1960s calculated the number of set bits as well as the number of leading zeros as a by-product of all logical operations.[1]
+Cray supercomputers early on featured a population count machine instruction, rumoured to have been specifically requested by the U.S. government National Security Agency for cryptanalysis applications.[1]
+Control Data Corporation's (CDC) 6000 and Cyber 70/170 series machines included a population count instruction; in COMPASS, this instruction was coded as CXi.
+The 64-bit SPARC version 9 architecture defines a POPC instruction,[11][1] but most implementations do not implement it, requiring it be emulated by the operating system.[32]
+Donald Knuth's model computer MMIX that is going to replace MIX in his book The Art of Computer Programming has an SADD instruction since 1999. SADD a,b,c counts all bits that are 1 in b and 0 in c and writes the result to a.
+Compaq's Alpha 21264A, released in 1999, was the first Alpha series CPU design that had the count extension (CIX).
+Analog Devices' Blackfin processors feature the ONES instruction to perform a 32-bit population count.[33]
+AMD's Barcelona architecture introduced the advanced bit manipulation (ABM) ISA introducing the POPCNT instruction as part of the SSE4a extensions in 2007.
+Intel Core processors introduced a POPCNT instruction with the SSE4.2 instruction set extension, first available in a Nehalem-based Core i7 processor, released in November 2008.
+The ARM architecture introduced the VCNT instruction as part of the Advanced SIMD (NEON) extensions.
+The RISC-V architecture introduced the PCNT instruction as part of the Bit Manipulation (B) extension.[34]
+See also[edit]
+Two's complement
+Most frequent k characters
+Fan out
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Jump up to: a b c d e f g .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Warren Jr., Henry S. (2013) [2002]. Hacker's Delight (2Â ed.). Addison Wesley - Pearson Education, Inc. pp.Â 81â96. ISBNÂ 978-0-321-84268-8. 0-321-84268-5.
+
+^ Knuth, Donald Ervin (2009). "Bitwise tricks & techniques; Binary Decision Diagrams". The Art of Computer Programming. Vol.Â 4, Fascicle 1. AddisonâWesley Professional. ISBNÂ 978-0-321-58050-4. (NB. Draft of Fascicle 1b available for download.)
+
+^ Jump up to: a b Hewlett-Packard HP-16C Computer Scientist Owner's Handbook (PDF). Hewlett-Packard Company. April 1982. 00016-90001. Archived (PDF) from the original on 2017-03-28. Retrieved 2017-03-28.
+
+^ [1], written in FÅrmulÃ¦. The FÅrmulÃ¦ wiki. Retrieved 2019-09-30.
+
+^ A solution to the task Population count. Retrieved 2019-09-30.
+
+^ Rosetta Code. Retrieved 2019-09-30.
+
+^ Thompson, Thomas M. (1983). From Error-Correcting Codes through Sphere Packings to Simple Groups. The Carus Mathematical Monographs #21. The Mathematical Association of America. p.Â 33.
+
+^ Glaisher, James Whitbread Lee (1899). "On the residue of a binomial-theorem coefficient with respect to a prime modulus". The Quarterly Journal of Pure and Applied Mathematics. 30: 150â156. (NB. See in particular the final paragraph of p.Â 156.)
+
+^ Reed, Irving Stoy (1954). "A Class of Multiple-Error-Correcting Codes and the Decoding Scheme". IRE Professional Group on Information Theory. Institute of Radio Engineers (IRE). PGIT-4: 38â49.
+
+^ Stoica, I.; Morris, R.; Liben-Nowell, D.; Karger, D. R.; Kaashoek, M. F.; Dabek, F.; Balakrishnan, H. (February 2003). "Chord: a scalable peer-to-peer lookup protocol for internet applications". IEEE/ACM Transactions on Networking. 11 (1): 17â32. doi:10.1109/TNET.2002.808407. S2CIDÂ 221276912. Section 6.3: "In general, the number of fingers we need to follow will be the number of ones in the binary representation of the distance from node to query."
+
+^ Jump up to: a b SPARC International, Inc. (1992). "A.41: Population Count. Programming Note". The SPARC architecture manual: version 8 (Version 8Â ed.). Englewood Cliffs, New Jersey, USA: Prentice Hall. pp.Â 231. ISBNÂ 0-13-825001-4.
+
+^ Blaxell, David (1978).  Hogben, David; Fife, Dennis W. (eds.). "Record linkage by bit pattern matching". Computer Science and Statistics--Tenth Annual Symposium on the Interface. NBS Special Publication. U.S. Department of Commerce / National Bureau of Standards. 503: 146â156.
+
+^ Wegner, Peter (May 1960). "A technique for counting ones in a binary computer". Communications of the ACM. 3 (5): 322. doi:10.1145/367236.367286. S2CIDÂ 31683715.
+
+^ MuÅa, Wojciech; Kurz, Nathan; Lemire, Daniel (January 2018). "Faster Population Counts Using AVX2 Instructions". Computer Journal. 61 (1): 111â120. arXiv:1611.07612. doi:10.1093/comjnl/bxx046. S2CIDÂ 540973.
+
+^ Stern & Mahmoud, Communications System Design, Prentice Hall, 2004, pÂ 477ff.
+
+^ "GCC 3.4 Release Notes". GNU Project.
+
+^ "LLVM 1.5 Release Notes". LLVM Project.
+
+^ "What's New In Python 3.10". python.org.
+
+^ "GHC 7.4.1 release notes". GHC documentation.
+
+^ "Chapter 12.11. Bit Functions â MySQL 5.0 Reference Manual".
+
+^ Metcalf, Michael; Reid, John; Cohen, Malcolm (2011). Modern Fortran Explained. Oxford University Press. p.Â 380. ISBNÂ 978-0-19-960142-4.
+
+^ Schwartz, Jake; Grevelle, Rick (2003-10-20) [1993]. HP16C Emulator Library for the HP48S/SX. 1.20 (1Â ed.). Retrieved 2015-08-15. (NB. This library also works on the HP 48G/GX/G+. Beyond the feature set of the HP-16C this package also supports calculations for binary, octal, and hexadecimal floating-point numbers in scientific notation in addition to the usual decimal floating-point numbers.)
+
+^ Bonin, Walter (2019) [2015]. WPÂ 43S Owner's Manual (PDF). 0.12 (draftÂ ed.). p.Â 135. ISBNÂ 978-1-72950098-9. Retrieved 2019-08-05. [2] [3] (314 pages)
+
+^ Bonin, Walter (2019) [2015]. WPÂ 43S Reference Manual (PDF). 0.12 (draftÂ ed.). pp.Â xiii, 104, 115, 120, 188. ISBNÂ 978-1-72950106-1. Retrieved 2019-08-05. [4] [5] (271 pages)
+
+^ Martin, Ãngel M.; McClure, Greg J. (2015-09-05). "HP16C Emulator Module for the HP-41CX - User's Manual and QRG" (PDF). Archived (PDF) from the original on 2017-04-27. Retrieved 2017-04-27. (NB. Beyond the HP-16C feature set this custom library for the HP-41CX extends the functionality of the calculator by about 50 additional functions.)
+
+^ Martin, Ãngel M. (2015-09-07). "HP-41: New HP-16C Emulator available". Archived from the original on 2017-04-27. Retrieved 2017-04-27.
+
+^ ThÃ¶rngren, HÃ¥kan (2017-01-10). "Ladybug Documentation" (release 0AÂ ed.). Retrieved 2017-01-29. [6]
+
+^ "New HP-41 module available: Ladybug". 2017-01-10. Archived from the original on 2017-01-29. Retrieved 2017-01-29.
+
+^ Dale, Paul; Bonin, Walter (2012) [2008]. "WP 34S Owner's Manual" (PDF) (3.1Â ed.). Retrieved 2017-04-27.
+
+^ Bonin, Walter (2015) [2008]. WP 34S Owner's Manual (3.3Â ed.). ISBNÂ 978-1-5078-9107-0.
+
+^ "Free Pascal documentation popcnt". Retrieved 2019-12-07.
+
+^ "JDK-6378821: bitCount() should use POPC on SPARC processors and AMD+10h". Java bug database. 2006-01-30.
+
+^ Blackfin Instruction Set Reference (PreliminaryÂ ed.). Analog Devices. 2001. pp.Â 8â24. Part Number 82-000410-14.
+
+^ Wolf, Clifford (2019-03-22). "RISC-V "B" Bit Manipulation Extension for RISC-V, Draft v0.37" (PDF). Github.
+
+
+Further reading[edit]
+Schroeppel, Richard C.; Orman, Hilarie K. (1972-02-29). "compilation". HAKMEM. By Beeler, Michael; Gosper, Ralph William; Schroeppel, Richard C. (report). Artificial Intelligence Laboratory, Massachusetts Institute of Technology, Cambridge, Massachusetts, USA. MIT AI Memo 239. (Item 169: Population count assembly code for the PDP/6-10.)
+External links[edit]
+Aggregate Magic Algorithms. Optimized population count and other algorithms explained with sample code.
+Bit Twiddling Hacks Several algorithms with code for counting bits set.
+Necessary and Sufficient - by Damien Wintour - Has code in C# for various Hamming Weight implementations.
+Best algorithm to count the number of set bits in a 32-bit integer? - Stackoverflow
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Hamming_weight&oldid=1068186457"
+		Categories: Coding theoryHidden categories: CS1: long volume valueArticles needing additional references from January 2009All articles needing additional referencesUse dmy dates from May 2019Articles with example C codePages using the Graph extension
+	

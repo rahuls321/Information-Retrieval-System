@@ -1,0 +1,154 @@
+
+Title:
+Control-flow graph
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		graphical representation of a computer program or algorithm
+hideThis article has multiple issues. Please help improve it or discuss these issues on the talk page. (Learn how and when to remove these template messages)
+
+      This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Control-flow graph"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (January 2009) (Learn how and when to remove this template message)
+This article needs attention from an expert in Computer science. The specific problem is: many bad/unclear definitions and dubious claims.. WikiProject Computer science may be able to help recruit an expert.  (February 2015)
+    
+ (Learn how and when to remove this template message)
+  Some CFG examples:(a) an if-then-else(b) a while loop(c) a natural loop with two exits, e.g. while with an if...break in the middle; non-structured but reducible(d) an irreducible CFG: a loop with two entry points, e.g. goto into a while or for loop
+  A control flow graph used by the Rust compiler to perform codegen.
+In computer science, a control-flow graph (CFG) is a representation, using graph notation, of all paths that might be traversed through a program during its execution. The control-flow graph was discovered by Frances E. Allen,[1] who noted that Reese T. Prosser used boolean connectivity matrices for flow analysis before.[2]
+The CFG is essential to many compiler optimizations and static-analysis tools.
+
+Contents
+
+1 Definition
+2 Example
+3 Reachability
+4 Domination relationship
+5 Special edges
+6 Loop management
+7 Reducibility
+8 Loop connectedness
+9 Inter-procedural Control Flow Graph
+10 See also
+11 References
+12 External links
+
+
+
+Definition[edit]
+In a control-flow graph each node in the graph represents a basic block, i.e. a straight-line piece of code without any jumps or jump targets; jump targets start a block, and jumps end a block. Directed edges are used to represent jumps in the control flow. There are, in most presentations, two specially designated blocks: the entry block, through which control enters into the flow graph, and the exit block, through which all control flow leaves.[3]
+Because of its construction procedure, in a CFG, every edge AâB has the property that:
+
+outdegree(A) > 1 or indegree(B) > 1 (or both).[4]
+The CFG can thus be obtained, at least conceptually, by starting from the program's (full) flow graphâi.e. the graph in which every node represents an individual instructionâand performing an edge contraction for every edge that falsifies the predicate above, i.e. contracting every edge whose source has a single exit and whose destination has a single entry. This contraction-based algorithm is of no practical importance, except as a visualization aid for understanding the CFG construction, because the CFG can be more efficiently constructed directly from the program by scanning it for basic blocks.[4]
+
+Example[edit]
+Consider the following fragment of code:
+
+0: (A) t0 = read_num
+1: (A) if t0 mod 2 == 0
+2: (B)   print t0 + " is even."
+3: (B)   goto 5
+4: (C) print t0 + " is odd."
+5: (D) end program
+
+In the above, we have 4 basic blocks: A from 0 to 1, B from 2 to 3, C at 4 and D at 5. In particular, in this case, A is the "entry block", D the "exit block" and lines 4 and 5 are jump targets. A graph for this fragment has edges from A to B, A to C, B to D and C to D.
+
+Reachability[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Reachability
+Reachability is a graph property useful in optimization.
+If a subgraph is not connected from the subgraph containing the entry block, that subgraph is unreachable during any execution, and so is unreachable code; under normal conditions it can be safely removed.
+If the exit block is unreachable from the entry block, an infinite loop may exist. Not all infinite loops are detectable, see Halting problem. A halting order may also exist there.
+Unreachable code and infinite loops are possible even if the programmer does not explicitly code them: optimizations like constant propagation and constant folding followed by jump threading can collapse multiple basic blocks into one, cause edges to be removed from a CFG, etc., thus possibly disconnecting parts of the graph.
+
+Domination relationship[edit]
+Main article: Dominator (graph theory)
+A block M dominates a block N if every path from the entry that reaches block N has to pass through block M. The entry block dominates all blocks.
+In the reverse direction, block M postdominates block N if every path from N to the exit has to pass through block M. The exit block postdominates all blocks.
+It is said that a block M immediately dominates block N if M dominates N, and there is no intervening block P such that M dominates P and P dominates N. In other words, M is the last dominator on all paths from entry to N. Each block has a unique immediate dominator.
+Similarly, there is a notion of immediate postdominator, analogous to immediate dominator.
+The dominator tree is an ancillary data structure depicting the dominator relationships. There is an arc from Block M to Block N if M is an immediate dominator of N. This graph is a tree, since each block has a unique immediate dominator. This tree is rooted at the entry block. The dominator tree can be calculated efficiently using LengauerâTarjan's algorithm.
+A postdominator tree is analogous to the dominator tree. This tree is rooted at the exit block.
+
+Special edges[edit]
+A back edge is an edge that points to a block that has already been met during a depth-first (DFS) traversal of the graph. Back edges are typical of loops.
+A critical edge is an edge which is neither the only edge leaving its source block, nor the only edge entering its destination block. These edges must be split: a new block must be created in the middle of the edge, in order to insert computations on the edge without affecting any other edges.
+An abnormal edge is an edge whose destination is unknown. Exception handling constructs can produce them. These edges tend to inhibit optimization.
+An impossible edge (also known as a fake edge) is an edge which has been added to the graph solely to preserve the property that the exit block postdominates all blocks. It cannot ever be traversed.
+
+Loop management[edit]
+A loop header (sometimes called the entry point of the loop) is a dominator that is the target of a loop-forming back edge. The loop header dominates all blocks in the loop body.  A block may be a loop header for more than one loop.  A loop may have multiple entry points, in which case it has no "loop header".
+Suppose block M is a dominator with several incoming edges, some of them being back edges (so M is a loop header). It is advantageous to several optimization passes to break M up into two blocks Mpre and Mloop. The contents of M and back edges are moved to Mloop, the rest of the edges are moved to point into Mpre, and a new edge from Mpre to Mloop is inserted (so that Mpre is the immediate dominator of Mloop). In the beginning, Mpre would be empty, but passes like loop-invariant code motion could populate it. Mpre is called the loop pre-header, and Mloop would be the loop header.
+
+Reducibility[edit]
+A reducible CFG is one with edges that can be partitioned into two disjoint sets: forward edges, and back edges, such that:[5]
+
+Forward edges form a directed acyclic graph with all nodes reachable from the entry node.
+For all back edges (A, B), node B dominates node A.
+Structured programming languages are often designed such that all CFGs they produce are reducible, and common structured programming statements such as IF, FOR, WHILE, BREAK, and CONTINUE produce reducible graphs. To produce irreducible graphs, statements such as GOTO are needed.  Irreducible graphs may also be produced by some compiler optimizations.
+
+Loop connectedness[edit]
+The loop connectedness of a CFG is defined with respect to a given depth-first search tree (DFST) of the CFG. This DFST should be rooted at the start node and cover every node of the CFG.
+Edges in the CFG which run from a node to one of its DFST ancestors (including itself) are called back edges.
+The loop connectedness is the largest number of back edges found in any cycle-free path of the CFG. In a reducible CFG, the loop connectedness is independent of the DFST chosen.[6][7]
+Loop connectedness has been used to reason about the time complexity of data-flow analysis.[6]
+
+Inter-procedural Control Flow Graph[edit]
+While Control Flow Graphs represent the control flow of a single procedure, Inter-procedural Control Flow Graphs represent the control flow of whole programs.[8]
+
+
+See also[edit]
+Abstract syntax tree
+Flowchart
+Control-flow diagram
+Control-flow analysis
+Data-flow analysis
+Interval (graph theory)
+Program dependence graph
+Cyclomatic complexity
+Static single assignment
+Compiler construction
+Intermediate representation
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Frances E. Allen (July 1970). "Control flow analysis". SIGPLAN Notices. 5 (7): 1â19. doi:10.1145/390013.808479.
+
+^ Reese T. Prosser (1959). "Applications of Boolean matrices to the analysis of flow diagrams". Papers presented at the December 1â3, 1959, eastern joint IRE-AIEE-ACM computer conference. pp.Â 133â138.
+
+^ Yousefi, Javad (2015). Masking wrong-successor Control Flow Errors employing data redundancy. IEEE. pp.Â 201â205. doi:10.1109/ICCKE.2015.7365827.
+
+^ Jump up to: a b Peri L. Tarr; Alexander L. Wolf (2011). Engineering of Software: The Continuing Contributions of Leon J. Osterweil. Springer Science & Business Media. p.Â 58. ISBNÂ 978-3-642-19823-6.
+
+^ http://www.cs.colostate.edu/~mstrout/CS553Fall06/slides/lecture13-control.pdf
+
+^ Jump up to: a b Kam, John B.; Ullman, Jeffrey D. (1976-01-01). "Global Data Flow Analysis and Iterative Algorithms". Journal of the ACM. 23 (1): 158â171. doi:10.1145/321921.321938. ISSNÂ 0004-5411.
+
+^ Offner, Carl. "Notes on Graph Algorithms Used in Optimizing Compilers" (PDF). Retrieved 13 April 2018.
+
+^ "Control Flow Analysis" (PDF). 2016.
+
+
+External links[edit]
+
+
+
+Wikimedia Commons has media related to Control flow graph.
+
+The Machine-SUIF Control Flow Graph Library
+GNU Compiler Collection Internals
+Paper "Infrastructure for Profile Driven Optimizations in GCC Compiler" by ZdenÄk DvoÅÃ¡k et al.
+Examples
+Avrora â Control-Flow Graph Tool
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Control-flow_graph&oldid=1050421841"
+		Categories: Compiler constructionControl-flow analysisApplication-specific graphsModeling languagesHidden categories: Articles with short descriptionPages with lower-case short descriptionShort description matches WikidataArticles needing additional references from January 2009All articles needing additional referencesArticles needing expert attention from February 2015All articles needing expert attentionComputer science articles needing expert attentionArticles with multiple maintenance issuesCommons category link from Wikidata
+	

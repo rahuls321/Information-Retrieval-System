@@ -1,0 +1,3026 @@
+
+Title:
+Longest common subsequence problem
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Algorithmic problem on pairs of sequences
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with longest common substring problem.
+  Comparison of two revisions of an example file, based on their longest common subsequence  (black)
+The longest common subsequence (LCS) problem is the problem of finding the longest subsequence common to all sequences in a set of sequences (often just two sequences). It differs from the longest common substring problem: unlike substrings, subsequences are not required to occupy consecutive positions within the original sequences. The longest common subsequence problem is a classic computer science problem, the basis of data comparison programs such as the diff utility, and has applications in computational linguistics and bioinformatics. It is also widely used by revision control systems such as Git for reconciling multiple changes made to a revision-controlled collection of files. 
+For example, consider the sequences (ABCD) and (ACBAD). They have 5 length-2 common subsequences: (AB), (AC), (AD), (BD), and (CD); 2 length-3 common subsequences: (ABD) and (ACD); and no longer common subsequences. So (ABD) and (ACD) are their longest common subsequences.
+
+Contents
+
+1 Complexity
+2 Solution for two sequences
+
+2.1 Prefixes
+2.2 First property
+2.3 Second property
+2.4 LCS function defined
+2.5 Worked example
+2.6 Traceback approach
+
+
+3 Relation to other problems
+4 Code for the dynamic programming solution
+
+4.1 Computing the length of the LCS
+
+4.1.1 Example in C#
+
+
+4.2 Reading out a LCS
+
+4.2.1 Example in C#
+
+
+4.3 Reading out all LCSs
+4.4 Print the diff
+4.5 Example
+
+
+5 Code optimization
+
+5.1 Reduce the problem set
+5.2 Reduce the comparison time
+5.3 Reduce strings to hashes
+5.4 Reduce the required space
+5.5 Further optimized algorithms
+
+
+6 Behavior on random strings
+7 See also
+8 References
+9 External links
+
+
+
+Complexity[edit]
+For the general case of an arbitrary number of input sequences, the problem is NP-hard.[1] When the number of sequences is constant, the problem is solvable in polynomial time by dynamic programming.
+Given 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ sequences of lengths 
+  
+    
+      
+        
+          n
+          
+            1
+          
+        
+        ,
+        .
+        .
+        .
+        ,
+        
+          n
+          
+            N
+          
+        
+      
+    
+    {\displaystyle n_{1},...,n_{N}}
+  
+, a naive search would test each of the 
+  
+    
+      
+        
+          2
+          
+            
+              n
+              
+                1
+              
+            
+          
+        
+      
+    
+    {\displaystyle 2^{n_{1}}}
+  
+ subsequences of the first sequence to determine whether they are also subsequences of the remaining sequences; each subsequence may be tested in time linear in the lengths of the remaining sequences, so the time for this algorithm would be
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            
+              2
+              
+                
+                  n
+                  
+                    1
+                  
+                
+              
+            
+            
+              â
+              
+                i
+                >
+                1
+              
+            
+            
+              n
+              
+                i
+              
+            
+          
+          )
+        
+        .
+      
+    
+    {\displaystyle O\left(2^{n_{1}}\sum _{i>1}n_{i}\right).}
+  
+
+For the case of two sequences of n and m elements, the running time of the dynamic programming approach is O(n Ã m).[2] For an arbitrary number of input sequences, the dynamic programming approach gives a solution in
+
+
+  
+    
+      
+        O
+        
+          (
+          
+            N
+            
+              â
+              
+                i
+                =
+                1
+              
+              
+                N
+              
+            
+            
+              n
+              
+                i
+              
+            
+          
+          )
+        
+        .
+      
+    
+    {\displaystyle O\left(N\prod _{i=1}^{N}n_{i}\right).}
+  
+
+There exist methods with lower complexity,[3]
+which often depend on the length of the LCS, the size of the alphabet, or both.
+The LCS is not necessarily unique; in the worst case, the number of common subsequences is exponential in the lengths of the inputs, so the algorithmic complexity must be at least exponential.[4]
+
+Solution for two sequences[edit]
+The LCS problem has an optimal substructure: the problem can be broken down into smaller, simpler subproblems, which can, in turn, be broken down into simpler subproblems, and so on, until, finally, the solution becomes trivial. LCS in particular has overlapping subproblems: the solutions to high-level subproblems often reuse solutions to lower level subproblems. Problems with these two properties are amenable to dynamic programming approaches, in which subproblem solutions are memoized, that is, the solutions of subproblems are saved for reuse.
+
+Prefixes[edit]
+The prefix Sn of S is defined as the first n characters of S.[5]  For example, the prefixes of S = (AGCA) are
+
+S0 = ()
+S1 = (A)
+S2 = (AG)
+S3 = (AGC)
+S4 = (AGCA).
+Let LCS(X, Y) be a function that computes a longest subsequence common to X and Y.  Such a function has two interesting properties.
+
+First property[edit]
+LCS(X^A,Y^A) = LCS(X,Y)^A, for all strings X, Y and all symbols A, where ^ denotes string concatenation. This allows one to simplify the LCS computation for two sequences ending in the same symbol.
+For example, LCS("BANANA","ATANA") = LCS("BANAN","ATAN")^"A",  Continuing for the remaining common symbols, LCS("BANANA","ATANA") = LCS("BAN","AT")^"ANA".
+
+Second property[edit]
+If A and B are distinct symbols (Aâ B), then LCS(X^A,Y^B) is one of the maximal-length strings in the set { LCS(X^A,Y), LCS(X,Y^B) }, for all strings X, Y.
+For example, 
+LCS("ABCDEFG","BCDGK") is the longest string among LCS("ABCDEFG","BCDG") and LCS("ABCDEF","BCDGK"); if both happened to be of equal length, one of them could be chosen arbitrarily.
+To realize the property, distinguish two cases:
+
+If  LCS("ABCDEFG","BCDGK") ends with a "G", then the final "K" cannot be in the LCS, hence LCS("ABCDEFG","BCDGK") = LCS("ABCDEFG","BCDG").
+If  LCS("ABCDEFG","BCDGK") does not end with a "G", then the final "G" cannot be in the LCS, hence LCS("ABCDEFG","BCDGK") = LCS("ABCDEF","BCDGK").
+LCS function defined[edit]
+Let two sequences be defined as follows:  
+  
+    
+      
+        X
+        =
+        (
+        
+          x
+          
+            1
+          
+        
+        
+          x
+          
+            2
+          
+        
+        â¯
+        
+          x
+          
+            m
+          
+        
+        )
+      
+    
+    {\displaystyle X=(x_{1}x_{2}\cdots x_{m})}
+  
+ and 
+  
+    
+      
+        Y
+        =
+        (
+        
+          y
+          
+            1
+          
+        
+        
+          y
+          
+            2
+          
+        
+        â¯
+        
+          y
+          
+            n
+          
+        
+        )
+      
+    
+    {\displaystyle Y=(y_{1}y_{2}\cdots y_{n})}
+  
+.  The prefixes of 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ are 
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+        ,
+        
+          X
+          
+            1
+          
+        
+        ,
+        
+          X
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          X
+          
+            m
+          
+        
+      
+    
+    {\displaystyle X_{0},X_{1},X_{2},\dots ,X_{m}}
+  
+; the prefixes of 
+  
+    
+      
+        Y
+      
+    
+    {\displaystyle Y}
+  
+ are 
+  
+    
+      
+        
+          Y
+          
+            0
+          
+        
+        ,
+        
+          Y
+          
+            1
+          
+        
+        ,
+        
+          Y
+          
+            2
+          
+        
+        ,
+        â¦
+        ,
+        
+          Y
+          
+            n
+          
+        
+      
+    
+    {\displaystyle Y_{0},Y_{1},Y_{2},\dots ,Y_{n}}
+  
+.  Let 
+  
+    
+      
+        
+          
+            L
+            C
+            S
+          
+        
+        (
+        
+          X
+          
+            i
+          
+        
+        ,
+        
+          Y
+          
+            j
+          
+        
+        )
+      
+    
+    {\displaystyle {\mathit {LCS}}(X_{i},Y_{j})}
+  
+ represent the set of longest common subsequence of prefixes 
+  
+    
+      
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle X_{i}}
+  
+ and 
+  
+    
+      
+        
+          Y
+          
+            j
+          
+        
+      
+    
+    {\displaystyle Y_{j}}
+  
+.  This set of sequences is given by the following.
+
+
+  
+    
+      
+        
+          
+            L
+            C
+            S
+          
+        
+        (
+        
+          X
+          
+            i
+          
+        
+        ,
+        
+          Y
+          
+            j
+          
+        
+        )
+        =
+        
+          
+            {
+            
+              
+                
+                  â
+                
+                
+                  
+                    
+                      ifÂ 
+                    
+                  
+                  i
+                  =
+                  0
+                  
+                    
+                      Â orÂ 
+                    
+                  
+                  j
+                  =
+                  0
+                
+              
+              
+                
+                  
+                    
+                      L
+                      C
+                      S
+                    
+                  
+                  (
+                  
+                    X
+                    
+                      i
+                      â
+                      1
+                    
+                  
+                  ,
+                  
+                    Y
+                    
+                      j
+                      â
+                      1
+                    
+                  
+                  )
+                  
+                    
+                      
+                        
+                        ^
+                      
+                    
+                  
+                  
+                    x
+                    
+                      i
+                    
+                  
+                
+                
+                  
+                    
+                      ifÂ 
+                    
+                  
+                  i
+                  ,
+                  j
+                  >
+                  0
+                  
+                    
+                      Â andÂ 
+                    
+                  
+                  
+                    x
+                    
+                      i
+                    
+                  
+                  =
+                  
+                    y
+                    
+                      j
+                    
+                  
+                
+              
+              
+                
+                  
+                    max
+                  
+                  â¡
+                  {
+                  
+                    
+                      L
+                      C
+                      S
+                    
+                  
+                  (
+                  
+                    X
+                    
+                      i
+                    
+                  
+                  ,
+                  
+                    Y
+                    
+                      j
+                      â
+                      1
+                    
+                  
+                  )
+                  ,
+                  
+                    
+                      L
+                      C
+                      S
+                    
+                  
+                  (
+                  
+                    X
+                    
+                      i
+                      â
+                      1
+                    
+                  
+                  ,
+                  
+                    Y
+                    
+                      j
+                    
+                  
+                  )
+                  }
+                
+                
+                  
+                    
+                      ifÂ 
+                    
+                  
+                  i
+                  ,
+                  j
+                  >
+                  0
+                  
+                    
+                      Â andÂ 
+                    
+                  
+                  
+                    x
+                    
+                      i
+                    
+                  
+                  â 
+                  
+                    y
+                    
+                      j
+                    
+                  
+                  .
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\mathit {LCS}}(X_{i},Y_{j})={\begin{cases}\emptyset &{\mbox{if }}i=0{\mbox{ or }}j=0\\{\mathit {LCS}}(X_{i-1},Y_{j-1}){\hat {}}x_{i}&{\mbox{if }}i,j>0{\mbox{ and }}x_{i}=y_{j}\\\operatorname {\max } \{{\mathit {LCS}}(X_{i},Y_{j-1}),{\mathit {LCS}}(X_{i-1},Y_{j})\}&{\mbox{if }}i,j>0{\mbox{ and }}x_{i}\neq y_{j}.\end{cases}}}
+  
+
+To find the LCS of 
+  
+    
+      
+        
+          X
+          
+            i
+          
+        
+      
+    
+    {\displaystyle X_{i}}
+  
+ and 
+  
+    
+      
+        
+          Y
+          
+            j
+          
+        
+      
+    
+    {\displaystyle Y_{j}}
+  
+, compare 
+  
+    
+      
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle x_{i}}
+  
+ and 
+  
+    
+      
+        
+          y
+          
+            j
+          
+        
+      
+    
+    {\displaystyle y_{j}}
+  
+.  If they are equal, then the sequence 
+  
+    
+      
+        
+          
+            L
+            C
+            S
+          
+        
+        (
+        
+          X
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          Y
+          
+            j
+            â
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle {\mathit {LCS}}(X_{i-1},Y_{j-1})}
+  
+ is extended by that element, 
+  
+    
+      
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle x_{i}}
+  
+.  If they are not equal, then the longest among the two sequences, 
+  
+    
+      
+        
+          
+            L
+            C
+            S
+          
+        
+        (
+        
+          X
+          
+            i
+          
+        
+        ,
+        
+          Y
+          
+            j
+            â
+            1
+          
+        
+        )
+      
+    
+    {\displaystyle {\mathit {LCS}}(X_{i},Y_{j-1})}
+  
+, and 
+  
+    
+      
+        
+          
+            L
+            C
+            S
+          
+        
+        (
+        
+          X
+          
+            i
+            â
+            1
+          
+        
+        ,
+        
+          Y
+          
+            j
+          
+        
+        )
+      
+    
+    {\displaystyle {\mathit {LCS}}(X_{i-1},Y_{j})}
+  
+, is retained.  (If they are the same length, but not identical, then both are retained.)
+
+Worked example[edit]
+The longest subsequence common to R = (GAC), and C = (AGCAT) will be found.  Because the LCS function uses a "zeroth" element, it is convenient to define zero prefixes that are empty for these sequences:  R0 =  Ã; and C0 =  Ã.  All the prefixes are placed in a table with C in the first row (making it a column header) and R in the first column (making it a row header).
+
+
+LCS Strings
+
+
+
+Ã
+A
+G
+C
+A
+T
+
+
+Ã
+
+Ã
+Ã
+Ã
+Ã
+Ã
+Ã
+
+
+G
+
+Ã
+
+
+
+
+
+
+
+
+
+
+
+
+A
+
+Ã
+
+
+
+
+
+
+
+
+
+
+
+
+C
+
+Ã
+
+
+
+
+
+
+
+
+
+
+
+
+This table is used to store the LCS sequence for each step of the calculation.  The second column and second row have been filled in with Ã, because when an empty sequence is compared with a non-empty sequence, the longest common subsequence is always an empty sequence.
+LCS(R1, C1) is determined by comparing the first elements in each sequence.  G and A are not the same, so this LCS gets (using the "second property") the longest of the two sequences, LCS(R1, C0) and  LCS(R0, C1).  According to the table, both of these are empty, so LCS(R1, C1) is also empty, as shown in the table below.  The arrows indicate that the sequence comes from both the cell above, LCS(R0, C1) and the cell on the left, LCS(R1, C0).
+LCS(R1, C2) is determined by comparing G and G.  They match, so G is appended to the upper left sequence, LCS(R0, C1), which is (Ã), giving (ÃG), which is (G).
+For LCS(R1, C3), G and C do not match.  The sequence above is empty; the one to the left contains one element, G.  Selecting the longest of these, LCS(R1, C3) is (G).  The arrow points to the left, since that is the longest of the two sequences.
+LCS(R1, C4), likewise, is (G).
+LCS(R1, C5), likewise, is (G).
+
+
+"G" Row Completed
+
+
+
+Ã
+A
+G
+C
+A
+T
+
+
+Ã
+
+Ã
+Ã
+Ã
+Ã
+Ã
+Ã
+
+
+G
+
+Ã
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+Ã
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+A
+
+Ã
+
+
+
+
+
+
+
+
+
+
+
+
+C
+
+Ã
+
+
+
+
+
+
+
+
+
+
+
+
+For LCS(R2, C1), A is compared with A.  The two elements match, so A is appended to Ã, giving (A).
+For LCS(R2, C2), A and G do not match, so the longest of LCS(R1, C2), which is (G), and LCS(R2, C1), which is (A), is used.  In this case, they each contain one element, so this LCS is given two subsequences:  (A) and (G).
+For LCS(R2, C3), A does not match C.  LCS(R2, C2) contains sequences (A) and (G); LCS(R1, C3) is (G), which is already contained in LCS(R2, C2).  The result is that LCS(R2, C3) also contains the two subsequences, (A) and (G).
+For LCS(R2, C4), A matches A, which is appended to the upper left cell, giving (GA).
+For LCS(R2, C5), A does not match T.  Comparing the two sequences, (GA) and (G), the longest is (GA), so LCS(R2, C5) is (GA).
+
+
+"G" & "A" Rows Completed
+
+
+
+Ã
+A
+G
+C
+A
+T
+
+
+Ã
+
+Ã
+Ã
+Ã
+Ã
+Ã
+Ã
+
+
+G
+
+Ã
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+Ã
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+A
+
+Ã
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(A)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(A) & (G)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(A) & (G)
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(GA)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(GA)
+
+
+C
+
+Ã
+
+
+
+
+
+
+
+
+
+
+
+
+For LCS(R3, C1), C and A do not match, so LCS(R3, C1) gets the longest of the two sequences, (A).
+For LCS(R3, C2), C and G do not match.  Both LCS(R3, C1) and LCS(R2, C2) have one element.  The result is that LCS(R3, C2) contains the two subsequences, (A) and (G).
+For LCS(R3, C3), C and C match, so C is appended to LCS(R2, C2), which contains the two subsequences, (A) and (G), giving (AC) and (GC).
+For LCS(R3, C4), C and A do not match.  Combining LCS(R3, C3), which contains (AC) and (GC), and LCS(R2, C4), which contains (GA), gives a total of three sequences:  (AC), (GC), and (GA).
+Finally, for LCS(R3, C5), C and T do not match.  The result is that LCS(R3, C5) also contains the three sequences, (AC), (GC), and (GA).
+
+
+Completed LCS Table
+
+
+
+Ã
+A
+G
+C
+A
+T
+
+
+Ã
+
+Ã
+Ã
+Ã
+Ã
+Ã
+Ã
+
+
+G
+
+Ã
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+Ã
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(G)
+
+
+A
+
+Ã
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(A)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(A) & (G)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(A) & (G)
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(GA)
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+(GA)
+
+
+C
+
+Ã
+
+
+  
+    
+      
+        
+          
+            Â 
+            
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \uparrow }{\ }}}
+  
+(A)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(A) & (G)
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+(AC) & (GC)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(AC) & (GC) & (GA)
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+(AC) & (GC) & (GA)
+
+
+The final result is that the last cell contains all the longest subsequences common to (AGCAT) and (GAC); these are (AC), (GC), and (GA).  The table also shows the longest common subsequences for every possible pair of prefixes.  For example, for (AGC) and (GA), the longest common subsequence are (A) and (G).
+
+Traceback approach[edit]
+Calculating the LCS of a row of the LCS table requires only the solutions to the current row and the previous row.  Still, for long sequences, these sequences can get numerous and long, requiring a lot of storage space.  Storage space can be saved by saving not the actual subsequences, but the length of the subsequence and the direction of the arrows, as in the table below.
+
+
+Storing length, rather than sequences
+
+
+
+Ã
+A
+G
+C
+A
+T
+
+
+Ã
+
+0
+0
+0
+0
+0
+0
+
+
+G
+
+0
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+0
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+1
+
+
+A
+
+0
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+2
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+2
+
+
+C
+
+0
+
+
+  
+    
+      
+        
+          
+            Â 
+            
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \uparrow }{\ }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+2
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+2
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+2
+
+
+The actual subsequences are deduced in a "traceback" procedure that follows the arrows backwards, starting from the last cell in the table.  When the length decreases, the sequences must have had a common element.  Several paths are possible when two arrows are shown in a cell.  Below is the table for such an analysis, with numbers colored in cells where the length is about to decrease.  The bold numbers trace out the sequence, (GA).[6]
+
+
+Traceback example
+
+
+
+Ã
+A
+G
+C
+A
+T
+
+
+Ã
+
+0
+0
+0
+0
+0
+0
+
+
+G
+
+0
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+0
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+1
+
+
+A
+
+0
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+2
+
+
+  
+    
+      
+        
+          
+            â
+            Â 
+          
+        
+      
+    
+    {\displaystyle {\overset {\ }{\leftarrow }}}
+  
+2
+
+
+C
+
+0
+
+
+  
+    
+      
+        
+          
+            Â 
+            
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \uparrow }{\ }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+1
+
+
+  
+    
+      
+        
+          
+            Â 
+            â
+          
+        
+      
+    
+    {\displaystyle {\overset {\nwarrow }{\ }}}
+  
+2
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+2
+
+
+  
+    
+      
+        
+          
+            â
+            
+              Â 
+              Â 
+              â
+            
+          
+        
+      
+    
+    {\displaystyle {\overset {\ \ \uparrow }{\leftarrow }}}
+  
+2
+
+
+Relation to other problems[edit]
+For two strings 
+  
+    
+      
+        
+          X
+          
+            1
+            â¦
+            m
+          
+        
+      
+    
+    {\displaystyle X_{1\dots m}}
+  
+ and 
+  
+    
+      
+        
+          Y
+          
+            1
+            â¦
+            n
+          
+        
+      
+    
+    {\displaystyle Y_{1\dots n}}
+  
+, the length of the shortest common supersequence is related to the length of the LCS by[3]
+
+
+  
+    
+      
+        
+          |
+          
+            S
+            C
+            S
+            (
+            X
+            ,
+            Y
+            )
+          
+          |
+        
+        =
+        n
+        +
+        m
+        â
+        
+          |
+          
+            L
+            C
+            S
+            (
+            X
+            ,
+            Y
+            )
+          
+          |
+        
+        .
+      
+    
+    {\displaystyle \left|SCS(X,Y)\right|=n+m-\left|LCS(X,Y)\right|.}
+  
+
+The edit distance when only insertion and deletion is allowed (no substitution), or when the cost of the substitution is the double of the cost of an insertion or  deletion, is:
+
+
+  
+    
+      
+        
+          d
+          â²
+        
+        (
+        X
+        ,
+        Y
+        )
+        =
+        n
+        +
+        m
+        â
+        2
+        â
+        
+          |
+          
+            L
+            C
+            S
+            (
+            X
+            ,
+            Y
+            )
+          
+          |
+        
+        .
+      
+    
+    {\displaystyle d'(X,Y)=n+m-2\cdot \left|LCS(X,Y)\right|.}
+  
+
+Code for the dynamic programming solution[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (March 2013) (Learn how and when to remove this template message)
+Computing the length of the LCS[edit]
+The function below takes as input sequences X[1..m] and Y[1..n], computes the LCS between X[1..i] and Y[1..j] for all 1 â¤ i â¤ m and 1 â¤ j â¤ n, and stores it in C[i,j]. C[m,n] will contain the length of the LCS of X and Y.
+
+function LCSLength(X[1..m], Y[1..n])
+    C = array(0..m, 0..n)
+    for iÂ := 0..m
+        C[i,0] = 0
+    for jÂ := 0..n
+        C[0,j] = 0
+    for iÂ := 1..m
+        for jÂ := 1..n
+            if X[i] = Y[j]
+                C[i,j]Â := C[i-1,j-1] + 1
+            else
+                C[i,j]Â := max(C[i,j-1], C[i-1,j])
+    return C[m,n]
+
+Alternatively, memoization could be used.
+
+Example in C#[edit]
+static int LcsLength(string a, string b)
+{
+	int m = a.Length;
+	int n = b.Length;
+	int[,] C = new int[m + 1, n + 1];
+	for (int i = 0; i < m; i++)
+		C[i, 0] = 0;
+	for (int j = 0; j < n; j++)
+		C[0, j] = 0;
+	for (int i = 1; i <= m; i++)
+		for (int j = 1; j <= n; j++)
+		{
+			if (a[i - 1] == b[j - 1])
+				C[i, j] = C[i - 1, j - 1] + 1;
+			else
+				C[i, j] = Math.Max(C[i, j - 1], C[i - 1, j]);
+		}
+	return C[m, n];
+}
+
+Reading out a LCS[edit]
+The following function backtracks the choices taken when computing the C table. If the last characters in the prefixes are equal, they must be in an LCS. If not, check what gave the largest LCS of keeping 
+  
+    
+      
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle x_{i}}
+  
+ and 
+  
+    
+      
+        
+          y
+          
+            j
+          
+        
+      
+    
+    {\displaystyle y_{j}}
+  
+, and make the same choice. Just choose one if they were equally long. Call the function with i=m and j=n.
+
+function backtrack(C[0..m,0..n], X[1..m], Y[1..n], i, j)
+    if i = 0 or j = 0
+        return ""
+    if  X[i] = Y[j]
+        return backtrack(C, X, Y, i-1, j-1) + X[i]
+    if C[i,j-1] > C[i-1,j]
+        return backtrack(C, X, Y, i, j-1)
+    return backtrack(C, X, Y, i-1, j)
+
+Example in C#[edit]
+string Backtrack(int[,] C, char[] aStr, char[] bStr, int x, int y)
+{
+    if (x == 0 | y == 0)
+        return "";
+    if (aStr[x - 1] == bStr[y - 1]) // x-1, y-1
+        return backtrack(C, aStr, bStr, x - 1, y - 1) + aStr[x - 1]; // x-1
+    if (C[x, y - 1] > C[x - 1, y])
+        return backtrack(C, aStr, bStr, x, y - 1);
+    return backtrack(C, aStr, bStr, x - 1, y);
+}
+
+Reading out all LCSs[edit]
+If choosing 
+  
+    
+      
+        
+          x
+          
+            i
+          
+        
+      
+    
+    {\displaystyle x_{i}}
+  
+ and 
+  
+    
+      
+        
+          y
+          
+            j
+          
+        
+      
+    
+    {\displaystyle y_{j}}
+  
+ would give an equally long result, read out both resulting subsequences. This is returned as a set by this function. Notice that this function is not polynomial, as it might branch in almost every step if the strings are similar.
+
+function backtrackAll(C[0..m,0..n], X[1..m], Y[1..n], i, j)
+    if i = 0 or j = 0
+        return {""}
+    if X[i] = Y[j]
+        return {Z + X[i] for all Z in backtrackAll(C, X, Y, i-1, j-1)}
+    RÂ := {}
+    if C[i,j-1] â¥ C[i-1,j]
+        RÂ := backtrackAll(C, X, Y, i, j-1)
+    if C[i-1,j] â¥ C[i,j-1]
+        RÂ := R âª backtrackAll(C, X, Y, i-1, j)
+    return R
+
+Print the diff[edit]
+This function will backtrack through the C matrix, and print the diff between the two sequences. Notice that you will get a different answer if you exchange â¥ and <, with > and â¤ below.
+
+function printDiff(C[0..m,0..n], X[1..m], Y[1..n], i, j)
+    if i >= 0 and j >= 0 and X[i] = Y[j]
+        printDiff(C, X, Y, i-1, j-1)
+        print "  " + X[i]
+    else if j > 0 and (i = 0 or C[i,j-1] â¥ C[i-1,j])
+        printDiff(C, X, Y, i, j-1)
+        print "+ " + Y[j]
+    else if i > 0 and (j = 0 or C[i,j-1] < C[i-1,j])
+        printDiff(C, X, Y, i-1, j)
+        print "- " + X[i]
+    else
+        print ""
+
+Example[edit]
+Let 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ be âXMJYAUZâ and 
+  
+    
+      
+        Y
+      
+    
+    {\displaystyle Y}
+  
+ be âMZJAWXUâ. The longest common subsequence between 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ and 
+  
+    
+      
+        Y
+      
+    
+    {\displaystyle Y}
+  
+ is âMJAUâ. The table C shown below, which is generated by the function LCSLength, shows the lengths of the longest common subsequences between prefixes of 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ and 
+  
+    
+      
+        Y
+      
+    
+    {\displaystyle Y}
+  
+. The 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+th row and 
+  
+    
+      
+        j
+      
+    
+    {\displaystyle j}
+  
+th column shows the length of the LCS between 
+  
+    
+      
+        
+          X
+          
+            1..
+            i
+          
+        
+      
+    
+    {\displaystyle X_{1..i}}
+  
+ and 
+  
+    
+      
+        
+          Y
+          
+            1..
+            j
+          
+        
+      
+    
+    {\displaystyle Y_{1..j}}
+  
+.
+
+
+
+
+
+
+0
+1
+2
+3
+4
+5
+6
+7
+
+
+Ã
+M
+Z
+J
+A
+W
+X
+U
+
+
+0
+Ã
+
+0
+0
+0
+0
+0
+0
+0
+0
+
+
+1
+X
+
+0
+0
+0
+0
+0
+0
+1
+1
+
+
+2
+M
+
+0
+1
+1
+1
+1
+1
+1
+1
+
+
+3
+J
+
+0
+1
+1
+2
+2
+2
+2
+2
+
+
+4
+Y
+
+0
+1
+1
+2
+2
+2
+2
+2
+
+
+5
+A
+
+0
+1
+1
+2
+3
+3
+3
+3
+
+
+6
+U
+
+0
+1
+1
+2
+3
+3
+3
+4
+
+
+7
+Z
+
+0
+1
+2
+2
+3
+3
+3
+4
+
+The highlighted numbers show the path the function backtrack would follow from the bottom right to the top left corner, when reading out an LCS. If the current symbols in 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ and 
+  
+    
+      
+        Y
+      
+    
+    {\displaystyle Y}
+  
+ are equal, they are part of the LCS, and we go both up and left (shown in bold). If not, we go up or left, depending on which cell has a higher number. This corresponds to either taking the LCS between 
+  
+    
+      
+        
+          X
+          
+            1..
+            i
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle X_{1..i-1}}
+  
+ and 
+  
+    
+      
+        
+          Y
+          
+            1..
+            j
+          
+        
+      
+    
+    {\displaystyle Y_{1..j}}
+  
+, or 
+  
+    
+      
+        
+          X
+          
+            1..
+            i
+          
+        
+      
+    
+    {\displaystyle X_{1..i}}
+  
+ and 
+  
+    
+      
+        
+          Y
+          
+            1..
+            j
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle Y_{1..j-1}}
+  
+.
+
+Code optimization[edit]
+Several optimizations can be made to the algorithm above to speed it up for real-world cases.
+
+Reduce the problem set[edit]
+The C matrix in the naive algorithm grows quadratically with the lengths of the sequences.  For two 100-item sequences, a 10,000-item matrix would be needed, and 10,000 comparisons would need to be done.  In most real-world cases, especially source code diffs and patches, the beginnings and ends of files rarely change, and almost certainly not both at the same time.  If only a few items have changed in the middle of the sequence, the beginning and end can be eliminated.  This reduces not only the memory requirements for the matrix, but also the number of comparisons that must be done.
+
+function LCS(X[1..m], Y[1..n])
+    startÂ := 1
+    m_endÂ := m
+    n_endÂ := n
+    trim off the matching items at the beginning
+    while start â¤ m_end and start â¤ n_end and X[start] = Y[start]
+        startÂ := start + 1
+    trim off the matching items at the end
+    while start â¤ m_end and start â¤ n_end and X[m_end] = Y[n_end]
+        m_endÂ := m_end - 1
+        n_endÂ := n_end - 1
+    C = array(start-1..m_end, start-1..n_end)
+    only loop over the items that have changed
+    for iÂ := start..m_end
+        for jÂ := start..n_end
+            the algorithm continues as before ...
+
+In the best-case scenario, a sequence with no changes, this optimization would completely eliminate the need for the C matrix.  In the worst-case scenario, a change to the very first and last items in the sequence, only two additional comparisons are performed.
+
+Reduce the comparison time[edit]
+Most of the time taken by the naive algorithm is spent performing comparisons between items in the sequences.  For textual sequences such as source code, you want to view lines as the sequence elements instead of single characters.  This can mean comparisons of relatively long strings for each step in the algorithm.  Two optimizations can be made that can help to reduce the time these comparisons consume.
+
+Reduce strings to hashes[edit]
+A hash function or checksum can be used to reduce the size of the strings in the sequences.  That is, for source code where the average line is 60 or more characters long, the hash or checksum for that line might be only 8 to 40 characters long.  Additionally, the randomized nature of hashes and checksums would guarantee that comparisons would short-circuit faster, as lines of source code will rarely be changed at the beginning.
+There are three primary drawbacks to this optimization.  First, an amount of time needs to be spent beforehand to precompute the hashes for the two sequences.  Second, additional memory needs to be allocated for the new hashed sequences.  However, in comparison to the naive algorithm used here, both of these drawbacks are relatively minimal.
+The third drawback is that of collisions.  Since the checksum or hash is not guaranteed to be unique, there is a small chance that two different items could be reduced to the same hash.  This is unlikely in source code, but it is possible.  A cryptographic hash would therefore be far better suited for this optimization, as its entropy is going to be significantly greater than that of a simple checksum.  However, the benefits may not be worth the setup and computational requirements of a cryptographic hash for small sequence lengths.
+
+Reduce the required space[edit]
+If only the length of the LCS is required, the matrix can be reduced to a 
+  
+    
+      
+        2
+        Ã
+        min
+        (
+        n
+        ,
+        m
+        )
+      
+    
+    {\displaystyle 2\times \min(n,m)}
+  
+ matrix with ease, or to a 
+  
+    
+      
+        min
+        (
+        m
+        ,
+        n
+        )
+        +
+        1
+      
+    
+    {\displaystyle \min(m,n)+1}
+  
+ vector (smarter) as the dynamic programming approach only needs the current and previous columns of the matrix.[7] Hirschberg's algorithm allows the construction of the optimal sequence itself in the same quadratic time and linear space bounds.[8]
+
+Further optimized algorithms[edit]
+Several algorithms exist that run faster than the presented dynamic programming approach. One of them is HuntâSzymanski algorithm, which typically runs in 
+  
+    
+      
+        O
+        (
+        (
+        n
+        +
+        r
+        )
+        log
+        â¡
+        (
+        n
+        )
+        )
+      
+    
+    {\displaystyle O((n+r)\log(n))}
+  
+ time (for 
+  
+    
+      
+        n
+        >
+        m
+      
+    
+    {\displaystyle n>m}
+  
+), where 
+  
+    
+      
+        r
+      
+    
+    {\displaystyle r}
+  
+ is the number of matches between the two sequences.[9] For problems with a bounded alphabet size, the Method of Four Russians can be used to reduce the running time of the dynamic programming algorithm by a logarithmic factor.[10]
+
+Behavior on random strings[edit]
+Main article: ChvÃ¡talâSankoff constants
+Beginning with ChvÃ¡tal & Sankoff (1975) harvtxt error: no target: CITEREFChvÃ¡talSankoff1975 (help),[11] a number of researchers have investigated the behavior of the longest common subsequence length when the two given strings are drawn randomly from the same alphabet. When the alphabet size is constant, the expected length of the LCS is proportional to the length of the two strings, and the constants of proportionality (depending on alphabet size) are known as the ChvÃ¡talâSankoff constants. Their exact values are not known, but upper and lower bounds on their values have been proven,[12] and it is known that they grow inversely proportionally to the square root of the alphabet size.[13] Simplified mathematical models of the longest common subsequence problem have been shown to be controlled by the TracyâWidom distribution.[14]
+
+See also[edit]
+Longest increasing subsequence
+Longest alternating subsequence
+Levenshtein distance
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}David Maier (1978). "The Complexity of Some Problems on Subsequences and Supersequences". J. ACM. ACM Press. 25 (2): 322â336. doi:10.1145/322063.322075. S2CIDÂ 16120634.
+
+^ Wagner, Robert; Fischer, Michael (January 1974). "The string-to-string correction problem". Journal of the ACM. 21 (1): 168â173. CiteSeerXÂ 10.1.1.367.5281. doi:10.1145/321796.321811. S2CIDÂ 13381535. Retrieved 2018-05-03.
+
+^ Jump up to: a b 
+L. Bergroth and H. Hakonen and T. Raita (2000). "A Survey of Longest Common Subsequence Algorithms". SPIRE. IEEE Computer Society: 39â48. doi:10.1109/SPIRE.2000.878178. ISBNÂ 0-7695-0746-8. S2CIDÂ 10375334.
+
+^ Ronald I. Greenberg (2003-08-06). "Bounds on the Number of Longest Common Subsequences". arXiv:cs.DM/0301030.
+
+^ Xia, Xuhua (2007). Bioinformatics and the Cell: Modern Computational Approaches in Genomics, Proteomics and Transcriptomics. New York: Springer. p.Â 24. ISBNÂ 978-0-387-71336-6.
+
+^ Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein (2001). "15.4". Introduction to Algorithms (2ndÂ ed.). MIT Press and McGraw-Hill. pp.Â 350â355. ISBNÂ 0-262-53196-8.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ Binette, Olivier (2022-01-23), â¡ StringCompare: Efficient String Comparison Functions, retrieved 2022-01-24
+
+^ Hirschberg, D. S. (1975). "A linear space algorithm for computing maximal common subsequences". Communications of the ACM. 18 (6): 341â343. doi:10.1145/360825.360861. S2CIDÂ 207694727.
+
+^ Apostolico, Alberto; Galil, Zvi (1997-05-29). Pattern Matching Algorithms. ISBNÂ 9780195354348.
+
+^ Masek, William J.; Paterson, Michael S. (1980), "A faster algorithm computing string edit distances", Journal of Computer and System Sciences, 20 (1): 18â31, doi:10.1016/0022-0000(80)90002-1, MRÂ 0566639.
+
+^ Chvatal, VÃ¡clÃ¡v; Sankoff, David (1975), "Longest common subsequences of two random sequences", Journal of Applied Probability, 12 (2): 306â315, doi:10.2307/3212444, JSTORÂ 3212444, MRÂ 0405531.
+
+^ Lueker, George S. (2009), "Improved bounds on the average length of longest common subsequences", Journal of the ACM, 56 (3), A17, doi:10.1145/1516512.1516519, MRÂ 2536132, S2CIDÂ 7232681.
+
+^ Kiwi, Marcos; Loebl, Martin; MatouÅ¡ek, JiÅÃ­ (2005), "Expected length of the longest common subsequence for large alphabets", Advances in Mathematics, 197 (2): 480â498, arXiv:math/0308234, doi:10.1016/j.aim.2004.10.012, MRÂ 2173842.
+
+^ Majumdar, Satya N.; Nechaev, Sergei (2005), "Exact asymptotic results for the Bernoulli matching model of sequence alignment", Physical Review E, 72 (2): 020901, 4, arXiv:q-bio/0410012, Bibcode:2005PhRvE..72b0901M, doi:10.1103/PhysRevE.72.020901, MRÂ 2177365, PMIDÂ 16196539, S2CIDÂ 11390762.
+
+
+External links[edit]
+
+
+
+The Wikibook Algorithm implementation has a page on the topic of: Longest common subsequence
+
+Dictionary of Algorithms and Data Structures: longest common subsequence
+A collection of implementations of the longest common subsequence in many programming languages
+Find Longest Common Subsequence in Python
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}show.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteStringsString metric
+Approximate string matching
+Bitap algorithm
+DamerauâLevenshtein distance
+Edit distance
+Gestalt Pattern Matching
+Hamming distance
+JaroâWinkler distance
+Lee distance
+Levenshtein automaton
+Levenshtein distance
+WagnerâFischer algorithm 
+String-searching algorithm
+ApostolicoâGiancarlo algorithm
+BoyerâMoore string-search algorithm
+BoyerâMooreâHorspool algorithm
+KnuthâMorrisâPratt algorithm
+RabinâKarp algorithm
+Multiple string searching
+AhoâCorasick
+Commentz-Walter algorithm
+Regular expression
+Comparison of regular-expression engines
+Regular grammar
+Thompson's construction
+Nondeterministic finite automaton
+Sequence alignment
+Hirschberg's algorithm
+NeedlemanâWunsch algorithm
+SmithâWaterman algorithm
+Data structure
+DAFSA
+Suffix array
+Suffix automaton
+Suffix tree
+Generalized suffix tree
+Rope
+Ternary search tree
+Trie
+Other
+Parsing
+Pattern matching
+Compressed pattern matching
+Longest common subsequence
+Longest common substring
+Sequential pattern mining
+Sorting
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Longest_common_subsequence_problem&oldid=1067748295"
+		Categories: Problems on stringsCombinatoricsDynamic programmingPolynomial-time problemsNP-complete problemsHidden categories: CS1 maint: multiple names: authors listArticles with short descriptionShort description is different from WikidataArticles needing additional references from March 2013All articles needing additional referencesHarv and Sfn no-target errors
+	

@@ -1,0 +1,850 @@
+
+Title:
+Linear congruential generator
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		  Two modulo-9 LCGs show how different parameters lead to different cycle lengths. Each row shows the state evolving until it repeats. The top row shows a generator with mÂ =Â 9, aÂ =Â 2, cÂ =Â 0, and a seed of 1, which produces a cycle of length 6. The second row is the same generator with a seed of 3, which produces a cycle of length 2. Using aÂ =Â 4 and cÂ =Â 1 (bottom row) gives a cycle length of 9 with any seed in [0,Â 8].
+A linear congruential generator (LCG) is an algorithm that yields a sequence of pseudo-randomized numbers calculated with a discontinuous piecewise linear equation. The method represents one of the oldest and best-known pseudorandom number generator algorithms. The theory behind them is relatively easy to understand, and they are easily implemented and fast, especially on computer hardware which can provide modular arithmetic by storage-bit truncation.
+The generator is defined by recurrence relation:
+
+
+  
+    
+      
+        
+          X
+          
+            n
+            +
+            1
+          
+        
+        =
+        
+          (
+          
+            a
+            
+              X
+              
+                n
+              
+            
+            +
+            c
+          
+          )
+        
+        
+          mod
+          
+            m
+          
+        
+      
+    
+    {\displaystyle X_{n+1}=\left(aX_{n}+c\right){\bmod {m}}}
+  
+
+where 
+  
+    
+      
+        X
+      
+    
+    {\displaystyle X}
+  
+ is the sequence of pseudorandom values, and
+
+
+  
+    
+      
+        m
+        ,
+        
+        0
+        <
+        m
+      
+    
+    {\displaystyle m,\,0<m}
+  
+ â the "modulus"
+
+  
+    
+      
+        a
+        ,
+        
+        0
+        <
+        a
+        <
+        m
+      
+    
+    {\displaystyle a,\,0<a<m}
+  
+ â the "multiplier"
+
+  
+    
+      
+        c
+        ,
+        
+        0
+        â¤
+        c
+        <
+        m
+      
+    
+    {\displaystyle c,\,0\leq c<m}
+  
+ â the "increment"
+
+  
+    
+      
+        
+          X
+          
+            0
+          
+        
+        ,
+        
+        0
+        â¤
+        
+          X
+          
+            0
+          
+        
+        <
+        m
+      
+    
+    {\displaystyle X_{0},\,0\leq X_{0}<m}
+  
+ â the "seed" or "start value"
+are integer constants that specify the generator. If cÂ =Â 0, the generator is often called a multiplicative congruential generator (MCG), or Lehmer RNG. If cÂ â Â 0, the method is called a mixed congruential generator.[1]:â4-â
+When cÂ â Â 0, a mathematician would call the recurrence an affine transformation, not a linear one, but the misnomer is well-established in computer science.[2]:â1â
+
+Contents
+
+1 History
+2 Period length
+
+2.1 m prime, c = 0
+2.2 m a power of 2, c = 0
+2.3 c â  0
+
+
+3 Parameters in common use
+4 Advantages and disadvantages
+5 Sample code
+
+5.1 Python code
+5.2 Free Pascal
+
+
+6 LCG derivatives
+7 Comparison with other PRNGs
+8 See also
+9 Notes
+10 References
+11 External links
+
+
+
+History[edit]
+The Lehmer generator was published in 1951[3] and the Linear congruential generator was published in 1958 by W. E. Thomson and A. Rotenberg.
+[4][5]
+
+Period length[edit]
+A benefit of LCGs is that with appropriate choice of parameters, the period is known and long. Although not the only criterion, too short a period is a fatal flaw in a pseudorandom number generator.[6]
+While LCGs are capable of producing pseudorandom numbers which can pass formal tests for randomness, the quality of the output is extremely sensitive to the choice of the parameters m and a.[7][1][8][9][10][2]  For example, aÂ =Â 1 and cÂ =Â 1 produces a simple modulo-m counter, which has a long period, but is obviously non-random.
+Historically, poor choices for a have led to ineffective implementations of LCGs. A particularly illustrative example of this is RANDU, which was widely used in the early 1970s and led to many results which are currently being questioned because of the use of this poor LCG.[11]
+There are three common families of parameter choice:
+
+m prime, c = 0[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Main article: Lehmer random number generator
+This is the original Lehmer RNG construction. The period is mâ1 if the multiplier a is chosen to be a primitive element of the integers modulo m. The initial state must be chosen between 1 and mâ1.
+One disadvantage of a prime modulus is that the modular reduction requires a double-width product and an explicit reduction step. Often a prime just less than a power of 2 is used (the Mersenne primes 231â1 and 261â1 are popular), so that the reduction modulo mÂ =Â 2eÂ âÂ d can be computed as (axÂ modÂ 2e)Â +Â dÂ âax/2eâ. This must be followed by a conditional subtraction of m if the result is too large, but the number of subtractions is limited to ad/m, which can be easily limited to one if d is small.
+If a double-width product is unavailable, and the multiplier is chosen carefully, Schrage's method[12] may be used. To do this, factor mÂ =Â qa+r, i.e. q = âm/aâ and r = m mod a. Then compute axÂ modÂ m = a(x mod q) â râx/qâ. Since xÂ modÂ q < q â¤ m/a, the first term is strictly less than am/aÂ =Â m. If a is chosen so that rÂ â¤Â q (and thus r/qÂ â¤Â 1), then the second term is also less than m: râx/qâ â¤ rx/q = x(r/q) â¤ x < m. Thus, both products can be computed with a single-width product, and the difference between them lies in the range [1âm,Â mâ1], so can be reduced to [0,Â mâ1] with a single conditional add.[13]
+A second disadvantage is that it is awkward to convert the value 1Â â¤Â xÂ <Â m to uniform random bits. If a prime just less than a power of 2 is used, sometimes the missing values are simply ignored.
+
+m a power of 2, c = 0[edit]
+Choosing m to be a power of 2, most often m = 232 or m = 264, produces a particularly efficient LCG, because this allows the modulus operation to be computed by simply truncating the binary representation. In fact, the most significant bits are usually not computed at all. There are, however, disadvantages.
+This form has maximal period m/4, achieved if aÂ â¡Â 3 or aÂ â¡Â 5 (mod 8). The initial state X0 must be odd, and the low three bits of X alternate between two states and are not useful. It can be shown that this form is equivalent to a generator with a modulus a quarter the size and c â  0.[1]
+A more serious issue with the use of a power-of-two modulus is that the low bits have a shorter period than the high bits. The lowest-order bit of X never changes (X is always odd), and the next two bits alternate between two states. (If aÂ â¡Â 5 (mod 8), then bit 1 never changes and bit 2 alternates. If aÂ â¡Â 3 (mod 8), then bit 2 never changes and bit 1 alternates.) Bit 3 repeats with a period of 4, bit 4 has a period of 8, and so on. Only the most significant bit of X achieves the full period.
+
+c â  0[edit]
+When c â  0, correctly chosen parameters allow a period equal to m, for all seed values. This will occur if and only if:[1]:â17â19â
+
+
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ and 
+  
+    
+      
+        c
+      
+    
+    {\displaystyle c}
+  
+ are relatively prime,
+
+  
+    
+      
+        a
+        â
+        1
+      
+    
+    {\displaystyle a-1}
+  
+ is divisible by all prime factors of 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+,
+
+  
+    
+      
+        a
+        â
+        1
+      
+    
+    {\displaystyle a-1}
+  
+ is divisible by 4 if 
+  
+    
+      
+        m
+      
+    
+    {\displaystyle m}
+  
+ is divisible by 4.
+These three requirements are referred to as the HullâDobell Theorem.[14][15]
+This form may be used with any m, but only works well for m with many repeated prime factors, such as a power of 2; using a computer's word size is the most common choice.  If m were a square-free integer, this would only allow aÂ â¡Â 1 (modÂ m), which makes a very poor PRNG; a selection of possible full-period multipliers is only available when m has repeated prime factors.
+Although the HullâDobell theorem provides maximum period, it is not sufficient to guarantee a good generator.  For example, it is desirable for aÂ âÂ 1 to not be any more divisible by prime factors of m than necessary.  Thus, if m is a power of 2, then aÂ âÂ 1 should be divisible by 4 but not divisible by 8, i.e.Â aÂ â¡Â 5Â (modÂ 8).[1]:âÂ§3.2.1.3â
+Indeed, most multipliers produce a sequence which fails one test for non-randomness or another, and finding a multiplier which is satisfactory to all applicable criteria[1]:âÂ§3.3.3â is quite challenging.  The spectral test is one of the most important tests.[16]
+Note that a power-of-2 modulus shares the problem as described above for cÂ =Â 0: the low k bits form a generator with modulus 2k and thus repeat with a period of 2k; only the most significant bit achieves the full period.  If a pseudorandom number less than r is desired, ârX/mâ is a much higher-quality result than X mod r.  Unfortunately, most programming languages make the latter much easier to write (XÂ % r), so it is the more commonly used form.
+The generator is not sensitive to the choice of c, as long as it is relatively prime to the modulus (e.g. if m is a power of 2, then c must be odd), so the value c=1 is commonly chosen.
+The series produced by other choices of c can be written as a simple function of the series when c=1.[1]:â11â  Specifically, if Y is the prototypical series defined by Y0 =Â 0 and Yn+1 =Â aYn+1 modÂ m, then a general series Xn+1 =Â aXn+c modÂ m can be written as an affine function of Y:
+
+
+  
+    
+      
+        
+          X
+          
+            n
+          
+        
+        =
+        (
+        
+          X
+          
+            0
+          
+        
+        (
+        a
+        â
+        1
+        )
+        +
+        c
+        )
+        
+          Y
+          
+            n
+          
+        
+        +
+        
+          X
+          
+            0
+          
+        
+        =
+        (
+        
+          X
+          
+            1
+          
+        
+        â
+        
+          X
+          
+            0
+          
+        
+        )
+        
+          Y
+          
+            n
+          
+        
+        +
+        
+          X
+          
+            0
+          
+        
+        
+          
+          (
+          mod
+          
+          m
+          )
+        
+        .
+      
+    
+    {\displaystyle X_{n}=(X_{0}(a-1)+c)Y_{n}+X_{0}=(X_{1}-X_{0})Y_{n}+X_{0}{\pmod {m}}.}
+  
+
+More generally, any two series X and Z with the same multiplier and modulus are related by
+
+
+  
+    
+      
+        
+          
+            
+              
+                X
+                
+                  n
+                
+              
+              â
+              
+                X
+                
+                  0
+                
+              
+            
+            
+              
+                X
+                
+                  1
+                
+              
+              â
+              
+                X
+                
+                  0
+                
+              
+            
+          
+        
+        =
+        
+          Y
+          
+            n
+          
+        
+        =
+        
+          
+            
+              
+                a
+                
+                  n
+                
+              
+              â
+              1
+            
+            
+              a
+              â
+              1
+            
+          
+        
+        =
+        
+          
+            
+              
+                Z
+                
+                  n
+                
+              
+              â
+              
+                Z
+                
+                  0
+                
+              
+            
+            
+              
+                Z
+                
+                  1
+                
+              
+              â
+              
+                Z
+                
+                  0
+                
+              
+            
+          
+        
+        
+          
+          (
+          mod
+          
+          m
+          )
+        
+        .
+      
+    
+    {\displaystyle {X_{n}-X_{0} \over X_{1}-X_{0}}=Y_{n}={a^{n}-1 \over a-1}={Z_{n}-Z_{0} \over Z_{1}-Z_{0}}{\pmod {m}}.}
+  
+
+Parameters in common use[edit]
+The following table lists the parameters of LCGs in common use, including built-in rand() functions in runtime libraries of various compilers.  This table is to show popularity, not examples to emulate; many of these parameters are poor.  Tables of good parameters are available.[10][2]
+
+
+
+Source
+modulusm
+multipliera
+incrementc
+output bits of seed in rand() or Random(L)
+
+
+ZX81
+216 + 1
+75
+74
+
+
+
+Numerical Recipes
+232
+1664525
+1013904223
+
+
+
+Borland C/C++
+232
+22695477
+1
+bits 30..16 in rand(), 30..0 in lrand()
+
+
+glibc (used by GCC)[17]
+
+231
+1103515245
+12345
+bits 30..0
+
+
+ANSI C: Watcom, Digital Mars, CodeWarrior, IBM VisualAge C/C++ [18]C90, C99, C11: Suggestion in the ISO/IEC 9899,[19] C17
+231
+1103515245
+12345
+bits 30..16
+
+
+Borland Delphi, Virtual Pascal
+232
+134775813
+1
+bits 63..32 of (seed Ã L)
+
+
+Turbo Pascal
+232
+134775813 (808840516)
+1
+
+
+
+Microsoft Visual/Quick C/C++
+232
+214013 (343FD16)
+2531011 (269EC316)
+bits 30..16
+
+
+Microsoft Visual Basic (6 and earlier)[20]
+224
+1140671485 (43FD43FD16)
+12820163 (C39EC316)
+
+
+
+RtlUniform from Native API[21]
+231 â 1
+
+2147483629 (7FFFFFED16)
+2147483587 (7FFFFFC316)
+
+
+
+Apple CarbonLib, C++11's minstd_rand0[22]
+231 â 1
+16807
+0
+see MINSTD
+
+
+C++11's minstd_rand[22]
+231 â 1
+48271
+0
+see MINSTD
+
+
+MMIX by Donald Knuth
+264
+6364136223846793005
+1442695040888963407
+
+
+
+Newlib, Musl
+264
+6364136223846793005
+1
+bits 63..32
+
+
+VMS's MTH$RANDOM,[23] old versions of glibc
+232
+69069 (10DCD16)
+1
+
+
+
+Java's java.util.Random, POSIX [ln]rand48, glibc [ln]rand48[_r]
+248
+25214903917 (5DEECE66D16)
+11
+bits 47..16
+
+
+
+random0[24][25][26][27][28]
+
+
+134456 = 2375
+8121
+28411
+
+  
+    
+      
+        
+          
+            
+              X
+              
+                n
+              
+            
+            134456
+          
+        
+      
+    
+    {\displaystyle {\frac {X_{n}}{134456}}}
+  
+
+
+
+POSIX[29] [jm]rand48, glibc [mj]rand48[_r]
+248
+25214903917 (5DEECE66D16)
+11
+bits 47..15
+
+
+POSIX [de]rand48, glibc [de]rand48[_r]
+248
+25214903917 (5DEECE66D16)
+11
+bits 47..0
+
+
+cc65[30]
+223
+65793 (1010116)
+4282663 (41592716)
+bits 22..8
+
+
+cc65
+232
+16843009 (101010116)
+826366247 (3141592716)
+bits 31..16
+
+
+Formerly common: RANDU [11]
+231
+65539
+0
+
+
+As shown above, LCGs do not always use all of the bits in the values they produce. For example, the Java implementation operates with 48-bit values at each iteration but returns only their 32 most significant bits. This is because the higher-order bits have longer periods than the lower-order bits (see below). LCGs that use this truncation technique produce statistically better values than those that do not. This is especially noticeable in scripts that use the mod operation to reduce range; modifying the random number mod 2 will lead to alternating 0 and 1 without truncation.
+
+Advantages and disadvantages[edit]
+This section needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.  (July 2021) (Learn how and when to remove this template message)
+LCGs are fast and require minimal memory (one modulo-m number, often 32 or 64 bits) to retain state. This makes them valuable for simulating multiple independent streams.  LCGs are not intended, and must not be used, for cryptographic applications; use a cryptographically secure pseudorandom number generator for such applications.
+
+  Hyperplanes of a linear congruential generator in three dimensions. This structure is what the spectral test measures.
+Although LCGs have a few specific weaknesses, many of their flaws come from having too small a state. The fact that people have been lulled for so many years into using them with such small moduli can be seen as a testament to strength of the technique. A LCG with large enough state can pass even stringent statistical tests; a modulo-2 LCG which returns the high 32 bits passes TestU01's SmallCrush suite,[citation needed] and a 96-bit LCG passes the most stringent BigCrush suite.[31]
+For a specific example, an ideal random number generator with 32 bits of output is expected (by the Birthday theorem) to begin duplicating earlier outputs after âm âÂ 216 results. Any PRNG whose output is its full, untruncated state will not produce duplicates until its full period elapses, an easily detectable statistical flaw. For related reasons, any PRNG should have a period longer than the square of the number of outputs required. Given modern computer speeds, this means a period of 264 for all but the least demanding applications, and longer for demanding simulations.
+One flaw specific to LCGs is that, if used to choose points in an n-dimensional space, the points will lie on, at most, nân!âm hyperplanes (Marsaglia's theorem, developed by George Marsaglia).[7] This is due to serial correlation between successive values of the sequence Xn. Carelessly chosen multipliers will usually have far fewer, widely spaced planes, which can lead to problems. The spectral test, which is a simple test of an LCG's quality, measures this spacing and allows a good multiplier to be chosen.
+The plane spacing depends both on the modulus and the multiplier. A large enough modulus can reduce this distance below the resolution of double precision numbers. The choice of the multiplier becomes less important when the modulus is large. It is still necessary to calculate the spectral index and make sure that the multiplier is not a bad one, but purely probabilistically it becomes extremely unlikely to encounter a bad multiplier when the modulus is larger than about 264.
+Another flaw specific to LCGs is the short period of the low-order bits when m is chosen to be a power of 2. This can be mitigated by using a modulus larger than the required output, and using the most significant bits of the state.
+Nevertheless, for some applications LCGs may be a good option. For instance, in an embedded system, the amount of memory available is often severely limited. Similarly, in an environment such as a video game console taking a small number of high-order bits of an LCG may well suffice.  (The low-order bits of LCGs when m is a power of 2 should never be relied on for any degree of randomness whatsoever.)  The low order bits go through very short cycles.  In particular, any full-cycle LCG, when m is a power of 2, will produce alternately odd and even results.
+LCGs should be evaluated very carefully for suitability in non-cryptographic applications where high-quality randomness is critical. For Monte Carlo simulations, an LCG must use a modulus greater and preferably much greater than the cube of the number of random samples which are required. This means, for example, that a (good) 32-bit LCG can be used to obtain about a thousand random numbers; a 64-bit LCG is good for about 221 random samples (a little over two million), etc. For this reason, in practice LCGs are not suitable for large-scale Monte Carlo simulations.
+
+Sample code[edit]
+Python code[edit]
+The following is an implementation of an LCG in Python, in the form of a generator:
+
+from typing import Generator
+
+def lcg(modulus: int, a: int, c: int, seed: int) -> Generator[int, None, None]:
+    """Linear congruential generator."""
+    while True:
+        seed = (a * seed + c) % modulus
+        yield seed
+
+Free Pascal[edit]
+Free Pascal uses a Mersenne Twister as its default pseudo random number generator whereas Delphi uses a LCG. Here is a Delphi compatible example in Free Pascal based on the information in the table above. Given the same RandSeed value it generates the same sequence of random numbers as Delphi.
+
+unit lcg_random;
+{$ifdef fpc}{$mode delphi}{$endif}
+interface
+
+function LCGRandom: extended; overload; inline;
+function LCGRandom(const range:longint): longint; overload; inline;
+
+implementation
+function IM: cardinal; inline;
+begin
+  RandSeed := RandSeed * 134775813 + 1;
+  Result := RandSeed;
+end;
+
+function LCGRandom: extended; overload; inline;
+begin
+  Result := IM * 2.32830643653870e-10;
+end;
+
+function LCGRandom(const range: longint): longint; overload; inline;
+begin
+  Result := IM * range shr 32;
+end;
+
+Like all pseudorandom number generators, a LCG needs to store state and alter it each time it generates a new number. Multiple threads may access this state simultaneously causing a race condition. Implementations should use different state each with unique initialization for different threads to avoid equal sequences of random numbers on simultaneously executing threads.
+
+LCG derivatives[edit]
+There are several generators which are linear congruential generators in a different form, and thus the techniques used to analyze LCGs can be applied to them.
+One method of producing a longer period is to sum the outputs of several LCGs of different periods having a large least common multiple; the WichmannâHill generator is an example of this form. (We would prefer them to be completely coprime, but a prime modulus implies an even period, so there must be a common factor of 2, at least.) This can be shown to be equivalent to a single LCG with a modulus equal to the product of the component LCG moduli.
+Marsaglia's add-with-carry and subtract-with-borrow PRNGs with a word size of b=2w and lags r and s (rÂ >Â s) are equivalent to LCGs with a modulus of brÂ Â±Â bsÂ Â±Â 1.[32][33]
+Multiply-with-carry PRNGs with a multiplier of a are equivalent to LCGs with a large prime modulus of abrâ1 and a power-of-2 multiplier b.
+A permuted congruential generator begins with a power-of-2-modulus LCG and applies an output transformation to eliminate the short period problem in the low-order bits.
+
+Comparison with other PRNGs[edit]
+The other widely used primitive for obtaining long-period pseudorandom sequences is the linear-feedback shift register construction, which is based on arithmetic in GF(2)[x], the polynomial ring over GF(2).  Rather than integer addition and multiplication, the basic operations are exclusive-or and carry-less multiplication, which is usually implemented as a sequence of logical shifts.  These have the advantage that all of their bits are full-period; they do not suffer from the weakness in the low-order bits that plagues arithmetic modulo 2k.[34]
+Examples of this family include xorshift generators and the Mersenne twister.  The latter provides a very long period (219937â1) and variate uniformity, but it fails some statistical tests.[35]  Lagged Fibonacci generators also fall into this category; although they use arithmetic addition, their period is ensured by an LFSR among the least-significant bits.
+It is easy to detect the structure of a linear-feedback shift register with appropriate tests[36] such as the linear complexity test implemented in the TestU01 suite; a boolean circulant matrix initialized from consecutive bits of an LFSR will never have rank greater than the degree of the polynomial.  Adding a non-linear output mixing function (as in the xoshiro256** and permuted congruential generator constructions) can greatly improve the performance on statistical tests.
+Another structure for a PRNG is a very simple recurrence function combined with a powerful output mixing function.  This includes counter mode block ciphers and non-cryptographic generators such as SplitMix64.
+A structure similar to LCGs, but not equivalent, is the multiple-recursive generator: XnÂ = (a1Xnâ1Â + a2Xnâ2Â + Â·Â·Â·Â + akXnâk) modÂ m for kÂ â¥Â 2.  With a prime modulus, this can generate periods up to mkâ1, so is a useful extension of the LCG structure to larger periods.
+A powerful technique for generating high-quality pseudorandom numbers is to combine two or more PRNGs of different structure; the sum of an LFSR and an LCG (as in the KISS or xorwow constructions) can do very well at some cost in speed.
+
+See also[edit]
+List of random number generators â other PRNGs including some with better statistical qualitites
+ACORN generator â not to be confused with ACG which term appears to have been used for variants of LCG and LFSR generators
+Permuted congruential generator
+Full cycle
+Inversive congruential generator
+Multiply-with-carry
+Lehmer RNG (sometimes called the ParkâMiller RNG)
+Combined linear congruential generator
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ a b c d e f g .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Knuth, Donald (1997). Seminumerical Algorithms. The Art of Computer Programming. Vol.Â 2 (3rdÂ ed.). Reading, MA: Addison-Wesley Professional. pp.Â 10â26.
+
+^ a b c Steele, Guy; Vigna, Sebastiano (15 January 2020). "Computationally easy, spectrally good multipliers for congruential pseudorandom number generators". arXiv:2001.05304 [cs.DS]. At this point it is unlikely that the now-traditional names will be corrected. Mathematics of Computation (to appear).  Associated data at https://github.com/vigna/CPRNG.
+
+^ Lehmer, Derrick H. (1951). "Mathematical methods in large-scale computing units". Proceedings of 2nd Symposium on Large-Scale Digital Calculating Machinery: 141â146.
+
+^ Thomson, W. E. (1958). "A Modified Congruence Method of Generating Pseudo-random Numbers". The Computer Journal. 1 (2): 83. doi:10.1093/comjnl/1.2.83.
+
+^ Rotenberg, A. (1960). "A New Pseudo-Random Number Generator". Journal of the ACM. 7 (1): 75â77. doi:10.1145/321008.321019. S2CIDÂ 16770825.
+
+^ L'Ecuyer, Pierre (13 July 2017).  Chan, W. K. V.; D'Ambrogio, A.; Zacharewicz, G.; Mustafee, N.; Wainer, G.; Page, E. (eds.). History of Uniform Random Number Generation (PDF). Proceedings of the 2017 Winter Simulation Conference (to appear). Las Vegas, United States. hal-01561551.
+
+^ a b Marsaglia, George (September 1968). "Random Numbers Fall Mainly in the Planes" (PDF). PNAS. 61 (1): 25â28. Bibcode:1968PNAS...61...25M. doi:10.1073/pnas.61.1.25. PMCÂ 285899. PMIDÂ 16591687.
+
+^ Park, Stephen K.; Miller, Keith W. (October 1988). "Random Number Generators: Good Ones Are Hard To Find" (PDF). Communications of the ACM. 31 (10): 1192â1201. doi:10.1145/63039.63042. S2CIDÂ 207575300.
+
+^ HÃ¶rmann, Wolfgang; Derflinger, Gerhard (1993). "A Portable Uniform Random Number Generator Well Suited for the Rejection Method" (PDF). ACM Transactions on Mathematical Software. 19 (4): 489â495. CiteSeerXÂ 10.1.1.52.3811. doi:10.1145/168173.168414. S2CIDÂ 15238956. a multiplier about as small as âm, produces random numbers with a bad one-dimensional distribution.
+
+^ a b L'Ecuyer, Pierre (1999). "Tables of Linear Congruential Generators of Different Sizes and Good Lattice Structure". Mathematics of Computation. 68 (225): 249â260. Bibcode:1999MaCom..68..249L. CiteSeerXÂ 10.1.1.34.1024. doi:10.1090/S0025-5718-99-00996-5.
+ Be sure to read the Errata as well.
+
+^ a b Press, William H.;  etÂ al. (1992). Numerical Recipes in Fortran 77: The Art of Scientific Computing (2ndÂ ed.). ISBNÂ 978-0-521-43064-7.
+
+^ Jain, Raj (9 July 2010). "Computer Systems Performance Analysis Chapter 26: Random-Number Generation" (PDF). pp.Â 19â20. Retrieved 2017-10-31.
+
+^ Fenerty, Paul (11 September 2006). "Schrage's Method". Retrieved 2017-10-31.
+
+^ Hull, T. E.; Dobell, A. R. (July 1962). "Random Number Generators" (PDF). SIAM Review. 4 (3): 230â254. Bibcode:1962SIAMR...4..230H. doi:10.1137/1004061. hdl:1828/3142. Retrieved 2016-06-26.
+
+^ Severance, Frank (2001). System Modeling and Simulation. John Wiley & Sons, Ltd. p.Â 86. ISBNÂ 978-0-471-49694-6.
+
+^ Austin, David (March 2008). "Random Numbers: Nothing Left to Chance". American Mathematical Society.
+
+^ Implementation in glibc-2.26 release. See the code after the test for "TYPE_0"; the GNU C library's rand() in stdlib.h uses a simple (single state) linear congruential generator only in case that the state is declared as 8 bytes. If the state is larger (an array), the generator becomes an additive feedback generator (initialized using minstd_rand0) and the period increases. See the simplified code that reproduces the random sequence from this library.
+
+^ K. Entacher (21 August 1997). A collection of selected pseudorandom number generators with linear structures. CiteSeerXÂ 10.1.1.53.3686. Retrieved 16 June 2012.
+
+^ "Last public Committee Draft from April 12, 2011" (PDF). p.Â 346f. Retrieved 21 Dec 2014.
+
+^ "How Visual Basic Generates Pseudo-Random Numbers for the RND Function". Microsoft Support. Microsoft. Retrieved 17 June 2011.
+
+^ In spite of documentation on MSDN, RtlUniform uses LCG, and not Lehmer's algorithm, implementations before Windows Vista are flawed, because the result of multiplication is cut to 32 bits, before modulo is applied
+
+^ a b "ISO/IEC 14882:2011". ISO. 2 September 2011. Retrieved 3 September 2011.
+
+^ "GNU Scientific Library: Other random number generators".
+
+^ 
+Stephen J. Chapman.
+"Example 6.4 â Random Number Generator".
+"MATLAB Programming for Engineers".
+2015.
+pp. 253â256.
+
+^ 
+Stephen J. Chapman.
+"Example 6.4 â Random Number Generator".
+"MATLAB Programming with Applications for Engineers".
+2012.
+pp. 292â295.
+
+^ 
+S. J. Chapman.
+random0.
+2004.
+
+^ 
+Stephen J. Chapman.
+"Introduction to Fortran 90/95".
+1998.
+pp. 322â324.
+
+^ 
+Wu-ting Tsai.
+"'Module': A Major Feature of the Modern Fortran".
+pp. 6â7.
+
+^ The Open Group Base Specifications Issue 7
+IEEE Std 1003.1, 2013 Edition
+
+^ Cadot, Sidney. "rand.s". cc65. Retrieved 8 July 2016.
+
+^ O'Neill, Melissa E. (5 September 2014). PCG: A Family of Simple Fast Space-Efficient Statistically Good Algorithms for Random Number Generation (PDF) (Technical report). Harvey Mudd College. pp.Â 6â7. HMC-CS-2014-0905.
+
+^ Tezuka, Shu; L'Ecuyer, Pierre (October 1993). On the Lattice Structure of the Add-with-Carry and Subtract-with-Borrow Random Number Generators (PDF). Workshop on Stochastic Numerics. Kyoto University.
+
+^ Tezuka, Shi; L'Ecuyer, Pierre (December 1992). Analysis of Add-with-Carry and Subtract-with-Borrow Generators (PDF). Proceedings of the 1992 Winter Simulation Conference. pp.Â 443â447.
+
+^ Gershenfeld, Neil (1999). "Section 5.3.2: Linear Feedback". The Nature of Mathematical Modeling (FirstÂ ed.). Cambridge University Press. p.Â 59. ISBNÂ 978-0-521-57095-4.
+
+^ Matsumoto, Makoto; Nishimura, Takuji (January 1998). "Mersenne twister: a 623-dimensionally equidistributed uniform pseudo-random number generator" (PDF). ACM Transactions on Modeling and Computer Simulation. 8 (1): 3â30. CiteSeerXÂ 10.1.1.215.1141. doi:10.1145/272991.272995. S2CIDÂ 3332028. Archived from the original (PDF) on 2017-11-07.
+
+^ Eastlake, Donald E. 3rd; Schiller, Jeffrey I.; Crocker, Steve (June 2005). "Traditional Pseudo-random Sequences". Randomness Requirements for Security. IETF. sec.Â 6.1.3. doi:10.17487/RFC4086. BCP 106. RFC 4086.
+
+
+References[edit]
+Press, WH; Teukolsky, SA; Vetterling, WT; Flannery, BP (2007), "Section 7.1.1. Some History", Numerical Recipes: The Art of Scientific Computing (3rdÂ ed.), New York: Cambridge University Press, ISBNÂ 978-0-521-88068-8
+Gentle, James E., (2003). Random Number Generation and Monte Carlo Methods, 2nd edition, Springer, ISBNÂ 0-387-00178-6.
+Joan Boyar (1989). "Inferring sequences produced by pseudo-random number generators" (PDF). Journal of the ACM. 36 (1): 129â141. doi:10.1145/58562.59305. S2CIDÂ 3565772. (in this paper, efficient algorithms are given for inferring sequences produced by certain pseudo-random number generators).
+External links[edit]
+The simulation Linear Congruential Generator visualizes the correlations between the pseudo-random numbers when manipulating the parameters.
+Security of Random Number Generation: An Annotated Bibliography
+Linear Congruential Generators post to sci.math
+The "Death of Art" computer art project at Goldstein Technologies LLC, uses an LCG to generate 33,554,432 images
+P. L'Ecuyer and R. Simard, "TestU01: A C Library for Empirical Testing of Random Number Generators", May 2006, revised November 2006, ACM Transactions on Mathematical Software, 33, 4, Article 22, August 2007.
+Article about another way of cracking LCG
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Linear_congruential_generator&oldid=1068909592"
+		Categories: Pseudorandom number generatorsModular arithmeticHidden categories: Articles needing additional references from July 2021All articles needing additional referencesAll articles with unsourced statementsArticles with unsourced statements from November 2017Articles with example Python (programming language) code
+	

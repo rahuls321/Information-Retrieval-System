@@ -1,0 +1,938 @@
+
+Title:
+B-tree
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		A self-balancing, tree-based data structure, that allows read/write access in logarithmic time
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with Binary tree or B+-tree.
+.mw-parser-output .infobox-subbox{padding:0;border:none;margin:-3px;width:auto;min-width:100%;font-size:100%;clear:none;float:none;background-color:transparent}.mw-parser-output .infobox-3cols-child{margin:auto}.mw-parser-output .infobox .navbar{font-size:100%}body.skin-minerva .mw-parser-output .infobox-header,body.skin-minerva .mw-parser-output .infobox-subheader,body.skin-minerva .mw-parser-output .infobox-above,body.skin-minerva .mw-parser-output .infobox-title,body.skin-minerva .mw-parser-output .infobox-image,body.skin-minerva .mw-parser-output .infobox-full-data,body.skin-minerva .mw-parser-output .infobox-below{text-align:center}B-treeTypeTree (data structure)Invented1970[1]Invented byRudolf Bayer, Edward M. McCreightTime complexity in big O notationAlgorithm
+
+Average
+Worst caseSpace
+
+O(n)
+O(n)Search
+
+O(log n)
+O(log n)Insert
+
+O(log n)
+O(log n)Delete
+
+O(log n)
+O(log n)
+In computer science, a B-tree is a self-balancing tree data structure that maintains sorted data and allows searches, sequential access, insertions, and deletions in logarithmic time. The B-tree generalizes the binary search tree, allowing for nodes with more than two children.[2] Unlike other self-balancing binary search trees, the B-tree is well suited for storage systems that read and write relatively large blocks of data, such as disks. It is commonly used in databases and file systems.
+
+Contents
+
+1 Origin
+2 Definition
+
+2.1 Differences in terminology
+
+
+3 Informal description
+
+3.1 Variants
+
+
+4 B-tree usage in databases
+
+4.1 Time to search a sorted file
+4.2 An index speeds the search
+4.3 Insertions and deletions
+4.4 Advantages of B-tree usage for databases
+
+
+5 Best case and worst case heights
+6 Algorithms
+
+6.1 Search
+6.2 Insertion
+6.3 Deletion
+
+6.3.1 Deletion from a leaf node
+6.3.2 Deletion from an internal node
+6.3.3 Rebalancing after deletion
+
+
+6.4 Sequential access
+6.5 Initial construction
+
+
+7 In filesystems
+8 Performance
+9 Variations
+
+9.1 Access concurrency
+9.2 Parallel algorithms
+
+
+10 See also
+11 Notes
+12 References
+
+12.1 Original papers
+
+
+13 External links
+
+
+
+Origin[edit]
+B-trees were invented by Rudolf Bayer and Edward M. McCreight while working at Boeing Research Labs, for the purpose of efficiently managing index pages for large random-access files. The basic assumption was that indexes would be so voluminous that only small chunks of the tree could fit in main memory. Bayer and McCreight's paper, Organization and maintenance of large ordered indices,[1] was first circulated in July 1970 and later published in Acta Informatica.[3]
+Bayer and McCreight never explained what, if anything, the B stands for: Boeing, balanced, broad, bushy, and Bayer have been suggested.[4][5][6] McCreight has said that "the more you think about what the B in B-trees means, the better you understand B-trees."[5]
+
+Definition[edit]
+According to Knuth's definition, a B-tree of order m is a tree which satisfies the following properties:
+
+Every node has at most m children.
+Every non-leaf node (except root) has at least âm/2â child nodes.
+The root has at least two children if it is not a leaf node.
+A non-leaf node with k children contains k â 1 keys.
+All leaves appear in the same level and carry no information.
+Each internal node's keys act as separation values which divide its subtrees. For example, if an internal node has 3 child nodes (or subtrees) then it must have 2 keys: a1 and a2. All values in the leftmost subtree will be less than a1, all values in the middle subtree will be between a1 and a2, and all values in the rightmost subtree will be greater than a2.
+
+Internal nodes
+Internal nodes are all nodes except for leaf nodes and the root node. They are usually represented as an ordered set of elements and child pointers. Every internal node contains a maximum of U children and a minimum of L children. Thus, the number of elements is always 1 less than the number of child pointers (the number of elements is between Lâ1 and Uâ1). U must be either 2L or 2Lâ1; therefore each internal node is at least half full. The relationship between U and L implies that two half-full nodes can be joined to make a legal node, and one full node can be split into two legal nodes (if there's room to push one element up into the parent). These properties make it possible to delete and insert new values into a B-tree and adjust the tree to preserve the B-tree properties.
+The root node
+The root node's number of children has the same upper limit as internal nodes, but has no lower limit. For example, when there are fewer than Lâ1 elements in the entire tree, the root will be the only node in the tree with no children at all.
+Leaf nodes
+In Knuth's terminology, leaf nodes do not carry any information. The internal nodes that are one level above the leaves are what would be called "leaves" by other authors: these nodes only store keys (at most m-1, and at least m/2-1 if they are not the root) and pointers to nodes carrying no information.
+A B-tree of depth n+1 can hold about U times as many items as a B-tree of depth n, but the cost of search, insert, and delete operations grows with the depth of the tree. As with any balanced tree, the cost grows much more slowly than the number of elements.
+Some balanced trees store values only at leaf nodes, and use different kinds of nodes for leaf nodes and internal nodes. B-trees keep values in every node in the tree except leaf nodes.
+
+Differences in terminology[edit]
+The literature on B-trees is not uniform in its terminology.[7]
+Bayer and McCreight (1972),[3] Comer (1979),[2] and others define the order of B-tree as the minimum number of keys in a non-root node.[8] points out that terminology is ambiguous because the maximum number of keys is not clear. An order 3 B-tree might hold a maximum of 6 keys or a maximum of 7 keys. Knuth (1998) avoids the problem by defining the order to be the maximum number of children (which is one more than the maximum number of keys).[9]
+The term leaf is also inconsistent. Bayer and McCreight (1972)[3] considered the leaf level to be the lowest level of keys, but Knuth considered the leaf level to be one level below the lowest keys.[10] There are many possible implementation choices. In some designs, the leaves may hold the entire data record; in other designs, the leaves may only hold pointers to the data record. Those choices are not fundamental to the idea of a B-tree.[11]
+For simplicity, most authors assume there are a fixed number of keys that fit in a node. The basic assumption is the key size is fixed and the node size is fixed. In practice, variable length keys may be employed.[12]
+
+Informal description[edit]
+  A B-tree (Bayer & McCreight 1972) of order 5 (Knuth 1998).
+In B-trees, internal (non-leaf) nodes can have a variable number of child nodes within some pre-defined range. When data is inserted or removed from a node, its number of child nodes changes. In order to maintain the pre-defined range, internal nodes may be joined or split. Because a range of child nodes is permitted, B-trees do not need re-balancing as frequently as other self-balancing search trees, but may waste some space, since nodes are not entirely full. The lower and upper bounds on the number of child nodes are typically fixed for a particular implementation. For example, in a 2â3 tree (sometimes referred to as a 2â3 B-tree), each internal node may have only 2 or 3 child nodes.
+Each internal node of a B-tree contains a number of keys. The keys act as separation values which divide its subtrees. For example, if an internal node has 3 child nodes (or subtrees) then it must have 2 keys: 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+      
+    
+    {\displaystyle a_{1}}
+  
+ and 
+  
+    
+      
+        
+          a
+          
+            2
+          
+        
+      
+    
+    {\displaystyle a_{2}}
+  
+. All values in the leftmost subtree will be less than 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+      
+    
+    {\displaystyle a_{1}}
+  
+, all values in the middle subtree will be between 
+  
+    
+      
+        
+          a
+          
+            1
+          
+        
+      
+    
+    {\displaystyle a_{1}}
+  
+ and 
+  
+    
+      
+        
+          a
+          
+            2
+          
+        
+      
+    
+    {\displaystyle a_{2}}
+  
+, and all values in the rightmost subtree will be greater than 
+  
+    
+      
+        
+          a
+          
+            2
+          
+        
+      
+    
+    {\displaystyle a_{2}}
+  
+.
+Usually, the number of keys is chosen to vary between 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ and 
+  
+    
+      
+        2
+        d
+      
+    
+    {\displaystyle 2d}
+  
+, where 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ is the minimum number of keys, and 
+  
+    
+      
+        d
+        +
+        1
+      
+    
+    {\displaystyle d+1}
+  
+ is the minimum degree or branching factor of the tree. In practice, the keys take up the most space in a node. The factor of 2 will guarantee that nodes can be split or combined. If an internal node has 
+  
+    
+      
+        2
+        d
+      
+    
+    {\displaystyle 2d}
+  
+ keys, then adding a key to that node can be accomplished by splitting the hypothetical 
+  
+    
+      
+        2
+        d
+        +
+        1
+      
+    
+    {\displaystyle 2d+1}
+  
+ key node into two 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ key nodes and moving the key that would have been in the middle to the parent node. Each split node has the required minimum number of keys. Similarly, if an internal node and its neighbor each have 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ keys, then a key may be deleted from the internal node by combining it with its neighbor. Deleting the key would make the internal node have 
+  
+    
+      
+        d
+        â
+        1
+      
+    
+    {\displaystyle d-1}
+  
+ keys; joining the neighbor would add 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ keys plus one more key brought down from the neighbor's parent. The result is an entirely full node of 
+  
+    
+      
+        2
+        d
+      
+    
+    {\displaystyle 2d}
+  
+ keys.
+The number of branches (or child nodes) from a node will be one more than the number of keys stored in the node. In a 2â3 B-tree, the internal nodes will store either one key (with two child nodes) or two keys (with three child nodes). A B-tree is sometimes described with the parameters 
+  
+    
+      
+        (
+        d
+        +
+        1
+        )
+      
+    
+    {\displaystyle (d+1)}
+  
+â
+  
+    
+      
+        (
+        2
+        d
+        +
+        1
+        )
+      
+    
+    {\displaystyle (2d+1)}
+  
+ or simply with the highest branching order, 
+  
+    
+      
+        (
+        2
+        d
+        +
+        1
+        )
+      
+    
+    {\displaystyle (2d+1)}
+  
+.
+A B-tree is kept balanced after insertion by splitting a would-be overfilled node, of 
+  
+    
+      
+        2
+        d
+        +
+        1
+      
+    
+    {\displaystyle 2d+1}
+  
+ keys, into two 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+-key siblings and inserting the mid-value key into the parent. Depth only increases when the root is split, maintaining balance. Similarly, a B-tree is kept balanced after deletion by merging or redistributing keys among siblings to maintain the 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+-key minimum for non-root nodes. A merger reduces the number of keys in the parent potentially forcing it to merge or redistribute keys with its siblings, and so on. The only change in depth occurs when the root has two children, of 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ and (transitionally) 
+  
+    
+      
+        d
+        â
+        1
+      
+    
+    {\displaystyle d-1}
+  
+ keys, in which case the two siblings and parent are merged, reducing the depth by one.
+This depth will increase slowly as elements are added to the tree, but an increase in the overall depth is infrequent, and results in all leaf nodes being one more node farther away from the root.
+B-trees have substantial advantages over alternative implementations when the time to access the data of a node greatly exceeds the time spent processing that data, because then the cost of accessing the node may be amortized over multiple operations within the node. This usually occurs when the node data are in secondary storage such as disk drives. By maximizing the number of keys within each internal node, the height of the tree decreases and the number of expensive node accesses is reduced. In addition, rebalancing of the tree occurs less often. The maximum number of child nodes depends on the information that must be stored for each child node and the size of a full disk block or an analogous size in secondary storage. While 2â3 B-trees are easier to explain, practical B-trees using secondary storage need a large number of child nodes to improve performance.
+
+Variants[edit]
+The term B-tree may refer to a specific design or it may refer to a general class of designs. In the narrow sense, a B-tree stores keys in its internal nodes but need not store those keys in the records at the leaves. The general class includes variations such as the B+ tree, the B* tree and the B*+ tree.
+
+In the B+ tree, copies of the keys are stored in the internal nodes; the keys and records are stored in leaves; in addition, a leaf node may include a pointer to the next leaf node to speed sequential access.[2]
+The B* tree balances more neighboring internal nodes to keep the internal nodes more densely packed.[2] This variant ensures non-root nodes are at least 2/3 full instead of 1/2.[13] As the most costly part of operation of inserting the node in B-tree is splitting the node, B*-trees are created to postpone splitting operation as long as they can.[14] To maintain this, instead of immediately splitting up a node when it gets full, its keys are shared with a node next to it. This spill operation is less costly to do than split, because it requires only shifting the keys between existing nodes, not allocating memory for a new one.[14] For inserting, first it is checked whether the node has some free space in it, and if so, the new key is just inserted in the node. However, if the node is full (it has m â 1  keys, where  m is the order of the tree as maximum number of pointers to subtrees from one node), it needs to be checked whether the right sibling exists and has some free space. If the right sibling has j < m â 1  keys, then keys are redistributed between the two sibling nodes as evenly as possible. For this purpose, m - 1  keys from the current node, the new key inserted, one key from the parent node and j keys from the sibling node are seen as an ordered array of m + j + 1 keys. The array becomes split by half, so that â(m + j + 1)/2â lowest keys stay in the current node, the next (middle) key is inserted in the parent and the rest go to the right sibling.[14] (The newly inserted key might end up in any of the three places.) The situation when right sibling is full, and left isn't is analogous.[14] When both the sibling nodes are full, then the two nodes (current node and a sibling) are split into three and one more key is shifted up the tree, to the parent node.[14] If the parent is full, then spill/split operation propagates towards the root node.[14] Deleting nodes is somewhat more complex than inserting however.
+The B*+ tree combines the main B+ tree and B* tree features together.[15]
+B-trees can be turned into order statistic trees to allow rapid searches for the Nth record in key order, or counting the number of records between any two records, and various other related operations.[16]
+B-tree usage in databases[edit]
+Time to search a sorted file[edit]
+Usually, sorting and searching algorithms have been characterized by the number of comparison operations that must be performed using order notation. A binary search of a sorted table with N records, for example, can be done in roughly â log2 N â comparisons. If the table had 1,000,000 records, then a specific record could be located with at most 20 comparisons: â log2 (1,000,000) â = 20.
+Large databases have historically been kept on disk drives. The time to read a record on a disk drive far exceeds the time needed to compare keys once the record is available. The time to read a record from a disk drive involves a seek time and a rotational delay. The seek time may be 0 to 20 or more milliseconds, and the rotational delay averages about half the rotation period. For a 7200 RPM drive, the rotation period is 8.33 milliseconds. For a drive such as the Seagate ST3500320NS, the track-to-track seek time is 0.8 milliseconds and the average reading seek time is 8.5 milliseconds.[17] For simplicity, assume reading from disk takes about 10 milliseconds.
+Naively, then, the time to locate one record out of a million would take 20 disk reads times 10 milliseconds per disk read, which is 0.2 seconds.
+The time won't be that bad because individual records are grouped together in a disk block. A disk block might be 16 kilobytes. If each record is 160 bytes, then 100 records could be stored in each block. The disk read time above was actually for an entire block. Once the disk head is in position, one or more disk blocks can be read with little delay. With 100 records per block, the last 6 or so comparisons don't need to do any disk readsâthe comparisons are all within the last disk block read.
+To speed the search further, the first 13 to 14 comparisons (which each required a disk access) must be sped up.
+
+An index speeds the search[edit]
+A B-tree index creates a multi-level tree structure that breaks a database down into fixed-size blocks or pages. Each level of this tree can be used to link those pages via an address location, allowing one page (known as a node, or internal page) to refer to another with leaf pages at the lowest level. One page is typically the starting point of the tree, or the "root". This is where the search for a particular key would begin, traversing a path that terminates in a leaf. Most pages in this structure will be leaf pages which ultimately refer to specific table rows. 
+A significant improvement in performance can be made with a B-tree index. Because each node (or internal page) can have more than two children, a B-tree index will usually have a shorter height (the distance from the root to the farthest leaf) than a Binary Search Tree. In the example above, initial disk reads narrowed the search range by a factor of two. That can be improved substantially by creating an auxiliary index that contains the first record in each disk block (sometimes called a sparse index). This auxiliary index would be 1% of the size of the original database, but it can be searched more quickly. Finding an entry in the auxiliary index would tell us which block to search in the main database; after searching the auxiliary index, we would have to search only that one block of the main databaseâat a cost of one more disk read. The index would hold 10,000 entries, so it would take at most 14 comparisons. Like the main database, the last six or so comparisons in the auxiliary index would be on the same disk block. The index could be searched in about eight disk reads, and the desired record could be accessed in 9 disk reads.
+The trick of creating an auxiliary index can be repeated to make an auxiliary index to the auxiliary index. That would make an aux-aux index that would need only 100 entries and would fit in one disk block.
+Instead of reading 14 disk blocks to find the desired record, we only need to read 3 blocks. This blocking is the core idea behind the creation of the B-tree, where the disk blocks fill-out a hierarchy of levels to make up the index. Reading and searching the first (and only) block of the aux-aux index which is the root of the tree identifies the relevant block in aux-index in the level below. Reading and searching that aux-index block identifies the relevant block to read, until the final level, known as the leaf level, identifies a record in the main database. Instead of 150 milliseconds, we need only 30 milliseconds to get the record.
+The auxiliary indices have turned the search problem from a binary search requiring roughly log2 N disk reads to one requiring only logb N disk reads where b is the blocking factor (the number of entries per block: b = 100 entries per block in our example; log100 1,000,000 = 3 reads).
+In practice, if the main database is being frequently searched, the aux-aux index and much of the aux index may reside in a disk cache, so they would not incur a disk read. The B-tree remains the standard index implementation in almost all relational databases, and many nonrelational databases use them too.[18]
+
+Insertions and deletions[edit]
+If the database does not change, then compiling the index is simple to do, and the index need never be changed. If there are changes, then managing the database and its index becomes more complicated.
+Deleting records from a database is relatively easy. The index can stay the same, and the record can just be marked as deleted. The database remains in sorted order. If there are a large number of deletions, then searching and storage become less efficient.
+Insertions can be very slow in a sorted sequential file because room for the inserted record must be made. Inserting a record before the first record requires shifting all of the records down one. Such an operation is just too expensive to be practical. One solution is to leave some spaces. Instead of densely packing all the records in a block, the block can have some free space to allow for subsequent insertions. Those spaces would be marked as if they were "deleted" records.
+Both insertions and deletions are fast as long as space is available on a block. If an insertion won't fit on the block, then some free space on some nearby block must be found and the auxiliary indices adjusted. The hope is that enough space is available nearby, such that a lot of blocks do not need to be reorganized. Alternatively, some out-of-sequence disk blocks may be used.[18]
+
+Advantages of B-tree usage for databases[edit]
+The B-tree uses all of the ideas described above. In particular, a B-tree:
+
+keeps keys in sorted order for sequential traversing
+uses a hierarchical index to minimize the number of disk reads
+uses partially full blocks to speed up insertions and deletions
+keeps the index balanced with a recursive algorithm
+In addition, a B-tree minimizes waste by making sure the interior nodes are at least half full. A B-tree can handle an arbitrary number of insertions and deletions.[18]
+
+Best case and worst case heights[edit]
+Let h â¥ â1 be the height of the classic B-tree (see Tree (data structure) Â§Â Terminology for the tree height definition). Let n â¥ 0 be the number of entries in the tree. Let m be the maximum number of children a node can have. Each node can have at most mâ1 keys.
+It can be shown (by induction for example) that a B-tree of height h with all its nodes completely filled has n = mh+1â1 entries. Hence, the best case height (i.e. the minimum height) of a B-tree is:
+
+
+  
+    
+      
+        
+          h
+          
+            
+              m
+              i
+              n
+            
+          
+        
+        =
+        â
+        
+          log
+          
+            m
+          
+        
+        â¡
+        (
+        n
+        +
+        1
+        )
+        â
+        â
+        1
+      
+    
+    {\displaystyle h_{\mathrm {min} }=\lceil \log _{m}(n+1)\rceil -1}
+  
+
+Let 
+  
+    
+      
+        d
+      
+    
+    {\displaystyle d}
+  
+ be the minimum number of children an internal (non-root) node can have. For an ordinary B-tree, 
+  
+    
+      
+        d
+        =
+        
+          â
+          
+            m
+            
+              /
+            
+            2
+          
+          â
+        
+        .
+      
+    
+    {\displaystyle d=\left\lceil m/2\right\rceil .}
+  
+
+Comer (1979) and Cormen et al. (2001) give the worst case height (the maximum height) of a B-tree as[19]
+
+
+  
+    
+      
+        
+          h
+          
+            
+              m
+              a
+              x
+            
+          
+        
+        =
+        
+          â
+          
+            
+              log
+              
+                d
+              
+            
+            â¡
+            
+              
+                
+                  n
+                  +
+                  1
+                
+                2
+              
+            
+          
+          â
+        
+        .
+      
+    
+    {\displaystyle h_{\mathrm {max} }=\left\lfloor \log _{d}{\frac {n+1}{2}}\right\rfloor .}
+  
+
+Algorithms[edit]
+This article may be confusing or unclear to readers. In particular, the discussion below uses "element", "value", "key", "separator", and "separation value" to mean essentially the same thing. The terms are not clearly defined. There are some subtle issues at the root and leaves. Please help clarify the article. There might be a discussion about this on the talk page.  (February 2012) (Learn how and when to remove this template message)
+Search[edit]
+Searching is similar to searching a binary search tree. Starting at the root, the tree is recursively traversed from top to bottom. At each level, the search reduces its field of view to the child pointer (subtree) whose range includes the search value. A subtree's range is defined by the values, or keys, contained in its parent node. These limiting values are also known as separation values.
+Binary search is typically (but not necessarily) used within nodes to find the separation values and child tree of interest.
+
+Insertion[edit]
+  A B Tree insertion example with each iteration. The nodes of this B tree have at most 3 children (Knuth order 3).
+All insertions start at a leaf node. To insert a new element, search the tree to find the leaf node where the new element should be added. Insert the new element into that node with the following steps:
+
+If the node contains fewer than the maximum allowed number of elements, then there is room for the new element. Insert the new element in the node, keeping the node's elements ordered.
+Otherwise the node is full, evenly split it into two nodes so:
+A single median is chosen from among the leaf's elements and the new element.
+Values less than the median are put in the new left node and values greater than the median are put in the new right node, with the median acting as a separation value.
+The separation value is inserted in the node's parent, which may cause it to be split, and so on. If the node has no parent (i.e., the node was the root), create a new root above this node (increasing the height of the tree).
+If the splitting goes all the way up to the root, it creates a new root with a single separator value and two children, which is why the lower bound on the size of internal nodes does not apply to the root. The maximum number of elements per node is Uâ1. When a node is split, one element moves to the parent, but one element is added. So, it must be possible to divide the maximum number Uâ1 of elements into two legal nodes. If this number is odd, then U=2L and one of the new nodes contains (Uâ2)/2 = Lâ1 elements, and hence is a legal node, and the other contains one more element, and hence it is legal too. If Uâ1 is even, then U=2Lâ1, so there are 2Lâ2 elements in the node. Half of this number is Lâ1, which is the minimum number of elements allowed per node.
+An alternative algorithm supports a single pass down the tree from the root to the node where the insertion will take place, splitting any full nodes encountered on the way preemptively. This prevents the need to recall the parent nodes into memory, which may be expensive if the nodes are on secondary storage. However, to use this algorithm, we must be able to send one element to the parent and split the remaining Uâ2 elements into two legal nodes, without adding a new element. This requires U = 2L rather than U = 2Lâ1, which accounts for why some[which?] textbooks impose this requirement in defining B-trees.
+
+Deletion[edit]
+There are two popular strategies for deletion from a B-tree.
+
+Locate and delete the item, then restructure the tree to retain its invariants, OR
+Do a single pass down the tree, but before entering (visiting) a node, restructure the tree so that once the key to be deleted is encountered, it can be deleted without triggering the need for any further restructuring
+The algorithm below uses the former strategy.
+There are two special cases to consider when deleting an element:
+
+The element in an internal node is a separator for its child nodes
+Deleting an element may put its node under the minimum number of elements and children
+The procedures for these cases are in order below.
+
+Deletion from a leaf node[edit]
+Search for the value to delete.
+If the value is in a leaf node, simply delete it from the node.
+If underflow happens, rebalance the tree as described in section "Rebalancing after deletion" below.
+Deletion from an internal node[edit]
+Each element in an internal node acts as a separation value for two subtrees, therefore we need to find a replacement for separation. Note that the largest element in the left subtree is still less than the separator. Likewise, the smallest element in the right subtree is still greater than the separator. Both of those elements are in leaf nodes, and either one can be the new separator for the two subtrees. Algorithmically described below:
+
+Choose a new separator (either the largest element in the left subtree or the smallest element in the right subtree), remove it from the leaf node it is in, and replace the element to be deleted with the new separator.
+The previous step deleted an element (the new separator) from a leaf node. If that leaf node is now deficient (has fewer than the required number of nodes), then rebalance the tree starting from the leaf node.
+Rebalancing after deletion[edit]
+Rebalancing starts from a leaf and proceeds toward the root until the tree is balanced. If deleting an element from a node has brought it under the minimum size, then some elements must be redistributed to bring all nodes up to the minimum. Usually, the redistribution involves moving an element from a sibling node that has more than the minimum number of nodes. That redistribution operation is called a rotation. If no sibling can spare an element, then the deficient node must be merged with a sibling. The merge causes the parent to lose a separator element, so the parent may become deficient and need rebalancing. The merging and rebalancing may continue all the way to the root. Since the minimum element count doesn't apply to the root, making the root be the only deficient node is not a problem. The algorithm to rebalance the tree is as follows:
+
+If the deficient node's right sibling exists and has more than the minimum number of elements, then rotate left
+Copy the separator from the parent to the end of the deficient node (the separator moves down; the deficient node now has the minimum number of elements)
+Replace the separator in the parent with the first element of the right sibling (right sibling loses one node but still has at least the minimum number of elements)
+The tree is now balanced
+Otherwise, if the deficient node's left sibling exists and has more than the minimum number of elements, then rotate right
+Copy the separator from the parent to the start of the deficient node (the separator moves down; deficient node now has the minimum number of elements)
+Replace the separator in the parent with the last element of the left sibling (left sibling loses one node but still has at least the minimum number of elements)
+The tree is now balanced
+Otherwise, if both immediate siblings have only the minimum number of elements, then merge with a sibling sandwiching their separator taken off from their parent
+Copy the separator to the end of the left node (the left node may be the deficient node or it may be the sibling with the minimum number of elements)
+Move all elements from the right node to the left node (the left node now has the maximum number of elements, and the right node â empty)
+Remove the separator from the parent along with its empty right child (the parent loses an element)
+If the parent is the root and now has no elements, then free it and make the merged node the new root (tree becomes shallower)
+Otherwise, if the parent has fewer than the required number of elements, then rebalance the parent[20]
+Note: The rebalancing operations are different for B+ trees (e.g., rotation is different because parent has copy of the key) and B*-tree (e.g., three siblings are merged into two siblings).
+Sequential access[edit]
+While freshly loaded databases tend to have good sequential behavior, this behavior becomes increasingly difficult to maintain as a database grows, resulting in more random I/O and performance challenges.[21]
+
+Initial construction[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (April 2018) (Learn how and when to remove this template message)
+A common special case is adding a large amount of pre-sorted data into an initially empty B-tree. While it is quite possible to simply perform a series of successive inserts, inserting sorted data results in a tree composed almost entirely of half-full nodes. Instead, a special "bulk loading" algorithm can be used to produce a more efficient tree with a higher branching factor.
+When the input is sorted, all insertions are at the rightmost edge of the tree, and in particular any time a node is split, we are guaranteed that no more insertions will take place in the left half. When bulk loading, we take advantage of this, and instead of splitting overfull nodes evenly, split them as unevenly as possible: leave the left node completely full and create a right node with zero keys and one child (in violation of the usual B-tree rules).
+At the end of bulk loading, the tree is composed almost entirely of completely full nodes; only the rightmost node on each level may be less than full. Because those nodes may also be less than half full, to re-establish the normal B-tree rules, combine such nodes with their (guaranteed full) left siblings and divide the keys to produce two nodes at least half full. The only node which lacks a full left sibling is the root, which is permitted to be less than half full.
+
+In filesystems[edit]
+In addition to its use in databases, the B-tree (or Â§Â Variants) is also used in filesystems to allow quick random access to an arbitrary block in a particular file. The basic problem is turning the file block 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ address into a disk block (or perhaps to a cylinder-head-sector) address.
+Some operating systems require the user to allocate the maximum size of the file when the file is created. The file can then be allocated as contiguous disk blocks. In that case, to convert the file block address 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ into a disk block address, the operating system simply adds the file block address 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+ to the address of the first disk block constituting the file. The scheme is simple, but the file cannot exceed its created size.
+Other operating systems allow a file to grow. The resulting disk blocks may not be contiguous, so mapping logical blocks to physical blocks is more involved.
+MS-DOS, for example, used a simple File Allocation Table (FAT). The FAT has an entry for each disk block,[note 1] and that entry identifies whether its block is used by a file and if so, which block (if any) is the next disk block of the same file. So, the allocation of each file is represented as a linked list in the table. In order to find the disk address of file block 
+  
+    
+      
+        i
+      
+    
+    {\displaystyle i}
+  
+, the operating system (or disk utility) must sequentially follow the file's linked list in the FAT. Worse, to find a free disk block, it must sequentially scan the FAT. For MS-DOS, that was not a huge penalty because the disks and files were small and the FAT had few entries and relatively short file chains. In the FAT12 filesystem (used on floppy disks and early hard disks), there were no more than 4,080 [note 2] entries, and the FAT would usually be resident in memory. As disks got bigger, the FAT architecture began to confront penalties. On a large disk using FAT, it may be necessary to perform disk reads to learn the disk location of a file block to be read or written.
+TOPS-20 (and possibly TENEX) used a 0 to 2 level tree that has similarities to a B-tree[citation needed]. A disk block was 512 36-bit words. If the file fit in a 512 (29) word block, then the file directory would point to that physical disk block. If the file fit in 218 words, then the directory would point to an aux index; the 512 words of that index would either be NULL (the block isn't allocated) or point to the physical address of the block. If the file fit in 227 words, then the directory would point to a block holding an aux-aux index; each entry would either be NULL or point to an aux index. Consequently, the physical disk block for a 227 word file could be located in two disk reads and read on the third.
+Apple's filesystem HFS+, Microsoft's NTFS,[22] AIX (jfs2) and some Linux filesystems, such as btrfs and Ext4, use B-trees.
+B*-trees are used in the HFS and Reiser4 file systems.
+DragonFly BSD's HAMMER file system uses a modified B+-tree.[23]
+
+Performance[edit]
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (May 2020) (Learn how and when to remove this template message)
+A B-tree grows slower with growing data amount, than the linearity of a linked list. Compared to a skip list, both structures have the same performance, but the B-tree scales better for growing n. A T-tree, for main memory database systems, is similar but more compact.
+
+Variations[edit]
+Access concurrency[edit]
+Lehman and Yao[24] showed that all the read locks could be avoided (and thus concurrent access greatly improved) by linking the tree blocks at each level together with a "next" pointer. This results in a tree structure where both insertion and search operations descend from the root to the leaf. Write locks are only required as a tree block is modified. This maximizes access concurrency by multiple users, an important consideration for databases and/or other B-tree-based ISAM storage methods. The cost associated with this improvement is that empty pages cannot be removed from the btree during normal operations. (However, see [25] for various strategies to implement node merging, and source code at.[26])
+United States Patent 5283894, granted in 1994, appears to show a way to use a 'Meta Access Method' [27] to allow concurrent B+ tree access and modification without locks. The technique accesses the tree 'upwards' for both searches and updates by means of additional in-memory indexes that point at the blocks in each level in the block cache. No reorganization for deletes is needed and there are no 'next' pointers in each block as in Lehman and Yao.
+
+Parallel algorithms[edit]
+Since B-trees are similar in structure to red-black trees, parallel algorithms for red-black trees can be applied to B-trees as well.
+
+See also[edit]
+B+ tree
+R-tree
+Redâblack tree
+2â3 tree
+2â3â4 tree
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ For FAT, what is called a "disk block" here is what the FAT documentation calls a "cluster", which is a fixed-size group of one or more contiguous whole physical disk sectors. For the purposes of this discussion, a cluster has no significant difference from a physical sector.
+
+^ Two of these were reserved for special purposes, so only 4078 could actually represent disk blocks (clusters).
+
+
+References[edit]
+
+
+^ a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Bayer, R.; McCreight, E. (July 1970). "Organization and maintenance of large ordered indices" (PDF). Proceedings of the 1970 ACM SIGFIDET (Now SIGMOD) Workshop on Data Description, Access and Control - SIGFIDET '70. Boeing Scientific Research Laboratories. p.Â 107. doi:10.1145/1734663.1734671. S2CIDÂ 26930249.
+
+^ a b c d Comer 1979.
+
+^ a b c Bayer & McCreight 1972.
+
+^ Comer 1979, p.Â 123 footnote 1.
+
+^ a b Weiner, Peter G. (30 August 2013). "4- Edward M McCreight" â via Vimeo.
+
+^ "Stanford Center for Professional Development". scpd.stanford.edu. Archived from the original on 2014-06-04. Retrieved 2011-01-16.
+
+^ Folk & Zoellick 1992, p.Â 362.
+
+^ Folk & Zoellick 1992.
+
+^ Knuth 1998, p.Â 483.
+
+^ Folk & Zoellick 1992, p.Â 363.
+
+^ Bayer & McCreight (1972) avoided the issue by saying an index element is a (physically adjacent) pair of (x,Â a) where x is the key, and a is some associated information. The associated information might be a pointer to a record or records in a random access, but what it was didn't really matter. Bayer & McCreight (1972) states, "For this paper the associated information is of no further interest."
+
+^ Folk & Zoellick 1992, p.Â 379.
+
+^ Knuth 1998, p.Â 488.
+
+^ a b c d e f TomaÅ¡eviÄ, Milo (2008). Algorithms and Data Structures. Belgrade, Serbia: Akademska misao. pp.Â 274â275. ISBNÂ 978-86-7466-328-8.
+
+^ Rigin A. M., Shershakov S. A. (2019-09-10). "SQLite RDBMS Extension for Data Indexing Using B-tree Modifications". Proceedings of the Institute for System Programming of the RAS (Proceedings of ISP RAS). Institute for System Programming of the RAS (ISP RAS). doi:10.15514/ispras-2019-31(3)-16. Retrieved 2021-08-29.
+
+^ Counted B-Trees, retrieved 2010-01-25
+
+^ Seagate Technology LLC, Product Manual: Barracuda ES.2 Serial ATA, Rev. F., publication 100468393, 2008 [1], page 6
+
+^ a b c Kleppmann, Martin (2017), Designing Data-Intensive Applications, Sebastopol, California: O'Reilly Media, p.Â 80, ISBNÂ 978-1-449-37332-0
+
+^ Comer 1979, p.Â 127; Cormen et al. 2001, pp.Â 439â440
+
+^ https://www.cs.rhodes.edu/~kirlinp/courses/db/f16/handouts/btrees-deletion.pdf
+
+^ "Cache Oblivious B-trees". State University of New York (SUNY) at Stony Brook. Retrieved 2011-01-17.
+
+^ Mark Russinovich. "Inside Win2K NTFS, Part 1". Microsoft Developer Network. Archived from the original on 13 April 2008. Retrieved 2008-04-18.
+
+^ Matthew Dillon (2008-06-21). "The HAMMER Filesystem" (PDF).
+
+^ Lehman, Philip L.; Yao, s. Bing (1981). "Efficient locking for concurrent operations on B-trees". ACM Transactions on Database Systems. 6 (4): 650â670. doi:10.1145/319628.319663. S2CIDÂ 10756181.
+
+^ http://www.dtic.mil/cgi-bin/GetTRDoc?AD=ADA232287&Location=U2&doc=GetTRDoc.pdf
+
+^ "Downloads - high-concurrency-btree - High Concurrency B-Tree code in C - GitHub Project Hosting". Retrieved 2014-01-27.
+
+^ "Lockless concurrent B-tree index meta access method for cached nodes".
+
+
+General
+Bayer, R.; McCreight, E. (1972), "Organization and Maintenance of Large Ordered Indexes" (PDF), Acta Informatica, 1 (3): 173â189, doi:10.1007/bf00288683, S2CIDÂ 29859053
+Comer, Douglas (June 1979), "The Ubiquitous B-Tree", Computing Surveys, 11 (2): 123â137, doi:10.1145/356770.356776, ISSNÂ 0360-0300, S2CIDÂ 101673.
+Cormen, Thomas; Leiserson, Charles; Rivest, Ronald; Stein, Clifford (2001), Introduction to Algorithms (SecondÂ ed.), MIT Press and McGraw-Hill, pp.Â 434â454, ISBNÂ 0-262-03293-7. Chapter 18: B-Trees.
+Folk, Michael J.; Zoellick, Bill (1992), File Structures (2ndÂ ed.), Addison-Wesley, ISBNÂ 0-201-55713-4
+Knuth, Donald (1998), Sorting and Searching, The Art of Computer Programming, vol.Â 3 (SecondÂ ed.), Addison-Wesley, ISBNÂ 0-201-89685-0. Section 6.2.4: Multiway Trees, pp.Â 481â491. Also, pp.Â 476â477 of section 6.2.3 (Balanced Trees) discusses 2â3 trees.
+Original papers[edit]
+Bayer, Rudolf; McCreight, E. (July 1970), Organization and Maintenance of Large Ordered Indices, vol.Â Mathematical and Information Sciences Report No. 20, Boeing Scientific Research Laboratories.
+Bayer, Rudolf (1971), Binary B-Trees for Virtual Memory, Proceedings of 1971 ACM-SIGFIDET Workshop on Data Description, Access and Control, San Diego, California.
+External links[edit]
+
+
+
+Wikimedia Commons has media related to B-Trees.
+
+B-tree lecture by David Scot Taylor, SJSU
+B-Tree visualisation (click "init")
+Animated B-Tree visualization
+B-tree and UB-tree on Scholarpedia Curator: Dr Rudolf Bayer
+B-Trees: Balanced Tree Data Structures
+NIST's Dictionary of Algorithms and Data Structures: B-tree
+B-Tree Tutorial
+The InfinityDB BTree implementation
+Cache Oblivious B(+)-trees
+Dictionary of Algorithms and Data Structures entry for B*-tree
+Open Data Structures - Section 14.2 - B-Trees, Pat Morin
+Counted B-Trees
+B-Tree .Net, a modern, virtualized RAM & Disk implementation
+Bulk loading
+
+Shetty, Soumya B. (2010). A user configurable implementation of B-trees (Thesis). Iowa State University.
+KaldÄ±rÄ±m, Semih (28 April 2015). "File Organization, ISAM, B+ Tree and Bulk Loading" (PDF). Ankara, Turkey: Bilkent University. pp.Â 4â6.
+"ECS 165B: Database System Implementation: Lecture 6" (PDF). University of California, Davis. 9 April 2010. p.Â 23.
+"BULK INSERT (Transact-SQL) in SQL Server 2017". Microsoft Docs. 6 September 2018.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteTree data structuresSearch trees(dynamic sets/associative arrays)
+2â3
+2â3â4
+AA
+(a,b)
+AVL
+B
+B+
+B*
+Bx
+(Optimal)Â Binary search
+Dancing
+HTree
+Interval
+Order statistic
+(Left-leaning)Â Redâblack
+Scapegoat
+Splay
+T
+Treap
+UB
+Weight-balanced
+Heaps
+Binary
+Binomial
+Brodal
+Fibonacci
+Leftist
+Pairing
+Skew
+van Emde Boas
+Weak
+Tries
+Ctrie
+C-trie (compressed ADT)
+Hash
+Radix
+Suffix
+Ternary search
+X-fast
+Y-fast
+Spatial data partitioning trees
+Ball
+BK
+BSP
+Cartesian
+Hilbert R
+k-d (implicit k-d)
+M
+Metric
+MVP
+Octree
+Priority R
+Quad
+R
+R+
+R*
+Segment
+VP
+X
+Other trees
+Cover
+Exponential
+Fenwick
+Finger
+Fractal tree index
+Fusion
+Hash calendar
+iDistance
+K-ary
+Left-child right-sibling
+Link/cut
+Log-structured merge
+Merkle
+PQ
+Range
+SPQR
+Top
+
+vteWell-known data structuresTypes
+Collection
+Container
+Abstract
+Associative array
+Multimap
+Retrieval Data Structure
+List
+Stack
+Queue
+Double-ended queue
+Priority queue
+Double-ended priority queue
+Set
+Multiset
+Disjoint-set
+Arrays
+Bit array
+Circular buffer
+Dynamic array
+Hash table
+Hashed array tree
+Sparse matrix
+Linked
+Association list
+Linked list
+Skip list
+Unrolled linked list
+XOR linked list
+Trees
+B-tree
+Binary search tree
+AA tree
+AVL tree
+Redâblack tree
+Self-balancing tree
+Splay tree
+Heap
+Binary heap
+Binomial heap
+Fibonacci heap
+R-tree
+R* tree
+R+ tree
+Hilbert R-tree
+Trie
+Hash tree
+Graphs
+Binary decision diagram
+Directed acyclic graph
+Directed acyclic word graph
+
+List of data structures
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=B-tree&oldid=1067979751"
+		Categories: B-treeComputer-related introductions in 1971Database index techniquesHidden categories: Articles with short descriptionShort description matches WikidataWikipedia articles needing clarification from February 2012All Wikipedia articles needing clarificationAll articles with specifically marked weasel-worded phrasesArticles with specifically marked weasel-worded phrases from September 2019Articles needing additional references from April 2018All articles needing additional referencesAll articles with unsourced statementsArticles with unsourced statements from October 2009Articles needing additional references from May 2020CS1: long volume valueCommons category link is on Wikidata
+	

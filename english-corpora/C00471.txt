@@ -1,0 +1,1328 @@
+
+Title:
+MillerâRabin primality test
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Primality test
+The MillerâRabin primality test or RabinâMiller primality test is a probabilistic primality test: an algorithm which determines whether a given number is likely to be prime, similar to the Fermat primality test and the SolovayâStrassen primality test.
+It is of historical significance in the search for a polynomial-time deterministic primality test. Its probabilistic variant remains widely used in practice, as one of the simplest and fastest tests known.
+Gary L. Miller discovered the test in 1976; Miller's version of the test is deterministic, but its correctness relies on the unproven extended Riemann hypothesis.[1] Michael O. Rabin modified it to obtain an unconditional probabilistic algorithm in 1980.[2][a]
+
+Contents
+
+1 Mathematical concepts
+
+1.1 Strong probable primes
+1.2 Choices of bases
+1.3 Proofs
+
+
+2 Example
+3 MillerâRabin test
+
+3.1 Complexity
+3.2 Accuracy
+
+
+4 Deterministic variants
+
+4.1 Miller test
+4.2 Testing against small sets of bases
+
+
+5 Variants for finding factors
+6 Generation of probable primes
+
+6.1 Complexity
+6.2 Accuracy
+
+
+7 Notes
+8 References
+9 External links
+
+
+
+Mathematical concepts[edit]
+Similarly to the Fermat and SolovayâStrassen tests, the MillerâRabin primality test checks whether a specific property, which is known to hold for prime values, holds for the number under testing.
+
+Strong probable primes[edit]
+The property is the following. For a given odd integer n > 2, letâs write n as 2sâd + 1 where s and d are positive integers and d is odd.
+Letâs consider an integerÂ a, called a base, such that 0 < a < n.
+Then, n is said to be a strong probable prime to base a if one of these congruence relations holds:
+
+
+  
+    
+      
+        
+          a
+          
+            d
+          
+        
+        â¡
+        1
+        
+          
+          (
+          mod
+          
+          n
+          )
+        
+      
+    
+    {\displaystyle a^{d}\equiv 1{\pmod {n}}}
+  
+;
+
+  
+    
+      
+        
+          a
+          
+            
+              2
+              
+                r
+              
+            
+            â
+            d
+          
+        
+        â¡
+        â
+        1
+        
+          
+          (
+          mod
+          
+          n
+          )
+        
+      
+    
+    {\displaystyle a^{2^{r}\cdot d}\equiv -1{\pmod {n}}}
+  
+  for some 0 â¤ r < s.
+The idea beneath this test is that when n is an odd prime, it passes the test because of two facts:
+
+by Fermat's little theorem, 
+  
+    
+      
+        
+          a
+          
+            n
+            â
+            1
+          
+        
+        â¡
+        1
+        
+          
+          (
+          mod
+          
+          n
+          )
+        
+      
+    
+    {\displaystyle a^{n-1}\equiv 1{\pmod {n}}}
+  
+ (this property alone defines the weaker notion of probable prime to base a, on which the Fermat test is based);
+the only square roots of 1 modulo n are 1 and â1.
+Hence, by contraposition, if n is not a strong probable prime to base a, then n is definitely composite, and a is called a witness for the compositeness of n (sometimes misleadingly called a strong witness).
+However, this property is not an exact characterization of prime numbers. If n is composite, it may nonetheless be a strong probable prime to base a, in which case it is called a strong pseudoprime, and a is a strong liar.
+
+Choices of bases[edit]
+Thankfully, no composite number is a strong pseudoprime to all bases at the same time. However no simple way of finding a witness is known. A naÃ¯ve solution is to try all possible bases, which yields an inefficient deterministic algorithm. The Miller test is a more efficient variant of this (see section Miller test below).
+Another solution is to pick a base at random. This yields a fast probabilistic test. When n is composite, most bases are witnesses, so the test will detect n as composite with a reasonably high probability (see section Accuracy below). We can quickly reduce the probability of a false positive to an arbitrarily small rate, by combining the outcome of as many independently chosen bases as necessary to achieve the said rate. This is the MillerâRabin test. The number of bases to try does not depend on n. There seems to be diminishing returns in trying many bases, because if n is a pseudoprime to some base, then it seems more likely to be a pseudoprime to another base.[4]:âÂ§8â
+For testing arbitrarily large n, choosing bases at random is essential, as we don't know the distribution of witnesses and strong liars among the numbers 1, 2, â¦, nâ1.[b]
+However, a pre-selected set of a few small bases guarantees the identification of all composites up to a pre-computed maximum. This maximum is generally quite large compared to the bases. This gives very fast deterministic tests for small enough n (see section Testing against small sets of bases below).
+
+Proofs[edit]
+Here is a proof that, when n is an odd prime, the only square roots of 1 modulo n are 1 and â1.
+
+.mw-parser-output .math_proof{border:thin solid #aaa;margin:1em 2em;padding:0.5em 1em 0.4em;text-align:justify}@media(max-width:500px){.mw-parser-output .math_proof{margin:1em 0;padding:0.5em 0.5em 0.4em}}Proof
+Certainly 1 and â1, when squared modulo n, always yield 1. It remains to show that there are no other square roots of 1 modulo n. This is a special case, here applied with the polynomial X2 â 1 over the finite field Z/nZ, of the more general fact that a polynomial over some field has no more roots than its degree (this theorem follows from the existence of an Euclidean division for polynomials). Here follows a more elementary proof. Suppose that x is a square root of 1 modulo n. Then:
+
+
+  
+    
+      
+        (
+        x
+        â
+        1
+        )
+        (
+        x
+        +
+        1
+        )
+        =
+        
+          x
+          
+            2
+          
+        
+        â
+        1
+        â¡
+        0
+        
+          
+          (
+          mod
+          
+          n
+          )
+        
+        .
+      
+    
+    {\displaystyle (x-1)(x+1)=x^{2}-1\equiv 0{\pmod {n}}.}
+  
+
+In other words, n divides the product (x â 1)(x + 1). By Euclid's lemma, since n is prime, it divides one of the factors x â 1 or x + 1, implying that x is congruent to either 1 or â1 modulo n.
+
+
+Here is a proof that if n is an odd prime, then it is a strong probable prime to base a.
+
+Proof
+By Fermat's little theorem:
+
+
+  
+    
+      
+        
+          a
+          
+            
+              2
+              
+                s
+              
+            
+            â
+            d
+          
+        
+        â¡
+        1
+        
+          
+          (
+          mod
+          
+          n
+          )
+        
+      
+    
+    {\displaystyle a^{2^{s}\cdot d}\equiv 1{\pmod {n}}}
+  
+
+Each term of the sequence
+
+  
+    
+      
+        
+          a
+          
+            
+              2
+              
+                s
+              
+            
+            â
+            d
+          
+        
+        ,
+        
+          a
+          
+            
+              2
+              
+                s
+                â
+                1
+              
+            
+            â
+            d
+          
+        
+        ,
+        â¦
+        ,
+        
+          a
+          
+            2
+            d
+          
+        
+        ,
+        
+          a
+          
+            d
+          
+        
+      
+    
+    {\displaystyle a^{2^{s}\cdot d},a^{2^{s-1}\cdot d},\dots ,a^{2d},a^{d}}
+  
+,
+is a square root of the previous term. Since the first term is congruent to 1, the second term is a square root modulo n of 1. By the previous lemma, it is congruent to either 1 or â1. If it is congruent to â1, we are done. Otherwise, it is congruent to 1 and we can iterate the reasoning. At the end, either one of the terms is congruent to â1, or all of them are congruent to 1, and in particular the last term, ad, is.
+
+
+Example[edit]
+Suppose we wish to determine if nÂ =Â 221 is prime. We write nâ1 as 22Â·55, so that we have sÂ =Â 2 and dÂ =Â 55. We randomly select a number a such that 1Â <Â aÂ <Â n - 1, say a = 174. We proceed to compute:
+
+a20Â·d mod n = 17455 mod 221 = 47 â  1, n â 1
+a21Â·d mod n = 174110 mod 221 = 220 = n â 1.
+Since 220 â¡ â1 mod n, either 221 is prime, or 174 is a strong liar for 221. We try another random a, this time choosing a = 137:
+
+a20Â·d mod n = 13755 mod 221 = 188 â  1, n â 1
+a21Â·d mod n = 137110 mod 221 = 205 â  n â 1.
+Hence 137 is a witness for the compositeness of 221, and 174 was in fact a strong liar. Note that this tells us nothing about the factors of 221 (which are 13 and 17). However, the example with 341 in a later section shows how these calculations can sometimes produce a factor of n.
+
+MillerâRabin test[edit]
+The algorithm can be written in pseudocode as follows. The parameter k determines the accuracy of the test. The greater the number of rounds, the more accurate the result.
+
+Input #1: n > 3, an odd integer to be tested for primality
+Input #2: k, the number of rounds of testing to perform
+Output: âcompositeâ if n is found to be composite, âprobably primeâ otherwise
+
+write n as 2rÂ·d + 1 with d odd (by factoring out powers of 2 from n â 1)
+WitnessLoop: repeat k times:
+    pick a random integer a in the range [2, n â 2]
+    x â ad mod n
+    if x = 1 or x = n â 1 then
+        continue WitnessLoop
+    repeat r â 1 times:
+        x â x2 mod n
+        if x = n â 1 then
+            continue WitnessLoop
+    return âcompositeâ
+return âprobably primeâ
+
+Complexity[edit]
+Using repeated squaring, the running time of this algorithm is O(kÂ log3n), where n is the number tested for primality, and k is the number of rounds performed; thus this is an efficient, polynomial-time algorithm. FFT-based multiplication can push the running time down to O(k log2n log log n log log log n) = Ã(kÂ log2n).
+
+Accuracy[edit]
+The error made by the primality test is measured by the probability that a composite number is declared probably prime. The more bases a are tried, the better the accuracy of the test. It can be shown that if n is composite, then at most .mw-parser-output .frac{white-space:nowrap}.mw-parser-output .frac .num,.mw-parser-output .frac .den{font-size:80%;line-height:0;vertical-align:super}.mw-parser-output .frac .den{vertical-align:sub}.mw-parser-output .sr-only{border:0;clip:rect(0,0,0,0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}1â4 of the bases a are strong liars for n.[2][6] As a consequence, if n is composite then running k iterations of the MillerâRabin test will declare n probably prime with a probability at most 4âk.
+This is an improvement over the SolovayâStrassen test, whose worstâcase error bound is 2âk. Moreover, the MillerâRabin test is strictly stronger than the SolovayâStrassen test in the sense that for every composite n, the set of strong liars for n is a subset of the set of Euler liars for n, and for many n, the subset is proper.
+In addition, for large values of n, the probability for a composite number to be declared probably prime is often significantly smaller than 4âk. For instance, for most numbers n, this probability is bounded by 8âk; the proportion of numbers n which invalidate this upper bound vanishes as we consider larger values of n.[7] Hence the average case has a much better accuracy than 4âk, a fact which can be exploited for generating probable primes (see below). However, such improved error bounds should not be relied upon to verify primes whose probability distribution is not controlled, since a cryptographic adversary might send a carefully chosen pseudoprime in order to defeat the primality test.[c]
+In such contexts, only the worstâcase error bound of 4âk can be relied upon.
+The above error measure is the probability for a composite number to be declared as a strong probable prime after k rounds of testing; in mathematical words, it is the conditional probability
+
+  
+    
+      
+        Pr
+        (
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        â£
+        Â¬
+        P
+        )
+      
+    
+    {\displaystyle \Pr(M\!R_{k}\mid \lnot P)}
+  
+
+where P is the event that the number being tested is prime, and MRk is the event that it passes the MillerâRabin test with k rounds. We are often interested instead in the inverse conditional probability 
+  
+    
+      
+        Pr
+        (
+        Â¬
+        P
+        â£
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        )
+      
+    
+    {\displaystyle \Pr(\lnot P\mid M\!R_{k})}
+  
+: the probability that a number which has been declared as a strong probable prime is in fact composite. These two probabilities are related by Bayes' law:
+
+
+  
+    
+      
+        Pr
+        (
+        Â¬
+        P
+        â£
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        )
+        =
+        
+          
+            
+              Pr
+              (
+              Â¬
+              P
+              â§
+              M
+              
+              
+                R
+                
+                  k
+                
+              
+              )
+            
+            
+              Pr
+              (
+              Â¬
+              P
+              â§
+              M
+              
+              
+                R
+                
+                  k
+                
+              
+              )
+              +
+              Pr
+              (
+              P
+              â§
+              M
+              
+              
+                R
+                
+                  k
+                
+              
+              )
+            
+          
+        
+        =
+        
+          
+            1
+            
+              1
+              +
+              
+                
+                  
+                    Pr
+                    (
+                    M
+                    
+                    
+                      R
+                      
+                        k
+                      
+                    
+                    â£
+                    P
+                    )
+                  
+                  
+                    Pr
+                    (
+                    M
+                    
+                    
+                      R
+                      
+                        k
+                      
+                    
+                    â£
+                    Â¬
+                    P
+                    )
+                  
+                
+              
+              â
+              
+                
+                  
+                    Pr
+                    (
+                    P
+                    )
+                  
+                  
+                    Pr
+                    (
+                    Â¬
+                    P
+                    )
+                  
+                
+              
+            
+          
+        
+        =
+        
+          
+            1
+            
+              1
+              +
+              
+                
+                  1
+                  
+                    Pr
+                    (
+                    M
+                    
+                    
+                      R
+                      
+                        k
+                      
+                    
+                    â£
+                    Â¬
+                    P
+                    )
+                  
+                
+              
+              â
+              
+                
+                  
+                    Pr
+                    (
+                    P
+                    )
+                  
+                  
+                    1
+                    â
+                    Pr
+                    (
+                    P
+                    )
+                  
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle \Pr(\lnot P\mid M\!R_{k})={\frac {\Pr(\lnot P\land M\!R_{k})}{\Pr(\lnot P\land M\!R_{k})+\Pr(P\land M\!R_{k})}}={\frac {1}{1+{\frac {\Pr(M\!R_{k}\mid P)}{\Pr(M\!R_{k}\mid \lnot P)}}\cdot {\frac {\Pr(P)}{\Pr(\lnot P)}}}}={\frac {1}{1+{\frac {1}{\Pr(M\!R_{k}\mid \lnot P)}}\cdot {\frac {\Pr(P)}{1-\Pr(P)}}}}}
+  
+
+In the last equation, we simplified the expression using the fact that all prime numbers are correctly reported as strong probable primes (the test has no false negative). By dropping the left part of the denominator, we derive a simple upper bound:
+
+
+  
+    
+      
+        Pr
+        (
+        Â¬
+        P
+        â£
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        )
+        <
+        Pr
+        (
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        â£
+        Â¬
+        P
+        )
+        â
+        
+          (
+          
+            
+              
+                
+                  1
+                  
+                    Pr
+                    (
+                    P
+                    )
+                  
+                
+              
+            
+            â
+            1
+          
+          )
+        
+      
+    
+    {\displaystyle \Pr(\lnot P\mid M\!R_{k})<\Pr(M\!R_{k}\mid \lnot P)\cdot \left({\tfrac {1}{\Pr(P)}}-1\right)}
+  
+
+Hence this conditional probability is related not only to the error measure discussed above ââ¯which is bounded by 4âkâ¯â but also to the probability distribution of the input number. In the general case, as said earlier, this distribution is controlled by a cryptographic adversary, thus unknown, so we cannot deduce much about 
+  
+    
+      
+        Pr
+        (
+        Â¬
+        P
+        â£
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        )
+      
+    
+    {\displaystyle \Pr(\lnot P\mid M\!R_{k})}
+  
+. However, in the case when we use the MillerâRabin test to generate primes (see below), the distribution is chosen by the generator itself, so we can exploit this result.
+
+Deterministic variants[edit]
+Miller test[edit]
+The MillerâRabin algorithm can be made deterministic by trying all possible a below a certain limit. Taking n as the limit would imply O(n) trials, hence the running time would be exponential with respect to the size log n of the input. To improve the running time, the challenge is then to lower the limit as much as possible while keeping the test reliable.
+If the tested number n is composite, the strong liars a coprime to n are contained in a proper subgroup of the group (Z/nZ)*, which means that if we test all a from a set which generates (Z/nZ)*, one of them must lie outside the said subgroup, hence must be a witness for the compositeness of n. Assuming the truth of the generalized Riemann hypothesis (GRH), it is known that the group is generated by its elements smaller than O((ln n)2), which was already noted by Miller.[1] The constant involved in the Big O notation was reduced to 2 by Eric Bach.[9] This leads to the following deterministic primality testing algorithm, known as the Miller test:
+
+Input: n > 1, an odd integer to be tested for primality
+Output: âcompositeâ if n is composite, âprimeâ otherwise
+
+write n as 2rÂ·d + 1 with d odd (by factoring out powers of 2 from n â 1)
+WitnessLoop: for all a in the range [2, min(nâ2, â2(ln n)2â)]:
+    x â ad mod n
+    if x = 1 or x = n â 1 then
+        continue WitnessLoop
+    repeat r â 1 times:
+        x â x2 mod n
+        if x = n â 1 then
+            continue WitnessLoop
+    return âcompositeâ
+return âprimeâ
+
+The full power of the generalized Riemann hypothesis is not needed to ensure the correctness of the test: as we deal with subgroups of even index, it suffices to assume the validity of GRH for quadratic Dirichlet characters.[6]
+The running time of the algorithm is, in the soft-O notation, Ã((log n)4) (using FFTâbased multiplication).
+The Miller test is not used in practice.  For most purposes, proper use of the probabilistic MillerâRabin test or the BaillieâPSW primality test gives sufficient confidence while running much faster.  It is also slower in practice than commonly used proof methods such as APR-CL and ECPP which give results that do not rely on unproven assumptions. For theoretical purposes requiring a deterministic polynomial time algorithm, it was superseded by the AKS primality test, which also does not rely on unproven assumptions.
+
+Testing against small sets of bases[edit]
+When the number n to be tested is small, trying all a < 2(ln n)2 is not necessary, as much smaller sets of potential witnesses are known to suffice. For example, Pomerance, Selfridge, Wagstaff[4] and Jaeschke[10] have verified that
+
+if n < 2,047, it is enough to test a = 2;
+if n < 1,373,653, it is enough to test a = 2 and 3;
+if n < 9,080,191, it is enough to test a = 31 and 73;
+if n < 25,326,001, it is enough to test a = 2, 3, and 5;
+if n < 3,215,031,751, it is enough to test a = 2, 3, 5, and 7;
+if n < 4,759,123,141, it is enough to test a = 2, 7, and 61;
+if n < 1,122,004,669,633, it is enough to test a = 2, 13, 23, and 1662803;
+if n < 2,152,302,898,747, it is enough to test a = 2, 3, 5, 7, and 11;
+if n < 3,474,749,660,383, it is enough to test a = 2, 3, 5, 7, 11, and 13;
+if n < 341,550,071,728,321, it is enough to test a = 2, 3, 5, 7, 11, 13, and 17.
+Using the work of Feitsma and Galway enumerating all base 2 pseudoprimes in 2010, this was extended (see OEIS:Â A014233), with the first result later shown using different methods in Jiang and Deng:[11]
+
+if n < 3,825,123,056,546,413,051, it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, and 23.
+if n < 18,446,744,073,709,551,616 = 264, it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, and 37.
+Sorenson and Webster[12] verify the above and calculate precise results for these larger than 64âbit results:
+
+if n < 318,665,857,834,031,151,167,461, it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, and 37.
+if n < 3,317,044,064,679,887,385,961,981, it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, and 41.
+Other criteria of this sort, often more efficient (fewer bases required) than those shown above, exist.[13][14][15][16] They give very fast deterministic primality tests for numbers in the appropriate range, without any assumptions.
+There is a small list of potential witnesses for every possible input size (at most b values for bâbit numbers). However, no finite set of bases is sufficient for all composite numbers. Alford, Granville, and Pomerance have shown that there exist infinitely many composite numbers n whose smallest compositeness witness is at least (ln n)1/(3ln ln ln n).[17] They also argue heuristically that the smallest number w such that every composite number below n has a compositeness witness less than w should be of order Î(log n log log n).
+
+Variants for finding factors[edit]
+By inserting greatest common divisor calculations into the above algorithm, we can sometimes obtain a factor of n instead of merely determining that n is composite. This occurs for example when n is a probable prime base a but not a strong probable prime base a.[18]:â1402â We can detect this case in the algorithm by comparing x in the inner loop not only to â1, but also to 1.i
+If at some iteration 1 â¤ i < r of the inner loop, the algorithm discovers that the value adÂ·2i mod n of the variable x is equal to 1, then, knowing that the previous value x0 = adÂ·2sâ1 of the variable x has been checked to be different from Â±1, we can deduce that x0 is a square root of 1 which is neither 1 nor â1. As this is not possible when n is prime, this implies that n is composite. Moreover:
+
+since x02 â¡ 1 (mod n), we know that n divides x02 â 1 = (x0 â 1)(x0 + 1);
+since x0 â¢ Â±1 (mod n), we know that n does not divide x0 â 1 nor x0 + 1.
+From this we deduce that A = GCD(x0 â 1, n) and B = GCD(x0 + 1, n) are nonâtrivial (not necessarily prime) factors of n (in fact, since n is odd, these factors are coprime and n = AÂ·B). Hence, if factoring is a goal, these GCD calculations can be inserted into the algorithm at little additional computational cost. This leads to the following pseudocode, where the added or changed code is highlighted:
+
+Input #1: n > 3, an odd integer to be tested for primality
+Input #2: k, the number of rounds of testing to perform
+Output: (âmultiple ofâ, m) if a nonâtrivial factor m of n is found,
+        âcompositeâ if n is otherwise found to be composite,
+        âprobably primeâ otherwise
+
+write n as 2rÂ·d + 1 with d odd (by factoring out powers of 2 from n â 1)
+WitnessLoop: repeat k times:
+    pick a random integer a in the range [2, n â 2]
+    x â ad mod n
+    if x = 1 or x = n â 1 then
+        continue WitnessLoop
+    repeat r â 1 times:
+        y â x2 mod n
+        if y = 1 then
+            return (âmultiple ofâ, GCD(x â 1, n))
+        x â y
+        if x = n â 1 then
+            continue WitnessLoop
+    return âcompositeâ
+return âprobably primeâ
+
+This algorithm does not yield a probabilistic factorization algorithm because it is only able to find factors for numbers n which are pseudoprime to base a (in other words, for numbers n such that anâ1 â¡ 1 mod n). For other numbers, the algorithm only returns âcompositeâ with no further information.
+For example, consider n = 341 and a = 2. We have n â 1 = 85Â·4. Then 285 mod 341 = 32. and 322 mod 341 = 1. This tells us that n is a pseudoprime base 2, but not a strong pseudoprime base 2. By computing a GCD at this stage, we find a factor of 341: GCD(32 â 1, 341) = 31. Indeed, 341 = 11Â·31.
+In order to find factors more often, the same ideas can also be applied to the square roots of â1 (or any other number).
+This strategy can be implemented by exploiting knowledge from previous rounds of the MillerâRabin test. In those rounds we may have identified a square root modulo n of â1, say R. Then, when x2 mod n = nâ1, we can compare the value of x against R: if x is neither R nor nâR, then GCD(x â R, n) and GCD(x + R, n) are nonâtrivial factors of n.[13]
+
+Generation of probable primes[edit]
+The MillerâRabin test can be used to generate strong probable primes, simply by drawing integers at random until one passes the test. This algorithm terminates almost surely (since at each iteration there is a chance to draw a prime number).  The pseudocode for generating bâbit strong probable primes (with the most significant bit set) is as follows:
+
+Input #1: b, the number of bits of the result
+Input #2: k, the number of rounds of testing to perform
+Output: a strong probable prime n
+
+while True:
+    pick a random odd integer n in the range [2bâ1, 2bâ1]
+    if the MillerâRabin test with inputs n and k returns âprobably primeâ then
+        return n
+
+Complexity[edit]
+Of course the worst-case running time is infinite, since the outer loop may never terminate, but that happens with probability zero. As per the geometric distribution, the expected number of draws is 
+  
+    
+      
+        
+          
+            
+              1
+              
+                Pr
+                (
+                M
+                
+                
+                  R
+                  
+                    k
+                  
+                
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\tfrac {1}{\Pr(M\!R_{k})}}}
+  
+ (reusing notations from earlier).
+As any prime number passes the test, the probability of being prime gives a coarse lower bound to the probability of passing the test. If we draw odd integers uniformly in the range [2bâ1, 2bâ1], then we get:
+
+
+  
+    
+      
+        Pr
+        (
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        )
+        >
+        Pr
+        (
+        P
+        )
+        =
+        
+          
+            
+              Ï
+              
+                (
+                
+                  2
+                  
+                    b
+                  
+                
+                )
+              
+              â
+              Ï
+              
+                (
+                
+                  2
+                  
+                    b
+                    â
+                    1
+                  
+                
+                )
+              
+            
+            
+              2
+              
+                b
+                â
+                2
+              
+            
+          
+        
+      
+    
+    {\displaystyle \Pr(M\!R_{k})>\Pr(P)={\frac {\pi \left(2^{b}\right)-\pi \left(2^{b-1}\right)}{2^{b-2}}}}
+  
+
+where Ï is the prime-counting function. Using an asymptotic expansion of Ï (an extension of the prime number theorem), we can approximate this probability when b grows towards infinity. We find:
+
+
+  
+    
+      
+        Pr
+        (
+        P
+        )
+        =
+        
+          
+            
+              2
+              
+                ln
+                â¡
+                2
+              
+            
+          
+        
+        
+          b
+          
+            â
+            1
+          
+        
+        +
+        
+          
+            O
+          
+        
+        
+          (
+          
+            b
+            
+              â
+              3
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Pr(P)={\tfrac {2}{\ln 2}}b^{-1}+{\mathcal {O}}\left(b^{-3}\right)}
+  
+
+
+  
+    
+      
+        
+          
+            
+              1
+              
+                Pr
+                (
+                P
+                )
+              
+            
+          
+        
+        =
+        
+          
+            
+              
+                ln
+                â¡
+                2
+              
+              2
+            
+          
+        
+        b
+        +
+        
+          
+            O
+          
+        
+        
+          (
+          
+            b
+            
+              â
+              1
+            
+          
+          )
+        
+      
+    
+    {\displaystyle {\tfrac {1}{\Pr(P)}}={\tfrac {\ln 2}{2}}b+{\mathcal {O}}\left(b^{-1}\right)}
+  
+
+Hence we can expect the generator to run no more MillerâRabin tests than a number proportional to b. Taking into account the worst-case complexity of each MillerâRabin test (see earlier), the expected running time of the generator with inputs b and k is then bounded by O(k b4) (or Ã(k b3) using FFT-based multiplication).
+
+Accuracy[edit]
+The error measure of this generator is the probability that it outputs a composite number.
+Using the relation between conditional probabilities (shown in an earlier section) and the asymptotic behavior of 
+  
+    
+      
+        Pr
+        (
+        P
+        )
+      
+    
+    {\displaystyle \Pr(P)}
+  
+ (shown just before), this error measure can be given a coarse upper bound:
+
+
+  
+    
+      
+        Pr
+        (
+        Â¬
+        P
+        â£
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        )
+        <
+        Pr
+        (
+        M
+        
+        
+          R
+          
+            k
+          
+        
+        â£
+        Â¬
+        P
+        )
+        â
+        
+          (
+          
+            
+              
+                
+                  1
+                  
+                    Pr
+                    (
+                    P
+                    )
+                  
+                
+              
+            
+            â
+            1
+          
+          )
+        
+        â¤
+        
+          4
+          
+            â
+            k
+          
+        
+        â
+        
+          (
+          
+            
+              
+                
+                  
+                    ln
+                    â¡
+                    2
+                  
+                  2
+                
+              
+            
+            b
+            â
+            1
+            +
+            
+              
+                O
+              
+            
+            
+              (
+              
+                b
+                
+                  â
+                  1
+                
+              
+              )
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \Pr(\lnot P\mid M\!R_{k})<\Pr(M\!R_{k}\mid \lnot P)\cdot \left({\tfrac {1}{\Pr(P)}}-1\right)\leq 4^{-k}\cdot \left({\tfrac {\ln 2}{2}}b-1+{\mathcal {O}}\left(b^{-1}\right)\right)}
+  
+
+Hence, for large enough b, this error measure is less than 
+  
+    
+      
+        
+          
+            
+              
+                ln
+                â¡
+                2
+              
+              2
+            
+          
+        
+        â
+        b
+        â
+        
+          4
+          
+            â
+            k
+          
+        
+      
+    
+    {\displaystyle {\tfrac {\ln 2}{2}}\cdot b\cdot 4^{-k}}
+  
+. However, much better bounds exist.
+Using the fact that the MillerâRabin test itself often has an error bound much smaller than 4âk (see earlier), DamgÃ¥rd, Landrock and Pomerance derived several error bounds for the generator, with various classes of parameters b and k.[7] These error bounds allow an implementor to choose a reasonable k for a desired accuracy.
+One of these error bounds is 4âk, which holds for all b â¥ 2 (the authors only showed it for b â¥ 51, while Ronald Burthe Jr. completed the proof with the remaining values 2 â¤ b â¤ 50[19]). Again this simple bound can be improved for large values of b. For instance, another bound derived by the same authors is:
+
+
+  
+    
+      
+        
+          (
+          
+            
+              
+                
+                  1
+                  7
+                
+              
+            
+            
+              b
+              
+                15
+                
+                  /
+                
+                4
+              
+            
+            
+              2
+              
+                â
+                b
+                
+                  /
+                
+                2
+              
+            
+          
+          )
+        
+        â
+        
+          4
+          
+            â
+            k
+          
+        
+      
+    
+    {\displaystyle \left({\tfrac {1}{7}}b^{15/4}2^{-b/2}\right)\cdot 4^{-k}}
+  
+
+which holds for all b â¥ 21 and k â¥ bâ4. This bound is smaller than 4âk as soon as b â¥ 32.
+
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ 
+The MillerâRabin test is often incorrectly said to have been discovered by M. M. Artjuhov as soon as 1967; a reading of Artjuhov's paper[3]  
+(particularly his Theorem E) shows that he actually discovered the SolovayâStrassen test.
+
+^ 
+For instance, in 1995, Arnault gives a 397-digit composite number for which all bases less than 307 are strong liars; this number was reported to be prime by the Maple isprime() function, because it implemented the MillerâRabin test with the specific bases 2, 3, 5, 7 and 11.[5]
+
+^ 
+For instance, in 2018, Albrecht et al. were able to construct, for many cryptographic libraries such as OpenSSL and GNU GMP, composite numbers that these libraries declared prime, thus demonstrating that they were not implemented with an adversarial context in mind.[8]
+
+
+References[edit]
+
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Miller, Gary L. (1976), "Riemann's Hypothesis and Tests for Primality", Journal of Computer and System Sciences, 13 (3): 300â317, doi:10.1145/800116.803773, S2CIDÂ 10690396
+
+^ Jump up to: a b Rabin, Michael O. (1980), "Probabilistic algorithm for testing primality", Journal of Number Theory, 12 (1): 128â138, doi:10.1016/0022-314X(80)90084-0
+
+^ Artjuhov, M. M. (1966â1967), "Certain criteria for primality of numbers connected with the little Fermat theorem", Acta Arithmetica, 12: 355â364, MRÂ 0213289
+
+^ Jump up to: a b Carl Pomerance; John L. Selfridge; Samuel S. Wagstaff, Jr. (July 1980). "The pseudoprimes to 25Â·109" (PDF). Mathematics of Computation. 35 (151): 1003â1026. doi:10.1090/S0025-5718-1980-0572872-7.
+
+^ F. Arnault (August 1995). "Constructing Carmichael Numbers Which Are Strong Pseudoprimes to Several Bases". Journal of Symbolic Computation. 20 (2): 151â161. doi:10.1006/jsco.1995.1042.
+
+^ Jump up to: a b Schoof, RenÃ© (2004), "Four primality testing algorithms" (PDF), Algorithmic Number Theory: Lattices, Number Fields, Curves and Cryptography, Cambridge University Press, ISBNÂ 978-0-521-80854-5
+
+^ Jump up to: a b DamgÃ¥rd, I.; Landrock, P. & Pomerance, C. (1993), "Average case error estimates for the strong probable prime test" (PDF), Mathematics of Computation, 61 (203): 177â194, Bibcode:1993MaCom..61..177D, doi:10.2307/2152945, JSTORÂ 2152945
+
+^ Martin R. Albrecht; Jake Massimo; Kenneth G. Paterson; Juraj Somorovsky (15 October 2018). Prime and Prejudice: Primality Testing Under Adversarial Conditions (PDF). ACM SIGSAC Conference on Computer and Communications Security 2018. Toronto: Association for Computing Machinery. pp.Â 281â298. doi:10.1145/3243734.3243787.
+
+^ Bach, Eric (1990), "Explicit bounds for primality testing and related problems", Mathematics of Computation, 55 (191): 355â380, Bibcode:1990MaCom..55..355B, doi:10.2307/2008811, JSTORÂ 2008811
+
+^ Jaeschke, Gerhard (1993), "On strong pseudoprimes to several bases", Mathematics of Computation, 61 (204): 915â926, doi:10.2307/2153262, JSTORÂ 2153262
+
+^ Jiang, Yupeng; Deng, Yingpu (2014). "Strong pseudoprimes to the first eight prime bases". Mathematics of Computation. 83 (290): 2915â2924. doi:10.1090/S0025-5718-2014-02830-5.
+
+^ Sorenson, Jonathan; Webster, Jonathan (2015). "Strong Pseudoprimes to Twelve Prime Bases". Mathematics of Computation. 86 (304): 985â1003. arXiv:1509.00864. Bibcode:2015arXiv150900864S. doi:10.1090/mcom/3134. S2CIDÂ 6955806.
+
+^ Jump up to: a b Caldwell, Chris. "Finding primes & proving primality â 2.3: Strong probable-primality and a practical test". The Prime Pages. Retrieved February 24, 2019.
+
+^ Zhang, Zhenxiang & Tang, Min (2003), "Finding strong pseudoprimes to several bases. II", Mathematics of Computation, 72 (44): 2085â2097, Bibcode:2003MaCom..72.2085Z, doi:10.1090/S0025-5718-03-01545-X
+
+^ Sloane, N.Â J.Â A. (ed.). "Sequence A014233 (Smallest odd number for which MillerâRabin primality test on bases <= n-th prime does not reveal compositeness)". The On-Line Encyclopedia of Integer Sequences. OEIS Foundation.
+
+^ Izykowski, Wojciech. "Deterministic variants of the MillerâRabin primality test". Retrieved February 24, 2019.
+
+^ Alford, W. R.; Granville, A.; Pomerance, C. (1994), "On the difficulty of finding reliable witnesses" (PDF), Lecture Notes in Computer Science, Springer-Verlag, 877: 1â16, doi:10.1007/3-540-58691-1_36, ISBNÂ 978-3-540-58691-3
+
+^ Robert Baillie; Samuel S. Wagstaff, Jr. (October 1980). "Lucas Pseudoprimes" (PDF). Mathematics of Computation. 35 (152): 1391â1417. doi:10.1090/S0025-5718-1980-0583518-6. MRÂ 0583518.
+
+^ Burthe Jr., Ronald J. (1996), "Further investigations with the strong probable prime test" (PDF), Mathematics of Computation, 65 (213): 373â381, Bibcode:1996MaCom..65..373B, doi:10.1090/S0025-5718-96-00695-3
+
+
+External links[edit]
+
+
+
+The Wikibook Algorithm Implementation has a page on the topic of: Primality testing
+
+Weisstein, Eric W. "Rabin-Miller Strong Pseudoprime Test". MathWorld.
+Interactive Online Implementation of the Deterministic Variant (stepping through the algorithm step-by-step)
+Applet (German)
+MillerâRabin primality test in C#
+MillerâRabin primality test in JavaScript using arbitrary precision arithmetic
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteNumber-theoretic algorithmsPrimality tests
+AKS
+APR
+BaillieâPSW
+Elliptic curve
+Pocklington
+Fermat
+Lucas
+LucasâLehmer
+LucasâLehmerâRiesel
+Proth's theorem
+PÃ©pin's
+Quadratic Frobenius
+SolovayâStrassen
+MillerâRabin
+Prime-generating
+Sieve of Atkin
+Sieve of Eratosthenes
+Sieve of Sundaram
+Wheel factorization
+Integer factorization
+Continued fraction (CFRAC)
+Dixon's
+Lenstra elliptic curve (ECM)
+Euler's
+Pollard's rho
+p â 1
+p + 1
+Quadratic sieve (QS)
+General number field sieve (GNFS)
+Special number field sieve (SNFS)
+Rational sieve
+Fermat's
+Shanks's square forms
+Trial division
+Shor's
+Multiplication
+Ancient Egyptian
+Long
+Karatsuba
+ToomâCook
+SchÃ¶nhageâStrassen
+FÃ¼rer's
+Euclidean division
+Binary
+Chunking
+Fourier
+Goldschmidt
+Newton-Raphson
+Long
+Short
+SRT
+Discrete logarithm
+Baby-step giant-step
+Pollard rho
+Pollard kangaroo
+PohligâHellman
+Index calculus
+Function field sieve
+Greatest common divisor
+Binary
+Euclidean
+Extended Euclidean
+Lehmer's
+Modular square root
+Cipolla
+Pocklington's
+TonelliâShanks
+Berlekamp
+Kunerth
+Other algorithms
+Chakravala
+Cornacchia
+Exponentiation by squaring
+Integer square root
+Integer relation (LLL; KZ)
+Modular exponentiation
+Montgomery reduction
+Schoof
+
+Italics indicate that algorithm is for numbers of special forms
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=MillerâRabin_primality_test&oldid=1058489090"
+		Categories: Primality testsFinite fieldsHidden categories: Articles with short descriptionShort description is different from Wikidata
+	

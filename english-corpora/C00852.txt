@@ -1,0 +1,204 @@
+
+Title:
+Asynchronous I/O
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Form of input/output processing
+This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Asynchronous I/O"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (June 2014) (Learn how and when to remove this template message)
+This article may require cleanup to meet Wikipedia's quality standards. The specific problem is: async and nonblocking are different approaches. Relevant discussion may be found on the talk page. Please help improve this article if you can.  (September 2017) (Learn how and when to remove this template message)
+In computer science, asynchronous I/O (also non-sequential I/O) is a form of input/output processing that permits other processing to continue before the transmission has finished.
+Input and output (I/O) operations on a computer can be extremely slow compared to the processing of data. An I/O device can incorporate mechanical devices that must physically move, such as a hard drive seeking a track to read or write; this is often orders of magnitude slower than the switching of electric current. For example, during a disk operation that takes ten milliseconds to perform, a processor that is clocked at one gigahertz could have performed ten million instruction-processing cycles.
+A simple approach to I/O would be to start the access and then wait for it to complete. But such an approach (called synchronous I/O, or blocking I/O) would block the progress of a program while the communication is in progress, leaving system resources idle. When a program makes many I/O operations (such as a program mainly or largely dependent on user input), this means that the processor can spend almost all of its time idle waiting for I/O operations to complete.
+Alternatively, it is possible to start the communication and then perform processing that does not require that the I/O be completed. This approach is called asynchronous input/output. Any task that depends on the I/O having completed (this includes both using the input values and critical operations that claim to assure that a write operation has been completed) still needs to wait for the I/O operation to complete, and thus is still blocked, but other processing that does not have a dependency on the I/O operation can continue.
+Many operating system functions exist to implement asynchronous I/O at many levels. In fact, one of the main functions of all but the most rudimentary of operating systems is to perform at least some form of basic asynchronous I/O, though this may not be particularly apparent to the user or the programmer. In the simplest software solution, the hardware device status is polled at intervals to detect whether the device is ready for its next operation. (For example, the CP/M operating system was built this way. Its system call semantics did not require any more elaborate I/O structure than this, though most implementations were more complex, and thereby more efficient.) Direct memory access (DMA) can greatly increase the efficiency of a polling-based system, and hardware interrupts can eliminate the need for polling entirely. Multitasking operating systems can exploit the functionality provided by hardware interrupts, whilst hiding the complexity of interrupt handling from the user. Spooling was one of the first forms of multitasking designed to exploit asynchronous I/O. Finally, multithreading and explicit asynchronous I/O APIs within user processes can exploit asynchronous I/O further, at the cost of extra software complexity.
+Asynchronous I/O is used to improve energy efficiency, and in some cases, throughput. However, it can have negative effects on latency and throughput in some cases.
+
+Contents
+
+1 Forms
+
+1.1 Process
+1.2 Polling
+1.3 Select(/poll) loops
+1.4 Signals (interrupts)
+1.5 Callback functions
+1.6 Light-weight processes or threads
+1.7 Completion queues/ports
+1.8 Event flags
+1.9 Channel I/O
+1.10 Registered I/O
+
+
+2 Implementation
+
+2.1 Synthesis
+
+
+3 Examples
+4 See also
+5 References
+6 External links
+
+
+
+Forms[edit]
+Forms of I/O and examples of POSIX functions:
+
+
+
+
+
+Blocking
+Non-blocking
+Asynchronous
+
+
+API
+
+write, read
+write, read + poll / select
+aio_write, aio_read
+
+All forms of asynchronous I/O open applications up to potential resource conflicts and associated failure. Careful programming (often using mutual exclusion, semaphores, etc.) is required to prevent this.
+When exposing asynchronous I/O to applications there are a few broad classes of implementation. The form of the API provided to the application does not necessarily correspond with the mechanism actually provided by the operating system; emulations are possible. Furthermore, more than one method may be used by a single application, depending on its needs and the desires of its programmer(s). Many operating systems provide more than one of these mechanisms, it is possible that some may provide all of them.
+
+Process[edit]
+Available in early Unix. In a multitasking operating system, processing can be distributed across different processes, which run independently, have their own memory, and process their own I/O flows; these flows are typically connected in pipelines. Processes are fairly expensive to create and maintain,[citation needed] so this solution only works well if the set of processes is small and relatively stable. It also assumes that the individual processes can operate independently, apart from processing each other's I/O; if they need to communicate in other ways, coordinating them can become difficult.[citation needed]
+An extension of this approach is dataflow programming, which allows more complicated networks than just the chains that pipes support.
+
+Polling[edit]
+Variations:
+
+Error if it cannot be done yet (reissue later)
+Report when it can be done without blocking (then issue it)
+Polling provides non-blocking synchronous API which may be used to implement some asynchronous API. Available in traditional Unix and Windows. Its major problem is that it can waste CPU time polling repeatedly when there is nothing else for the issuing process to do, reducing the time available for other processes. Also, because a polling application is essentially single-threaded it may be unable to fully exploit I/O parallelism that the hardware is capable of.
+
+Select(/poll) loops[edit]
+Available in BSD Unix, and almost anything else with a TCP/IP protocol stack that either utilizes or is modeled after the BSD implementation. A variation on the theme of polling, a select loop uses the select system call to sleep until a condition occurs on a file descriptor (e.g., when data is available for reading), a timeout occurs, or a signal is received (e.g., when a child process dies). By examining the return parameters of the select call, the loop finds out which file descriptor has changed and executes the appropriate code. Often, for ease of use, the select loop is implemented as an event loop, perhaps using callback functions; the situation lends itself particularly well to event-driven programming.
+While this method is reliable and relatively efficient, it depends heavily on the Unix paradigm that "everything is a file"; any blocking I/O that does not involve a file descriptor will block the process. The select loop also relies on being able to involve all I/O in the central select call; libraries that conduct their own I/O are particularly problematic in this respect. An additional potential problem is that the select and the I/O operations are still sufficiently decoupled that select's result may effectively be a lie: if two processes are reading from a single file descriptor (arguably bad design) the select may indicate the availability of read data that has disappeared by the time that the read is issued, thus resulting in blocking; if two processes are writing to a single file descriptor (not that uncommon) the select may indicate immediate writability yet the write may still block, because a buffer has been filled by the other process in the interim, or due to the write being too large for the available buffer or in other ways unsuitable to the recipient.
+The select loop does not reach the ultimate system efficiency possible with, say, the completion queues method, because the semantics of the select call, allowing as it does for per-call tuning of the acceptable event set, consumes some amount of time per invocation traversing the selection array. This creates little overhead for user applications that might have open one file descriptor for the windowing system and a few for open files, but becomes more of a problem as the number of potential event sources grows, and can hinder development of many-client server applications, as in the C10k problem; other asynchronous methods may be noticeably more efficient in such cases. Some Unixes provide system-specific calls with better scaling; for example, epoll in Linux (that fills the return selection array with only those event sources on which an event has occurred), kqueue in FreeBSD, and event ports (and /dev/poll) in Solaris.
+SVR3 Unix provided the poll system call. Arguably better-named than select, for the purposes of this discussion it is essentially the same thing. SVR4 Unixes (and thus POSIX) offer both calls.
+
+Signals (interrupts)[edit]
+Available in BSD and POSIX Unix. I/O is issued asynchronously, and when it is completed a signal (interrupt) is generated. As in low-level kernel programming, the facilities available for safe use within the signal handler are limited, and the main flow of the process could have been interrupted at nearly any point, resulting in inconsistent data structures as seen by the signal handler. The signal handler is usually not able to issue further asynchronous I/O by itself.
+The signal approach, though relatively simple to implement within the OS, brings to the application program the unwelcome baggage associated with writing an operating system's kernel interrupt system. Its worst characteristic is that every blocking (synchronous) system call is potentially interruptible; the programmer must usually incorporate retry code at each call.[citation needed]
+
+Callback functions[edit]
+Available in the classic Mac OS, VMS and Windows. Bears many of the characteristics of the signal method as it is fundamentally the same thing, though rarely recognized as such. The difference is that each I/O request usually can have its own completion function, whereas the signal system has a single callback. This method is used by some networking framework, including Node.js, due to ease of implementation and due to the absence of language support needed; nonetheless it can result in nested and messy code, nicknamed as "callback hell".
+On the other hand, a potential problem of using callbacks is that stack depth can grow unmanageably, as an extremely common thing to do when one I/O is finished is to schedule another. If this should be satisfied immediately, the first callback is not 'unwound' off the stack before the next one is invoked. Systems to prevent this (like 'mid-ground' scheduling of new work) add complexity and reduce performance. In practice, however, this is generally not a problem because the new I/O will itself usually return as soon as the new I/O is started allowing the stack to be 'unwound'. The problem can also be prevented by avoiding any further callbacks, by means of a queue, until the first callback returns.
+
+Light-weight processes or threads[edit]
+Light-weight processes (LWPs) or threads are available in more modern Unixes, originating in Plan 9 .[citation needed] Like the process method, but without the data isolation that hampers coordination of the flows. This lack of isolation introduces its own problems, usually requiring kernel-provided synchronization mechanisms and thread-safe libraries. Each LWP or thread itself uses traditional blocking synchronous I/O. The requisite separate per-thread stack may preclude large-scale implementations using very large numbers of threads. The separation of textual (code) and time (event) flows provides fertile ground for errors.
+This approach is also used in the Erlang programming language runtime system. The Erlang virtual machine uses asynchronous I/O using a small pool of only a few threads or sometimes just one process, to handle I/O from up to millions of Erlang processes. I/O handling in each process is written mostly using blocking synchronous I/O. This way high performance of asynchronous I/O is merged with simplicity of normal I/O (c.f. the Actor model). Many I/O problems in Erlang are mapped to message passing, which can be easily processed using built-in selective receive.
+Fibers / Coroutines can be viewed as a similarly lightweight approach to do asynchronous I/O outside of the Erlang runtime system, although they do not provide exactly the same guarantees as Erlang processes.
+
+Completion queues/ports[edit]
+Available in Microsoft Windows, Solaris, AmigaOS, DNIX and Linux (using io_uring, available on 5.1 and above).[1] I/O requests are issued asynchronously, but notifications of completion are provided via a synchronizing queue mechanism in the order they are completed. Usually associated with a state-machine structuring of the main process (event-driven programming), which can bear little resemblance to a process that does not use asynchronous I/O or that uses one of the other forms, hampering code reuse[citation needed]. Does not require additional special synchronization mechanisms or thread-safe libraries, nor are the textual (code) and time (event) flows separated.
+
+Event flags[edit]
+Available in VMS and AmigaOS (often used in conjunction with a completion port). Bears many of the characteristics of the completion queue method, as it is essentially a completion queue of depth one. To simulate the effect of queue 'depth', an additional event flag is required for each potential unprocessed (but completed) event, or event information can be lost. Waiting for the next available event in such a clump requires synchronizing mechanisms that may not scale well to larger numbers of potentially parallel events.
+
+Channel I/O[edit]
+Available in mainframes by IBM, Groupe Bull, and Unisys. Channel I/O is designed to maximize CPU utilization and throughput by offloading most I/O onto a coprocessor. The coprocessor has onboard DMA, handles device interrupts, is controlled by the main CPU, and only interrupts the main CPU when it's truly necessary. This architecture also supports so-called channel programs that run on the channel processor to do heavy lifting for I/O activities and protocols.
+
+Registered I/O[edit]
+Available in Windows Server 2012 and Windows 8. Optimized for applications that process large numbers of small messages to achieve higher I/O operations per second with reduced jitter and latency.[2]
+
+This section needs expansion. You can help by adding to it.  (May 2014)
+Implementation[edit]
+This section is written like a personal reflection, personal essay, or argumentative essay that states a Wikipedia editor's personal feelings or presents an original argument about a topic. Please help improve it by rewriting it in an encyclopedic style.  (February 2016) (Learn how and when to remove this template message)
+This section does not cite any sources. Please help improve this section by adding citations to reliable sources. Unsourced material may be challenged and removed.  (February 2016) (Learn how and when to remove this template message)
+The vast majority of general-purpose computing hardware relies entirely upon two methods of implementing asynchronous I/O: polling and interrupts. Usually both methods are used together, the balance depends heavily upon the design of the hardware and its required performance characteristics. (DMA is not itself another independent method, it is merely a means by which more work can be done per poll or interrupt.)
+Pure polling systems are entirely possible, small microcontrollers (such as systems using the PIC) are often built this way. CP/M systems could also be built this way (though rarely were), with or without DMA. Also, when the utmost performance is necessary for only a few tasks, at the expense of any other potential tasks, polling may also be appropriate as the overhead of taking interrupts may be unwelcome. (Servicing an interrupt requires time [and space] to save at least part of the processor state, along with the time required to resume the interrupted task.)
+Most general-purpose computing systems rely heavily upon interrupts. A pure interrupt system may be possible, though usually some component of polling is also required, as it is very common for multiple potential sources of interrupts to share a common interrupt signal line, in which case polling is used within the device driver to resolve the actual source. (This resolution time also contributes to an interrupt system's performance penalty. Over the years a great deal of work has been done to try to minimize the overhead associated with servicing an interrupt. Current interrupt systems are rather lackadaisical when compared to some highly tuned earlier ones, but the general increase in hardware performance has greatly mitigated this.)
+Hybrid approaches are also possible, wherein an interrupt can trigger the beginning of some burst of asynchronous I/O, and polling is used within the burst itself. This technique is common in high-speed device drivers, such as network or disk, where the time lost in returning to the pre-interrupt task is greater than the time until the next required servicing. (Common I/O hardware in use these days relies heavily upon DMA and large data buffers to make up for a relatively poorly-performing interrupt system. These characteristically use polling inside the driver loops, and can exhibit tremendous throughput. Ideally the per-datum polls are always successful, or at most repeated a small number of times.)
+At one time this sort of hybrid approach was common in disk and network drivers where there was not DMA or significant buffering available. Because the desired transfer speeds were faster even than could tolerate the minimum four-operation per-datum loop (bit-test, conditional-branch-to-self, fetch, and store), the hardware would often be built with automatic wait state generation on the I/O device, pushing the data ready poll out of software and onto the processor's fetch or store hardware and reducing the programmed loop to two operations. (In effect using the processor  itself as a DMA engine.) The 6502 processor offered an unusual means to provide a three-element per-datum loop, as it had a hardware pin that, when asserted, would cause the processor's Overflow bit to be set directly. (Obviously one would have to take great care in the hardware design to avoid overriding the Overflow bit outside of the device driver!)
+
+Synthesis[edit]
+Using only these two tools (polling, and interrupts), all the other forms of asynchronous I/O discussed above may be (and in fact, are) synthesized.
+In an environment such as a Java Virtual Machine (JVM), asynchronous I/O can be synthesized even though the environment the JVM is running in may not offer it at all. This is due to the interpreted nature of the JVM. The JVM may poll (or take an interrupt) periodically to institute an internal flow of control change, effecting the appearance of multiple simultaneous processes, at least some of which presumably exist in order to perform asynchronous I/O. (Of course, at the microscopic level the parallelism may be rather coarse and exhibit some non-ideal characteristics, but on the surface it will appear to be as desired.)
+That, in fact, is the problem with using polling in any form to synthesize a different form of asynchronous I/O. Every CPU cycle that is a poll is wasted, and lost to overhead rather than  accomplishing a desired task. Every CPU cycle that is not a poll represents an increase in latency of reaction to pending I/O. Striking an acceptable balance between these two opposing forces is difficult. (This is why hardware interrupt systems were invented in the first place.)
+The trick to maximize efficiency is to minimize the amount of work that has to be done upon reception of an interrupt in order to awaken the appropriate application. Secondarily (but perhaps no less important) is the method the application itself uses to determine what it needs to do.
+Particularly problematic (for application efficiency) are the exposed polling methods, including the select/poll mechanisms. Though the underlying I/O events they are interested in are in all likelihood interrupt-driven, the interaction to this mechanism is polled and can consume a large amount of time in the poll. This is particularly true of the potentially large-scale polling possible through select (and poll). Interrupts map very well to Signals, Callback functions, Completion Queues, and Event flags, such systems can be very efficient.
+
+Examples[edit]
+Following examples shows concepts of three I/O approaches on the reading operation. Objects and functions are abstract.
+1. Blocking, synchronous:
+
+device = IO.open()
+data = device.read() # thread will be blocked until there is data in the device
+print(data)
+
+2. Non-blocking, synchronous:
+
+device = IO.open()
+ready = False
+while not ready:
+    print("There is no data to read!")
+    ready = IO.poll(device, IO.INPUT, 5) # returns control if 5 seconds have elapsed or there is data to read (INPUT)
+data = device.read()
+print(data)
+
+3. Non-blocking, asynchronous:
+
+ios = IO.IOService()
+device = IO.open(ios)
+
+def inputHandler(data, err):
+    "Input data handler"
+    if not err:
+        print(data)
+
+device.readSome(inputHandler)
+ios.loop() # wait till all operations have been completed and call all appropriate handlers
+
+Here is the example with Reactor pattern:
+
+device = IO.open()
+reactor = IO.Reactor()
+
+def inputHandler(data):
+    "Input data handler"
+    print(data)
+    reactor.stop()
+
+reactor.addHandler(inputHandler, device, IO.INPUT)
+reactor.run() # run reactor, which handles events and calls appropriate handlers
+
+See also[edit]
+Input/output completion port (IOCP)
+Asynchronous Transfer Mode
+C10k problem
+References[edit]
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Corbet, Jonathan. "Ringing in a new asynchronous I/O API". LWN.net. Retrieved 27 July 2020.
+
+^ "Registered Input-Output (RIO) API Extensions". technet.microsoft.com.
+
+
+External links[edit]
+The C10K Problem; a survey of asynchronous I/O methods with emphasis on scaling â by Dan Kegel
+Article "Boost application performance using asynchronous I/O" by M. Tim Jones
+Article "Lazy Asynchronous I/O For Event-Driven Servers" by Willy Zwaenepoel, Khaled Elmeleegy, Anupam Chanda and Alan L. Cox
+Perform I/O Operations in Parallel
+Description from POSIX standard
+Inside I/O Completion Ports by Mark Russinovich
+Description from .NET Framework Developer's Guide
+Asynchronous I/O and The Asynchronous Disk I/O Explorer
+IO::AIO is a Perl module offering an asynchronous interface for most I/O operations
+ACE Proactor
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Asynchronous_I/O&oldid=1069587294"
+		Categories: Concurrency controlEvents (computing)Input/outputHidden categories: Articles with short descriptionShort description matches WikidataArticles needing additional references from June 2014All articles needing additional referencesArticles needing cleanup from September 2017All pages needing cleanupCleanup tagged articles with a reason field from September 2017Wikipedia pages needing cleanup from September 2017All articles with unsourced statementsArticles with unsourced statements from November 2013Articles with unsourced statements from April 2017Articles to be expanded from May 2014All articles to be expandedArticles using small message boxesWikipedia articles with style issues from February 2016All articles with style issuesArticles needing additional references from February 2016
+	

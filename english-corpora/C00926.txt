@@ -1,0 +1,176 @@
+
+Title:
+Hard link
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}For the hyperlinking term, see Hardlink (hyperlink).
+In computing, a hard link is a directory entry (in a directory-based file system) that associates a name with a file. Thus, each file must have at least one hard link. Creating additional hard links for a file makes the contents of that file accessible via additional paths (i.e., via different names or in different directories).[1] This causes an alias effect: a process can open the file by any one of its paths and change its content. By contrast, a soft link or âshortcutâ to a file is not a direct link to the data itself, but rather a reference to a hard link or another soft link.
+Every directory is itself a special file, only it contains a list of file names. Hence, multiple hard links to directories are possible, which could create a circular directory structure, rather than a branching structure like a tree. For that reason, some file systems forbid the creation of hard links to directories.
+POSIX-compliant operating systems, such as Linux, Android, macOS, and the Windows NT family,[2] support multiple hard links to the same file, depending on the file system. For instance, NTFS supports hard links, while FAT and ReFS do not.
+
+Contents
+
+1 Operation
+
+1.1 Reference counting
+
+
+2 Limitations
+3 Platform support
+4 See also
+5 References
+
+
+
+Operation[edit]
+  An illustration of the concept of hard linking
+Let two hard links, named "LINK A.TXT" and "LINK B.TXT", point to the same physical data. A text editor opens "LINK A.TXT", modifies it and save it. When the editor (or any other app) opens "LINK B.TXT", it can see that changes made to "LINK A.TXT", since both file names point to the same data.
+Some editors however break the hard link concept, e.g. emacs. When opening a file for editing, e.g.,  "LINK B.TXT", emacs renames "LINK B.TXT" to "LINK B.TXT~", loads "LINK B.TXT~" into the editor, and saves the modified contents to a newly created "LINK B.TXT". Now, "LINK A.TXT" and "LINK B.TXT" no longer shares the same data. (This behavior can be changed using the emacs variable backup-by-copying.)
+Any number of hard links to the physical data may be created. To access the data, a user only needs to specify the name of any existing link; the operating system will resolve the location of the actual data. Even if the user deletes one of the hard links, the data is still accessible through any other link that remains. Once the user deletes all of the links, if no process has the file open, the operating system frees the disk space that the file once occupied.
+
+Reference counting[edit]
+  Simplified illustration of hard links on typical UN*X filesystem. Note that files "A" and "D" both point to same index entry in filesystem's inode table, making its reference count 2.
+Most file systems that support hard links use reference counting. The system stores an integer value with each logical data section that represents the total number of hard links that have been created to point to the data. When a new link is created, this value is increased by one. When a link is removed, the value is decreased by one. When the counter becomes zero, the operating system frees the logical data section. (The OS may not to do so immediately, e.g., when there are outstanding file handles open, for performance reasons, or to enable the undelete command.
+This is a simple method for the file system to track the use of a given area of storage, as zero values indicate free space and nonzero values indicate used space. The maintenance of this value guarantees that there will be no dangling hard links pointing nowhere. The data section and the associated inode are preserved as long as a single hard link (directory reference) points to it or any process keeps the associated file open.
+On POSIX-compliant operating systems, the reference count for a file or directory is returned by the stat() or fstat() system calls in the st_nlink field of struct stat.
+
+Limitations[edit]
+To prevent loops in the filesystem, and to keep the interpretation of the ".." file (parent directory) consistent, operating systems do not allow hard links to directories. UNIX System V allowed them, but only the superuser had permission to make such links.[3] Mac OS X v10.5 (Leopard) and newer use hard links on directories for the Time Machine backup mechanism only.[4]
+Hard links can be created to files only on the same volume, i.e., within the same file system. (Different volumes may have different file systems. There is no guarantee that the target volume's file system is compatible with hard linking.)
+The maximum number of hard links to a single file is limited by the size of the reference counter. On Unix-like systems the counter is 4,294,967,295 (on 32-bit machines) or 18,446,744,073,709,551,615 (on 64-bit machines.) In some file systems, the number of hard links is limited more strictly by their on-disk format. For example, as of Linux 3.11, the ext4 file system limits the number of hard links on a file to 65,000.[5] Windows limits enforces a limit of 1024 hard links to a file on NTFS volumes.[6]
+On Linux Weekly News, Neil Brown criticized hard links as high-maintenance, since they complicate the design of programs that handle directory trees, including archivers and disk usage tools. These apps must take care to de-duplicate files that are linked multiple times in a hierarchy. Brown notes that Plan 9 from Bell Labs, the intended successor to Unix, does not include the concept of a hard link.[7]
+
+Platform support[edit]
+Windows NT 3.1 and later support hard links on the NTFS file system.[8] Windows 2000 introduces a CreateHardLink() function to create hard links, but only for files, not directories.[9] The DeleteFile() function can remove them.
+To create a hard link on Windows, end-users can use:
+
+The fsutil utility (introduced in Windows 2000)[10]
+The mklink internal command of Windows Command Prompt (introduced in Windows Vista and Windows Server 2008)[11]
+The New-Item cmdlet of PowerShell[12]
+To interrogate a file for its hard links, end-users can use:
+
+The fsutil utility[10]
+The Get-Item and Get-ChildItem cmdlets of PowerShell. These cmdlets represent each file with an object; PowerShell adds a read-only LinkType property to each of them. This property contains the "HardLink" string if the associated file has multiple hard links.[13]
+The Windows Component Store uses hard links to keep track of different versions of components stored on the hard disk drive.
+On Unix-like systems, the link() system call can create additional hard links to existing files. To create hard links, end-users can use:
+
+The ln utility
+The link utility
+The New-Item cmdlet of PowerShell[12]
+To interrogate a file for its hard links, end-users can use:
+
+The stat command
+The ls -l command
+The Get-Item and Get-ChildItem cmdlets of PowerShell (see above)[13]
+Unix-like emulation or compatibility software running on Microsoft Windows, such as Cygwin and Subsystem for UNIX-based Applications, allow the use of POSIX interfaces. 
+OpenVMS supports hard links on the ODS-5 file system.[14] Unlike Unix, VMS can create hard links to directories.
+
+See also[edit]
+Symbolic link: Points to a hard link, not the file data itself; hence, it works across volumes and file systems.
+NTFS links: Details the four link types that the NTFS supportsâhard links, symbolic links, junction points, and volume mount points
+Shortcut: A small file that points to another in a local or remote location
+Alias: macOS implementation of a shortcut
+Shadow: OS/2 implementation of a shortcut
+freedup â The freedup command frees-up disk space by replacing duplicate data stores with automatically generated hard links
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Pitcher, Lew. "Q & A: The difference between hard and soft links".
+
+^ "Link Shell Extension".
+
+^ Bach, Maurice J. (1986). The Design of the UNIX Operating System. Prentice Hall. p.Â 128. ISBNÂ 9780132017992.
+
+^ Pond, James (August 31, 2013). "How Time Machine Works its Magic". File System Event Store, Hard Links. Retrieved May 19, 2019.
+
+^ "Linux kernel source tree, fs/ext4/ext4.h, line 229".
+
+^ "CreateHardLinkA function (winbase.h)". Windows App Development. 13 October 2021 â via Microsoft Docs.
+
+^ Brown, Neil (23 November 2010). "Ghosts of Unix past, part 4: High-maintenance designs". Linux Weekly News. Retrieved 20 April 2014.
+
+^ "How hard links work". Microsoft Docs.
+
+^ "CreateHardLink Function". Windows Development. Microsoft. 10 March 2011. Archived from the original on 2 July 2011 â via MSDN. Establishes a hard link between an existing file and a new file. This function is only supported on the NTFS file system, and only for files, not directories.{{cite web}}:  CS1 maint: unfit URL (link)
+
+^ Jump up to: a b "Fsutil hardlink". Windows App Development. Microsoft. 18 April 2012 â via Microsoft Docs.
+
+^ "Mklink". Microsoft Docs. Microsoft. 18 April 2012.
+
+^ Jump up to: a b "New-Item (PowerShell 3.0)". Microsoft Docs. Microsoft. 22 June 2020. If your location is in a FileSystem drive, the following values are allowed: If your location is in a FileSystem drive, the following values are allowed: File[,] Directory[,] Junction[,] HardLink
+
+^ Jump up to: a b "FileSystemProvider.cs". PowerShell / PowerShell repo. Microsoft. 20 November 2021. Lines 8139â8234 â via GitHub.
+
+^ "OpenVMS System Manager's Manual, Vol. I" (PDF). VSI. August 2019. Retrieved 2021-01-23.
+
+
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteComputer filesTypes
+Binary file / text file
+File format
+List of file formats
+File signatures
+Magic number
+Metafile
+Sidecar file
+Sparse file
+Swap file
+System file
+Temporary file
+Zero-byte file
+Properties
+Filename
+8.3 filename
+Long filename
+Filename mangling
+Filename extension
+List of filename extensions
+File attribute
+Extended file attributes
+File size
+Hidden file / Hidden directory
+Organisation
+Directory/folder
+NTFS links
+Temporary folder
+Directory structure
+File sequence
+File system
+Filesystem Hierarchy Standard
+Path
+Operations
+Open
+Close
+Read
+Write
+Linking
+File descriptor
+Hard link
+Shortcut
+Alias
+Shadow
+Symbolic link
+Management
+File comparison
+Data compression
+File manager
+Comparison of file managers
+File system permissions
+File transfer
+File sharing
+File verification
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Hard_link&oldid=1068856962"
+		Categories: Computer file systemsHidden categories: CS1 maint: unfit URL
+	

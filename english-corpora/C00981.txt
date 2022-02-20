@@ -1,0 +1,473 @@
+
+Title:
+Double-checked locking
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In software engineering, double-checked locking (also known as "double-checked locking optimization"[1]) is a software design pattern used to reduce the overhead of acquiring a lock by testing the locking criterion (the "lock hint") before acquiring the lock.  Locking occurs only if the locking criterion check indicates that locking is required.
+The pattern, when implemented in some language/hardware combinations, can be unsafe. At times, it can be considered an anti-pattern.[2]
+It is typically used to reduce locking overhead when implementing "lazy initialization" in a multi-threaded environment, especially as part of the Singleton pattern. Lazy initialization avoids initializing a value until the first time it is accessed.
+
+Contents
+
+1 Usage in C++11
+2 Usage in Go
+3 Usage in Java
+4 Usage in C#
+5 See also
+6 References
+7 External links
+
+
+
+Usage in C++11[edit]
+For the singleton pattern, double-checked locking is not needed:
+
+.mw-parser-output .templatequote{overflow:hidden;margin:1em 0;padding:0 40px}.mw-parser-output .templatequote .templatequotecite{line-height:1.5em;text-align:left;padding-left:1.6em;margin-top:0}If control enters the declaration concurrently while the variable is being initialized, the concurrent execution shall wait for completion of the initialization.ââÂ§Â 6.7 [stmt.dcl] p4
+Singleton& GetInstance() {
+  static Singleton s;
+  return s;
+}
+
+C++11 and beyond also provide a built-in double-checked locking pattern in the form of std::once_flag and std::call_once:
+
+#include <mutex>
+#include <optional> // Since C++17
+
+// Singleton.h
+class Singleton {
+ public:
+  static Singleton* GetInstance();
+ private:
+  Singleton() = default;
+
+  static std::optional<Singleton> s_instance;
+  static std::once_flag s_flag;
+};
+
+// Singleton.cpp
+std::optional<Singleton> Singleton::s_instance;
+std::once_flag Singleton::s_flag{};
+
+Singleton* Singleton::GetInstance() {
+  std::call_once(Singleton::s_flag,
+                 []() { s_instance.emplace(Singleton{}); });
+  return &*s_instance;
+}
+
+If one truly wishes to use the double-checked idiom instead of the trivially working example above (for instance because Visual Studio before the 2015 release did not implement the C++11 standard's language about concurrent initialization quoted above [3] ), one needs to use acquire and release fences:[4]
+
+#include <atomic>
+#include <mutex>
+
+class Singleton {
+ public:
+  static Singleton* GetInstance();
+
+ private:
+  Singleton() = default;
+
+  static std::atomic<Singleton*> s_instance;
+  static std::mutex s_mutex;
+};
+
+Singleton* Singleton::GetInstance() {
+  Singleton* p = s_instance.load(std::memory_order_acquire);
+  if (p == nullptr) { // 1st check
+    std::lock_guard<std::mutex> lock(s_mutex);
+    p = s_instance.load(std::memory_order_relaxed);
+    if (p == nullptr) { // 2nd (double) check
+      p = new Singleton();
+      s_instance.store(p, std::memory_order_release);
+    }
+  }
+  return p;
+}
+
+Usage in Go[edit]
+package main
+
+import "sync"
+
+var arrOnce sync.Once
+var arr []int
+
+// getArr retrieves arr, lazily initializing on first call. Double-checked
+// locking is implemented with the sync.Once library function. The first
+// goroutine to win the race to call Do() will initialize the array, while
+// others will block until Do() has completed. After Do has run, only a
+// single atomic comparison will be required to get the array.
+func getArr() []int {
+	arrOnce.Do(func() {
+		arr = []int{0, 1, 2}
+	})
+	return arr
+}
+
+func main() {
+	// thanks to double-checked locking, two goroutines attempting to getArr()
+	// will not cause double-initialization
+	go getArr()
+	go getArr()
+}
+
+Usage in Java[edit]
+Consider, for example, this code segment in the Java programming language as given by [2] (as well as all other Java code segments):
+
+// Single-threaded version
+class Foo {
+    private static Helper helper;
+    public Helper getHelper() {
+        if (helper == null) {
+            helper = new Helper();
+        }
+        return helper;
+    }
+
+    // other functions and members...
+}
+
+The problem is that this does not work when using multiple threads. A lock must be obtained in case two threads call getHelper() simultaneously. Otherwise, either they may both try to create the object at the same time, or one may wind up getting a reference to an incompletely initialized object.
+The lock is obtained by expensive synchronizing, as is shown in the following example.
+
+// Correct but possibly expensive multithreaded version
+class Foo {
+    private Helper helper;
+    public synchronized Helper getHelper() {
+        if (helper == null) {
+            helper = new Helper();
+        }
+        return helper;
+    }
+
+    // other functions and members...
+}
+
+However, the first call to getHelper() will create the object and only the few threads trying to access it during that time need to be synchronized; after that all calls just get a reference to the member variable.
+Since synchronizing a method could in some extreme cases decrease performance by a factor of 100 or higher,[5] the overhead of acquiring and releasing a lock every time this method is called seems unnecessary: once the initialization has been completed, acquiring and releasing the locks would appear unnecessary. Many programmers have attempted to optimize this situation in the following manner:
+
+Check that the variable is initialized (without obtaining the lock). If it is initialized, return it immediately.
+Obtain the lock.
+Double-check whether the variable has already been initialized: if another thread acquired the lock first, it may have already done the initialization. If so, return the initialized variable.
+Otherwise, initialize and return the variable.
+// Broken multithreaded version
+// "Double-Checked Locking" idiom
+class Foo {
+    private Helper helper;
+    public Helper getHelper() {
+        if (helper == null) {
+            synchronized (this) {
+                if (helper == null) {
+                    helper = new Helper();
+                }
+            }
+        }
+        return helper;
+    }
+
+    // other functions and members...
+}
+
+Intuitively, this algorithm seems like an efficient solution to the problem. However, this technique has many subtle problems and should usually be avoided. For example, consider the following sequence of events:
+
+Thread A notices that the value is not initialized, so it obtains the lock and begins to initialize the value.
+Due to the semantics of some programming languages, the code generated by the compiler is allowed to update the shared variable to point to a partially constructed object before A has finished performing the initialization. For example, in Java if a call to a constructor has been inlined then the shared variable may immediately be updated once the storage has been allocated but before the inlined constructor initializes the object.[6]
+Thread B notices that the shared variable has been initialized (or so it appears), and returns its value. Because thread B believes the value is already initialized, it does not acquire the lock. If B uses the object before all of the initialization done by A is seen by B (either because A has not finished initializing it or because some of the initialized values in the object have not yet percolated to the memory B uses (cache coherence)), the program will likely crash.
+One of the dangers of using double-checked locking in J2SE 1.4 (and earlier versions) is that it will often appear to work: it is not easy to distinguish between a correct implementation of the technique and one that has subtle problems. Depending on the compiler, the interleaving of threads by the scheduler and the nature of other concurrent system activity, failures resulting from an incorrect implementation of double-checked locking may only occur intermittently. Reproducing the failures can be difficult.
+As of J2SE 5.0, this problem has been fixed. The volatile keyword now ensures that multiple threads handle the singleton instance correctly. This new idiom is described in [3] and [4].
+
+// Works with acquire/release semantics for volatile in Java 1.5 and later
+// Broken under Java 1.4 and earlier semantics for volatile
+class Foo {
+    private volatile Helper helper;
+    public Helper getHelper() {
+        Helper localRef = helper;
+        if (localRef == null) {
+            synchronized (this) {
+                localRef = helper;
+                if (localRef == null) {
+                    helper = localRef = new Helper();
+                }
+            }
+        }
+        return localRef;
+    }
+
+    // other functions and members...
+}
+
+Note the local variable ".mw-parser-output .monospaced{font-family:monospace,monospace}localRef", which seems unnecessary. The effect of this is that in cases where helper is already initialized (i.e., most of the time), the volatile field is only accessed once (due to "return localRef;" instead of "return helper;"), which can improve the method's overall performance by as much as 40 percent.[7]
+Java 9 introduced the VarHandle class, which allows use of relaxed atomics to access fields, giving somewhat faster reads on machines with weak memory models, at the cost of more difficult mechanics and loss of sequential consistency (field accesses no longer participate in the synchronization order, the global order of accesses to volatile fields).[8]
+
+// Works with acquire/release semantics for VarHandles introduced in Java 9
+class Foo {
+    private volatile Helper helper;
+
+    public Helper getHelper() {
+        Helper localRef = getHelperAcquire();
+        if (localRef == null) {
+            synchronized (this) {
+                localRef = getHelperAcquire();
+                if (localRef == null) {
+                    localRef = new Helper();
+                    setHelperRelease(localRef);
+                }
+            }
+        }
+        return localRef;
+    }
+
+    private static final VarHandle HELPER;
+    private Helper getHelperAcquire() {
+        return (Helper) HELPER.getAcquire(this);
+    }
+    private void setHelperRelease(Helper value) {
+        HELPER.setRelease(this, value);
+    }
+
+    static {
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            HELPER = lookup.findVarHandle(Foo.class, "helper", Helper.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    // other functions and members...
+}
+
+If the helper object is static (one per class loader), an alternative is the initialization-on-demand holder idiom[9] (See Listing 16.6[10] from the previously cited text.)
+
+// Correct lazy initialization in Java
+class Foo {
+    private static class HelperHolder {
+       public static final Helper helper = new Helper();
+    }
+
+    public static Helper getHelper() {
+        return HelperHolder.helper;
+    }
+}
+
+This relies on the fact that nested classes are not loaded until they are referenced.
+Semantics of final field in Java 5 can be employed to safely publish the helper object without using volatile:[11]
+
+public class FinalWrapper<T> {
+    public final T value;
+    public FinalWrapper(T value) {
+        this.value = value;
+    }
+}
+
+public class Foo {
+   private FinalWrapper<Helper> helperWrapper;
+
+   public Helper getHelper() {
+      FinalWrapper<Helper> tempWrapper = helperWrapper;
+
+      if (tempWrapper == null) {
+          synchronized (this) {
+              if (helperWrapper == null) {
+                  helperWrapper = new FinalWrapper<Helper>(new Helper());
+              }
+              tempWrapper = helperWrapper;
+          }
+      }
+      return tempWrapper.value;
+   }
+}
+
+The local variable tempWrapper is required for correctness: simply using helperWrapper for both null checks and the return statement could fail due to read reordering allowed under the Java Memory Model.[12] Performance of this implementation is not necessarily better than the volatile implementation.
+
+Usage in C#[edit]
+Double-checked locking can be implemented efficiently in .NET. A common usage pattern is to add double-checked locking to Singleton implementations:
+
+public class MySingleton
+{
+    private static object _myLock = new object();
+    private static MySingleton _mySingleton = null;
+
+    private MySingleton() { }
+
+    public static MySingleton GetInstance()
+    {
+        if (_mySingleton is null) // The first check
+        {
+            lock (_myLock)
+            {
+                if (_mySingleton is null) // The second (double) check
+                {
+                    _mySingleton = new MySingleton();
+                }
+            }
+        }
+
+        return _mySingleton;
+    }
+}
+
+In this example, the "lock hint" is the _mySingleton object which is no longer null when fully constructed and ready for use.
+In .NET Framework 4.0, the Lazy<T> class was introduced, which internally uses double-checked locking by default (ExecutionAndPublication mode) to store either the exception that was thrown during construction, or the result of the function that was passed to Lazy<T>:[13]
+
+public class MySingleton
+{
+    private static readonly Lazy<MySingleton> _mySingleton = new Lazy<MySingleton>(() => new MySingleton());
+
+    private MySingleton() { }
+
+    public static MySingleton Instance => _mySingleton.Value;
+}
+
+See also[edit]
+The Test and Test-and-set idiom for a low-level locking mechanism.
+Initialization-on-demand holder idiom for a thread-safe replacement in Java.
+References[edit]
+
+^ Schmidt, D et al. Pattern-Oriented Software Architecture Vol 2, 2000 pp353-363
+
+^ Jump up to: a b David Bacon et al. The "Double-Checked Locking is Broken" Declaration.
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Support for C++11-14-17 Features (Modern C++)".
+
+^ Double-Checked Locking is Fixed In C++11
+
+^ Boehm, Hans-J (Jun 2005). "Threads cannot be implemented as a library" (PDF). ACM SIGPLAN Notices. 40 (6): 261â268. doi:10.1145/1064978.1065042.
+
+^ Haggar, Peter (1 May 2002). "Double-checked locking and the Singleton pattern". IBM.
+
+^ Joshua Bloch "Effective Java, Third Edition", p. 372
+
+^ "Chapter 17. Threads and Locks". docs.oracle.com. Retrieved 2018-07-28.
+
+^ Brian Goetz et al. Java Concurrency in Practice, 2006 pp348
+
+^ Goetz, Brian;  etÂ al. "Java Concurrency in Practice â listings on website". Retrieved 21 October 2014.
+
+^ [1] Javamemorymodel-discussion mailing list
+
+^ [2] Manson, Jeremy (2008-12-14). "Date-Race-Ful Lazy Initialization for Performance â Java Concurrency (&c)". Retrieved 3 December 2016.
+
+^ Albahari, Joseph (2010). "Threading in C#: Using Threads". C# 4.0 in a Nutshell. O'Reilly Media. ISBNÂ 978-0-596-80095-6. Lazy<T> actually implements [â¦] double-checked locking. Double-checked locking performs an additional volatile read to avoid the cost of obtaining a lock if the object is already initialized.
+
+
+External links[edit]
+Issues with the double checked locking mechanism captured in Jeu George's Blogs
+"Double Checked Locking" Description from the Portland Pattern Repository
+"Double Checked Locking is Broken" Description from the Portland Pattern Repository
+Paper "C++ and the Perils of Double-Checked Locking" (475Â KB) by Scott Meyers and Andrei Alexandrescu
+Article "Double-checked locking: Clever, but broken" by Brian Goetz
+Article "Warning! Threading in a multiprocessor world" by Allen Holub
+Double-checked locking and the Singleton pattern
+Singleton Pattern and Thread Safety
+volatile keyword in VC++ 2005
+Java Examples and timing of double check locking solutions
+"More Effective Java With Google's Joshua Bloch".
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Double-checked_locking&oldid=1023651132"
+		Categories: Concurrency controlSoftware design patternsHidden categories: Articles with example Java code
+	

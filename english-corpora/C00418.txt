@@ -1,0 +1,542 @@
+
+Title:
+Hazard (computer architecture)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Problems with the instruction pipeline in central processing unit (CPU) microarchitectures
+This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Hazard"Â computer architectureÂ âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (January 2014) (Learn how and when to remove this template message)
+In the domain of central processing unit (CPU) design, hazards are problems with the instruction pipeline in CPU microarchitectures when the next instruction cannot execute in the following clock cycle,[1] and can potentially lead to incorrect computation results. Three common types of hazards are data hazards, structural hazards, and control hazards (branching hazards).[2]
+There are several methods used to deal with hazards, including pipeline stalls/pipeline bubbling, operand forwarding, and in the case of out-of-order execution, the scoreboarding method and the Tomasulo algorithm.
+
+Contents
+
+1 Background
+2 Types
+
+2.1 Data hazards
+
+2.1.1 Read after write (RAW)
+
+2.1.1.1 Example
+
+
+2.1.2 Write after read (WAR)
+
+2.1.2.1 Example
+
+
+2.1.3 Write after write (WAW)
+
+2.1.3.1 Example
+
+
+
+
+2.2 Structural hazards
+2.3 Control hazards (branch hazards or instruction hazards)
+
+
+3 Eliminating hazards
+
+3.1 Generic
+
+3.1.1 Pipeline bubbling
+
+
+3.2 Data hazards
+
+3.2.1 Operand forwarding
+3.2.2 Examples
+
+
+3.3 Control hazards (branch hazards)
+3.4 Other techniques
+
+
+4 See also
+5 References
+
+5.1 General
+
+
+6 External links
+
+
+
+Background[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Further information: Instruction pipelining
+Instructions in a pipelined processor are performed in several stages, so that at any given time several instructions are being processed in the various stages of the pipeline, such as fetch and execute. There are many different instruction pipeline microarchitectures, and instructions may be executed out-of-order. A hazard occurs when two or more of these simultaneous (possibly out of order) instructions conflict.
+
+Types[edit]
+Data hazards[edit]
+Data hazards occur when instructions that exhibit data dependence modify data in different stages of a pipeline. Ignoring potential data hazards can result in race conditions (also termed race hazards). There are three situations in which a data hazard can occur:
+
+read after write (RAW), a true dependency
+write after read (WAR), an anti-dependency
+write after write (WAW), an output dependency
+Read after read (RAR) is not a hazard case.
+Consider two instructions .mw-parser-output .monospaced{font-family:monospace,monospace}i1 and i2, with i1 occurring before i2 in program order.
+
+Read after write (RAW)[edit]
+(i2 tries to read a source before i1 writes to it)
+A read after write (RAW) data hazard refers to a situation where an instruction refers to a result that has not yet been calculated or retrieved. This can occur because even though an instruction is executed after a prior instruction, the prior instruction has been processed only partly through the pipeline.
+
+Example[edit]
+For example:
+
+i1. R2 <- R5 + R3
+i2. R4 <- R2 + R3
+
+The first instruction is calculating a value to be saved in register R2, and the second is going to use this value to compute a result for register R4. However, in a pipeline, when operands are fetched for the 2nd operation, the results from the first have not yet been saved, and hence a data dependency occurs.
+A data dependency occurs with instruction i2, as it is dependent on the completion of instruction i1.
+
+Write after read (WAR)[edit]
+(i2 tries to write a destination before it is read by i1)
+A write after read (WAR) data hazard represents a problem with concurrent execution.
+
+Example[edit]
+For example:
+
+i1. R4 <- R1 + R5
+i2. R5 <- R1 + R2
+
+In any situation with a chance that i2 may finish before i1 (i.e., with concurrent execution), it must be ensured that the result of register R5 is not stored before i1 has had a chance to fetch the operands.
+
+Write after write (WAW)[edit]
+(i2 tries to write an operand before it is written by i1)
+A write after write (WAW) data hazard may occur in a concurrent execution environment.
+
+Example[edit]
+For example:
+
+i1. R2 <- R4 + R7
+i2. R2 <- R1 + R3
+
+The write back (WB) of i2 must be delayed until i1 finishes executing.
+
+Structural hazards[edit]
+A structural hazard occurs when two (or more) instructions that are already in pipeline need the same resource. The result is that instruction must be executed in series rather than parallel for a portion of pipeline. Structural hazards are sometime referred to as resource hazards.
+Example:
+A situation in which multiple instructions are ready to enter the execute instruction phase and there is a single ALU (Arithmetic Logic Unit). One solution to such resource hazard is to increase available resources, such as having multiple ports into main memory and multiple ALU (Arithmetic Logic Unit) units.
+
+Control hazards (branch hazards or instruction hazards)[edit]
+Control hazard occurs when the pipeline makes wrong decisions on branch prediction and therefore brings instructions into the pipeline that must subsequently be discarded. The term branch hazard also refers to a control hazard.
+
+Eliminating hazards[edit]
+Generic[edit]
+Pipeline bubbling[edit]
+Main article: Bubble (computing)
+Bubbling the pipeline, also termed a pipeline break or pipeline stall, is a method to preclude data, structural, and branch hazards. As instructions are fetched, control logic determines whether a hazard could/will occur. If this is true, then the control logic inserts no operations (NOPs) into the pipeline. Thus, before the next instruction (which would cause the hazard) executes, the prior one will have had sufficient time to finish and prevent the hazard. If the number of NOPs equals the number of stages in the pipeline, the processor has been cleared of all instructions and can proceed free from hazards. All forms of stalling introduce a delay before the processor can resume execution.
+Flushing the pipeline occurs when a branch instruction jumps to a new memory location, invalidating all prior stages in the pipeline.  These prior stages are cleared, allowing the pipeline to continue at the new instruction indicated by the branch.[3][4]
+
+Data hazards[edit]
+There are several main solutions and algorithms used to resolve data hazards:
+
+insert a pipeline bubble whenever a read after write (RAW) dependency is encountered, guaranteed to increase latency, or
+use out-of-order execution to potentially prevent the need for pipeline bubbles
+use operand forwarding to use data from later stages in the pipeline
+In the case of out-of-order execution, the algorithm used can be:
+
+scoreboarding, in which case a pipeline bubble is needed only when there is no functional unit available
+the Tomasulo algorithm, which uses register renaming, allowing continual issuing of instructions
+The task of removing data dependencies can be delegated to the compiler, which can fill in an appropriate number of NOP instructions between dependent instructions to ensure correct operation, or re-order instructions where possible.
+
+Operand forwarding[edit]
+Main article: Operand forwarding
+Examples[edit]
+In the following examples, computed values are in bold, while Register numbers are not.
+For example, to write the value 3 to register 1, (which already contains a 6), and then add 7 to register 1 and store the result in register 2, i.e.:
+
+i0: R1 = 6
+i1: R1 = 3
+i2: R2 = R1 + 7 = 10
+
+Following execution, register 2 should contain the value 10. However, if i1 (write 3 to register 1) does not fully exit the pipeline before i2 starts executing, it means that R1 does not contain the value 3 when i2 performs its addition. In such an event, i2 adds 7 to the old value of register 1 (6), and so register 2 contains 13 instead, i.e.:
+
+i0: R1 = 6
+i2: R2 = R1 + 7 = 13
+i1: R1 = 3
+
+This error occurs because i2 reads Register 1 before i1 has committed/stored the result of its write operation to Register 1. So when i2 is reading the contents of Register 1, register 1 still contains 6, not 3.
+Forwarding (described below) helps correct such errors by depending on the fact that the output of i1 (which is 3) can be used by subsequent instructions before the value 3 is committed to/stored in Register 1.
+Forwarding applied to the example means that there is no wait to commit/store the output of i1 in Register 1 (in this example, the output is 3) before making that output available to the subsequent instruction (in this case, i2). The effect is that i2 uses the correct (the more recent) value of Register 1: the commit/store was made immediately and not pipelined.
+With forwarding enabled, the Instruction Decode/Execution (ID/EX) stage of the pipeline now has two inputs: the value read from the register specified (in this example, the value 6 from Register 1), and the new value of Register 1 (in this example, this value is 3) which is sent from the next stage Instruction Execute/Memory Access (EX/MEM). Added control logic is used to determine which input to use.
+
+Control hazards (branch hazards)[edit]
+To avoid control hazards microarchitectures can:
+
+insert a pipeline bubble (discussed above), guaranteed to increase latency, or
+use branch prediction and essentially make educated guesses about which instructions to insert, in which case a pipeline bubble will only be needed in the case of an incorrect prediction
+In the event that a branch causes a pipeline bubble after incorrect instructions have entered the pipeline, care must be taken to prevent any of the wrongly-loaded instructions from having any effect on the processor state excluding energy wasted processing them before they were discovered to be loaded incorrectly.
+
+Other techniques[edit]
+Memory latency is another factor that designers must attend to, because the delay could reduce performance. Different types of memory have different accessing time to the memory. Thus, by choosing a suitable type of memory, designers can improve the performance of the pipelined data path.[5]
+
+See also[edit]
+.mw-parser-output .div-col{margin-top:0.3em;column-width:30em}.mw-parser-output .div-col-small{font-size:90%}.mw-parser-output .div-col-rules{column-rule:1px solid #aaa}.mw-parser-output .div-col dl,.mw-parser-output .div-col ol,.mw-parser-output .div-col ul{margin-top:0}.mw-parser-output .div-col li,.mw-parser-output .div-col dd{page-break-inside:avoid;break-inside:avoid-column}
+Feed forward (control)
+Register renaming
+Data dependency
+Hazard (logic)
+Hazard pointer
+Classic RISC pipeline Â§Â Hazards
+Speculative execution
+Branch delay slot
+Branch predication
+Branch predictor
+Race condition
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Patterson & Hennessy 2009, p.Â 335.
+
+^ Patterson & Hennessy 2009, pp.Â 335â343.
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Branch Prediction Schemes". cs.iastate.edu. 2001-04-06. Retrieved 2014-07-19.
+
+^ "Data and Control Hazards". classes.soe.ucsc.edu. 2004-02-23. Retrieved 2014-07-19.
+
+^ Cheng, Ching-Hwa (2012-12-27). "Design Example of Useful Memory Latency for Developing a Hazard Preventive Pipeline High-Performance Embedded-Microprocessor". VLSI Design. 2013: 1â10. doi:10.1155/2013/425105.
+
+
+General[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Patterson, David; Hennessy, John (2009). Computer Organization and Design (4thÂ ed.). Morgan Kaufmann. ISBNÂ 978-0-12-374493-7.
+Patterson, David; Hennessy, John (2011). Computer Architecture: A Quantitative Approach (5thÂ ed.). Morgan Kaufmann. ISBNÂ 978-0-12-383872-8.
+Shen, John P.; Lipasti, Mikko H. (2013) [2004]. "2.2.3.2 Identication of Pipeline Hazards". Modern Processor Design: Fundamentals of Superscalar Processors. pp.Â 73â78. ISBNÂ 9781478610762.
+
+External links[edit]
+"Automatic Pipelining from Transactional Datapath Specifications" (PDF). Retrieved 23 July 2014.
+Tulsen, Dean (18 January 2005). "Pipeline hazards" (PDF).
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteProcessor technologiesModels
+Abstract machine
+Stored-program computer
+Finite-state machine
+with datapath
+Hierarchical
+Deterministic finite automaton
+Queue automaton
+Cellular automaton
+Quantum cellular automaton
+Turing machine
+Alternating Turing machine
+Universal
+PostâTuring
+Quantum
+Nondeterministic Turing machine
+Probabilistic Turing machine
+Hypercomputation
+Zeno machine
+Belt machine
+Stack machine
+Register machines
+Counter
+Pointer
+Random-access
+Random-access stored program
+Architecture
+Microarchitecture
+Von Neumann
+Harvard
+modified
+Dataflow
+Transport-triggered
+Cellular
+Endianness
+Memory access
+NUMA
+HUMA
+Loadâstore
+Register/memory
+Cache hierarchy
+Memory hierarchy
+Virtual memory
+Secondary storage
+Heterogeneous
+Fabric
+Multiprocessing
+Cognitive
+Neuromorphic
+Instruction setarchitecturesTypes
+Orthogonal instruction set
+CISC
+RISC
+Application-specific
+EDGE
+TRIPS
+VLIW
+EPIC
+MISC
+OISC
+NISC
+ZISC
+VISC architecture
+Quantum computing
+Comparison
+Addressing modes
+Instructionsets
+Motorola 68000 series
+VAX
+PDP-11
+x86
+ARM
+Stanford MIPS
+MIPS
+MIPS-X
+Power
+POWER
+PowerPC
+Power ISA
+Clipper architecture
+SPARC
+SuperH
+DEC Alpha
+ETRAX CRIS
+M32R
+Unicore
+Itanium
+OpenRISC
+RISC-V
+MicroBlaze
+LMC
+System/3x0
+S/360
+S/370
+S/390
+z/Architecture
+Tilera ISA
+VISC architecture
+Epiphany architecture
+Others
+ExecutionInstruction pipelining
+Pipeline stall
+Operand forwarding
+Classic RISC pipeline
+Hazards
+Data dependency
+Structural
+Control
+False sharing
+Out-of-order
+Scoreboarding
+Tomasulo algorithm
+Reservation station
+Re-order buffer
+Register renaming
+Wide-issue
+Speculative
+Branch prediction
+Memory dependence prediction
+ParallelismLevel
+Bit
+Bit-serial
+Word
+Instruction
+Pipelining
+Scalar
+Superscalar
+Task
+Thread
+Process
+Data
+Vector
+Memory
+Distributed
+Multithreading
+Temporal
+Simultaneous
+Hyperthreading
+Speculative
+Preemptive
+Cooperative
+Flynn's taxonomy
+SISD
+SIMD
+Array processing (SIMT)
+Pipelined processing
+Associative processing
+SWAR
+MISD
+MIMD
+SPMD
+Processorperformance
+Transistor count
+Instructions per cycle (IPC)
+Cycles per instruction (CPI)
+Instructions per second (IPS)
+Floating-point operations per second (FLOPS)
+Transactions per second (TPS)
+Synaptic updates per second (SUPS)
+Performance per watt (PPW)
+Cache performance metrics
+Computer performance by orders of magnitude
+Types
+Central processing unit (CPU)
+Graphics processing unit (GPU)
+GPGPU
+Vector
+Barrel
+Stream
+Tile processor
+Coprocessor
+PAL
+ASIC
+FPGA
+FPOA
+CPLD
+Multi-chip module (MCM)
+System in a package (SiP)
+Package on a package (PoP)
+By application
+Embedded system
+Microprocessor
+Microcontroller
+Mobile
+Notebook
+Ultra-low-voltage
+ASIP
+Soft microprocessor
+Systemson chip
+System on a chip (SoC)
+Multiprocessor (MPSoC)
+Programmable (PSoC)
+Network on a chip (NoC)
+Hardwareaccelerators
+Coprocessor
+AI accelerator
+Graphics processing unit (GPU)
+Image processor
+Vision processing unit (VPU)
+Physics processing unit (PPU)
+Digital signal processor (DSP)
+Tensor Processing Unit (TPU)
+Secure cryptoprocessor
+Network processor
+Baseband processor
+
+Word size
+1-bit
+4-bit
+8-bit
+12-bit
+15-bit
+16-bit
+24-bit
+32-bit
+48-bit
+64-bit
+128-bit
+256-bit
+512-bit
+bit slicing
+others
+variable
+Core count
+Single-core
+Multi-core
+Manycore
+Heterogeneous architecture
+Components
+Core
+Cache
+CPU cache
+Scratchpad memory
+Data cache
+Instruction cache
+replacement policies
+coherence
+Bus
+Clock rate
+Clock signal
+FIFO
+Functionalunits
+Arithmetic logic unit (ALU)
+Address generation unit (AGU)
+Floating-point unit (FPU)
+Memory management unit (MMU)
+Loadâstore unit
+Translation lookaside buffer (TLB)
+Branch predictor
+Branch target predictor
+Integrated memory controller (IMC)
+Memory management unit
+Instruction decoder
+Logic
+Combinational
+Sequential
+Glue
+Logic gate
+Quantum
+Array
+Registers
+Processor register
+Status register
+Stack register
+Register file
+Memory buffer
+Memory address register
+Program counter
+Control unit
+Hardwired control unit
+Instruction unit
+Data buffer
+Write buffer
+Microcode ROM
+Horizontal microcode
+Counter
+Datapath
+Multiplexer
+Demultiplexer
+Adder
+Multiplier
+CPU
+Binary decoder
+Address decoder
+Sum-addressed decoder
+Barrel shifter
+Circuitry
+Integrated circuit
+3D
+Mixed-signal
+Power management
+Boolean
+Digital
+Analog
+Quantum
+Switch
+
+Powermanagement
+PMU
+APM
+ACPI
+Dynamic frequency scaling
+Dynamic voltage scaling
+Clock gating
+Performance per watt (PPW)
+Related
+History of general-purpose CPUs
+Microprocessor chronology
+Processor design
+Digital electronics
+Hardware security module
+Semiconductor device fabrication
+Tickâtock model
+Pin grid array
+Chip carrier
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Hazard_(computer_architecture)&oldid=1034770091"
+		Categories: Instruction processingHidden categories: Articles with short descriptionShort description matches WikidataArticles needing additional references from January 2014All articles needing additional references
+	

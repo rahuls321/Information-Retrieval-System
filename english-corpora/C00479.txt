@@ -1,0 +1,3497 @@
+
+Title:
+Grover's algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Quantum search algorithm
+
+In quantum computing, Grover's algorithm, also known as the quantum search algorithm, refers to a quantum algorithm for unstructured search that finds with high probability the unique input to a black box function that produces a particular output value, using just 
+  
+    
+      
+        O
+        (
+        
+          
+            N
+          
+        
+        )
+      
+    
+    {\displaystyle O({\sqrt {N}})}
+  
+ evaluations of the function, where 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ is the size of the function's domain. It was devised by Lov Grover in 1996.[1]
+The analogous problem in classical computation cannot be solved in fewer than 
+  
+    
+      
+        O
+        (
+        N
+        )
+      
+    
+    {\displaystyle O(N)}
+  
+ evaluations (because, on average, one has to check half of the domain to get a 50% chance of finding the right input). At roughly the same time that Grover published his algorithm, Charles H. Bennett, Ethan Bernstein, Gilles Brassard, and Umesh Vazirani proved that any quantum solution to the problem needs to evaluate the function 
+  
+    
+      
+        O
+        (
+        
+          
+            N
+          
+        
+        )
+      
+    
+    {\displaystyle O({\sqrt {N}})}
+  
+ times, so Grover's algorithm is asymptotically optimal.[2] Since researchers generally believe that NP-complete problems are difficult because their search spaces have essentially no structure, the optimality of Grover's algorithm for unstructured search suggests (but does not prove) that quantum computers cannot solve NP-complete problems in polynomial time.[3]
+Unlike other quantum algorithms, which may provide exponential speedup over their classical counterparts, Grover's algorithm provides only a quadratic speedup. However, even quadratic speedup is considerable when 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+ is large, and Grover's algorithm can be applied to speed up broad classes of algorithms.[3] Grover's algorithm could brute-force a 128-bit symmetric cryptographic key in roughly 264 iterations, or a 256-bit key in roughly 2128 iterations. As a result, it is sometimes suggested[4] that symmetric key lengths be doubled to protect against future quantum attacks.
+
+Contents
+
+1 Applications and limitations
+
+1.1 Cryptography
+1.2 Limitations
+
+
+2 Problem description
+
+2.1 Alternative oracle definition
+
+
+3 Algorithm
+4 Geometric proof of correctness
+5 Algebraic proof of correctness
+6 Extensions and variants
+
+6.1 Multiple matching entries
+6.2 Quantum partial search
+
+
+7 Optimality
+8 See also
+9 Notes
+10 References
+11 External links
+
+
+
+Applications and limitations[edit]
+Grover's algorithm, along with variants like amplitude amplification, can be used to speed up a broad range of algorithms.[5][6][7] In particular, algorithms for NP-complete problems generally contain exhaustive search as a subroutine, which can be sped up by Grover's algorithm.[6] The current best algorithm for 3SAT is one such example. Generic constraint satisfaction problems also see quadratic speedups with Grover.[8] These algorithms do not require that the input be given in the form of an oracle, since Grover's algorithm is being applied with an explicit function, e.g. the function checking that a set of bits satisfies a 3SAT instance.
+Grover's algorithm can also give provable speedups for black-box problems in quantum query complexity, including element distinctness[9] and the collision problem[10] (solved with the BrassardâHÃ¸yerâTapp algorithm). In these types of problems, one treats the oracle function f as a database, and the goal is to use the quantum query to this function as few times as possible.
+
+Cryptography[edit]
+Grover's algorithm essentially solves the task of function inversion. Roughly speaking, if we have a function 
+  
+    
+      
+        y
+        =
+        f
+        (
+        x
+        )
+      
+    
+    {\displaystyle y=f(x)}
+  
+ that can be evaluated on a quantum computer, Grover's algorithm allows us to calculate 
+  
+    
+      
+        x
+      
+    
+    {\displaystyle x}
+  
+ when given 
+  
+    
+      
+        y
+      
+    
+    {\displaystyle y}
+  
+. Consequently, Grover's algorithm gives broad asymptotic speed-ups to many kinds of brute-force attacks on symmetric-key cryptography, including collision attacks and pre-image attacks.[11] However, this may not necessarily be the most efficient algorithm since, for example, the parallel rho algorithm is able to find a collision in SHA2 more efficiently than Grover's algorithm.[12]
+
+Limitations[edit]
+Grover's original paper described the algorithm as a database search algorithm, and this description is still common. The database in this analogy is a table of all of the function's outputs, indexed by the corresponding input. However, this database is not represented explicitly. Instead, an oracle is invoked to evaluate an item by its index. Reading a full data-base item by item and converting it into such a representation may take a lot longer than Grover's search. To account for such effects, Grover's algorithm can be viewed as solving an equation or satisfying a constraint. In such applications, the oracle is a way to check the constraint and is not related to the search algorithm. This separation usually prevents algorithmic optimizations, whereas conventional search algorithms often rely on such optimizations and avoid exhaustive search.[13]
+The major barrier to instantiating a speedup from Grover's algorithm is that the quadratic speedup achieved is too modest to overcome the large overhead of near-term quantum computers.[14] However, later generations of fault-tolerant quantum computers with better hardware performance may be able to realize these speedups for practical instances of data.
+
+Problem description[edit]
+As input for Grover's algorithm, suppose we have a function 
+  
+    
+      
+        f
+        :
+        {
+        0
+        ,
+        1
+        ,
+        â¦
+        ,
+        N
+        â
+        1
+        }
+        â
+        {
+        0
+        ,
+        1
+        }
+      
+    
+    {\displaystyle f:\{0,1,\ldots ,N-1\}\to \{0,1\}}
+  
+. In the "unstructured database" analogy, the domain represent indices to a database, and f(x) = 1 if and only if the data that x points to satisfies the search criterion. We additionally assume that only one index satisfies f(x) = 1, and we call this index Ï. Our goal is to identify Ï.
+We can access f with a subroutine (sometimes called an oracle) in the form of a unitary operator UÏ that acts as follows:
+
+
+  
+    
+      
+        
+          
+            {
+            
+              
+                
+                  
+                    U
+                    
+                      Ï
+                    
+                  
+                  
+                    |
+                  
+                  x
+                  â©
+                  =
+                  â
+                  
+                    |
+                  
+                  x
+                  â©
+                
+                
+                  
+                    forÂ 
+                  
+                  x
+                  =
+                  Ï
+                  
+                    , that is,Â 
+                  
+                  f
+                  (
+                  x
+                  )
+                  =
+                  1
+                  ,
+                
+              
+              
+                
+                  
+                    U
+                    
+                      Ï
+                    
+                  
+                  
+                    |
+                  
+                  x
+                  â©
+                  =
+                  
+                    |
+                  
+                  x
+                  â©
+                
+                
+                  
+                    forÂ 
+                  
+                  x
+                  â 
+                  Ï
+                  
+                    , that is,Â 
+                  
+                  f
+                  (
+                  x
+                  )
+                  =
+                  0.
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{cases}U_{\omega }|x\rangle =-|x\rangle &{\text{for }}x=\omega {\text{, that is, }}f(x)=1,\\U_{\omega }|x\rangle =|x\rangle &{\text{for }}x\neq \omega {\text{, that is, }}f(x)=0.\end{cases}}}
+  
+
+This uses the 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+-dimensional state space 
+  
+    
+      
+        
+          
+            H
+          
+        
+      
+    
+    {\displaystyle {\mathcal {H}}}
+  
+, which is supplied by a register with 
+  
+    
+      
+        n
+        =
+        â
+        
+          log
+          
+            2
+          
+        
+        â¡
+        N
+        â
+      
+    
+    {\displaystyle n=\lceil \log _{2}N\rceil }
+  
+ qubits.
+This is often written as
+
+
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+        
+          |
+        
+        x
+        â©
+        =
+        (
+        â
+        1
+        
+          )
+          
+            f
+            (
+            x
+            )
+          
+        
+        
+          |
+        
+        x
+        â©
+        .
+      
+    
+    {\displaystyle U_{\omega }|x\rangle =(-1)^{f(x)}|x\rangle .}
+  
+
+Grover's algorithm outputs Ï with probability at least 1/2 using 
+  
+    
+      
+        O
+        (
+        
+          
+            N
+          
+        
+        )
+      
+    
+    {\displaystyle O({\sqrt {N}})}
+  
+ applications of UÏ. This probability can be made arbitrarily large by running Grover's algorithm multiple times. If one runs Grover's algorithm until Ï is found, the expected number of applications is still 
+  
+    
+      
+        O
+        (
+        
+          
+            N
+          
+        
+        )
+      
+    
+    {\displaystyle O({\sqrt {N}})}
+  
+, since it will only be run twice on average.
+
+Alternative oracle definition[edit]
+This section compares the above oracle 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+ with an oracle 
+  
+    
+      
+        
+          U
+          
+            f
+          
+        
+      
+    
+    {\displaystyle U_{f}}
+  
+.
+UÏ is different from the standard quantum oracle for a function f. This standard oracle, denoted here as Uf, uses an ancillary qubit system. The operation then represents an inversion (NOT gate) conditioned by the value of f(x) on the main system:
+
+
+  
+    
+      
+        
+          
+            {
+            
+              
+                
+                  
+                    U
+                    
+                      f
+                    
+                  
+                  
+                    |
+                  
+                  x
+                  â©
+                  
+                    |
+                  
+                  y
+                  â©
+                  =
+                  
+                    |
+                  
+                  x
+                  â©
+                  
+                    |
+                  
+                  Â¬
+                  y
+                  â©
+                
+                
+                  
+                    forÂ 
+                  
+                  x
+                  =
+                  Ï
+                  
+                    , that is,Â 
+                  
+                  f
+                  (
+                  x
+                  )
+                  =
+                  1
+                  ,
+                
+              
+              
+                
+                  
+                    U
+                    
+                      f
+                    
+                  
+                  
+                    |
+                  
+                  x
+                  â©
+                  
+                    |
+                  
+                  y
+                  â©
+                  =
+                  
+                    |
+                  
+                  x
+                  â©
+                  
+                    |
+                  
+                  y
+                  â©
+                
+                
+                  
+                    forÂ 
+                  
+                  x
+                  â 
+                  Ï
+                  
+                    , that is,Â 
+                  
+                  f
+                  (
+                  x
+                  )
+                  =
+                  0
+                  ,
+                
+              
+            
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{cases}U_{f}|x\rangle |y\rangle =|x\rangle |\neg y\rangle &{\text{for }}x=\omega {\text{, that is, }}f(x)=1,\\U_{f}|x\rangle |y\rangle =|x\rangle |y\rangle &{\text{for }}x\neq \omega {\text{, that is, }}f(x)=0,\end{cases}}}
+  
+
+or briefly,
+
+
+  
+    
+      
+        
+          U
+          
+            f
+          
+        
+        
+          |
+        
+        x
+        â©
+        
+          |
+        
+        y
+        â©
+        =
+        
+          |
+        
+        x
+        â©
+        
+          |
+        
+        y
+        â
+        f
+        (
+        x
+        )
+        â©
+        .
+      
+    
+    {\displaystyle U_{f}|x\rangle |y\rangle =|x\rangle |y\oplus f(x)\rangle .}
+  
+
+These oracles are typically realized using uncomputation.
+If we are given Uf as our oracle, then we can also implement UÏ, since UÏ is Uf when the ancillary qubit is in the state 
+  
+    
+      
+        
+          |
+        
+        â
+        â©
+        =
+        
+          
+            1
+            
+              2
+            
+          
+        
+        
+          
+            (
+          
+        
+        
+          |
+        
+        0
+        â©
+        â
+        
+          |
+        
+        1
+        â©
+        
+          
+            )
+          
+        
+        =
+        H
+        
+          |
+        
+        1
+        â©
+      
+    
+    {\displaystyle |-\rangle ={\frac {1}{\sqrt {2}}}{\big (}|0\rangle -|1\rangle {\big )}=H|1\rangle }
+  
+:
+
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  U
+                  
+                    f
+                  
+                
+                
+                  
+                    (
+                  
+                
+                
+                  |
+                
+                x
+                â©
+                â
+                
+                  |
+                
+                â
+                â©
+                
+                  
+                    )
+                  
+                
+              
+              
+                
+                =
+                
+                  
+                    1
+                    
+                      2
+                    
+                  
+                
+                
+                  (
+                  
+                    
+                      U
+                      
+                        f
+                      
+                    
+                    
+                      |
+                    
+                    x
+                    â©
+                    
+                      |
+                    
+                    0
+                    â©
+                    â
+                    
+                      U
+                      
+                        f
+                      
+                    
+                    
+                      |
+                    
+                    x
+                    â©
+                    
+                      |
+                    
+                    1
+                    â©
+                  
+                  )
+                
+              
+            
+            
+              
+              
+                
+                =
+                
+                  
+                    1
+                    
+                      2
+                    
+                  
+                
+                
+                  (
+                  
+                    
+                      |
+                    
+                    x
+                    â©
+                    
+                      |
+                    
+                    f
+                    (
+                    x
+                    )
+                    â©
+                    â
+                    
+                      |
+                    
+                    x
+                    â©
+                    
+                      |
+                    
+                    1
+                    â
+                    f
+                    (
+                    x
+                    )
+                    â©
+                  
+                  )
+                
+              
+            
+            
+              
+              
+                
+                =
+                
+                  
+                    {
+                    
+                      
+                        
+                          
+                            
+                              1
+                              
+                                2
+                              
+                            
+                          
+                          
+                            (
+                            
+                              â
+                              
+                                |
+                              
+                              x
+                              â©
+                              
+                                |
+                              
+                              0
+                              â©
+                              +
+                              
+                                |
+                              
+                              x
+                              â©
+                              
+                                |
+                              
+                              1
+                              â©
+                            
+                            )
+                          
+                        
+                        
+                          
+                            ifÂ 
+                          
+                          f
+                          (
+                          x
+                          )
+                          =
+                          1
+                          ,
+                        
+                      
+                      
+                        
+                          
+                            
+                              1
+                              
+                                2
+                              
+                            
+                          
+                          
+                            (
+                            
+                              
+                                |
+                              
+                              x
+                              â©
+                              
+                                |
+                              
+                              0
+                              â©
+                              â
+                              
+                                |
+                              
+                              x
+                              â©
+                              
+                                |
+                              
+                              1
+                              â©
+                            
+                            )
+                          
+                        
+                        
+                          
+                            ifÂ 
+                          
+                          f
+                          (
+                          x
+                          )
+                          =
+                          0
+                        
+                      
+                    
+                    
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                (
+                
+                  U
+                  
+                    Ï
+                  
+                
+                
+                  |
+                
+                x
+                â©
+                )
+                â
+                
+                  |
+                
+                â
+                â©
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}U_{f}{\big (}|x\rangle \otimes |-\rangle {\big )}&={\frac {1}{\sqrt {2}}}\left(U_{f}|x\rangle |0\rangle -U_{f}|x\rangle |1\rangle \right)\\&={\frac {1}{\sqrt {2}}}\left(|x\rangle |f(x)\rangle -|x\rangle |1\oplus f(x)\rangle \right)\\&={\begin{cases}{\frac {1}{\sqrt {2}}}\left(-|x\rangle |0\rangle +|x\rangle |1\rangle \right)&{\text{if }}f(x)=1,\\{\frac {1}{\sqrt {2}}}\left(|x\rangle |0\rangle -|x\rangle |1\rangle \right)&{\text{if }}f(x)=0\end{cases}}\\&=(U_{\omega }|x\rangle )\otimes |-\rangle \end{aligned}}}
+  
+
+So, Grover's algorithm can be run regardless of which oracle is given.[3] If Uf is given, then we must maintain an additional qubit in the state 
+  
+    
+      
+        
+          |
+        
+        â
+        â©
+      
+    
+    {\displaystyle |-\rangle }
+  
+ and apply Uf in place of UÏ.
+
+Algorithm[edit]
+  Quantum circuit representation of Grover's algorithm
+The steps of Grover's algorithm are given as follows:
+
+Initialize the system to the uniform superposition over all states
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+        =
+        
+          
+            1
+            
+              N
+            
+          
+        
+        
+          â
+          
+            x
+            =
+            0
+          
+          
+            N
+            â
+            1
+          
+        
+        
+          |
+        
+        x
+        â©
+        .
+      
+    
+    {\displaystyle |s\rangle ={\frac {1}{\sqrt {N}}}\sum _{x=0}^{N-1}|x\rangle .}
+  
+
+Perform the following "Grover iteration" 
+  
+    
+      
+        r
+        (
+        N
+        )
+      
+    
+    {\displaystyle r(N)}
+  
+ times:
+Apply the operator 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+.
+Apply the Grover diffusion operator 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        =
+        2
+        
+          |
+          s
+          â©
+        
+        
+          â¨
+          s
+          |
+        
+        â
+        I
+      
+    
+    {\displaystyle U_{s}=2\left|s\right\rangle \left\langle s\right|-I}
+  
+.
+Measure the resulting quantum state in the computational basis.
+For the correctly chosen value of 
+  
+    
+      
+        r
+      
+    
+    {\displaystyle r}
+  
+, the output will be 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+ with probability approaching 1 for N â« 1. Analysis shows that this eventual value for 
+  
+    
+      
+        r
+        (
+        N
+        )
+      
+    
+    {\displaystyle r(N)}
+  
+ satisfies 
+  
+    
+      
+        r
+        (
+        N
+        )
+        â¤
+        
+          
+            â
+          
+        
+        
+          
+            Ï
+            4
+          
+        
+        
+          
+            N
+          
+        
+        
+          
+            â
+          
+        
+      
+    
+    {\displaystyle r(N)\leq {\Big \lceil }{\frac {\pi }{4}}{\sqrt {N}}{\Big \rceil }}
+  
+.
+Implementing the steps for this algorithm can be done using a number of gates linear in the number of qubits.[3] Thus, the gate complexity of this algorithm is 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        (
+        N
+        )
+        r
+        (
+        N
+        )
+        )
+      
+    
+    {\displaystyle O(\log(N)r(N))}
+  
+, or 
+  
+    
+      
+        O
+        (
+        log
+        â¡
+        (
+        N
+        )
+        )
+      
+    
+    {\displaystyle O(\log(N))}
+  
+ per iteration.
+
+Geometric proof of correctness[edit]
+  Picture showing the geometric interpretation of the first iteration of Grover's algorithm. The state vector 
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+      
+    
+    {\displaystyle |s\rangle }
+  
+ is rotated towards the target vector 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+ as shown.
+There is a geometric interpretation of Grover's algorithm, following from the observation that the quantum state of Grover's algorithm stays in a two-dimensional subspace after each step. Consider the plane spanned by 
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+      
+    
+    {\displaystyle |s\rangle }
+  
+ and 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+; equivalently, the plane spanned by 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+ and the perpendicular ket 
+  
+    
+      
+        
+          
+            |
+          
+          
+            s
+            â²
+          
+          â©
+          =
+          
+            
+              1
+              
+                N
+                â
+                1
+              
+            
+          
+          
+            â
+            
+              x
+              â 
+              Ï
+            
+          
+          
+            |
+          
+          x
+          â©
+        
+      
+    
+    {\displaystyle \textstyle |s'\rangle ={\frac {1}{\sqrt {N-1}}}\sum _{x\neq \omega }|x\rangle }
+  
+.
+Grover's algorithm begins with the initial ket 
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+      
+    
+    {\displaystyle |s\rangle }
+  
+, which lies in the subspace. The operator 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+ is a reflection at the hyperplane orthogonal to 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+ for vectors in the plane spanned by 
+  
+    
+      
+        
+          |
+        
+        
+          s
+          â²
+        
+        â©
+      
+    
+    {\displaystyle |s'\rangle }
+  
+ and 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+, i.e. it acts as a reflection across 
+  
+    
+      
+        
+          |
+        
+        
+          s
+          â²
+        
+        â©
+      
+    
+    {\displaystyle |s'\rangle }
+  
+. This can be seen by writing 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+ in the form of a Householder reflection:
+
+
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+        =
+        I
+        â
+        2
+        
+          |
+        
+        Ï
+        â©
+        â¨
+        Ï
+        
+          |
+        
+        .
+      
+    
+    {\displaystyle U_{\omega }=I-2|\omega \rangle \langle \omega |.}
+  
+
+The operator 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        =
+        2
+        
+          |
+        
+        s
+        â©
+        â¨
+        s
+        
+          |
+        
+        â
+        I
+      
+    
+    {\displaystyle U_{s}=2|s\rangle \langle s|-I}
+  
+ is a reflection through 
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+      
+    
+    {\displaystyle |s\rangle }
+  
+. Both operators 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+      
+    
+    {\displaystyle U_{s}}
+  
+ and 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+ take states in the plane spanned by 
+  
+    
+      
+        
+          |
+        
+        
+          s
+          â²
+        
+        â©
+      
+    
+    {\displaystyle |s'\rangle }
+  
+ and 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+ to states in the plane. Therefore, Grover's algorithm stays in this plane for the entire algorithm.
+It is straightforward to check that the operator 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{s}U_{\omega }}
+  
+ of each Grover iteration step rotates the state vector by an angle of 
+  
+    
+      
+        Î¸
+        =
+        2
+        arcsin
+        â¡
+        
+          
+            
+              1
+              
+                N
+              
+            
+          
+        
+      
+    
+    {\displaystyle \theta =2\arcsin {\tfrac {1}{\sqrt {N}}}}
+  
+.
+So, with enough iterations, one can rotate from the initial state 
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+      
+    
+    {\displaystyle |s\rangle }
+  
+ to the desired output state 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+. The initial ket is close to the state orthogonal to 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+:
+
+
+  
+    
+      
+        â¨
+        
+          s
+          â²
+        
+        
+          |
+        
+        s
+        â©
+        =
+        
+          
+            
+              
+                N
+                â
+                1
+              
+              N
+            
+          
+        
+        .
+      
+    
+    {\displaystyle \langle s'|s\rangle ={\sqrt {\frac {N-1}{N}}}.}
+  
+
+In geometric terms, the angle 
+  
+    
+      
+        Î¸
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle \theta /2}
+  
+ between 
+  
+    
+      
+        
+          |
+        
+        s
+        â©
+      
+    
+    {\displaystyle |s\rangle }
+  
+ and 
+  
+    
+      
+        
+          |
+        
+        
+          s
+          â²
+        
+        â©
+      
+    
+    {\displaystyle |s'\rangle }
+  
+ is given by
+
+
+  
+    
+      
+        sin
+        â¡
+        
+          
+            Î¸
+            2
+          
+        
+        =
+        
+          
+            1
+            
+              N
+            
+          
+        
+        .
+      
+    
+    {\displaystyle \sin {\frac {\theta }{2}}={\frac {1}{\sqrt {N}}}.}
+  
+
+We need to stop when the state vector passes close to 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+; after this, subsequent iterations rotate the state vector away from 
+  
+    
+      
+        
+          |
+        
+        Ï
+        â©
+      
+    
+    {\displaystyle |\omega \rangle }
+  
+, reducing the probability of obtaining the correct answer. The exact probability of measuring the correct answer is
+
+
+  
+    
+      
+        
+          sin
+          
+            2
+          
+        
+        â¡
+        
+          (
+          
+            
+              
+                (
+              
+            
+            r
+            +
+            
+              
+                1
+                2
+              
+            
+            
+              
+                )
+              
+            
+            Î¸
+          
+          )
+        
+        ,
+      
+    
+    {\displaystyle \sin ^{2}\left({\Big (}r+{\frac {1}{2}}{\Big )}\theta \right),}
+  
+
+where r is the (integer) number of Grover iterations. The earliest time that we get a near-optimal measurement is therefore 
+  
+    
+      
+        r
+        â
+        Ï
+        
+          
+            N
+          
+        
+        
+          /
+        
+        4
+      
+    
+    {\displaystyle r\approx \pi {\sqrt {N}}/4}
+  
+.
+
+Algebraic proof of correctness[edit]
+To complete the algebraic analysis, we need to find out what happens when we repeatedly apply 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{s}U_{\omega }}
+  
+. A natural way to do this is by eigenvalue analysis of a matrix. Notice that during the entire computation, the state of the algorithm is a linear combination of 
+  
+    
+      
+        s
+      
+    
+    {\displaystyle s}
+  
+ and 
+  
+    
+      
+        Ï
+      
+    
+    {\displaystyle \omega }
+  
+. We can write the action of 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+      
+    
+    {\displaystyle U_{s}}
+  
+ and 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+ in the space spanned by 
+  
+    
+      
+        {
+        
+          |
+        
+        s
+        â©
+        ,
+        
+          |
+        
+        Ï
+        â©
+        }
+      
+    
+    {\displaystyle \{|s\rangle ,|\omega \rangle \}}
+  
+ as:
+
+
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        :
+        a
+        
+          |
+        
+        Ï
+        â©
+        +
+        b
+        
+          |
+        
+        s
+        â©
+        â¦
+        [
+        
+          |
+        
+        Ï
+        â©
+        
+        
+          |
+        
+        s
+        â©
+        ]
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  2
+                  
+                    /
+                  
+                  
+                    
+                      N
+                    
+                  
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  a
+                
+              
+              
+                
+                  b
+                
+              
+            
+            ]
+          
+        
+        .
+      
+    
+    {\displaystyle U_{s}:a|\omega \rangle +b|s\rangle \mapsto [|\omega \rangle \,|s\rangle ]{\begin{bmatrix}-1&0\\2/{\sqrt {N}}&1\end{bmatrix}}{\begin{bmatrix}a\\b\end{bmatrix}}.}
+  
+
+
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+        :
+        a
+        
+          |
+        
+        Ï
+        â©
+        +
+        b
+        
+          |
+        
+        s
+        â©
+        â¦
+        [
+        
+          |
+        
+        Ï
+        â©
+        
+        
+          |
+        
+        s
+        â©
+        ]
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  â
+                  2
+                  
+                    /
+                  
+                  
+                    
+                      N
+                    
+                  
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  a
+                
+              
+              
+                
+                  b
+                
+              
+            
+            ]
+          
+        
+        .
+      
+    
+    {\displaystyle U_{\omega }:a|\omega \rangle +b|s\rangle \mapsto [|\omega \rangle \,|s\rangle ]{\begin{bmatrix}-1&-2/{\sqrt {N}}\\0&1\end{bmatrix}}{\begin{bmatrix}a\\b\end{bmatrix}}.}
+  
+
+So in the basis 
+  
+    
+      
+        {
+        
+          |
+        
+        Ï
+        â©
+        ,
+        
+          |
+        
+        s
+        â©
+        }
+      
+    
+    {\displaystyle \{|\omega \rangle ,|s\rangle \}}
+  
+ (which is neither orthogonal nor a basis of the whole space) the action 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{s}U_{\omega }}
+  
+ of applying 
+  
+    
+      
+        
+          U
+          
+            Ï
+          
+        
+      
+    
+    {\displaystyle U_{\omega }}
+  
+ followed by 
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+      
+    
+    {\displaystyle U_{s}}
+  
+ is given by the matrix
+
+
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  0
+                
+              
+              
+                
+                  2
+                  
+                    /
+                  
+                  
+                    
+                      N
+                    
+                  
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        
+          
+            [
+            
+              
+                
+                  â
+                  1
+                
+                
+                  â
+                  2
+                  
+                    /
+                  
+                  
+                    
+                      N
+                    
+                  
+                
+              
+              
+                
+                  0
+                
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          
+            [
+            
+              
+                
+                  1
+                
+                
+                  2
+                  
+                    /
+                  
+                  
+                    
+                      N
+                    
+                  
+                
+              
+              
+                
+                  â
+                  2
+                  
+                    /
+                  
+                  
+                    
+                      N
+                    
+                  
+                
+                
+                  1
+                  â
+                  4
+                  
+                    /
+                  
+                  N
+                
+              
+            
+            ]
+          
+        
+        .
+      
+    
+    {\displaystyle U_{s}U_{\omega }={\begin{bmatrix}-1&0\\2/{\sqrt {N}}&1\end{bmatrix}}{\begin{bmatrix}-1&-2/{\sqrt {N}}\\0&1\end{bmatrix}}={\begin{bmatrix}1&2/{\sqrt {N}}\\-2/{\sqrt {N}}&1-4/N\end{bmatrix}}.}
+  
+
+This matrix happens to have a very convenient Jordan form. If we define 
+  
+    
+      
+        t
+        =
+        arcsin
+        â¡
+        (
+        1
+        
+          /
+        
+        
+          
+            N
+          
+        
+        )
+      
+    
+    {\displaystyle t=\arcsin(1/{\sqrt {N}})}
+  
+, it is
+
+
+  
+    
+      
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+        =
+        M
+        
+          
+            [
+            
+              
+                
+                  
+                    e
+                    
+                      2
+                      i
+                      t
+                    
+                  
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  
+                    e
+                    
+                      â
+                      2
+                      i
+                      t
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        
+          M
+          
+            â
+            1
+          
+        
+      
+    
+    {\displaystyle U_{s}U_{\omega }=M{\begin{bmatrix}e^{2it}&0\\0&e^{-2it}\end{bmatrix}}M^{-1}}
+  
+ where 
+  
+    
+      
+        M
+        =
+        
+          
+            [
+            
+              
+                
+                  â
+                  i
+                
+                
+                  i
+                
+              
+              
+                
+                  
+                    e
+                    
+                      i
+                      t
+                    
+                  
+                
+                
+                  
+                    e
+                    
+                      â
+                      i
+                      t
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        .
+      
+    
+    {\displaystyle M={\begin{bmatrix}-i&i\\e^{it}&e^{-it}\end{bmatrix}}.}
+  
+
+It follows that r-th power of the matrix (corresponding to r iterations) is 
+
+
+  
+    
+      
+        (
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+        
+          )
+          
+            r
+          
+        
+        =
+        M
+        
+          
+            [
+            
+              
+                
+                  
+                    e
+                    
+                      2
+                      r
+                      i
+                      t
+                    
+                  
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  
+                    e
+                    
+                      â
+                      2
+                      r
+                      i
+                      t
+                    
+                  
+                
+              
+            
+            ]
+          
+        
+        
+          M
+          
+            â
+            1
+          
+        
+        .
+      
+    
+    {\displaystyle (U_{s}U_{\omega })^{r}=M{\begin{bmatrix}e^{2rit}&0\\0&e^{-2rit}\end{bmatrix}}M^{-1}.}
+  
+
+Using this form, we can use trigonometric identities to compute the probability of observing Ï after r iterations mentioned in the previous section, 
+
+
+  
+    
+      
+        
+          
+            |
+            
+              
+                
+                  [
+                  
+                    
+                      
+                        â¨
+                        Ï
+                        
+                          |
+                        
+                        Ï
+                        â©
+                      
+                      
+                        â¨
+                        Ï
+                        
+                          |
+                        
+                        s
+                        â©
+                      
+                    
+                  
+                  ]
+                
+              
+              (
+              
+                U
+                
+                  s
+                
+              
+              
+                U
+                
+                  Ï
+                
+              
+              
+                )
+                
+                  r
+                
+              
+              
+                
+                  [
+                  
+                    
+                      
+                        0
+                      
+                    
+                    
+                      
+                        1
+                      
+                    
+                  
+                  ]
+                
+              
+            
+            |
+          
+          
+            2
+          
+        
+        =
+        
+          sin
+          
+            2
+          
+        
+        â¡
+        
+          (
+          
+            (
+            2
+            r
+            +
+            1
+            )
+            t
+          
+          )
+        
+        .
+      
+    
+    {\displaystyle \left|{\begin{bmatrix}\langle \omega |\omega \rangle &\langle \omega |s\rangle \end{bmatrix}}(U_{s}U_{\omega })^{r}{\begin{bmatrix}0\\1\end{bmatrix}}\right|^{2}=\sin ^{2}\left((2r+1)t\right).}
+  
+
+Alternatively, one might reasonably imagine that a near-optimal time to distinguish would be when the angles 2rt and â2rt are as far apart as possible, which corresponds to 
+  
+    
+      
+        2
+        r
+        t
+        â
+        Ï
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle 2rt\approx \pi /2}
+  
+, or 
+  
+    
+      
+        r
+        =
+        Ï
+        
+          /
+        
+        4
+        t
+        =
+        Ï
+        
+          /
+        
+        4
+        arcsin
+        â¡
+        (
+        1
+        
+          /
+        
+        
+          
+            N
+          
+        
+        )
+        â
+        Ï
+        
+          
+            N
+          
+        
+        
+          /
+        
+        4
+      
+    
+    {\displaystyle r=\pi /4t=\pi /4\arcsin(1/{\sqrt {N}})\approx \pi {\sqrt {N}}/4}
+  
+. Then the system is in state
+
+
+  
+    
+      
+        [
+        
+          |
+        
+        Ï
+        â©
+        
+        
+          |
+        
+        s
+        â©
+        ]
+        (
+        
+          U
+          
+            s
+          
+        
+        
+          U
+          
+            Ï
+          
+        
+        
+          )
+          
+            r
+          
+        
+        
+          
+            [
+            
+              
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        â
+        [
+        
+          |
+        
+        Ï
+        â©
+        
+        
+          |
+        
+        s
+        â©
+        ]
+        M
+        
+          
+            [
+            
+              
+                
+                  i
+                
+                
+                  0
+                
+              
+              
+                
+                  0
+                
+                
+                  â
+                  i
+                
+              
+            
+            ]
+          
+        
+        
+          M
+          
+            â
+            1
+          
+        
+        
+          
+            [
+            
+              
+                
+                  0
+                
+              
+              
+                
+                  1
+                
+              
+            
+            ]
+          
+        
+        =
+        
+          |
+        
+        Ï
+        â©
+        
+          
+            1
+            
+              cos
+              â¡
+              (
+              t
+              )
+            
+          
+        
+        â
+        
+          |
+        
+        s
+        â©
+        
+          
+            
+              sin
+              â¡
+              (
+              t
+              )
+            
+            
+              cos
+              â¡
+              (
+              t
+              )
+            
+          
+        
+        .
+      
+    
+    {\displaystyle [|\omega \rangle \,|s\rangle ](U_{s}U_{\omega })^{r}{\begin{bmatrix}0\\1\end{bmatrix}}\approx [|\omega \rangle \,|s\rangle ]M{\begin{bmatrix}i&0\\0&-i\end{bmatrix}}M^{-1}{\begin{bmatrix}0\\1\end{bmatrix}}=|\omega \rangle {\frac {1}{\cos(t)}}-|s\rangle {\frac {\sin(t)}{\cos(t)}}.}
+  
+
+A short calculation now shows that the observation yields the correct answer Ï with error 
+  
+    
+      
+        O
+        
+          (
+          
+            
+              1
+              N
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left({\frac {1}{N}}\right)}
+  
+.
+
+Extensions and variants[edit]
+Multiple matching entries[edit]
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Further information: Amplitude amplification
+If, instead of 1 matching entry, there are k matching entries, the same algorithm works, but the number of iterations must be 
+  
+    
+      
+        
+          
+            Ï
+            4
+          
+        
+        
+          
+            
+              (
+              
+                
+                  N
+                  k
+                
+              
+              )
+            
+            
+              1
+              
+                /
+              
+              2
+            
+          
+        
+      
+    
+    {\textstyle {\frac {\pi }{4}}{\left({\frac {N}{k}}\right)^{1/2}}}
+  
+instead of 
+  
+    
+      
+        
+          
+            Ï
+            4
+          
+        
+        
+          
+            N
+            
+              1
+              
+                /
+              
+              2
+            
+          
+        
+      
+    
+    {\textstyle {\frac {\pi }{4}}{N^{1/2}}}
+  
+.
+There are several ways to handle the case if k is unknown.[15] A simple solution performs optimally up to a constant factor: run Grover's algorithm repeatedly for increasingly small values of k, e.g. taking k = N, N/2, N/4, ..., and so on, taking 
+  
+    
+      
+        k
+        =
+        N
+        
+          /
+        
+        
+          2
+          
+            t
+          
+        
+      
+    
+    {\displaystyle k=N/2^{t}}
+  
+ for iteration t until a matching entry is found.
+With sufficiently high probability, a marked entry will be found by iteration 
+  
+    
+      
+        t
+        =
+        
+          log
+          
+            2
+          
+        
+        â¡
+        (
+        N
+        
+          /
+        
+        k
+        )
+        +
+        c
+      
+    
+    {\displaystyle t=\log _{2}(N/k)+c}
+  
+ for some constant c. Thus, the total number of iterations taken is at most
+
+
+  
+    
+      
+        
+          
+            Ï
+            4
+          
+        
+        
+          
+            (
+          
+        
+        1
+        +
+        
+          
+            2
+          
+        
+        +
+        
+          
+            4
+          
+        
+        +
+        â¯
+        +
+        
+          
+            
+              N
+              
+                k
+                
+                  2
+                  
+                    c
+                  
+                
+              
+            
+          
+        
+        
+          
+            )
+          
+        
+        =
+        O
+        
+          
+            (
+          
+        
+        
+          
+            N
+            
+              /
+            
+            k
+          
+        
+        
+          
+            )
+          
+        
+        .
+      
+    
+    {\displaystyle {\frac {\pi }{4}}{\Big (}1+{\sqrt {2}}+{\sqrt {4}}+\cdots +{\sqrt {\frac {N}{k2^{c}}}}{\Big )}=O{\big (}{\sqrt {N/k}}{\big )}.}
+  
+
+A version of this algorithm is used in order to solve the collision problem.[16][17]
+
+Quantum partial search[edit]
+A  modification of Grover's algorithm called quantum partial search was described by Grover and Radhakrishnan in 2004.[18] In partial search, one is not interested in finding the exact address of the target item, only the first few digits of the address. Equivalently, we can think of "chunking" the search space into blocks, and then asking "in which block is the target item?". In many applications, such a search yields enough information if the target address contains the information wanted. For instance, to use the example given by L. K. Grover, if one has a list of students organized by class rank, we may only be interested in whether a student is in the lower 25%, 25â50%, 50â75% or 75â100% percentile.
+To describe partial search, we consider a database separated into 
+  
+    
+      
+        K
+      
+    
+    {\displaystyle K}
+  
+ blocks, each of size 
+  
+    
+      
+        b
+        =
+        N
+        
+          /
+        
+        K
+      
+    
+    {\displaystyle b=N/K}
+  
+. The partial search problem is easier. Consider the approach we would take classically â we pick one block at random, and then perform a normal search through the rest of the blocks (in set theory language, the complement). If we don't find the target, then we know it's in the block we didn't search. The average number of iterations drops from 
+  
+    
+      
+        N
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle N/2}
+  
+ to 
+  
+    
+      
+        (
+        N
+        â
+        b
+        )
+        
+          /
+        
+        2
+      
+    
+    {\displaystyle (N-b)/2}
+  
+.
+Grover's algorithm requires 
+  
+    
+      
+        
+          
+            Ï
+            4
+          
+        
+        
+          
+            N
+          
+        
+      
+    
+    {\textstyle {\frac {\pi }{4}}{\sqrt {N}}}
+  
+ iterations. Partial search will be faster by a numerical factor that depends on the number of blocks 
+  
+    
+      
+        K
+      
+    
+    {\displaystyle K}
+  
+. Partial search uses 
+  
+    
+      
+        
+          n
+          
+            1
+          
+        
+      
+    
+    {\displaystyle n_{1}}
+  
+ global iterations and 
+  
+    
+      
+        
+          n
+          
+            2
+          
+        
+      
+    
+    {\displaystyle n_{2}}
+  
+ local iterations. The global Grover operator is designated 
+  
+    
+      
+        
+          G
+          
+            1
+          
+        
+      
+    
+    {\displaystyle G_{1}}
+  
+ and the local Grover operator is designated 
+  
+    
+      
+        
+          G
+          
+            2
+          
+        
+      
+    
+    {\displaystyle G_{2}}
+  
+.
+The global Grover operator acts on the blocks. Essentially, it is given as follows:
+
+Perform 
+  
+    
+      
+        
+          j
+          
+            1
+          
+        
+      
+    
+    {\displaystyle j_{1}}
+  
+ standard Grover iterations on the entire database.
+Perform 
+  
+    
+      
+        
+          j
+          
+            2
+          
+        
+      
+    
+    {\displaystyle j_{2}}
+  
+ local Grover iterations. A local Grover iteration is a direct sum of Grover iterations over each block.
+Perform one standard Grover iteration.
+The optimal values of 
+  
+    
+      
+        
+          j
+          
+            1
+          
+        
+      
+    
+    {\displaystyle j_{1}}
+  
+ and 
+  
+    
+      
+        
+          j
+          
+            2
+          
+        
+      
+    
+    {\displaystyle j_{2}}
+  
+ are discussed in the paper by Grover and Radhakrishnan. One might also wonder what happens if one applies successive partial searches at different levels of "resolution". This idea was studied in detail by Vladimir Korepin and Xu, who called it binary quantum search. They proved that it is not in fact any faster than performing a single partial search.
+
+Optimality[edit]
+Grover's algorithm is optimal up to sub-constant factors. That is, any algorithm that accesses the database only by using the operator UÏ must apply UÏ at least a 
+  
+    
+      
+        1
+        â
+        o
+        (
+        1
+        )
+      
+    
+    {\displaystyle 1-o(1)}
+  
+ fraction as many times as Grover's algorithm.[19] The extension of Grover's algorithm to k matching entries, Ï(N/k)1/2/4, is also optimal.[16] This result is important in understanding the limits of quantum computation.
+If the Grover's search problem was solvable with logc N applications of UÏ, that would imply that NP is contained in BQP, by transforming problems in NP into Grover-type search problems. The optimality of Grover's algorithm suggests that quantum computers cannot solve NP-Complete problems in polynomial time, and thus NP is not contained in BQP.
+It has been shown that a class of non-local hidden variable quantum computers could implement a search of an 
+  
+    
+      
+        N
+      
+    
+    {\displaystyle N}
+  
+-item database in at most 
+  
+    
+      
+        O
+        (
+        
+          
+            N
+            
+              3
+            
+          
+        
+        )
+      
+    
+    {\displaystyle O({\sqrt[{3}]{N}})}
+  
+ steps. This is faster than the 
+  
+    
+      
+        O
+        (
+        
+          
+            N
+          
+        
+        )
+      
+    
+    {\displaystyle O({\sqrt {N}})}
+  
+ steps taken by Grover's algorithm.[20]
+
+See also[edit]
+Amplitude amplification
+Shor's algorithm (for factorization)
+BrassardâHÃ¸yerâTapp algorithm (for solving the collision problem)
+Notes[edit]
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Grover, Lov K. (1996-07-01). "A fast quantum mechanical algorithm for database search". Proceedings of the Twenty-eighth Annual ACM Symposium on Theory of Computing. STOC '96. Philadelphia, Pennsylvania, USA: Association for Computing Machinery: 212â219. arXiv:quant-ph/9605043. Bibcode:1996quant.ph..5043G. doi:10.1145/237814.237866. ISBNÂ 978-0-89791-785-8. S2CIDÂ 207198067.
+
+^ Bennett C.H.; Bernstein E.; Brassard G.; Vazirani U. (1997). "The strengths and weaknesses of quantum computation". SIAM Journal on Computing. 26 (5): 1510â1523. arXiv:quant-ph/9701001. doi:10.1137/s0097539796300933. S2CIDÂ 13403194.
+
+^ Jump up to: a b c d Nielsen, Michael A. (2010). Quantum computation and quantum information. Isaac L. Chuang. Cambridge: Cambridge University Press. pp.Â 276â305. ISBNÂ 978-1-107-00217-3. OCLCÂ 665137861.
+
+^ Daniel J. Bernstein (2010-03-03). "Grover vs. McEliece" (PDF). {{cite journal}}: Cite journal requires |journal= (help)
+
+^ Grover, Lov K. (1997). "A framework for fast quantum mechanical algorithms". arXiv:quant-ph/9711043.
+
+^ Jump up to: a b Ambainis, A. (2004-06-01). "Quantum search algorithms". ACM SIGACT News. 35 (2): 22â35. doi:10.1145/992287.992296. ISSNÂ 0163-5700. S2CIDÂ 11326499.
+
+^ Jordan, Stephen. "Quantum Algorithm Zoo". quantumalgorithmzoo.org. Retrieved 2021-04-21.
+
+^ Cerf, Nicolas J.; Grover, Lov K.; Williams, Colin P. (2000-05-01). "Nested Quantum Search and NP-Hard Problems". Applicable Algebra in Engineering, Communication and Computing. 10 (4): 311â338. doi:10.1007/s002000050134. ISSNÂ 1432-0622. S2CIDÂ 311132.
+
+^ Ambainis, Andris (2007-01-01). "Quantum Walk Algorithm for Element Distinctness". SIAM Journal on Computing. 37 (1): 210â239. doi:10.1137/S0097539705447311. ISSNÂ 0097-5397. S2CIDÂ 6581885.
+
+^ Brassard, Gilles; Hoyer, Peter; Tapp, Alain (1997). "Quantum Algorithm for the Collision Problem". Lecture Notes in Computer Science: 163â169. arXiv:quant-ph/9705002. doi:10.1007/BFb0054319. S2CIDÂ 118940551.
+
+^ Post-quantum cryptography. Daniel J. Bernstein, Johannes Buchmann, Erik, Dipl.-Math DahmÃ©n. Berlin: Springer. 2009. ISBNÂ 978-3-540-88702-7. OCLCÂ 318545517.{{cite book}}:  CS1 maint: others (link)
+
+^ Bernstein, Daniel J. (2021-04-21). "Cost analysis of hash collisions: Will quantum computers make SHARCS obsolete?" (PDF). Conference Proceedings for Special-purpose Hardware for Attacking Cryptographic Systems (SHARCS '09). 09: 105â117.
+
+^ Viamontes G.F.; Markov I.L.; Hayes J.P. (2005), "Is Quantum Search Practical?" (PDF), Computing in Science and Engineering, 7 (3): 62â70, arXiv:quant-ph/0405001, Bibcode:2005CSE.....7c..62V, doi:10.1109/mcse.2005.53, S2CIDÂ 8929938
+
+^ Babbush, Ryan; McClean, Jarrod R.; Newman, Michael; Gidney, Craig; Boixo, Sergio; Neven, Hartmut (2021-03-29). "Focus beyond Quadratic Speedups for Error-Corrected Quantum Advantage". PRX Quantum. 2 (1): 010103. arXiv:2011.04149. doi:10.1103/PRXQuantum.2.010103.
+
+^ Aaronson, Scott (April 19, 2021). "Introduction to Quantum Information Science Lecture Notes" (PDF).{{cite web}}:  CS1 maint: url-status (link)
+
+^ Jump up to: a b Michel Boyer; Gilles Brassard; Peter HÃ¸yer; Alain Tapp (1998), "Tight Bounds on Quantum Searching", Fortsch. Phys., 46: 493â506, arXiv:quant-ph/9605034, Bibcode:1998ForPh..46..493B, doi:10.1002/3527603093.ch10, ISBNÂ 9783527603091
+
+^ Andris Ambainis (2004), "Quantum search algorithms", SIGACT News, 35 (2): 22â35, arXiv:quant-ph/0504012, Bibcode:2005quant.ph..4012A, doi:10.1145/992287.992296, S2CIDÂ 11326499
+
+^ L.K. Grover; J. Radhakrishnan (2005-02-07). "Is partial quantum search of a database any easier?". arXiv:quant-ph/0407122v4.
+
+^ Zalka, Christof (1999-10-01). "Grover's quantum searching algorithm is optimal". Physical Review A. 60 (4): 2746â2751. arXiv:quant-ph/9711070. Bibcode:1999PhRvA..60.2746Z. doi:10.1103/PhysRevA.60.2746. S2CIDÂ 1542077.
+
+^ Aaronson, Scott. "Quantum Computing and Hidden Variables" (PDF).
+
+
+References[edit]
+Grover L.K.: A fast quantum mechanical algorithm for database search, Proceedings, 28th Annual ACM Symposium on the Theory of Computing, (May 1996) p.Â 212
+Grover L.K.: From SchrÃ¶dinger's equation to quantum search algorithm, American Journal of Physics, 69(7): 769â777, 2001. Pedagogical review of the algorithm and its history.
+Grover L.K.: QUANTUM COMPUTING: How the weird logic of the subatomic world could make it possible for machines to calculate millions of times faster than they do today The Sciences, July/August 1999, pp.Â 24â30.
+Nielsen, M.A. and Chuang, I.L. Quantum computation and quantum information. Cambridge University Press, 2000. Chapter 6.
+What's a Quantum Phone Book?, Lov Grover, Lucent Technologies
+External links[edit]
+
+
+
+Wikiquote has quotations related to: Grover's algorithm
+
+Davy Wybiral. "Quantum Circuit Simulator". Archived from the original on 2017-01-16. Retrieved 2017-01-13.
+Craig Gidney (2013-03-05). "Grover's Quantum Search Algorithm".
+FranÃ§ois Schwarzentruber (2013-05-18). "Grover's algorithm".
+Alexander Prokopenya. "Quantum Circuit Implementing Grover's Search Algorithm". Wolfram Alpha.
+"Quantum computation, theory of", Encyclopedia of Mathematics, EMS Press, 2001 [1994]
+Roberto Maestre (2018-05-11). "Grover's Algorithm implemented in R and C". GitHub.
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteQuantum information scienceGeneral
+DiVincenzo's criteria
+NISQ era
+Quantum computing
+Timeline
+Cloud-based
+Quantum information
+Quantum programming
+Qubit
+physical vs. logical
+Quantum processors
+Theorems
+Bell's
+Gleason's
+GottesmanâKnill
+Holevo's
+MargolusâLevitin
+No-broadcast
+No-cloning
+No-communication
+No-deleting
+No-hiding
+No-teleportation
+PBR
+Quantum threshold
+SolovayâKitaev
+Quantumcommunication
+Classical capacity
+entanglement-assisted
+Quantum capacity
+Entanglement distillation
+LOCC
+Quantum channel
+Quantum network
+Quantum cryptography
+Quantum key distribution
+BB84
+SARG04
+Three-stage quantum cryptography protocol
+Quantum Secret Sharing
+Quantum teleportation
+Superdense coding
+Quantum algorithms
+BernsteinâVazirani
+DeutschâJozsa
+Grover's
+Quantum counting
+Quantum phase estimation
+Shor's
+Simon's
+Amplitude amplification
+Linear systems of equations
+Quantum annealing
+Quantum Fourier transform
+Quantum neural network
+Universal quantum simulator
+Quantumcomplexity theory
+BQP
+EQP
+QIP
+QMA
+PostBQP
+Quantumcomputing models
+Adiabatic quantum computation
+Differentiable quantum computing
+One-way quantum computer
+cluster state
+Quantum circuit
+Quantum logic gate
+Quantum Turing machine
+Topological quantum computer
+Quantumerror correction
+Codes
+CSS
+Quantum convolutional
+stabilizer
+Shor
+Steane
+Toric
+gnu
+Entanglement-assisted quantum error correction
+PhysicalimplementationsQuantum optics
+Boson sampling
+Cavity QED
+Circuit QED
+Linear optical quantum computing
+KLM protocol
+Ultracold atoms
+Optical lattice
+Trapped ion quantum computer
+Spin-based
+Kane QC
+Spin qubit QC
+Nitrogen-vacancy center
+Nuclear magnetic resonance QC
+Superconductingquantum computing
+Charge qubit
+Flux qubit
+Phase qubit
+Transmon
+Quantumprogramming
+OpenQASM-Qiskit-IBM QX
+Quil-Forest/Rigetti QCS
+Cirq
+Q#
+libquantum
+many others...
+ Quantum mechanics topics
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Grover%27s_algorithm&oldid=1068788734"
+		Categories: Quantum algorithmsSearch algorithmsPost-quantum cryptographyHidden categories: CS1 errors: missing periodicalCS1 maint: othersCS1 maint: url-statusUse American English from January 2019All Wikipedia articles written in American EnglishArticles with short descriptionShort description is different from Wikidata
+	

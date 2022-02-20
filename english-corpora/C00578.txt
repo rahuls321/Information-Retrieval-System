@@ -1,0 +1,413 @@
+
+Title:
+Apriori algorithm
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Algorithm for frequent item set mining and association rule learning over transactional databases
+This article needs additional citations for verification. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed.Find sources:Â "Apriori algorithm"Â âÂ newsÂ Â· newspapersÂ Â· booksÂ Â· scholarÂ Â· JSTOR  (September 2018) (Learn how and when to remove this template message)
+Apriori[1] is an algorithm for frequent item set mining and association rule learning over relational databases. It proceeds by identifying the frequent individual items in the database and extending them to larger and larger item sets as long as those item sets appear sufficiently often in the database. The frequent item sets determined by Apriori can be used to determine association rules which highlight general trends in the database: this has applications in domains such as market basket analysis.
+
+Contents
+
+1 Overview
+2 Examples
+
+2.1 Example 1
+2.2 Example 2
+
+
+3 Limitations
+4 References
+5 External links
+
+
+
+Overview[edit]
+The Apriori algorithm was proposed by Agrawal and Srikant in 1994. Apriori is designed to operate on databases containing transactions (for example, collections of items bought by customers, or details of a website frequentation or IP addresses[2]). Other algorithms are designed for finding association rules in data having no transactions (Winepi and Minepi), or having no timestamps (DNA sequencing). Each transaction is seen as a set of items (an itemset). Given a threshold 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+, the Apriori algorithm identifies the item sets which are subsets of at least 
+  
+    
+      
+        C
+      
+    
+    {\displaystyle C}
+  
+ transactions in the database.
+Apriori uses a "bottom up" approach, where frequent subsets are extended one item at a time (a step known as candidate generation), and groups of candidates are tested against the data.  The algorithm terminates when no further successful extensions are found.
+Apriori uses breadth-first search and a Hash tree structure to count candidate item sets efficiently. It generates candidate item sets of length 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+ from item sets of length 
+  
+    
+      
+        k
+        â
+        1
+      
+    
+    {\displaystyle k-1}
+  
+.  Then it prunes the candidates which have an infrequent sub pattern.  According to the downward closure lemma, the candidate set contains all frequent 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+-length item sets. After that, it scans the transaction database to determine frequent item sets among the candidates.
+The pseudo code for the algorithm is given below for a transaction database 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+, and a support threshold of 
+  
+    
+      
+        Îµ
+      
+    
+    {\displaystyle \varepsilon }
+  
+. Usual set theoretic notation is employed, though note that 
+  
+    
+      
+        T
+      
+    
+    {\displaystyle T}
+  
+ is a multiset. 
+  
+    
+      
+        
+          C
+          
+            k
+          
+        
+      
+    
+    {\displaystyle C_{k}}
+  
+ is the candidate set for level 
+  
+    
+      
+        k
+      
+    
+    {\displaystyle k}
+  
+. At each step, the algorithm is assumed to generate the candidate sets from the large item sets of the preceding level, heeding the downward closure lemma. 
+  
+    
+      
+        
+          c
+          o
+          u
+          n
+          t
+        
+        [
+        c
+        ]
+      
+    
+    {\displaystyle \mathrm {count} [c]}
+  
+ accesses a field of the data structure that represents candidate set 
+  
+    
+      
+        c
+      
+    
+    {\displaystyle c}
+  
+, which is initially assumed to be zero. Many details are omitted below, usually the most important part of the implementation is the data structure used for storing the candidate sets, and counting their frequencies.
+
+Apriori(T, Îµ)
+    L1 â {large 1 - itemsets}
+    k â 2
+    while Lkâ1 is not empty
+        Ck â Apriori_gen(Lkâ1, k)
+        for transactions t in T
+            Dt â {c in CkÂ : c â t}
+            for candidates c in Dt
+                count[c] â count[c] + 1
+
+        Lk â {c in CkÂ : count[c] â¥ Îµ}
+        k â k + 1
+
+    return Union(Lk)
+    
+Apriori_gen(L, k)
+     result â list()
+     for all p â L, q â L where p1 = q1, p2 = q2, ..., pk-2 = qk-2 and pk-1 < qk-1
+         c = p âª {qk-1}
+         if u â c for all u in L
+             result.add(c)
+      return result
+
+Examples[edit]
+Example 1[edit]
+Consider the following database, where each row is a transaction and each cell is an individual item of the transaction:
+
+
+
+
+
+alpha
+beta
+epsilon
+
+
+alpha
+beta
+theta
+
+
+alpha
+beta
+epsilon
+
+
+alpha
+beta
+theta
+
+The association rules that can be determined from this database are the following: 
+
+100% of sets with alpha also contain beta
+50% of sets with alpha, beta also have epsilon
+50% of sets with alpha, beta also have theta
+we can also illustrate this through a variety of examples.
+
+Example 2[edit]
+Assume that a large supermarket tracks sales data by stock-keeping unit (SKU) for each item: each item, such as "butter" or "bread", is identified by a numerical SKU. The supermarket has a database of transactions where each transaction is a set of SKUs that were bought together.
+Let the database of transactions consist of following itemsets:
+
+
+
+Itemsets
+
+
+{1,2,3,4}
+
+
+{1,2,4}
+
+
+{1,2}
+
+
+{2,3,4}
+
+
+{2,3}
+
+
+{3,4}
+
+
+{2,4}
+
+We will use Apriori to determine the frequent item sets of this database. To do this, we will say that an item set is frequent if it appears in at least 3 transactions of the database: the value 3 is the support threshold.
+The first step of Apriori is to count up the number of occurrences, called the support, of each member item separately. By scanning the database for the first time, we obtain the following result
+
+
+
+
+Item
+Support
+
+
+{1}
+3
+
+
+{2}
+6
+
+
+{3}
+4
+
+
+{4}
+5
+
+All the itemsets of size 1 have a support of at least 3, so they are all frequent.
+The next step is to generate a list of all pairs of the frequent items.
+For example, regarding the pair {1,2}: the first table of Example 2 shows items 1 and 2 appearing together in three of the itemsets; therefore, we say item {1,2} has support of three.
+
+
+
+
+Item
+Support
+
+
+{1,2}
+3
+
+
+{1,3}
+1
+
+
+{1,4}
+2
+
+
+{2,3}
+3
+
+
+{2,4}
+4
+
+
+{3,4}
+3
+
+The pairs {1,2}, {2,3}, {2,4}, and {3,4} all meet or exceed the minimum support of 3, so they are frequent. The pairs {1,3} and {1,4} are not. Now, because {1,3} and {1,4} are not frequent, any larger set which contains {1,3} or {1,4} cannot be frequent. In this way, we can prune sets: we will now look for frequent triples in the database, but we can already exclude all the triples that contain one of these two pairs:
+
+
+
+
+Item
+Support
+
+
+{2,3,4}
+2
+
+in the example, there are no frequent triplets. {2,3,4} is below the minimal threshold, and the other triplets were excluded because they were super sets of pairs that were already below the threshold.
+We have thus determined the frequent sets of items in the database, and illustrated how some items were not counted because one of their subsets was already known to be below the threshold.
+
+Limitations[edit]
+Apriori, while historically significant, suffers from a number of inefficiencies or trade-offs, which have spawned other algorithms.  Candidate generation generates large numbers of subsets (The algorithm attempts to load up the candidate set, with as many as possible subsets before each scan of the database).  Bottom-up subset exploration (essentially a breadth-first traversal of the subset lattice)  finds any maximal subset S only after all 
+  
+    
+      
+        
+          2
+          
+            
+              |
+            
+            S
+            
+              |
+            
+          
+        
+        â
+        1
+      
+    
+    {\displaystyle 2^{|S|}-1}
+  
+ of its proper subsets.
+The algorithm scans the database too many times,  which reduces the overall performance. Due to this, the algorithm assumes that the database is permanently in the memory. 
+Also, both the time and space complexity of this algorithm are very high: 
+  
+    
+      
+        O
+        
+          (
+          
+            2
+            
+              
+                |
+              
+              D
+              
+                |
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle O\left(2^{|D|}\right)}
+  
+, thus exponential, where 
+  
+    
+      
+        
+          |
+        
+        D
+        
+          |
+        
+      
+    
+    {\displaystyle |D|}
+  
+ is the horizontal width (the total number of items) present in the database.
+Later algorithms such as Max-Miner[3] try to identify the maximal frequent item sets without enumerating their subsets, and perform "jumps" in the search space rather than a purely bottom-up approach.
+
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ Rakesh Agrawal and Ramakrishnan Srikant Fast algorithms for mining association rules. Proceedings of the 20th International Conference on Very Large Data Bases, VLDB, pages 487-499, Santiago, Chile, September 1994.
+
+^ The data science behind IP address matching Published by deductive.com, September 6, 2018, retrieved September 7, 2018
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}Bayardo Jr, Roberto J. (1998). "Efficiently mining long patterns from databases" (PDF). ACM SIGMOD Record. 27 (2).
+
+
+External links[edit]
+ARtool, GPL Java association rule mining application with GUI, offering implementations of multiple algorithms for discovery of frequent patterns and extraction of association rules (includes Apriori)
+SPMF offers Java open-source implementations of Apriori and several variations such as AprioriClose, UApriori, AprioriInverse, AprioriRare, MSApriori, AprioriTID, and other more efficient algorithms such as FPGrowth and LCM.
+Christian Borgelt provides C implementations for Apriori and many other frequent pattern mining algorithms (Eclat, FPGrowth, etc.). The code is distributed as free software under the MIT license.
+The R package arules contains Apriori and Eclat and infrastructure for representing, manipulating and analyzing transaction data and patterns.
+Efficient-Apriori is a Python package with an implementation of the algorithm as presented in the original paper.
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Apriori_algorithm&oldid=1051825001"
+		Categories: Data mining algorithmsHidden categories: Articles with short descriptionShort description matches WikidataArticles needing additional references from September 2018All articles needing additional referencesArticles with example pseudocode
+	

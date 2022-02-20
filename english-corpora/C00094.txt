@@ -1,0 +1,541 @@
+
+Title:
+Kernel (operating system)
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Core of a computer operating system
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}"Kernel (computer science)" redirects here. For other uses, see Kernel (disambiguation) Â§Â Computing.
+This article's factual accuracy is disputed. Relevant discussion may be found on the talk page. Please help to ensure that disputed statements are reliably sourced.  (January 2022) (Learn how and when to remove this template message)
+  A kernel connects the application software to the hardware of a computer
+The kernel is a computer program at the core of a computer's operating system and generally has complete control over everything in the system.[1] It is the portion of the operating system code that is always resident in memory,[2] and facilitates interactions between hardware and software components. A full kernel controls all hardware resources (e.g. I/O, memory, cryptography) via device drivers, arbitrates conflicts between processes concerning such resources, and optimizes the utilization of common resources e.g. CPU & cache usage, file systems, and network sockets. On most systems, the kernel is one of the first programs loaded on startup (after the bootloader). It handles the rest of startup as well as memory, peripherals, and input/output (I/O) requests from software, translating them into data-processing instructions for the central processing unit.
+The critical code of the kernel is usually loaded into a separate area of memory, which is protected from access by application software or other less critical parts of the operating system. The kernel performs its tasks, such as running processes, managing hardware devices such as the hard disk, and handling interrupts, in this protected kernel space. In contrast, application programs such as browsers, word processors, or audio or video players  use a separate area of memory, user space. This separation prevents user data and kernel data from interfering with each other and causing instability and slowness,[1] as well as preventing malfunctioning applications from affecting other applications or crashing the entire operating system. Even in systems where the kernel is included in application address spaces, memory protection is used to prevent unauthorized applications from modifying the kernel.
+The kernel's interface is a low-level abstraction layer. When a process requests a service from the kernel, it must invoke a system call, usually through a wrapper function.
+There are different kernel architecture designs. Monolithic kernels run entirely in a single address space with the CPU executing in supervisor mode, mainly for speed. Microkernels run most but not all of their services in user space,[3] like user processes do, mainly for resilience and modularity.[4] MINIX 3 is a notable example of microkernel design. Instead, the Linux kernel is monolithic, although it is also modular, for it can insert and remove loadable kernel modules at runtime.
+This central component of a computer system is responsible for executing programs. The kernel takes responsibility for deciding at any time which of the many running programs should be allocated to the processor or processors.
+
+Contents
+
+1 Random-access memory
+2 Input/output devices
+3 Resource management
+4 Memory management
+5 Device management
+6 System calls
+7 Kernel design decisions
+
+7.1 Protection
+
+7.1.1 Hardware- or language-based protection
+
+
+7.2 Process cooperation
+7.3 I/O device management
+
+
+8 Kernel-wide design approaches
+
+8.1 Monolithic kernels
+8.2 Microkernels
+8.3 Monolithic kernels vs. microkernels
+
+8.3.1 Performance
+
+
+8.4 Hybrid (or modular) kernels
+8.5 Nanokernels
+8.6 Exokernels
+
+
+9 History of kernel development
+
+9.1 Early operating system kernels
+9.2 Time-sharing operating systems
+9.3 Amiga
+9.4 Unix
+9.5 Mac OS
+9.6 Microsoft Windows
+9.7 IBM Supervisor
+9.8 Development of microkernels
+
+
+10 See also
+11 Notes
+12 References
+13 Sources
+14 Further reading
+15 External links
+
+
+
+Random-access memory[edit]
+Random-access memory (RAM) is used to store both program instructions and data.[a] Typically, both need to be present in memory in order for a program to execute. Often multiple programs will want access to memory, frequently demanding more memory than the computer has available. The kernel is responsible for deciding which memory each process can use, and determining what to do when not enough memory is available.
+
+Input/output devices[edit]
+I/O devices include such peripherals as keyboards, mice, disk drives, printers, USB devices, network adapters, and display devices. The kernel allocates requests from applications to perform I/O to an appropriate device and provides convenient methods for using the device (typically abstracted to the point where the application does not need to know implementation details of the device).
+
+Resource management[edit]
+Key aspects necessary in resource management are defining the execution domain (address space) and the protection mechanism used to mediate access to the resources within a domain.[5] Kernels also provide methods for synchronization and inter-process communication (IPC). These implementations may be located within the kernel itself or the kernel can also rely on other processes it is running. Although the kernel must provide IPC in order to provide access to the facilities provided by each other, kernels must also provide running programs with a method to make requests to access these facilities. The kernel is also responsible for context switching between processes or threads.
+
+Memory management[edit]
+Further information: Memory management (operating systems)
+The kernel has full access to the system's memory and must allow processes to safely access this memory as they require it. Often the first step in doing this is virtual addressing, usually achieved by paging and/or segmentation. Virtual addressing allows the kernel to make a given physical address appear to be another address, the virtual address. Virtual address spaces may be different for different processes; the memory that one process accesses at a particular (virtual) address may be different memory from what another process accesses at the same address. This allows every program to behave as if it is the only one (apart from the kernel) running and thus prevents applications from crashing each other.[6]
+On many systems, a program's virtual address may refer to data which is not currently in memory. The layer of indirection provided by virtual addressing allows the operating system to use other data stores, like a hard drive, to store what would otherwise have to remain in main memory (RAM). As a result, operating systems can allow programs to use more memory than the system has physically available. When a program needs data which is not currently in RAM, the CPU signals to the kernel that this has happened, and the kernel responds by writing the contents of an inactive memory block to disk (if necessary) and replacing it with the data requested by the program. The program can then be resumed from the point where it was stopped. This scheme is generally known as demand paging.
+Virtual addressing also allows creation of virtual partitions of memory in two disjointed areas, one being reserved for the kernel (kernel space) and the other for the applications (user space). The applications are not permitted by the processor to address kernel memory, thus preventing an application from damaging the running kernel. This fundamental partition of memory space has contributed much to the current designs of actual general-purpose kernels and is almost universal in such systems, although some research kernels (e.g., Singularity) take other approaches.
+
+Device management[edit]
+To perform useful functions, processes need access to the peripherals connected to the computer, which are controlled by the kernel through device drivers. A device driver is a computer program encapsulating, monitoring and controlling a hardware device (via its Hardware/Software Interface (HSI)) on behalf of the OS. It provides the operating system with an API, procedures and information about how to control and communicate with a certain piece of hardware. Device drivers are an important and vital dependency for all OS and their applications. The design goal of a driver is abstraction; the function of the driver is to translate the OS-mandated abstract function calls (programming calls) into device-specific calls. In theory, a device should work correctly with a suitable driver. Device drivers are used for e.g. video cards, sound cards, printers, scanners, modems, and Network cards.
+At the hardware level, common abstractions of device drivers include:
+
+Interfacing directly
+Using a high-level interface (Video BIOS)
+Using a lower-level device driver (file drivers using disk drivers)
+Simulating work with hardware, while doing something entirely different
+And at the software level, device driver abstractions include:
+
+Allowing the operating system direct access to hardware resources
+Only implementing primitives
+Implementing an interface for non-driver software such as TWAIN
+Implementing a language (often a high-level language such as PostScript)
+For example, to show the user something on the screen, an application would make a request to the kernel, which would forward the request to its display driver, which is then responsible for actually plotting the character/pixel.[6]
+A kernel must maintain a list of available devices. This list may be known in advance (e.g., on an embedded system where the kernel will be rewritten if the available hardware changes), configured by the user (typical on older PCs and on systems that are not designed for personal use) or detected by the operating system at run time (normally called plug and play). In plug-and-play systems, a device manager first performs a scan on different peripheral buses, such as Peripheral Component Interconnect (PCI) or Universal Serial Bus (USB), to detect installed devices, then searches for the appropriate drivers.
+As device management is a very OS-specific topic, these drivers are handled differently by each kind of kernel design, but in every case, the kernel has to provide the I/O to allow drivers to physically access their devices through some port or memory location. Important decisions have to be made when designing the device management system, as in some designs accesses may involve context switches, making the operation very CPU-intensive and easily causing a significant performance overhead.[citation needed]
+
+System calls[edit]
+Main article: System call
+In computing, a system call is how a process requests a service from an operating system's kernel that it does not normally have permission to run. System calls provide the interface between a process and the operating system. Most operations interacting with the system require permissions not available to a user-level process, e.g., I/O performed with a device present on the system, or any form of communication with other processes requires the use of system calls.
+A system call is a mechanism that is used by the application program to request a service from the operating system. They use a machine-code instruction that causes the processor to change mode. An example would be from supervisor mode to protected mode. This is where the operating system performs actions like accessing hardware devices or the memory management unit. Generally the operating system provides a library that sits between the operating system and normal user programs. Usually it is a C library such as Glibc or Windows API. The library handles the low-level details of passing information to the kernel and switching to supervisor mode. System calls include close, open, read, wait and write.
+To actually perform useful work, a process must be able to access the services provided by the kernel. This is implemented differently by each kernel, but most provide a C library or an API, which in turn invokes the related kernel functions.[7]
+The method of invoking the kernel function varies from kernel to kernel. If memory isolation is in use, it is impossible for a user process to call the kernel directly, because that would be a violation of the processor's access control rules. A few possibilities are:
+
+Using a software-simulated interrupt. This method is available on most hardware, and is therefore very common.
+Using a call gate. A call gate is a special address stored by the kernel in a list in kernel memory at a location known to the processor. When the processor detects a call to that address, it instead redirects to the target location without causing an access violation. This requires hardware support, but the hardware for it is quite common.
+Using a special system call instruction. This technique requires special hardware support, which common architectures (notably, x86) may lack. System call instructions have been added to recent models of x86 processors, however, and some operating systems for PCs make use of them when available.
+Using a memory-based queue. An application that makes large numbers of requests but does not need to wait for the result of each may add details of requests to an area of memory that the kernel periodically scans to find requests.
+Kernel design decisions[edit]
+Protection[edit]
+An important consideration in the design of a kernel is the support it provides for protection from faults (fault tolerance) and from malicious behaviours (security). These two aspects are usually not clearly distinguished, and the adoption of this distinction in the kernel design leads to the rejection of a hierarchical structure for protection.[5]
+The mechanisms or policies provided by the kernel can be classified according to several criteria, including: static (enforced at compile time) or dynamic (enforced at run time); pre-emptive or post-detection; according to the protection principles they satisfy (e.g., Denning[8][9]); whether they are hardware supported or language based;  whether they are more an open mechanism or a binding policy; and many more.
+Support for hierarchical protection domains[10] is typically implemented using CPU modes.
+Many kernels provide implementation of "capabilities", i.e., objects that are provided to user code which allow limited access to an underlying object managed by the kernel. A common example is file handling: a file is a representation of information stored on a permanent storage device. The kernel may be able to perform many different operations, including read, write, delete or execute, but a user-level application may only be permitted to perform some of these operations (e.g., it may only be allowed to read the file).  A common implementation of this is for the kernel to provide an object to the application (typically so called a "file handle") which the application may then invoke operations on, the validity of which the kernel checks at the time the operation is requested. Such a system may be extended to cover all objects that the kernel manages, and indeed to objects provided by other user applications.
+An efficient and simple way to provide hardware support of capabilities is to delegate to the memory management unit (MMU) the responsibility of checking access-rights for every memory access, a mechanism called capability-based addressing.[11] Most commercial computer architectures lack such MMU support for capabilities.
+An alternative approach is to simulate capabilities using commonly supported hierarchical domains. In this approach, each protected object must reside in an address space that the application does not have access to; the kernel also maintains a list of capabilities in such memory.  When an application needs to access an object protected by a capability, it performs a system call and the kernel then checks whether the application's capability grants it permission to perform the requested action, and if it is permitted performs the access for it (either directly, or by delegating the request to another user-level process).  The performance cost of address space switching limits the practicality of this approach in systems with complex interactions between objects, but it is used in current operating systems for objects that are not accessed frequently or which are not expected to perform quickly.[12][13]
+If the firmware does not support protection mechanisms, it is possible to simulate protection at a higher level, for example by simulating capabilities by manipulating page tables, but there are performance implications.[14] Lack of hardware support may not be an issue, however, for systems that choose to use language-based protection.[15]
+An important kernel design decision is the choice of the abstraction levels where the security mechanisms and policies should be implemented. Kernel security mechanisms play a critical role in supporting security at higher levels.[11][16][17][18][19]
+One approach is to use firmware and kernel support for fault tolerance (see above), and build the security policy for malicious behavior on top of that (adding features such as cryptography mechanisms where necessary), delegating some responsibility to the compiler. Approaches that delegate enforcement of security policy to the compiler and/or the application level are often called language-based security.
+The lack of many critical security mechanisms in current mainstream operating systems impedes the implementation of adequate security policies at the application abstraction level.[16] In fact, a common misconception in computer security is that any security policy can be implemented in an application regardless of kernel support.[16]
+
+Hardware- or language-based protection[edit]
+Typical computer systems today use hardware-enforced rules about what programs are allowed to access what data. The processor monitors the execution and stops a program that violates a rule, such as a user process that tries to write to kernel memory. In systems that lack support for capabilities, processes are isolated from each other by using separate address spaces.[20] Calls from user processes into the kernel are regulated by requiring them to use one of the above-described system call methods.
+An alternative approach is to use language-based protection. In a language-based protection system, the kernel will only allow code to execute that has been produced by a trusted language compiler. The language may then be designed such that it is impossible for the programmer to instruct it to do something that will violate a security requirement.[15]
+Advantages of this approach include:
+
+No need for separate address spaces. Switching between address spaces is a slow operation that causes a great deal of overhead, and a lot of optimization work is currently performed in order to prevent unnecessary switches in current operating systems. Switching is completely unnecessary in a language-based protection system, as all code can safely operate in the same address space.
+Flexibility. Any protection scheme that can be designed to be expressed via a programming language can be implemented using this method. Changes to the protection scheme (e.g. from a hierarchical system to a capability-based one) do not require new hardware.
+Disadvantages include:
+
+Longer application startup time. Applications must be verified when they are started to ensure they have been compiled by the correct compiler, or may need recompiling either from source code or from bytecode.
+Inflexible type systems. On traditional systems, applications frequently perform operations that are not type safe. Such operations cannot be permitted in a language-based protection system, which means that applications may need to be rewritten and may, in some cases, lose performance.
+Examples of systems with language-based protection include JX and Microsoft's Singularity.
+
+Process cooperation[edit]
+Edsger Dijkstra proved that from a logical point of view, atomic lock and unlock operations operating on binary semaphores are sufficient primitives to express any functionality of process cooperation.[21] However this approach is generally held to be lacking in terms of safety and efficiency, whereas a message passing approach is more flexible.[22]  A number of other approaches (either lower- or higher-level) are available as well, with many modern kernels providing support for systems such as shared memory and remote procedure calls.
+
+I/O device management[edit]
+The idea of a kernel where I/O devices are handled uniformly with other processes, as parallel co-operating processes, was first proposed and implemented by Brinch Hansen (although similar ideas were suggested in 1967[23][24]). In Hansen's description of this, the "common" processes are called internal processes, while the I/O devices are called external processes.[22]
+Similar to physical memory, allowing applications direct access to controller ports and registers can cause the controller to malfunction, or system to crash. With this, depending on the complexity of the device, some devices can get surprisingly complex to program, and use several different controllers. Because of this, providing a more abstract interface to manage the device is important. This interface is normally done by a device driver or hardware abstraction layer. Frequently, applications will require access to these devices. The kernel must maintain the list of these devices by querying the system for them in some way. This can be done through the BIOS, or through one of the various system buses (such as PCI/PCIE, or USB). Using an example of a video driver, when an application requests an operation on a device, such as displaying a character, the kernel needs to send this request to the current active video driver. The video driver, in turn, needs to carry out this request. This is an example of inter-process communication (IPC).
+
+Kernel-wide design approaches[edit]
+Naturally, the above listed tasks and features can be provided in many ways that differ from each other in design and implementation.
+The principle of separation of mechanism and policy is the substantial difference between the philosophy of micro and monolithic kernels.[25][26] Here a mechanism is the support that allows the implementation of many different policies, while a policy is a particular "mode of operation". Example:  
+
+Mechanism: User login attempts are routed to an authorization server
+Policy: Authorization server requires a password which is verified against stored passwords in a database
+Because the mechanism and policy are separated, the policy can be easily changed to e.g. require the use of a security token.
+In minimal microkernel just some very basic policies are included,[26] and its mechanisms allows what is running on top of the kernel (the remaining part of the operating system and the other applications) to decide which policies to adopt (as memory management, high level process scheduling, file system management, etc.).[5][22] A monolithic kernel instead tends to include many policies, therefore restricting the rest of the system to rely on them.
+Per Brinch Hansen presented arguments in favour of separation of mechanism and policy.[5][22] The failure to properly fulfill this separation is one of the major causes of the lack of substantial innovation in existing operating systems,[5] a problem common in computer architecture.[27][28][29] The monolithic design is induced by the "kernel mode"/"user mode" architectural approach to protection (technically called hierarchical protection domains), which is common in conventional commercial systems;[30] in fact, every module needing protection is therefore preferably included into the kernel.[30] This link between monolithic design and "privileged mode" can be reconducted to the key issue of mechanism-policy separation;[5] in fact the "privileged mode" architectural approach melds together the protection mechanism with the security policies, while the major alternative architectural approach, capability-based addressing, clearly distinguishes between the two, leading naturally to a microkernel design[5] (see Separation of protection and security).
+While monolithic kernels execute all of their code in the same address space (kernel space), microkernels try to run most of their services in user space, aiming to improve maintainability and modularity of the codebase.[4] Most kernels do not fit exactly into one of these categories, but are rather found in between these two designs. These are called hybrid kernels. More exotic designs such as nanokernels and exokernels are available, but are seldom used for production systems. The Xen hypervisor, for example, is an exokernel.
+
+Monolithic kernels[edit]
+Main article: Monolithic kernel
+  Diagram of a monolithic kernel
+In a monolithic kernel, all OS services run along with the main kernel thread, thus also residing in the same memory area. This approach provides rich and powerful hardware access. Some developers, such as UNIX developer Ken Thompson, maintain that it is "easier to implement a monolithic kernel"[31] than microkernels. The main disadvantages of monolithic kernels are the dependencies between system componentsÂ â  a bug in a device driver might crash the entire systemÂ â  and the fact that large kernels can become very difficult to maintain.
+Monolithic kernels, which have traditionally been used by Unix-like operating systems, contain all the operating system core functions and the device drivers. This is the traditional design of UNIX systems. A monolithic kernel is one single program that contains all of the code necessary to perform every kernel-related task. Every part which is to be accessed by most programs which cannot be put in a library is in the kernel space: Device drivers, scheduler, memory handling, file systems, and network stacks. Many system calls are provided to applications, to allow them to access all those services. A monolithic kernel, while initially loaded with subsystems that may not be needed, can be tuned to a point where it is as fast as or faster than the one that was specifically designed for the hardware, although more relevant in a general sense. Modern monolithic kernels, such as those of Linux (one of the kernels of the GNU operating system) and FreeBSD kernel, both of which fall into the category of Unix-like operating systems, feature the ability to load modules at runtime, thereby allowing easy extension of the kernel's capabilities as required, while helping to minimize the amount of code running in kernel space. In the monolithic kernel, some advantages hinge on these points:
+
+Since there is less software involved it is faster.
+As it is one single piece of software it should be smaller both in source and compiled forms.
+Less code generally means fewer bugs which can translate to fewer security problems.
+Most work in the monolithic kernel is done via system calls. These are interfaces, usually kept in a tabular structure, that access some subsystem within the kernel such as disk operations. Essentially calls are made within programs and a checked copy of the request is passed through the system call. Hence, not far to travel at all. The monolithic Linux kernel can be made extremely small not only because of its ability to dynamically load modules but also because of its ease of customization. In fact, there are some versions that are small enough to fit together with a large number of utilities and other programs on a
+single floppy disk and still provide a fully functional operating system (one of the most popular of which is muLinux). This ability to miniaturize its kernel has also led to a rapid growth in the use of Linux in embedded systems.
+These types of kernels consist of the core functions of the operating system and the device drivers with the ability to load modules at runtime. They provide rich and powerful abstractions of the underlying hardware. They provide a small set of simple hardware abstractions and use applications called servers to provide more functionality. This particular approach defines a high-level virtual interface over the hardware, with a set of system calls to implement operating system services such as process management, concurrency and memory management in several modules that run in supervisor mode.
+This design has several flaws and limitations:
+
+Coding in kernel can be challenging, in part because one cannot use common libraries (like a full-featured libc), and because one needs to use a source-level debugger like gdb.  Rebooting the computer is often required. This is not just a problem of convenience to the developers. When debugging is harder, and as difficulties become stronger, it becomes more likely that code will be "buggier".
+Bugs in one part of the kernel have strong side effects; since every function in the kernel has all the privileges, a bug in one function can corrupt data structure of another, totally unrelated part of the kernel, or of any running program.
+Kernels often become very large and difficult to maintain.
+Even if the modules servicing these operations are separate from the whole, the code integration is tight and difficult to do correctly.
+Since the modules run in the same address space, a bug can bring down the entire system.
+Monolithic kernels are not portable; therefore, they must be rewritten for each new architecture that the operating system is to be used on.
+  In the microkernel approach, the kernel itself only provides basic functionality that allows the execution of servers, separate programs that assume former kernel functions, such as device drivers, GUI servers, etc.
+Examples of monolithic kernels are AIX kernel, HP-UX kernel and Solaris kernel.
+
+Microkernels[edit]
+Main article: Microkernel
+Microkernel (also abbreviated Î¼K or uK) is the term describing an approach to operating system design by which the functionality of the system is moved out of the traditional "kernel", into a set of "servers" that communicate through a "minimal" kernel, leaving as little as possible in "system space" and as much as possible in "user space". A microkernel that is designed for a specific platform or device is only ever going to have what it needs to operate. The microkernel approach consists of defining a simple abstraction over the hardware, with a set of primitives or system calls to implement minimal OS services such as memory management, multitasking, and inter-process communication. Other services, including those normally provided by the kernel, such as networking, are implemented in user-space programs, referred to as servers. Microkernels are easier to maintain than monolithic kernels, but the large number of system calls and context switches might slow down the system because they typically generate more overhead than plain function calls.
+Only parts which really require being in a privileged mode are in kernel space: IPC (Inter-Process Communication), basic scheduler, or scheduling primitives, basic memory handling, basic I/O primitives. Many critical parts are now running in user space: The complete scheduler, memory handling, file systems, and network stacks. Micro kernels were invented as a reaction to traditional "monolithic" kernel design, whereby all system functionality was put in a one static program running in a special "system" mode of the processor. In the microkernel, only the most fundamental of tasks are performed such as being able to access some (not necessarily all) of the hardware, manage memory and coordinate message passing between the processes. Some systems that use micro kernels are QNX and the HURD. In the case of QNX and Hurd user sessions can be entire snapshots of the system itself or views as it is referred to. The very essence of the microkernel architecture illustrates some of its advantages:
+
+Easier to maintain
+Patches can be tested in a separate instance, and then swapped in to take over a production instance.
+Rapid development time and new software can be tested without having to reboot the kernel.
+More persistence in general, if one instance goes haywire, it is often possible to substitute it with an operational mirror.
+Most microkernels use a message passing system to handle requests from one server to another. The message passing system generally operates on a port basis with the microkernel. As an example, if a request for more memory is sent, a port is opened with the microkernel and the request sent through. Once within the microkernel, the steps are similar to system calls. The rationale was that it would bring modularity in the system architecture, which would entail a cleaner system, easier to debug or dynamically modify, customizable to users' needs, and more performing. They are part of the operating systems like GNU Hurd, MINIX, MkLinux, QNX and Redox OS.  Although microkernels are very small by themselves, in combination with all their required auxiliary code they are, in fact, often larger than monolithic kernels. Advocates of monolithic kernels also point out that the two-tiered structure of microkernel systems, in which most of the operating system does not interact directly with the hardware, creates a not-insignificant cost in terms of system efficiency. These types of kernels normally provide only the minimal services such as defining memory address spaces, inter-process communication (IPC) and the process management. The other functions such as running the hardware processes are not handled directly by microkernels. Proponents of micro kernels point out those monolithic kernels have the disadvantage that an error in the kernel can cause the entire system to crash. However, with a microkernel, if a kernel process crashes, it is still possible to prevent a crash of the system as a whole by merely restarting the service that caused the error.
+Other services provided by the kernel such as networking are implemented in user-space programs referred to as servers. Servers allow the operating system to be modified by simply starting and stopping programs. For a machine without networking support, for instance, the networking server is not started. The task of moving in and out of the kernel to move data between the various applications and servers creates overhead which is detrimental to the efficiency of micro kernels in comparison with monolithic kernels.
+Disadvantages in the microkernel exist however. Some are:
+
+Larger running memory footprint
+More software for interfacing is required, there is a potential for performance loss.
+Messaging bugs can be harder to fix due to the longer trip they have to take versus the one off copy in a monolithic kernel.
+Process management in general can be very complicated.
+The disadvantages for microkernels are extremely context-based. As an example, they work well for small single-purpose (and critical) systems because if not many processes need to run, then the complications of process management are effectively mitigated.
+A microkernel allows the implementation of the remaining part of the operating system as a normal application program written in a high-level language, and the use of different operating systems on top of the same unchanged kernel. It is also possible to dynamically switch among operating systems and to have more than one active simultaneously.[22]
+
+Monolithic kernels vs. microkernels[edit]
+As the computer kernel grows, so grows the size and vulnerability of its trusted computing base; and, besides reducing security, there is the problem of enlarging the memory footprint. This is mitigated to some degree by perfecting the virtual memory system, but not all computer architectures have virtual memory support.[32] To reduce the kernel's footprint, extensive editing has to be performed to carefully remove unneeded code, which can be very difficult with non-obvious interdependencies between parts of a kernel with millions of lines of code.
+By the early 1990s, due to the various shortcomings of monolithic kernels versus microkernels, monolithic kernels were considered obsolete by virtually all operating system researchers.[citation needed] As a result, the design of Linux as a monolithic kernel rather than a microkernel was the topic of a famous debate between Linus Torvalds and Andrew Tanenbaum.[33] There is merit on both sides of the argument presented in the TanenbaumâTorvalds debate.
+
+Performance[edit]
+Monolithic kernels are designed to have all of their code in the same address space (kernel space), which some developers argue is necessary to increase the performance of the system.[34] Some developers also maintain that monolithic systems are extremely efficient if well written.[34] The monolithic model tends to be more efficient[35] through the use of shared kernel memory, rather than the slower IPC system of microkernel designs, which is typically based on message passing.[citation needed]
+The performance of microkernels was poor in both the 1980s and early 1990s.[36][37] However, studies that empirically measured the performance of these microkernels did not analyze the reasons of such inefficiency.[36] The explanations of this data were left to "folklore", with the assumption that they were due to the increased frequency of switches from "kernel-mode" to "user-mode", to the increased frequency of inter-process communication and to the increased frequency of context switches.[36] 
+In fact, as guessed in 1995, the reasons for the poor performance of microkernels might as well have been: (1) an actual inefficiency of the whole microkernel approach, (2) the particular concepts implemented in those microkernels, and (3) the particular implementation of those concepts. Therefore it remained to be studied if the solution to build an efficient microkernel was, unlike previous attempts, to apply the correct construction techniques.[36]
+On the other end, the hierarchical protection domains architecture that leads to the design of a monolithic kernel[30] has a significant performance drawback each time there's an interaction between different levels of protection (i.e., when a process has to manipulate a data structure both in "user mode" and "supervisor mode"), since this requires message copying by value.[38]
+
+  The hybrid kernel approach combines the speed and simpler design of a monolithic kernel with the modularity and execution safety of a microkernel
+Hybrid (or modular) kernels[edit]
+Main article: Hybrid kernel
+Hybrid kernels are used in most commercial operating systems such as Microsoft Windows NT 3.1, NT 3.5, NT 3.51, NT 4.0, 2000, XP, Vista, 7, 8, 8.1 and 10. Apple Inc's own macOS uses a hybrid kernel called XNU which is based upon code from OSF/1's Mach kernel (OSFMK 7.3)[39] and FreeBSD's monolithic kernel. They are similar to micro kernels, except they include some additional code in kernel-space to increase performance. These kernels represent a compromise that was implemented by some developers to accommodate the major advantages of both monolithic and micro kernels. These types of kernels are extensions of micro kernels with some properties of monolithic kernels. Unlike monolithic kernels, these types of kernels are unable to load modules at runtime on their own. Hybrid kernels are micro kernels that have some "non-essential" code in kernel-space in order for the code to run more quickly than it would were it to be in user-space. Hybrid kernels are a compromise between the monolithic and microkernel designs. This implies running some services (such as the network stack or the filesystem) in kernel space to reduce the performance overhead of a traditional microkernel, but still running kernel code (such as device drivers) as servers in user space.
+Many traditionally monolithic kernels are now at least adding (or else using) the module capability. The most well known of these kernels is the Linux kernel. The modular kernel essentially can have parts of it that are built into the core kernel binary or binaries that load into memory on demand. It is important to note that a code tainted module has the potential to destabilize a running kernel. Many people become confused on this point when discussing micro kernels. It is possible to write a driver for a microkernel in a completely separate memory space and test it before "going" live. When a kernel module is loaded, it accesses the monolithic portion's memory space by adding to it what it needs, therefore, opening the doorway to possible pollution. A few advantages to the modular (or) Hybrid kernel are:
+
+Faster development time for drivers that can operate from within modules. No reboot required for testing (provided the kernel is not destabilized).
+On demand capability versus spending time recompiling a whole kernel for things like new drivers or subsystems.
+Faster integration of third party technology (related to development but pertinent unto itself nonetheless).
+Modules, generally, communicate with the kernel using a module interface of some sort. The interface is generalized (although particular to a given operating system) so it is not always possible to use modules. Often the device drivers may need more flexibility than the module interface affords. Essentially, it is two system calls and often the safety checks that only have to be done once in the monolithic kernel now may be done twice. Some of the disadvantages of the modular approach are:
+
+With more interfaces to pass through, the possibility of increased bugs exists (which implies more security holes).
+Maintaining modules can be confusing for some administrators when dealing with problems like symbol differences.
+Nanokernels[edit]
+Main article: Nanokernel
+A nanokernel delegates virtually all servicesÂ â  including even the most basic ones like interrupt controllers or the timerÂ â  to device drivers to make the kernel memory requirement even smaller than a traditional microkernel.[40]
+
+Exokernels[edit]
+Main article: Exokernel
+Exokernels are a still-experimental approach to operating system design. They differ from other types of kernels in limiting their functionality to the protection and multiplexing of the raw hardware, providing no hardware abstractions on top of which to develop applications. This separation of hardware protection from hardware management enables application developers to determine how to make the most efficient use of the available hardware for each specific program.
+Exokernels in themselves are extremely small. However, they are accompanied by library operating systems (see also unikernel), providing application developers with the functionalities of a conventional operating system. This comes down to every user writing his own rest-of-the kernel from near scratch, which is a very-risky, complex and quite a daunting assignment - particularly in a time-constrained production-oriented environment, which is why exokernels have never caught on.[citation needed] A major advantage of exokernel-based systems is that they can incorporate multiple library operating systems, each exporting a different API, for example one for high level UI development and one for real-time control.
+
+History of kernel development[edit]
+Early operating system kernels[edit]
+Main article: History of operating systems
+Strictly speaking, an operating system (and thus, a kernel) is not required to run a computer. Programs can be directly loaded and executed on the "bare metal" machine, provided that the authors of those programs are willing to work without any hardware abstraction or operating system support. Most early computers operated this way during the 1950s and early 1960s, which were reset and reloaded between the execution of different programs. Eventually, small ancillary programs such as program loaders and debuggers were left in memory between runs, or loaded from ROM. As these were developed, they formed the basis of what became early operating system kernels. The "bare metal" approach is still used today on some video game consoles and embedded systems,[41] but in general, newer computers use modern operating systems and kernels.
+In 1969, the RC 4000 Multiprogramming System introduced the system design philosophy of a small nucleus "upon which operating systems for different purposes could be built in an orderly manner",[42] what would be called the microkernel approach.
+
+Time-sharing operating systems[edit]
+Main article: Time-sharing
+In the decade preceding Unix, computers had grown enormously in powerÂ â  to the point where computer operators were looking for new ways to get people to use their spare time on their machines. One of the major developments during this era was time-sharing, whereby a number of users would get small slices of computer time, at a rate at which it appeared they were each connected to their own, slower, machine.[43]
+The development of time-sharing systems led to a number of problems. One was that users, particularly at universities where the systems were being developed, seemed to want to hack the system to get more CPU time. For this reason, security and access control became a major focus of the Multics project in 1965.[44] Another ongoing issue was properly handling computing resources: users spent most of their time staring at the terminal and thinking about what to input instead of actually using the resources of the computer, and a time-sharing system should give the CPU time to an active user during these periods. Finally, the systems typically offered a memory hierarchy several layers deep, and partitioning this expensive resource led to major developments in virtual memory systems.
+
+Amiga[edit]
+Main article: AmigaOS
+The Commodore Amiga was released in 1985, and was among the firstÂ â  and certainly most successfulÂ â  home computers to feature  an advanced kernel architecture. The AmigaOS kernel's executive component, exec.library, uses a microkernel message-passing design, but there are other kernel components, like graphics.library, that have direct access to the hardware. There is no memory protection, and the kernel is almost always running in user mode. Only special actions are executed in kernel mode, and user-mode applications can ask the operating system to execute their code in kernel mode.
+
+Unix[edit]
+Main article: Unix
+  A diagram of the predecessor/successor family relationship for Unix-like systems
+During the design phase of Unix, programmers decided to model every high-level device as a file, because they believed the purpose of computation was data transformation.[45]
+For instance, printers were represented as a "file" at a known locationÂ â  when data was copied to the file, it printed out. Other systems, to provide a similar functionality, tended to virtualize devices at a lower levelÂ â  that is, both devices and files would be instances of some lower level concept. Virtualizing the system at the file level allowed users to manipulate the entire system using their existing file management utilities and concepts, dramatically simplifying operation. As an extension of the same paradigm, Unix allows programmers to manipulate files using a series of small programs, using the concept of pipes, which allowed users to complete operations in stages, feeding a file through a chain of single-purpose tools. Although the end result was the same, using smaller programs in this way dramatically increased flexibility as well as ease of development and use, allowing the user to modify their workflow by adding or removing a program from the chain.
+In the Unix model, the operating system consists of two parts: first, the huge collection of utility programs that drive most operations; second, the kernel that runs the programs.[45] Under Unix, from a programming standpoint, the distinction between the two is fairly thin; the kernel is a program, running in supervisor mode,[46] that acts as a program loader and supervisor for the small utility programs making up the rest of the system, and to provide locking and I/O services for these programs; beyond that, the kernel didn't intervene at all in user space.
+Over the years the computing model changed, and Unix's treatment of everything as a file or byte stream no longer was as universally applicable as it was before. Although a terminal could be treated as a file or a byte stream, which is printed to or read from, the same did not seem to be true for a graphical user interface. Networking posed another problem. Even if network communication can be compared to file access, the low-level packet-oriented architecture dealt with discrete chunks of data and not with whole files. As the capability of computers grew, Unix became increasingly cluttered with code. It is also because the modularity of the Unix kernel is extensively scalable.[47] While kernels might have had 100,000 lines of code in the seventies and eighties, kernels like Linux, of modern Unix successors like GNU, have more than 13 million lines.[48]
+Modern Unix-derivatives are generally based on module-loading monolithic kernels. Examples of this are the Linux kernel in the many distributions of GNU, IBM AIX, as well as the Berkeley Software Distribution variant kernels such as FreeBSD, DragonflyBSD, OpenBSD, NetBSD, and macOS. Apart from these alternatives, amateur developers maintain an active operating system development community, populated by self-written hobby kernels which mostly end up sharing many features with Linux, FreeBSD, DragonflyBSD, OpenBSD or NetBSD kernels and/or being compatible with them.[49]
+
+Mac OS[edit]
+Main articles: Classic Mac OS and macOS
+Apple first launched its classic Mac OS in 1984, bundled with its Macintosh personal computer. Apple moved to a nanokernel design in Mac OS 8.6. Against this, the modern macOS (originally named Mac OS X) is based on Darwin, which uses a hybrid kernel called XNU, which was created by combining the 4.3BSD kernel and the Mach kernel.[50]
+
+Microsoft Windows[edit]
+Main article: History of Microsoft Windows
+Microsoft Windows was first released in 1985 as an add-on to MS-DOS.  Because of its dependence on another operating system, initial releases of Windows, prior to Windows 95, were considered an operating environment (not to be confused with an operating system).  This product line continued to evolve through the 1980s and 1990s, with the Windows 9x series adding 32-bit addressing and pre-emptive multitasking; but ended with the release of Windows Me in 2000.
+Microsoft also developed Windows NT, an operating system with a very similar interface, but intended for high-end and business users. This line started with the release of Windows NT 3.1 in 1993, and was introduced to general users with the release of Windows XP in October 2001âreplacing Windows 9x with a completely different, much more sophisticated operating system. This is the line that continues with Windows 11.
+The architecture of Windows NT's kernel is considered a hybrid kernel because the kernel itself contains tasks such as the Window Manager and the IPC Managers, with a client/server layered subsystem model.[51] It was designed as a modified microkernel, as the Windows NT kernel was influenced by the Mach microkernel but does not meet all of the criteria of a pure microkernel.
+
+IBM Supervisor[edit]
+Supervisory program or supervisor is a computer program, usually part of an operating system, that controls the execution of other routines and regulates work scheduling, input/output operations, error actions, and similar functions and regulates the flow of work in a data processing system.
+Historically, this term was essentially associated with IBM's line of mainframe operating systems starting with OS/360. In other operating systems, the supervisor is generally called the kernel.
+In the 1970s, IBM further abstracted the supervisor state from the hardware, resulting in a hypervisor that enabled full virtualization, i.e. the capacity to run multiple operating systems on the same machine totally independently from each other. Hence the first such system was called Virtual Machine or VM.
+
+Development of microkernels[edit]
+Although Mach, developed by Richard Rashid at Carnegie Mellon University, is the best-known general-purpose microkernel, other microkernels have been developed with more specific aims. The L4 microkernel family (mainly the L3 and the L4 kernel) was created to demonstrate that microkernels are not necessarily slow.[52] Newer implementations such as Fiasco and Pistachio are able to run Linux next to other L4 processes in separate address spaces.[53][54]
+Additionally, QNX is a microkernel which is principally used in embedded systems,[55] and the open-source software MINIX, while originally created for educational purposes, is now focused on being a highly reliable and self-healing microkernel OS.
+
+See also[edit]
+Comparison of operating system kernels
+Inter-process communication
+Operating system
+Virtual memory
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ It may depend on the Computer architecture
+
+
+References[edit]
+
+
+^ Jump up to: a b .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Kernel". Linfo. Bellevue Linux Users Group. Archived from the original on 8 December 2006. Retrieved 15 September 2016.
+
+^ Randal E. Bryant; David R. OâHallaron (2016). Computer Systems: A Programmer's Perspective (ThirdÂ ed.). Pearson. p.Â 17. ISBNÂ 978-0134092669.
+
+^ cf. Daemon (computing)
+
+^ Jump up to: a b Roch 2004
+
+^ Jump up to: a b c d e f g Wulf 1974 pp.337â345
+
+^ Jump up to: a b Silberschatz 1991
+
+^ Tanenbaum, Andrew S. (2008). Modern Operating Systems (3rdÂ ed.). Prentice Hall. pp.Â 50â51. ISBNÂ 978-0-13-600663-3. . . . nearly all system calls [are] invoked from C programs by calling a library procedure . . . The library procedure . . . executes a TRAP instruction to switch from user mode to kernel mode and start execution . . .
+
+^ Denning 1976
+
+^ Swift 2005, p.29 quote: "isolation, resource control, decision verification (checking), and error recovery."
+
+^ Schroeder 72
+
+^ Jump up to: a b Linden 76
+
+^ Stephane Eranian and David Mosberger, Virtual Memory in the IA-64 Linux Kernel Archived 2018-04-03 at the Wayback Machine, Prentice Hall PTR, 2002
+
+^ Silberschatz & Galvin, Operating System Concepts, 4th ed, pp. 445 & 446
+
+^ Hoch, Charles; J. C. Browne (July 1980). "An implementation of capabilities on the PDP-11/45". ACM SIGOPS Operating Systems Review. 14 (3): 22â32. doi:10.1145/850697.850701. S2CIDÂ 17487360.
+
+^ Jump up to: a b A Language-Based Approach to Security Archived 2018-12-22 at the Wayback Machine, Schneider F., Morrissett G. (Cornell University) and Harper R. (Carnegie Mellon University)
+
+^ Jump up to: a b c P. A. Loscocco, S. D. Smalley, P. A. Muckelbauer, R. C. Taylor, S. J. Turner, and J. F. Farrell. The Inevitability of Failure: The Flawed Assumption of Security in Modern Computing Environments Archived 2007-06-21 at the Wayback Machine. In Proceedings of the 21st National Information Systems Security Conference, pages 303â314, Oct. 1998. [1] Archived 2011-07-21 at the Wayback Machine.
+
+^ Lepreau, Jay; Ford, Bryan; Hibler, Mike (1996). "The persistent relevance of the local operating system to global applications". Proceedings of the 7th workshop on ACM SIGOPS European workshop Systems support for worldwide applications - EW 7. p.Â 133. doi:10.1145/504450.504477. S2CIDÂ 10027108.
+
+^ J. Anderson, Computer Security Technology Planning Study Archived 2011-07-21 at the Wayback Machine, Air Force Elect. Systems Div., ESD-TR-73-51, October 1972.
+
+^ Jerry H. Saltzer; Mike D. Schroeder (September 1975). "The protection of information in computer systems". Proceedings of the IEEE. 63 (9): 1278â1308. CiteSeerXÂ 10.1.1.126.9257. doi:10.1109/PROC.1975.9939. S2CIDÂ 269166. Archived from the original on 2021-03-08. Retrieved 2007-07-15.
+
+^ Jonathan S. Shapiro; Jonathan M. Smith; David J. Farber (1999). "EROS: a fast capability system". Proceedings of the Seventeenth ACM Symposium on Operating Systems Principles. 33 (5): 170â185. doi:10.1145/319344.319163.
+
+^ Dijkstra, E. W. Cooperating Sequential Processes. Math. Dep., Technological U., Eindhoven, Sept. 1965.
+
+^ Jump up to: a b c d e Brinch Hansen 70 pp.238â241
+
+^ Harrison, M. C.; Schwartz, J. T. (1967). "SHARER, a time sharing system for the CDC 6600". Communications of the ACM. 10 (10): 659â665. doi:10.1145/363717.363778. S2CIDÂ 14550794. Retrieved 2007-01-07.
+
+^ Huxtable, D. H. R.; Warwick, M. T. (1967). Dynamic Supervisors â their design and construction. pp.Â 11.1â11.17. doi:10.1145/800001.811675. ISBNÂ 9781450373708. S2CIDÂ 17709902. Archived from the original on 2020-02-24. Retrieved 2007-01-07.
+
+^ Baiardi 1988
+
+^ Jump up to: a b Levin 75
+
+^ Denning 1980
+
+^ JÃ¼rgen Nehmer, "The Immortality of Operating Systems, or: Is Research in Operating Systems still Justified?", Lecture Notes In Computer Science; Vol. 563. Proceedings of the International Workshop on Operating Systems of the 90s and Beyond. pp. 77â83 (1991) ISBNÂ 3-540-54987-0 [2] Archived 2017-03-31 at the Wayback Machine quote: "The past 25 years have shown that research on operating system architecture had a minor effect on existing main stream [sic] systems."
+
+^ Levy 84, p.1 quote: "Although the complexity of computer applications increases yearly, the underlying hardware architecture for applications has remained unchanged for decades."
+
+^ Jump up to: a b c Levy 84, p.1 quote: "Conventional architectures support a single privileged mode of
+operation. This structure leads to monolithic design; any module needing protection must be part of the single operating system kernel. If, instead, any module could execute within a protected domain, systems could be built as a collection of independent modules extensible by any user."
+
+^ "Open Sources: Voices from the Open Source Revolution". 1-56592-582-3. 29 March 1999. Archived from the original on 1 February 2020. Retrieved 24 March 2019.
+
+^ Virtual addressing is most commonly achieved through a built-in memory management unit.
+
+^ Recordings of the debate between Torvalds and Tanenbaum can be found at dina.dk Archived 2012-10-03 at the Wayback Machine, groups.google.com Archived 2013-05-26 at the Wayback Machine, oreilly.com Archived 2014-09-21 at the Wayback Machine and Andrew Tanenbaum's website Archived 2015-08-05 at the Wayback Machine
+
+^ Jump up to: a b Matthew Russell. "What Is Darwin (and How It Powers Mac OS X)". O'Reilly Media. Archived from the original on 2007-12-08. Retrieved 2008-12-09. quote: "The tightly coupled nature of a monolithic kernel allows it to make very efficient use of the underlying hardware [...] Microkernels, on the other hand, run a lot more of the core processes in userland. [...] Unfortunately, these benefits come at the cost of the microkernel having to pass a lot of information in and out of the kernel space through a process known as a context switch. Context switches introduce considerable overhead and therefore result in a performance penalty."
+
+^ "Operating Systems/Kernel Models - Wikiversity". en.wikiversity.org. Archived from the original on 2014-12-18. Retrieved 2014-12-18.
+
+^ Jump up to: a b c d Liedtke 95
+
+^ HÃ¤rtig 97
+
+^ Hansen 73, section 7.3 p.233 "interactions between different levels of protection require transmission of messages by value"
+
+^ Magee, Jim. WWDC 2000 Session 106 â Mac OS X: Kernel.  14 minutes in. Archived from the original on 2021-10-30.
+
+^ KeyKOS Nanokernel Architecture Archived 2011-06-21 at the Wayback Machine
+
+^ Ball: Embedded Microprocessor Designs, p. 129
+
+^ Hansen 2001 (os), pp.17â18
+
+^ "BSTJ version of C.ACM Unix paper". bell-labs.com. Archived from the original on 2005-12-30. Retrieved 2006-08-17.
+
+^ Introduction and Overview of the Multics System Archived 2011-07-09 at the Wayback Machine, by F. J. CorbatÃ³ and V. A. Vissotsky.
+
+^ Jump up to: a b "The Single Unix Specification". The open group. Archived from the original on 2016-10-04. Retrieved 2016-09-29.
+
+^ The highest privilege level has various names throughout different architectures, such as supervisor mode, kernel mode, CPL0, DPL0, ring 0, etc. See Ring (computer security) for more information.
+
+^ "Unix's Revenge". asymco.com. 29 September 2010. Archived from the original on 9 November 2010. Retrieved 2 October 2010.
+
+^ Linux Kernel 2.6: It's Worth More! Archived 2011-08-21 at WebCite, by David A. Wheeler, October 12, 2004
+
+^ This community mostly gathers at Bona Fide OS Development Archived 2022-01-17 at the Wayback Machine,  The Mega-Tokyo Message Board Archived 2022-01-25 at the Wayback Machine and other operating system enthusiast web sites.
+
+^ XNU: The Kernel Archived 2011-08-12 at the Wayback Machine
+
+^ "Windows - Official Site for Microsoft Windows 10 Home & Pro OS, laptops, PCs, tablets & more". windows.com. Archived from the original on 2011-08-20. Retrieved 2019-03-24.
+
+^ "The L4 microkernel family - Overview". os.inf.tu-dresden.de. Archived from the original on 2006-08-21. Retrieved 2006-08-11.
+
+^ "The Fiasco microkernel - Overview". os.inf.tu-dresden.de. Archived from the original on 2006-06-16. Retrieved 2006-07-10.
+
+^ Zoller (inaktiv), Heinz (7 December 2013). "L4Ka - L4Ka Project". www.l4ka.org. Archived from the original on 19 April 2001. Retrieved 24 March 2019.
+
+^ "QNX Operating Systems". blackberry.qnx.com. Archived from the original on 2019-03-24. Retrieved 2019-03-24.
+
+
+Sources[edit]
+.mw-parser-output .refbegin{font-size:90%;margin-bottom:0.5em}.mw-parser-output .refbegin-hanging-indents>ul{margin-left:0}.mw-parser-output .refbegin-hanging-indents>ul>li{margin-left:0;padding-left:3.2em;text-indent:-3.2em}.mw-parser-output .refbegin-hanging-indents ul,.mw-parser-output .refbegin-hanging-indents ul li{list-style:none}@media(max-width:720px){.mw-parser-output .refbegin-hanging-indents>ul>li{padding-left:1.6em;text-indent:-1.6em}}.mw-parser-output .refbegin-columns{margin-top:0.3em}.mw-parser-output .refbegin-columns ul{margin-top:0}.mw-parser-output .refbegin-columns li{page-break-inside:avoid;break-inside:avoid-column}
+Roch, Benjamin (2004). "Monolithic kernel vs. Microkernel" (PDF). Archived from the original (PDF) on 2006-11-01. Retrieved 2006-10-12.
+Silberschatz, Abraham; James L. Peterson; Peter B. Galvin (1991). Operating system concepts. Boston, Massachusetts: Addison-Wesley. p.Â 696. ISBNÂ 978-0-201-51379-0.
+Ball, Stuart R. (2002) [2002]. Embedded Microprocessor Systems: Real World Designs (firstÂ ed.). Elsevier Science. ISBNÂ 978-0-7506-7534-5.
+Deitel, Harvey M. (1984) [1982]. An introduction to operating systems (revisited firstÂ ed.). Addison-Wesley. p.Â 673. ISBNÂ 978-0-201-14502-1.
+Denning, Peter J. (December 1976). "Fault tolerant operating systems". ACM Computing Surveys. 8 (4): 359â389. doi:10.1145/356678.356680. ISSNÂ 0360-0300. S2CIDÂ 207736773.
+Denning, Peter J. (April 1980). "Why not innovations in computer architecture?". ACM SIGARCH Computer Architecture News. 8 (2): 4â7. doi:10.1145/859504.859506. ISSNÂ 0163-5964. S2CIDÂ 14065743.
+Hansen, Per Brinch (April 1970). "The nucleus of a Multiprogramming System". Communications of the ACM. 13 (4): 238â241. CiteSeerXÂ 10.1.1.105.4204. doi:10.1145/362258.362278. ISSNÂ 0001-0782. S2CIDÂ 9414037.
+Hansen, Per Brinch (1973). Operating System Principles. Englewood Cliffs: Prentice Hall. p.Â 496. ISBNÂ 978-0-13-637843-3.
+Hansen, Per Brinch (2001). "The evolution of operating systems" (PDF). Archived (PDF) from the original on 2011-07-25. Retrieved 2006-10-24. included in book: Per Brinch Hansen, ed. (2001). "1 The evolution of operating systems". Classic operating systems: from batch processing to distributed systems. New York: Springer-Verlag. pp.Â 1â36. ISBNÂ 978-0-387-95113-3.
+Hermann HÃ¤rtig, Michael Hohmuth, Jochen Liedtke, Sebastian SchÃ¶nberg, Jean Wolter The performance of Î¼-kernel-based systems Archived 2020-02-17 at the Wayback Machine, HÃ¤rtig, Hermann; Hohmuth, Michael; Liedtke, Jochen; SchÃ¶nberg, Sebastian (1997). "The performance of Î¼-kernel-based systems". Proceedings of the sixteenth ACM symposium on Operating systems principles - SOSP '97. p.Â 66. CiteSeerXÂ 10.1.1.56.3314. doi:10.1145/268998.266660. ISBNÂ 978-0897919166. S2CIDÂ 1706253. ACM SIGOPS Operating Systems Review, v.31 n.5, p.Â 66â77, Dec. 1997
+Houdek, M. E., Soltis, F. G., and Hoffman, R. L. 1981. IBM System/38 support for capability-based addressing. In Proceedings of the 8th ACM International Symposium on Computer Architecture. ACM/IEEE, pp.Â 341â348.
+Intel Corporation (2002) The IA-32 Architecture Software Developer's Manual, Volume 1: Basic Architecture
+Levin, R.; Cohen, E.; Corwin, W.; Pollack, F.; Wulf, William (1975). "Policy/mechanism separation in Hydra". ACM Symposium on Operating Systems Principles / Proceedings of the Fifth ACM Symposium on Operating Systems Principles. 9 (5): 132â140. doi:10.1145/1067629.806531.
+Levy, Henry M. (1984). Capability-based computer systems. Maynard, Mass: Digital Press. ISBNÂ 978-0-932376-22-0. Archived from the original on 2007-07-13. Retrieved 2007-07-18.
+Liedtke, Jochen. On Âµ-Kernel Construction, Proc. 15th ACM Symposium on Operating System Principles (SOSP), December 1995
+Linden, Theodore A. (December 1976). "Operating System Structures to Support Security and Reliable Software". ACM Computing Surveys. 8 (4): 409â445. doi:10.1145/356678.356682. hdl:2027/mdp.39015086560037. ISSNÂ 0360-0300. S2CIDÂ 16720589., "Operating System Structures to Support Security and Reliable Software" (PDF). Archived (PDF) from the original on 2010-05-28. Retrieved 2010-06-19.
+Lorin, Harold (1981). Operating systems. Boston, Massachusetts: Addison-Wesley. pp.Â 161â186. ISBNÂ 978-0-201-14464-2.
+Schroeder, Michael D.; Jerome H. Saltzer (March 1972). "A hardware architecture for implementing protection rings". Communications of the ACM. 15 (3): 157â170. CiteSeerXÂ 10.1.1.83.8304. doi:10.1145/361268.361275. ISSNÂ 0001-0782. S2CIDÂ 14422402.
+Shaw, Alan C. (1974). The logical design of Operating systems. Prentice-Hall. p.Â 304. ISBNÂ 978-0-13-540112-5.
+Tanenbaum, Andrew S. (1979). Structured Computer Organization. Englewood Cliffs, New Jersey: Prentice-Hall. ISBNÂ 978-0-13-148521-1.
+Wulf, W.; E. Cohen; W. Corwin; A. Jones; R. Levin; C. Pierson; F. Pollack (June 1974). "HYDRA: the kernel of a multiprocessor operating system" (PDF). Communications of the ACM. 17 (6): 337â345. doi:10.1145/355616.364017. ISSNÂ 0001-0782. S2CIDÂ 8011765. Archived from the original (PDF) on 2007-09-26. Retrieved 2007-07-18.
+Baiardi, F.; A. Tomasi; M. Vanneschi (1988). Architettura dei Sistemi di Elaborazione, volume 1 (in Italian). Franco Angeli. ISBNÂ 978-88-204-2746-7. Archived from the original on 2012-06-27. Retrieved 2006-10-10.
+Swift, Michael M.; Brian N. Bershad; Henry M. Levy. Improving the reliability of commodity operating systems (PDF). Archived (PDF) from the original on 2007-07-19. Retrieved 2007-07-16.
+Gettys, James; Karlton, Philip L.; McGregor, Scott (1990). "Improving the reliability of commodity operating systems". Software: Practice and Experience. 20: S35âS67. doi:10.1002/spe.4380201404. S2CIDÂ 26329062. Retrieved 2010-06-19.
+Michael M. Swift; Brian N. Bershad; Henry M. Levy (February 2005). "Improving the reliability of commodity operating systems". ACM Transactions on Computer Systems (TOCS). Association for Computing Machinery. 23 (1): 77â110. eISSNÂ 1557-7333. ISSNÂ 0734-2071.
+
+Further reading[edit]
+Andrew Tanenbaum, Operating Systems â Design and Implementation (Third edition);
+Andrew Tanenbaum, Modern Operating Systems (Second edition);
+Daniel P. Bovet, Marco Cesati, The Linux Kernel;
+David A. Peterson, Nitin Indurkhya, Patterson, Computer Organization and Design, Morgan Koffman (ISBNÂ 1-55860-428-6);
+B.S. Chalk, Computer Organisation and Architecture, Macmillan P.(ISBNÂ 0-333-64551-0).
+External links[edit]
+
+
+
+Wikiversity has learning resources about Kernel Models at Operating Systems/Kernel Models
+
+Detailed comparison between most popular operating system kernels
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteOperating systemsGeneral
+Advocacy
+Comparison
+Forensic engineering
+History
+List
+Timeline
+Usage share
+User features comparison
+Variants
+Disk operating system
+Distributed operating system
+Embedded operating system
+Hobbyist operating system
+Just enough operating system
+Mobile operating system
+Network operating system
+Object-oriented operating system
+Real-time operating system
+Supercomputer operating system
+KernelArchitectures
+Exokernel
+Hybrid
+Microkernel
+Monolithic
+vkernel
+Rump kernel
+Unikernel
+Components
+Device driver
+Loadable kernel module
+User space and kernel space
+Process managementConcepts
+Computer multitasking (Cooperative, Preemptive)
+Context switch
+Interrupt
+IPC
+Process
+Process control block
+Real-time
+Thread
+Time-sharing
+Schedulingalgorithms
+Fixed-priority preemptive
+Multilevel feedback queue
+Round-robin
+Shortest job next
+Memory management,resource protection
+Bus error
+General protection fault
+Memory protection
+Paging
+Protection ring
+Segmentation fault
+Virtual memory
+Storage access,file systems
+Boot loader
+Defragmentation
+Device file
+File attribute
+Inode
+Journal
+Partition
+Virtual file system
+Virtual tape library
+Supporting concepts
+API
+Computer network
+HAL
+Live CD
+Live USB
+Shell
+CLI
+GUI
+3D GUI
+NUI
+TUI
+VUI
+ZUI
+PXE
+
+Authority control 
+Integrated Authority File (Germany)
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Kernel_(operating_system)&oldid=1069580014"
+		Categories: Operating system kernelsOperating systemsComputer scienceHidden categories: Webarchive template wayback linksWebarchive template webcite linksArticles with short descriptionShort description is different from WikidataAccuracy disputes from January 2022All accuracy disputesAll articles with unsourced statementsArticles with unsourced statements from July 2007Articles with unsourced statements from June 2015Articles with unsourced statements from August 2021CS1 Italian-language sources (it)Articles with GND identifiers
+	

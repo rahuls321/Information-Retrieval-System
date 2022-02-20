@@ -1,0 +1,189 @@
+
+Title:
+System call
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Mechanism used by an application program to request service from the kernel of the operating system
+.mw-parser-output .hatnote{font-style:italic}.mw-parser-output div.hatnote{padding-left:1.6em;margin-bottom:0.5em}.mw-parser-output .hatnote i{font-style:normal}.mw-parser-output .hatnote+link+.hatnote{margin-top:-0.5em}Not to be confused with System command.
+
+
+  A high-level overview of the Linux kernel's system call interface, which handles communication between its various components and the userspace
+In computing, a system call (commonly abbreviated to syscall) is the programmatic way in which a computer program requests a service from the kernel of the operating system on which it is executed. This may include hardware-related services (for example, accessing a hard disk drive or accessing the device's camera), creation and execution of new processes, and communication with integral kernel services such as process scheduling.  System calls provide an essential interface between a process and the operating system.
+In most systems, system calls can only be made from userspace processes, while in some systems, OS/360 and successors for example, privileged system code also issues system calls.[1]
+
+Contents
+
+1 Privileges
+2 The library as an intermediary
+3 Examples and tools
+4 Typical implementations
+5 Categories of system calls
+6 Processor mode and context switching
+7 See also
+8 Notes
+9 References
+10 External links
+
+
+
+Privileges[edit]
+The architecture of most modern processors, with the exception of some embedded systems, involves a security model. For example, the rings model specifies multiple privilege levels under which software may be executed: a program is usually limited to its own address space so that it cannot access or modify other running programs or the operating system itself, and is usually prevented from directly manipulating hardware devices (e.g. the frame buffer or network devices).
+However, many applications need access to these components, so system calls are made available by the operating system to provide well-defined, safe implementations for such operations. The operating system executes at the highest level of privilege, and allows applications to request services via system calls, which are often initiated via interrupts. An interrupt automatically puts the CPU into some elevated privilege level and then passes control to the kernel, which determines whether the calling program should be granted the requested service. If the service is granted, the kernel executes a specific set of instructions over which the calling program has no direct control, returns the privilege level to that of the calling program, and then returns control to the calling program.
+
+The library as an intermediary[edit]
+Generally, systems provide a library or API that sits between normal programs and the operating system.  On Unix-like systems, that API is usually part of an implementation of the C library (libc), such as glibc, that provides wrapper functions for the system calls, often named the same as the system calls they invoke. On Windows NT, that API is part of the Native API, in the .mw-parser-output .monospaced{font-family:monospace,monospace}ntdll.dll library; this is an undocumented API used by implementations of the regular Windows API and directly used by some system programs on Windows.  The library's wrapper functions expose an ordinary function calling convention (a subroutine call on the assembly level) for using the system call, as well as making the system call more modular. Here, the primary function of the wrapper is to place all the arguments to be passed to the system call in the appropriate processor registers (and maybe on the call stack as well), and also setting a unique system call number for the kernel to call. In this way the library, which exists between the OS and the application, increases portability.
+The call to the library function itself does not cause a switch to kernel mode and is usually a normal subroutine call (using, for example, a "CALL" assembly instruction in some Instruction set architectures (ISAs)). The actual system call does transfer control to the kernel (and is more implementation-dependent and platform-dependent than the library call abstracting it). For example, in Unix-like systems, fork and execve are C library functions that in turn execute instructions that invoke the fork and exec system calls. Making the system call directly in the application code is more complicated and may require embedded assembly code to be used (in C and C++), as well as requiring knowledge of the low-level binary interface for the system call operation, which may be subject to change over time and thus not be part of the application binary interface; the library functions are meant to abstract this away.
+On exokernel based systems, the library is especially important as an intermediary. On exokernels, libraries shield user applications from the very low level kernel API, and provide abstractions and resource management.
+IBM's OS/360 and DOS/360 implement most system calls through a library of assembly language macros,[a] although there are a few services with a call linkage. This reflects their origin at a time when programming in assembly language was more common than high-level language usage.  IBM system calls were therefore not directly executable by high-level language programs, but required a callable assembly language wrapper subroutine. Since then, IBM has added many services that can be called from high level languages in, e.g., z/OS and z/VSE.
+
+Examples and tools[edit]
+On Unix, Unix-like and other POSIX-compliant operating systems, popular system calls are open, read, write, close, wait, exec, fork, exit, and kill. Many modern operating systems have hundreds of system calls. For example, Linux and OpenBSD each have over 300 different calls,[2][3] NetBSD has close to 500,[4] FreeBSD has over 500,[5] Windows has close to 2000, divided between win32k (graphical) and ntdll (core) system calls[6] while Plan 9 has 51.[7]
+Tools such as strace, ftrace and truss allow a process to execute from start and report all system calls the process invokes, or can attach to an already running process and intercept any system call made by the said process if the operation does not violate the permissions of the user. This special ability of the program is usually also implemented with system calls such as ptrace or system calls on files in procfs.
+
+Typical implementations[edit]
+Implementing system calls requires a transfer of control from user space to kernel space, which involves some sort of architecture-specific feature. A typical way to implement this is to use a software interrupt or trap. Interrupts transfer control to the operating system kernel, so software simply needs to set up some register with the system call number needed, and execute the software interrupt.
+This is the only technique provided for many RISC processors, but CISC architectures such as x86 support additional techniques. For example, the x86 instruction set contains the instructions SYSCALL/SYSRET and SYSENTER/SYSEXIT (these two mechanisms were independently created by AMD and Intel, respectively, but in essence they do the same thing). These are "fast" control transfer instructions that are designed to quickly transfer control to the kernel for a system call without the overhead of an interrupt.[8] Linux 2.5 began using this on the x86, where available; formerly it used the INT instruction, where the system call number was placed in the EAX register before interrupt 0x80 was executed.[9][10]
+An older mechanism is the call gate; originally used in Multics and later, for example, see call gate on the Intel x86. It allows a program to call a kernel function directly using a safe control transfer mechanism, which the operating system sets up in advance. This approach has been unpopular on x86, presumably due to the requirement of a far call (a call to a procedure located in a different segment than the current code segment[11]) which uses x86 memory segmentation and the resulting lack of portability it causes, and the existence of the faster instructions mentioned above.
+For IA-64 architecture, EPC (Enter Privileged Code) instruction is used. The first eight system call arguments are passed in registers, and the rest are passed on the stack.
+In the IBM System/360 mainframe family, and its successors, a Supervisor Call instruction (SVC), with the number in the instruction rather than in a register, implements a system call for legacy facilities in most of[b] IBM's own operating systems, and for all system calls in Linux.  In later versions of MVS, IBM uses the Program Call (PC) instruction for many newer facilities. In particular, PC is used when the caller might be in Service Request Block (SRB) mode.
+The PDP-11 minicomputer used the EMT and IOT instructions, which, similar to the IBM System/360 SVC and x86 INT, put the code in the instruction; they generate interrupts to specific addresses, transferring control to the operating system.  The VAX 32-bit successor to the PDP-11 series used the CHMK, CHME, and CHMS instructions to make system calls to privileged code at various levels; the code is an argument to the instruction.
+
+Categories of system calls[edit]
+System calls can be grouped roughly into six major categories:[12]
+
+
+Process control
+create process (for example, fork on Unix-like systems, or NtCreateProcess in the Windows NT Native API)
+terminate process
+load, execute
+get/set process attributes
+wait for time, wait event, signal event
+allocate and free memory
+File management
+create file, delete file
+open, close
+read, write, reposition
+get/set file attributes
+Device management
+request device, release device
+read, write, reposition
+get/set device attributes
+logically attach or detach devices
+Information maintenance
+get/set total system information (including time, date, computer name, enterprise etc.)
+get/set process, file, or device metadata (including author, opener, creation time and date, etc.)
+Communication
+create, delete communication connection
+send, receive messages
+transfer status information
+attach or detach remote devices
+Protection
+get/set file permissions
+Processor mode and context switching[edit]
+System calls in most Unix-like systems are processed in kernel mode, which is accomplished by changing the processor execution mode to a more privileged one, but no process context switch is necessaryÂ â  although a privilege context switch does occur. The hardware sees the world in terms of the execution mode according to the processor status register, and processes are an abstraction provided by the operating system. A system call does not generally require a context switch to another process; instead, it is processed in the context of whichever process invoked it.[13][14]
+In a multithreaded process, system calls can be made from multiple threads. The handling of such calls is dependent on the design of the specific operating system kernel and the application runtime environment. The following list shows typical models followed by operating systems:[15][16]
+
+Many-to-one model: All system calls from any user thread in a process are handled by a single kernel-level thread. This model has a serious drawbackÂ â  any blocking system call (like awaiting input from the user) can freeze all the other threads. Also, since only one thread can access the kernel at a time, this model cannot utilize multiple cores of processors.
+One-to-one model: Every user thread gets attached to a distinct kernel-level thread during a system call. This model solves the above problem of blocking system calls. It is found in all major Linux distributions, macOS, iOS, recent Windows and Solaris versions.
+Many-to-many model: In this model, a pool of user threads is mapped to a pool of kernel threads. All system calls from a user thread pool are handled by the threads in their corresponding kernel thread pool.
+Hybrid model: This model implements both many to many and one to one models depending upon the choice made by the kernel. This is found in old versions of IRIX, HP-UX and Solaris.
+See also[edit]
+Linux kernel API
+VDSO
+Notes[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ In many but not all cases, IBM documented, e.g., the SVC number, the parameter registers.
+
+^ The CP components of CP-67 and VM use the Diagnose (DIAG) instruction as a Hypervisor CALL (HVC) from a virtual machine to CP.
+
+
+References[edit]
+
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}IBM (March 1967). "Writing SVC Routines". IBM System/360 Operating System System Programmer's Guide (PDF). Third Edition. pp.Â 32â36. C28-6550-2.
+
+^ "syscalls(2) - Linux manual page".
+
+^ OpenBSD (14 September 2013). "System call names (kern/syscalls.c)". BSD Cross Reference.
+
+^ NetBSD (17 October 2013). "System call names (kern/syscalls.c)". BSD Cross Reference.
+
+^ "FreeBSD syscalls.c, the list of syscall names and IDs".
+
+^ Author: Mateusz "j00ru" Jurczyk (5 November 2017). "Windows WIN32K.SYS System Call Table (NT/2000/XP/2003/Vista/2008/7/8/10)". {{cite web}}: |author= has generic name (help)
+
+^ "Plan 9 sys.h, the list of syscall names and IDs".
+
+^ "SYSENTER (OSDev wiki)".
+
+^ Anonymous (19 December 2002). "Linux 2.5 gets vsyscalls, sysenter support". KernelTrap. Retrieved 1 January 2008.
+
+^ Manu Garg (2006). "Sysenter Based System Call Mechanism in Linux 2.6".
+
+^ "Liberation: x86 Instruction Set Reference". renejeschke.de. Retrieved 4 July 2015.
+
+^ Silberschatz, Abraham (2018). Operating System Concepts. Peter B Galvin; Greg Gagne (10thÂ ed.). Hoboken, NJ: Wiley. p.Â 67. ISBNÂ 9781119320913. OCLCÂ 1004849022.
+
+^ Bach, Maurice J. (1986), The Design of the UNIX Operating System, Prentice Hall, pp. 15-16.
+
+^ Elliot, John (2011). "Discussion of system call implementation at ProgClub including quote from Bach 1986".
+
+^ "Threads".
+
+^ "Threading Models" (PDF).
+
+
+External links[edit]
+Linux 64-bit system call reference/listing Up to kernel version 4.20
+Linux system call reference Updated system call reference for Linux kernel 2.6.35.4, includes register and data structure references. Also for Linux kernel 4.14 64 bit and 32 bit.
+A list of modern Unix-like system calls
+Interactive Linux kernel map with main API functions and structures, PDF version
+Linux system callsÂ â  system calls for Linux kernel 2.2, with IA-32 calling conventions
+How System Calls Work on Linux/i86 (1996, based on the 1993 0.99.2 kernel)
+Sysenter Based System Call Mechanism in Linux 2.6 (2006)
+Kernel command using Linux system calls, IBM developerWorks
+Choudhary, Amit; HOWTO for Implementing a System Call on Linux 2.6
+Jorrit N. Herder, Herbert Bos, Ben Gras, Philip Homburg, and Andrew S. Tanenbaum, Modular system programming on Minix 3, ;login: 31, no. 2 (April 2006); 19-28, accessed March 5, 2018
+A simple open Unix Shell in C languageÂ â  examples on System Calls under Unix
+Inside the Native APIÂ â  Windows NT Native API, including system calls
+Gulbrandsen, John; System Call Optimization with the SYSENTER Instruction, CodeGuru.com, 8 October 2004
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteApplication binary interface (ABI)Parts andconventions
+Alignment
+Calling convention
+Call stack
+Library
+static
+Machine code
+Memory segmentation
+Name mangling
+Object code
+Opaque pointer
+Position-independent code
+Relocation
+System call
+Virtual method table
+Related topics
+Binary-code compatibility
+Foreign function interface
+Language binding
+Linker
+dynamic
+Loader
+Year 2038 problem
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=System_call&oldid=1056437221"
+		Categories: Operating system technologyApplication programming interfacesSystem callsHidden categories: CS1 errors: generic nameArticles with short descriptionShort description is different from WikidataUse dmy dates from January 2013
+	

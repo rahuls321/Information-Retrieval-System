@@ -1,0 +1,358 @@
+
+Title:
+Async/await
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		In computer programming, the async/await pattern is a syntactic feature of many programming languages that allows an asynchronous, non-blocking function to be structured in a way similar to an ordinary synchronous function. It is semantically related to the concept of a coroutine and is often implemented using similar techniques, and is primarily intended to provide opportunities for the program to execute other code while waiting for a long-running, asynchronous task to complete, usually represented by promises or similar data structures. The feature is found in C# 5.0, C++, Python 3.5, F#, Hack, Julia, Dart, Kotlin 1.1, Rust 1.39,[1] Nim 0.9.4,[2] JavaScript ES2017, Swift 5.5[3] and Zig,[4] with some experimental work in extensions, beta versions, and particular implementations of Scala.[5]   
+
+Contents
+
+1 History
+2 Example C#
+3 In F#
+4 In C#
+5 In Scala
+
+5.1 How it works
+
+
+6 In Python
+7 In JavaScript
+8 In C++
+9 In C
+10 In Perl 5
+11 In Rust
+12 In Swift
+13 Benefits and criticisms
+14 See also
+15 References
+
+
+
+History[edit]
+F# added asynchronous workflows with await points in version 2.0 in 2007.[6] This influenced the async/await mechanism added to C#.[7] 
+Microsoft released a version of C# with async/await for the first time in the Async CTP (2011). And were later officially released in C# 5 (2012).[8]
+Haskell lead developer Simon Marlow created the async package in 2012.[9]
+Python added support for async/await with version 3.5 in 2015[10] adding 2 new keywords, async and await.
+TypeScript added support for async/await with version 1.7 in 2015.[11]
+Javascript added support for async/await in 2017 as part of ECMAScript 2017 JavaScript edition.
+Rust added support for async/await with version 1.39.0 in 2019 [12] with 1 new keyword async and a lazy eval await pattern.[13] 
+C++ added support for async/await with version 20 in 2020 with 3 new keywords co_return, co_await, co_yield.
+Swift added support for async/await with version 5.5 in 2021, adding 2 new keywords async and await. This was released alongside a concrete implementation of the Actor model with the actor keyword[14] which uses async/await to mediate access to each actor from outside.
+
+Example C#[edit]
+The C# function below, which downloads a resource from a URI and returns the resource's length, uses this async/await pattern:
+
+public async Task<int> FindPageSizeAsync(Uri uri) 
+{
+    var client = new HttpClient();
+    byte[] data = await client.GetByteArrayAsync(uri);
+    return data.Length;
+}
+
+First, the async keyword indicates to C# that the method is asynchronous, meaning that it may use an arbitrary number of await expressions and will bind the result to a promise.
+The return type, Task<T>, is C#'s analogue to the concept of a promise, and here is indicated to have a result value of type int.
+The first expression to execute when this method is called will be new HttpClient().GetByteArrayAsync(uri), which is another asynchronous method returning a Task<byte[]>. Because this method is asynchronous, it will not download the entire batch of data before returning. Instead, it will begin the download process using a non-blocking mechanism (such as a background thread), and immediately return an unresolved, unrejected Task<byte[]> to this function.
+With the await keyword attached to the Task, this function will immediately proceed to return a Task<int> to its caller, who may then continue on with other processing as needed.
+Once GetByteArrayAsync() finishes its download, it will resolve the Task it returned with the downloaded data. This will trigger a callback and cause FindPageSizeAsync() to continue execution by assigning that value to data.
+Finally, the method returns data.Length, a simple integer indicating the length of the array. The compiler re-interprets this as resolving the Task it returned earlier, triggering a callback in the method's caller to do something with that length value.
+A function using async/await can use as many await expressions as it wants, and each will be handled in the same way (though a promise will only be returned to the caller for the first await, while every other await will utilize internal callbacks). A function can also hold a promise object directly and do other processing first (including starting other asynchronous tasks), delaying awaiting the promise until its result is needed. Functions with promises also have promise aggregation methods that allow you to await multiple promises at once or in some special pattern (such as C#'s Task.WhenAll(), which returns a valueless Task that resolves when all of the tasks in the arguments have resolved). Many promise types also have additional features beyond what the async/await pattern normally uses, such as being able to set up more than one result callback or inspect the progress of an especially long-running task.
+In the particular case of C#, and in many other languages with this language feature, the async/await pattern is not a core part of the language's runtime, but is instead implemented with lambdas or continuations at compile time. For instance, the C# compiler would likely translate the above code to something like the following before translating it to its IL bytecode format:
+
+public Task<int> FindPageSizeAsync(Uri uri) 
+{
+    var client = new HttpClient();
+    Task<byte[]> dataTask = client.GetByteArrayAsync(uri);
+    Task<int> afterDataTask = dataTask.ContinueWith((originalTask) => {
+        return originalTask.Result.Length;
+    });
+    return afterDataTask;
+}
+
+Because of this, if an interface method needs to return a promise object, but itself does not require await in the body to wait on any asynchronous tasks, it does not need the async modifier either and can instead return a promise object directly. For instance, a function might be able to provide a promise that immediately resolves to some result value (such as C#'s Task.FromResult()), or it may simply return another method's promise that happens to be the exact promise needed (such as when deferring to an overload).
+One important caveat of this functionality, however, is that while the code resembles traditional blocking code, the code is actually non-blocking and potentially multithreaded, meaning that many intervening events may occur while waiting for the promise targeted by an await to resolve. For instance, the following code, while always succeeding in a blocking model without await, may experience intervening events during the await and may thus find shared state changed out from under it:
+
+var a = state.a;
+var client = new HttpClient();
+var data = await client.GetByteArrayAsync(uri);
+Debug.Assert(a == state.a); // Potential failure, as value of state.a may have been changed
+                            // by the handler of potentially intervening event.
+return data.Length;
+
+In F#[edit]
+F# added asynchronous workflows in version 2.0.[15] The asynchronous workflows are implemented as CE (computation expressions). They can be defined without specifying any special context (like async in C#). F#  asynchronous workflows append a bang (!) to keywords to start asynchronous tasks. 
+
+The following async function downloads data from an URL using an asynchronous workflow:let asyncSumPageSizes (uris: #seq<Uri>) : Async<int> = async {
+    use httpClient = new HttpClient()
+    let! pages = 
+        uris
+        |> Seq.map(httpClient.GetStringAsync >> Async.AwaitTask)
+        |> Async.Parallel
+    return pages |> Seq.fold (fun accumulator current -> current.Length + accumulator) 0
+}
+
+In C#[edit]
+The async/await pattern in C# is available as of version 5.0, which Microsoft refers to as the task-based asynchronous pattern (TAP).[16] Async methods are required to return either void, Task, Task<T>, or ValueTask<T> (the latter as of version 7.0 only). Async methods that return void are intended for event handlers; in most cases where a synchronous method would return void, returning Task instead is recommended, as it allows for more intuitive exception handling.[17]
+Methods that make use of await must be declared with the async keyword. In methods that have a return value of type Task<T>, methods declared with async must have a return statement of type assignable to T instead of Task<T>; the compiler wraps the value in the Task<T> generic. It is also possible to await methods that have a return type of Task or Task<T> that are declared without async.
+The following async method downloads data from a URL using await.
+
+public async Task<int> SumPageSizesAsync(ICollection<Uri> uris) 
+{
+    var client = new HttpClient();
+    int total = 0;
+    foreach (var uri in uris) {
+        statusText.Text = $"Found {total} bytes ...";
+        var data = await client.GetByteArrayAsync(uri);
+        total += data.Length;
+    }
+    statusText.Text = $"Found {total} bytes total";
+    return total;
+}
+
+In Scala[edit]
+In the experimental Scala-async extension to Scala, await is a "method", although it does not operate like an ordinary method.[5] Furthermore, unlike in C# 5.0 in which a method must be marked as async, in Scala-async, a block of code is surrounded by an async "call".
+
+How it works[edit]
+In Scala-async, async is actually implemented using a Scala macro, which causes the compiler to emit different code, and produce a finite state machine implementation (which is considered to be more efficient than a monadic implementation, but less convenient to write by hand).
+There are plans for Scala-async to support a variety of different implementations, including non-asynchronous ones.
+
+In Python[edit]
+Python 3.5 (2015)[18] has added support for async/await as described in PEP 492 (https://www.python.org/dev/peps/pep-0492/).
+
+import asyncio
+
+async def main():
+    print("hello")
+    await asyncio.sleep(1)
+    print("world")
+
+asyncio.run(main())
+
+In JavaScript[edit]
+The await operator in JavaScript can only be used from inside an async function. If the parameter is a promise, execution of the async function will resume when the promise is resolved (unless the promise is rejected, in which case an error will be thrown that can be handled with normal JavaScript exception handling). If the parameter is not a promise, the parameter itself will be returned immediately.[19]
+Many libraries provide promise objects that can also be used with await, as long as they match the specification for native JavaScript promises. However, promises from the jQuery library were not Promises/A+ compatible until jQuery 3.0.[20]
+Here's an example (modified from this[21] article):
+
+async function createNewDoc() {
+  let response = await db.post({}); // post a new doc
+  return db.get(response.id); // find by id
+}
+
+async function main() {
+  try {
+    let doc = await createNewDoc();
+    console.log(doc);
+  } catch (err) {
+    console.log(err);
+  }
+}
+main();
+
+Node.js version 8 includes a utility that enables using the standard library callback-based methods as promises.[22]
+
+In C++[edit]
+In C++, await (named co_await in C++) has been officially merged into version 20.[23] Support for it, coroutines, and the keywords such as co_await is available in GCC and MSVC compilers while Clang has partial support.
+It is worth noting that std::promise and std::future, although it would seem that they would be awaitable objects, implement none of the machinery required to be returned from coroutines and be awaited using co_await. Programmers must implement a number of public member functions, such as await_ready, await_suspend, and await_resume on the return type in order for the type to be awaited on. Details can be found on cppreference.
+
+#include <iostream>
+#include "CustomAwaitableTask.h"
+
+using namespace std;
+
+CustomAwaitableTask<int> add(int a, int b)
+{
+    int c = a + b;
+    co_return c;
+}
+
+CustomAwaitableTask<int> test()
+{
+    int ret = co_await add(1, 2);
+    cout << "return " << ret << endl;
+    co_return ret;
+}
+
+int main()
+{
+    auto task = test();
+
+    return 0;
+}
+
+In C[edit]
+There's no official support for await/async in the C language yet. Some coroutine libraries such as s_task simulate the keywords await/async with macros.
+
+#include <stdio.h>
+#include "s_task.h"
+
+// define stack memory for tasks
+int g_stack_main[64 * 1024 / sizeof(int)];
+int g_stack0[64 * 1024 / sizeof(int)];
+int g_stack1[64 * 1024 / sizeof(int)];
+
+void sub_task(__async__, void* arg) {
+    int i;
+    int n = (int)(size_t)arg;
+    for (i = 0; i < 5; ++i) {
+        printf("task %d, delay seconds = %d, i = %d\n", n, n, i);
+        s_task_msleep(__await__, n * 1000);
+        //s_task_yield(__await__);
+    }
+}
+
+void main_task(__async__, void* arg) {
+    int i;
+
+    // create two sub-tasks
+    s_task_create(g_stack0, sizeof(g_stack0), sub_task, (void*)1);
+    s_task_create(g_stack1, sizeof(g_stack1), sub_task, (void*)2);
+
+    for (i = 0; i < 4; ++i) {
+        printf("task_main arg = %p, i = %d\n", arg, i);
+        s_task_yield(__await__);
+    }
+
+    // wait for the sub-tasks for exit
+    s_task_join(__await__, g_stack0);
+    s_task_join(__await__, g_stack1);
+}
+
+int main(int argc, char* argv) {
+
+    s_task_init_system();
+
+    //create the main task
+    s_task_create(g_stack_main, sizeof(g_stack_main), main_task, (void*)(size_t)argc);
+    s_task_join(__await__, g_stack_main);
+    printf("all task is over\n");
+    return 0;
+}
+
+In Perl 5[edit]
+The Future::AsyncAwait module was the subject of a Perl Foundation grant in September 2018.[24]
+
+In Rust[edit]
+On November 7th 2019, async/await was released on the stable version of Rust.[25] Async functions in Rust desugar to plain functions that return values that implement the Future trait. Currently they are implemented with a finite state machine.[26]
+
+// In the crate's Cargo.toml, we need `futures = "0.3.0"` in the dependencies section,
+// so we can use the futures crate
+
+extern crate futures; // There is no executor currently in the `std` library.
+
+// This desugars to something like
+// `fn async_add_one(num: u32) -> impl Future<Output = u32>`
+async fn async_add_one(num: u32) -> u32 {
+    num + 1
+}
+
+async fn example_task() {
+    let number = async_add_one(5).await;
+    println!("5 + 1 = {}", number);
+}
+
+fn main() {
+    // Creating the Future does not start the execution.
+    let future = example_task();
+
+    // The `Future` only executes when we actually poll it, unlike Javascript.
+    futures::executor::block_on(future);
+}
+
+In Swift[edit]
+Swift 5.5 (2021)[27] added support for async/await as described in SE-0296 (https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md).
+
+func getNumber() async throws -> Int {
+    try await Task.sleep(nanoseconds: 1_000_000_000)
+    return 42
+}
+
+Task {
+    let first = try await getNumber()
+    let second = try await getNumber()
+    print(first + second)
+}
+
+Benefits and criticisms[edit]
+A significant benefit of the async/await pattern in languages that support it is that asynchronous, non-blocking code can be written, with minimal overhead, and looking almost like traditional synchronous, blocking code. In particular, it has been argued that await is the best way of writing asynchronous code in message-passing programs; in particular, being close to blocking code, readability and the minimal amount of boilerplate code were cited as await benefits.[28] As a result, async/await makes it easier for most programmers to reason about their programs, and await tends to promote better, more robust non-blocking code in applications that require it. Such applications range from programs presenting graphical user interfaces to massively scalable stateful server-side programs, such as games and financial applications. 
+When criticising await, it has been noted that await tends to cause surrounding code to be asynchronous too; on the other hand, it has been argued that this contagious nature of the code (sometimes being compared to a "zombie virus") is inherent to all kinds of asynchronous programming, so await as such is not unique in this regard.[17]
+
+See also[edit]
+Coroutines
+Continuation-passing style
+Direct style
+Cooperative multitasking
+References[edit]
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"Announcing Rust 1.39.0". Retrieved 2019-11-07.
+
+^ "Version 0.9.4 released - Nim blog". Retrieved 2020-01-19.
+
+^ "Concurrency â The Swift Programming Language (Swift 5.5)". docs.swift.org. Retrieved 2021-09-28.
+
+^ "Zig Language Reference".
+
+^ Jump up to: a b "Scala Async". GitHub. Retrieved 20 October 2013.
+
+^ Syme, Don; Petricek, Tomas; Lomov, Dmitry (2011). The F# Asynchronous Programming Model. Springer Link. Lecture Notes in Computer Science. Vol.Â 6539. pp.Â 175â189. doi:10.1007/978-3-642-18378-2_15. ISBNÂ 978-3-642-18377-5. Retrieved 2021-04-29.
+
+^ "The Early History of F#, HOPL IV". ACM Digital Library. Retrieved 2021-04-29.
+
+^ Hejlsberg, Anders. "Anders Hejlsberg: Introducing Async â Simplifying Asynchronous Programming". Channel 9 MSDN. Microsoft. Retrieved 5 January 2021.
+
+^ "async: Run IO operations asynchronously and wait for their results". Hackage.
+
+^ "What's New In Python 3.5 â Python 3.9.1 documentation". docs.python.org. Retrieved 5 January 2021.
+
+^ Gaurav, Seth (30 November 2015). "Announcing TypeScript 1.7". TypeScript. Microsoft. Retrieved 5 January 2021.
+
+^ Matsakis, Niko. "Async-await on stable Rust! | Rust Blog". blog.rust-lang.org. Rust Blog. Retrieved 5 January 2021.
+
+^ https://www.infoq.com/news/2019/11/rust-async-await/
+
+^ https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html#ID645
+
+^ "Introducing F# Asynchronous Workflows".
+
+^ "Task-based asynchronous pattern". Microsoft. Retrieved 28 September 2020.
+
+^ Jump up to: a b Stephen Cleary, Async/Await - Best Practices in Asynchronous Programming
+
+^ https://www.python.org/downloads/release/python-350/#:~:text=is%20available%20here.-,Python%203.5.,released%20on%20September%2013th%2C%202015.
+
+^ "await - JavaScript (MDN)". Retrieved 2 May 2017.
+
+^ "jQuery Core 3.0 Upgrade Guide". Retrieved 2 May 2017.
+
+^ "Taming the asynchronous beast with ES7". Retrieved 12 November 2015.
+
+^ Foundation, Node.js. "Node v8.0.0 (Current) - Node.js". Node.js.
+
+^ "ISO C++ Committee announces that C++20 design is now feature complete".
+
+^ "September 2018 Grant Votes - The Perl Foundation". news.perlfoundation.org. Retrieved 2019-03-26.
+
+^ Matsakis, Niko. "Async-await on stable Rust!". Rust Blog. Retrieved 7 November 2019.
+
+^ Oppermann, Philipp. "Async/Await". Retrieved 28 October 2020.
+
+^ https://www.swift.org/blog/swift-5-5-released/
+
+^ 'No Bugs' Hare. Eight ways to handle non-blocking returns in message-passing programs CPPCON, 2018
+
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Async/await&oldid=1066422677"
+		Categories: Control flowHidden categories: Articles with example Java code
+	

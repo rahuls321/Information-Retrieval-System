@@ -1,0 +1,508 @@
+
+Title:
+Strategy pattern
+Text:
+
+		From Wikipedia, the free encyclopedia
+		
+		
+		
+		
+		Jump to navigation
+		Jump to search
+		Software design pattern
+In computer programming, the strategy pattern (also known as the policy pattern) is a behavioral software design pattern that enables selecting an algorithm at runtime. Instead of implementing a single algorithm directly, code receives run-time instructions as to which in a family of algorithms to use.[1]
+Strategy lets the algorithm vary independently from clients that use it.[2] Strategy is one of the patterns included in the influential book Design Patterns by Gamma et al.[3] that popularized the concept of using design patterns to describe how to design flexible and reusable object-oriented software. Deferring the decision about which algorithm to use until runtime allows the calling code to be more flexible and reusable.
+For instance, a class that performs validation on incoming data may use the strategy pattern to select a validation algorithm depending on the type of data, the source of the data, user choice, or other discriminating factors. These factors are not known until run-time and may require radically different validation to be performed. The validation algorithms (strategies), encapsulated separately from the validating object, may be used by other validating objects in different areas of the system (or even different systems) without code duplication.
+Typically, the strategy pattern stores a reference to some code in a data structure and retrieves it. This can be achieved by mechanisms such as the native function pointer, the first-class function, classes or class instances in object-oriented programming languages, or accessing the language implementation's internal storage of code via reflection.
+
+Contents
+
+1 Structure
+
+1.1 UML class and sequence diagram
+1.2 Class diagram
+
+
+2 Example
+
+2.1 C#
+2.2 Python
+2.3 Java
+
+
+3 Strategy and open/closed principle
+4 See also
+5 References
+6 External links
+
+
+
+Structure[edit]
+UML class and sequence diagram[edit]
+  A sample UML class and sequence diagram for the Strategy design pattern. [4]
+In the above UML class diagram, the Context class doesn't implement an algorithm directly.
+Instead, Context refers to the Strategy interface for performing an algorithm (strategy.algorithm()), which makes Context independent of how an algorithm is implemented.
+The Strategy1 and Strategy2 classes implement the Strategy interface, that is, implement (encapsulate) an algorithm.
+
+The UML sequence diagram
+shows the run-time interactions: The Context object delegates an algorithm to different Strategy objects. First, Context calls algorithm() on a Strategy1 object,
+which performs the algorithm and returns the result to Context. 
+Thereafter, Context changes its strategy and calls algorithm() on a Strategy2 object,
+which performs the algorithm and returns the result to Context.
+
+Class diagram[edit]
+  Strategy Pattern in UML[5]
+  Strategy pattern in LePUS3 (legend)
+Example[edit]
+C#[edit]
+The following example is in C#.
+
+public class StrategyPatternWiki
+{
+    public static void Main(String[] args)
+    {
+        // Prepare strategies
+        var normalStrategy    = new NormalStrategy();
+        var happyHourStrategy = new HappyHourStrategy();
+
+        var firstCustomer = new CustomerBill(normalStrategy);
+
+        // Normal billing
+        firstCustomer.Add(1.0, 1);
+
+        // Start Happy Hour
+        firstCustomer.Strategy = happyHourStrategy;
+        firstCustomer.Add(1.0, 2);
+
+        // New Customer
+        var secondCustomer = new CustomerBill(happyHourStrategy);
+        secondCustomer.Add(0.8, 1);
+        // The Customer pays
+        firstCustomer.Print();
+
+        // End Happy Hour
+        secondCustomer.Strategy = normalStrategy;
+        secondCustomer.Add(1.3, 2);
+        secondCustomer.Add(2.5, 1);
+        secondCustomer.Print();
+    }
+}
+
+// CustomerBill as class name since it narrowly pertains to a customer's bill
+class CustomerBill
+{
+    private IList<double> drinks;
+
+    // Get/Set Strategy
+    public IBillingStrategy Strategy { get; set; }
+
+    public CustomerBill(IBillingStrategy strategy)
+    {
+        this.drinks = new List<double>();
+        this.Strategy = strategy;
+    }
+
+    public void Add(double price, int quantity)
+    {
+        this.drinks.Add(this.Strategy.GetActPrice(price * quantity));
+    }
+
+    // Payment of bill
+    public void Print()
+    {
+        double sum = 0;
+        foreach (var drinkCost in this.drinks)
+        {
+            sum += drinkCost;
+        }
+        Console.WriteLine($"Total due: {sum}.");
+        this.drinks.Clear();
+    }
+}
+
+interface IBillingStrategy
+{
+    double GetActPrice(double rawPrice);
+}
+
+// Normal billing strategy (unchanged price)
+class NormalStrategy : IBillingStrategy
+{
+    public double GetActPrice(double rawPrice) => rawPrice;
+}
+
+// Strategy for Happy hour (50% discount)
+class HappyHourStrategy : IBillingStrategy
+{
+    public double GetActPrice(double rawPrice) => rawPrice * 0.5;
+}
+
+Python[edit]
+The following example is equivalent to the C# example above, but in Python.
+
+import abc
+from typing import List
+
+
+class Bill:
+    def __init__(self, billing_strategy:"BillingStrategy"):
+        self.drinks: List[float] = []
+        self._billing_strategy = billing_strategy
+
+    @property
+    def billing_strategy(self) -> "BillingStrategy":
+        return self._billing_strategy
+
+    @billing_strategy.setter
+    def billing_strategy(self, billing_strategy: "BillingStrategy") -> None:
+        self._billing_strategy = billing_strategy
+
+    def add(self, price: float, quantity: int) -> None:
+        self.drinks.append(self.billing_strategy.get_act_price(price * quantity))
+
+    def __str__(self) -> str:
+        return str(f"Â£{sum(self.drinks)}")
+
+class BillingStrategy(abc.ABC):
+    @abc.abstractmethod
+    def get_act_price(self, raw_price: float) -> float:
+        raise NotImplementedError
+
+
+class NormalStrategy(BillingStrategy):
+    def get_act_price(self, raw_price: float) -> float:
+        return raw_price
+
+
+class HappyHourStrategy(BillingStrategy):
+    def get_act_price(self, raw_price: float) -> float:
+        return raw_price * 0.5
+
+
+def main() -> None:
+    normal_strategy = NormalStrategy()
+    happy_hour_strategy = HappyHourStrategy()
+
+    customer_1 = Bill(normal_strategy)
+    customer_2 = Bill(normal_strategy)
+
+    # Normal billing
+    customer_1.add(2.50, 3)
+    customer_1.add(2.50, 2)
+
+    # Start happy hour
+    customer_1.billing_strategy = happy_hour_strategy
+    customer_2.billing_strategy = happy_hour_strategy
+    customer_1.add(3.40, 6)
+    customer_2.add(3.10, 2)
+
+    # End happy hour
+    customer_1.billing_strategy = normal_strategy
+    customer_2.billing_strategy = normal_strategy
+    customer_1.add(3.10, 6)
+    customer_2.add(3.10, 2)
+
+    # Print the bills;
+    print(customer_1)
+    print(customer_2)
+
+if __name__ == "__main__":
+    main()
+
+Java[edit]
+The following example is in Java.
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntUnaryOperator;
+
+enum BillingStrategy {
+
+    // Normal billing strategy (unchanged price)
+    NORMAL (a -> a),
+    // Strategy for Happy hour (50% discount)
+    HAPPY_HOUR (a -> a/2),
+    ;
+
+    private final IntUnaryOperator strategy;
+
+    BillingStrategy(IntUnaryOperator strategy) {
+        this.strategy = strategy;
+    }
+    
+    // Use a price in cents to avoid floating point round-off error
+    int getActPrice(int rawPrice) {
+        return this.strategy.applyAsInt(rawPrice);
+    }
+
+}
+
+class CustomerBill {
+    private final List<Integer> drinks = new ArrayList<>();
+    private BillingStrategy strategy;
+
+    public CustomerBill(BillingStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void add(int price, int quantity) {
+        this.drinks.add(this.strategy.getActPrice(price*quantity));
+    }
+
+    // Payment of bill
+    public void print() {
+        int sum = this.drinks.stream().mapToInt(v -> v).sum();
+        System.out.println("Total due: " + sum);
+        this.drinks.clear();
+    }
+
+    // Set Strategy
+    public void setStrategy(BillingStrategy strategy) {
+        this.strategy = strategy;
+    }
+}
+
+public class StrategyPattern {
+    public static void main(String[] arguments) {
+        // Prepare strategies
+        BillingStrategy normalStrategy    = BillingStrategy.NORMAL;
+        BillingStrategy happyHourStrategy = BillingStrategy.HAPPY_HOUR;
+
+        CustomerBill firstCustomer = new CustomerBill(normalStrategy);
+
+        // Normal billing
+        firstCustomer.add(100, 1);
+
+        // Start Happy Hour
+        firstCustomer.setStrategy(happyHourStrategy);
+        firstCustomer.add(100, 2);
+
+        // New Customer
+        CustomerBill secondCustomer = new CustomerBill(happyHourStrategy);
+        secondCustomer.add(80, 1);
+        // The Customer pays
+        firstCustomer.print();
+
+        // End Happy Hour
+        secondCustomer.setStrategy(normalStrategy);
+        secondCustomer.add(130, 2);
+        secondCustomer.add(250, 1);
+        secondCustomer.print();
+    }
+}
+
+Strategy and open/closed principle[edit]
+  Accelerate and brake behaviors must be declared in each new car model.
+According to the strategy pattern, the behaviors of a class should not be inherited. Instead, they should be encapsulated using interfaces. This is compatible with the open/closed principle (OCP), which proposes that classes should be open for extension but closed for modification.
+As an example, consider a car class. Two possible functionalities for car are brake and accelerate. Since accelerate and brake behaviors change frequently between models, a common approach is to implement these behaviors in subclasses. This approach has significant drawbacks: accelerate and brake behaviors must be declared in each new Car model. The work of managing these behaviors increases greatly as the number of models increases, and requires code to be duplicated across models. Additionally, it is not easy to determine the exact nature of the behavior for each model without investigating the code in each.
+The strategy pattern uses composition instead of inheritance. In the strategy pattern, behaviors are defined as separate interfaces and specific classes that implement these interfaces. This allows better decoupling between the behavior and the class that uses the behavior. The behavior can be changed without breaking the classes that use it, and the classes can switch between behaviors by changing the specific implementation used without requiring any significant code changes. Behaviors can also be changed at run-time as well as at design-time. For instance, a car object's brake behavior can be changed from BrakeWithABS() to Brake() by changing the brakeBehavior member to:
+
+brakeBehavior = new Brake();
+
+/* Encapsulated family of Algorithms
+ * Interface and its implementations
+ */
+public interface IBrakeBehavior {
+    public void brake();
+}
+
+public class BrakeWithABS implements IBrakeBehavior {
+    public void brake() {
+        System.out.println("Brake with ABS applied");
+    }
+}
+
+public class Brake implements IBrakeBehavior {
+    public void brake() {
+        System.out.println("Simple Brake applied");
+    }
+}
+
+/* Client that can use the algorithms above interchangeably */
+public abstract class Car {
+    private IBrakeBehavior brakeBehavior;
+
+    public Car(IBrakeBehavior brakeBehavior) {
+      this.brakeBehavior = brakeBehavior;
+    }
+
+    public void applyBrake() {
+        brakeBehavior.brake();
+    }
+
+    public void setBrakeBehavior(IBrakeBehavior brakeType) {
+        this.brakeBehavior = brakeType;
+    }
+}
+
+/* Client 1 uses one algorithm (Brake) in the constructor */
+public class Sedan extends Car {
+    public Sedan() {
+        super(new Brake());
+    }
+}
+
+/* Client 2 uses another algorithm (BrakeWithABS) in the constructor */
+public class SUV extends Car {
+    public SUV() {
+        super(new BrakeWithABS());
+    }
+}
+
+/* Using the Car example */
+public class CarExample {
+    public static void main(final String[] arguments) {
+        Car sedanCar = new Sedan();
+        sedanCar.applyBrake();  // This will invoke class "Brake"
+
+        Car suvCar = new SUV();
+        suvCar.applyBrake();    // This will invoke class "BrakeWithABS"
+
+        // set brake behavior dynamically
+        suvCar.setBrakeBehavior( new Brake() );
+        suvCar.applyBrake();    // This will invoke class "Brake"
+    }
+}
+
+See also[edit]
+Dependency injection
+Higher-order function
+List of object-oriented programming terms
+Mixin
+Policy-based design
+Type class
+Entityâcomponentâsystem
+Composition over inheritance
+References[edit]
+
+
+
+Wikimedia Commons has media related to Strategy (design pattern).
+
+.mw-parser-output .reflist{font-size:90%;margin-bottom:0.5em;list-style-type:decimal}.mw-parser-output .reflist .references{font-size:100%;margin-bottom:0;list-style-type:inherit}.mw-parser-output .reflist-columns-2{column-width:30em}.mw-parser-output .reflist-columns-3{column-width:25em}.mw-parser-output .reflist-columns{margin-top:0.3em}.mw-parser-output .reflist-columns ol{margin-top:0}.mw-parser-output .reflist-columns li{page-break-inside:avoid;break-inside:avoid-column}.mw-parser-output .reflist-upper-alpha{list-style-type:upper-alpha}.mw-parser-output .reflist-upper-roman{list-style-type:upper-roman}.mw-parser-output .reflist-lower-alpha{list-style-type:lower-alpha}.mw-parser-output .reflist-lower-greek{list-style-type:lower-greek}.mw-parser-output .reflist-lower-roman{list-style-type:lower-roman}
+
+^ .mw-parser-output cite.citation{font-style:inherit;word-wrap:break-word}.mw-parser-output .citation q{quotes:"\"""\"""'""'"}.mw-parser-output .citation:target{background-color:rgba(0,127,255,0.133)}.mw-parser-output .id-lock-free a,.mw-parser-output .citation .cs1-lock-free a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/6/65/Lock-green.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-limited a,.mw-parser-output .id-lock-registration a,.mw-parser-output .citation .cs1-lock-limited a,.mw-parser-output .citation .cs1-lock-registration a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/d/d6/Lock-gray-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .id-lock-subscription a,.mw-parser-output .citation .cs1-lock-subscription a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/a/aa/Lock-red-alt-2.svg")right 0.1em center/9px no-repeat}.mw-parser-output .cs1-ws-icon a{background:linear-gradient(transparent,transparent),url("//upload.wikimedia.org/wikipedia/commons/4/4c/Wikisource-logo.svg")right 0.1em center/12px no-repeat}.mw-parser-output .cs1-code{color:inherit;background:inherit;border:none;padding:inherit}.mw-parser-output .cs1-hidden-error{display:none;color:#d33}.mw-parser-output .cs1-visible-error{color:#d33}.mw-parser-output .cs1-maint{display:none;color:#3a3;margin-left:0.3em}.mw-parser-output .cs1-format{font-size:95%}.mw-parser-output .cs1-kern-left{padding-left:0.2em}.mw-parser-output .cs1-kern-right{padding-right:0.2em}.mw-parser-output .citation .mw-selflink{font-weight:inherit}"The Strategy design pattern - Problem, Solution, and Applicability". w3sDesign.com. Retrieved 2017-08-12.
+
+^ Eric Freeman, Elisabeth Freeman, Kathy Sierra and Bert Bates, Head First Design Patterns, First Edition, Chapter 1, Page 24, O'Reilly Media, Inc, 2004. ISBNÂ 978-0-596-00712-6
+
+^ Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison Wesley. pp.Â 315ff. ISBNÂ 0-201-63361-2.{{cite book}}:  CS1 maint: multiple names: authors list (link)
+
+^ "The Strategy design pattern - Structure and Collaboration". w3sDesign.com. Retrieved 2017-08-12.
+
+^ http://www.mcdonaldland.info/2007/11/28/40/
+
+
+External links[edit]
+
+
+
+The Wikibook Computer Science Design Patterns has a page on the topic of: Strategy implementations in various languages
+
+Strategy Pattern in UML (in Spanish)
+Geary, David (April 26, 2002). "Strategy for success". Java Design Patterns. JavaWorld. Retrieved 2020-07-20.
+Strategy Pattern for C article
+Refactoring: Replace Type Code with State/Strategy
+The Strategy Design Pattern at the Wayback Machine (archived 2017-04-15) Implementation of the Strategy pattern in JavaScript
+.mw-parser-output .navbox{box-sizing:border-box;border:1px solid #a2a9b1;width:100%;clear:both;font-size:88%;text-align:center;padding:1px;margin:1em auto 0}.mw-parser-output .navbox .navbox{margin-top:0}.mw-parser-output .navbox+.navbox,.mw-parser-output .navbox+.navbox-styles+.navbox{margin-top:-1px}.mw-parser-output .navbox-inner,.mw-parser-output .navbox-subgroup{width:100%}.mw-parser-output .navbox-group,.mw-parser-output .navbox-title,.mw-parser-output .navbox-abovebelow{padding:0.25em 1em;line-height:1.5em;text-align:center}.mw-parser-output .navbox-group{white-space:nowrap;text-align:right}.mw-parser-output .navbox,.mw-parser-output .navbox-subgroup{background-color:#fdfdfd}.mw-parser-output .navbox-list{line-height:1.5em;border-color:#fdfdfd}.mw-parser-output .navbox-list-with-group{text-align:left;border-left-width:2px;border-left-style:solid}.mw-parser-output tr+tr>.navbox-abovebelow,.mw-parser-output tr+tr>.navbox-group,.mw-parser-output tr+tr>.navbox-image,.mw-parser-output tr+tr>.navbox-list{border-top:2px solid #fdfdfd}.mw-parser-output .navbox-title{background-color:#ccf}.mw-parser-output .navbox-abovebelow,.mw-parser-output .navbox-group,.mw-parser-output .navbox-subgroup .navbox-title{background-color:#ddf}.mw-parser-output .navbox-subgroup .navbox-group,.mw-parser-output .navbox-subgroup .navbox-abovebelow{background-color:#e6e6ff}.mw-parser-output .navbox-even{background-color:#f7f7f7}.mw-parser-output .navbox-odd{background-color:transparent}.mw-parser-output .navbox .hlist td dl,.mw-parser-output .navbox .hlist td ol,.mw-parser-output .navbox .hlist td ul,.mw-parser-output .navbox td.hlist dl,.mw-parser-output .navbox td.hlist ol,.mw-parser-output .navbox td.hlist ul{padding:0.125em 0}.mw-parser-output .navbox .navbar{display:block;font-size:100%}.mw-parser-output .navbox-title .navbar{float:left;text-align:left;margin-right:0.5em}hide.mw-parser-output .navbar{display:inline;font-size:88%;font-weight:normal}.mw-parser-output .navbar-collapse{float:left;text-align:left}.mw-parser-output .navbar-boxtext{word-spacing:0}.mw-parser-output .navbar ul{display:inline-block;white-space:nowrap;line-height:inherit}.mw-parser-output .navbar-brackets::before{margin-right:-0.125em;content:"[ "}.mw-parser-output .navbar-brackets::after{margin-left:-0.125em;content:" ]"}.mw-parser-output .navbar li{word-spacing:-0.125em}.mw-parser-output .navbar a>span,.mw-parser-output .navbar a>abbr{text-decoration:inherit}.mw-parser-output .navbar-mini abbr{font-variant:small-caps;border-bottom:none;text-decoration:none;cursor:inherit}.mw-parser-output .navbar-ct-full{font-size:114%;margin:0 7em}.mw-parser-output .navbar-ct-mini{font-size:114%;margin:0 4em}vteSoftware design patternsGang of FourpatternsCreational
+Abstract factory
+Builder
+Factory method
+Prototype
+Singleton
+Structural
+Adapter
+Bridge
+Composite
+Decorator
+Facade
+Flyweight
+Proxy
+Behavioral
+Chain of responsibility
+Command
+Interpreter
+Iterator
+Mediator
+Memento
+Observer
+State
+Strategy
+Template method
+Visitor
+Concurrencypatterns
+Active object
+Balking
+Binding properties
+Double-checked locking
+Event-based asynchronous
+Guarded suspension
+Join
+Lock
+Monitor
+Proactor
+Reactor
+Read write lock
+Scheduler
+Thread pool
+Thread-local storage
+Architecturalpatterns
+Front controller
+Interceptor
+MVC
+ADR
+ECS
+n-tier
+Specification
+Publishâsubscribe
+Naked objects
+Service locator
+Active record
+Identity map
+Data access object
+Data transfer object
+Inversion of control
+Model 2
+Otherpatterns
+Blackboard
+Business delegate
+Composite entity
+Dependency injection
+Intercepting filter
+Lazy loading
+Mock object
+Null object
+Object pool
+Servant
+Twin
+Type tunnel
+Method chaining
+Delegation
+Books
+Design Patterns
+Enterprise Integration Patterns
+People
+Christopher Alexander
+Erich Gamma
+Ralph Johnson
+John Vlissides
+Grady Booch
+Kent Beck
+Ward Cunningham
+Martin Fowler
+Robert Martin
+Jim Coplien
+Douglas Schmidt
+Linda Rising
+Communities
+The Hillside Group
+The Portland Pattern Repository
+
+
+
+
+
+<img src="//en.wikipedia.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" />
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Strategy_pattern&oldid=1062163848"
+		Categories: Software design patternsHidden categories: CS1 maint: multiple names: authors listArticles with short descriptionShort description is different from WikidataCommons category link is on WikidataArticles with Spanish-language sources (es)Webarchive template wayback linksArticles with example C Sharp codeArticles with example Java code
+	
