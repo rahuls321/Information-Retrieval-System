@@ -25,9 +25,9 @@ top_k=10
 vocab_stem_path = './utils/vocab_doc_wise_stemming.npy'
 postings_list_path = "./utils/postings_list.pkl"
 b_query_file='./data/boolean_query.txt'
-b_query_ground_truth='./data/boolean query answer.txt'
+b_query_ground_truth='./data/query_answers.txt'
 query_file='./data/query.txt'
-query_ground_truth='./data/query answer.txt'
+query_ground_truth='./data/query_answers.txt'
 doc_vector_path = './utils/sparse_matrix_doc_vectors.npz'
 
 # vocab_doc_wise_tokenization = np.load('vocab_doc_wise_tokenization.npy', allow_pickle='TRUE').item()
@@ -243,27 +243,41 @@ def find_matched_doc(query_tokens, postings_list, doc_index):
     return matched_doc, token_not_found
 
 
-def get_score(mapped_doc, ground_truth):
-    if ground_truth in mapped_doc:
-        return 1
-    else: return 0
+def get_precision_score(mapped_doc, ground_truth):
+    intersection = set(mapped_doc).intersection(set(ground_truth))
+    return len(intersection)/len(mapped_doc), intersection
+
+def get_queries_from_file(query_file, relevant_doc_path):
+
+    with open(query_file, mode='r', encoding='utf-8') as input_file:
+        lines = input_file.readlines()
+        queries={}
+        for line in lines:
+            query = line.strip().split('\t')
+            queries[query[0]] = query[1]
+    # print(b_queries)
+    with open(relevant_doc_path, mode='r', encoding='utf-8') as input_file:
+        lines = input_file.readlines()
+        queries_o_answer={}
+        queries_relevant_doc={}
+        for line in lines:
+            query = line.strip().split(',')
+            if len(query) != 4:
+                print("Not in QRels format.")  
+                break 
+            assert len(query) == 4
+            if query[0] in queries_o_answer.keys():
+                queries_o_answer[query[0]].append(query[2])
+                queries_relevant_doc[query[0]].append(int(query[3]))
+            else: 
+                queries_o_answer[query[0]] = [query[2]]
+                queries_relevant_doc[query[0]] = [int(query[3])]
+
+    return queries, queries_o_answer, queries_relevant_doc
 
 
 print("Query processing for Boolean IR system ...")
-with open(b_query_file, mode='r', encoding='utf-8') as input_file:
-    lines = input_file.readlines()
-    b_queries={}
-    for line in lines:
-        query = line.strip().split('\t')
-        b_queries[query[0]] = query[1]
-# print(b_queries)
-with open(b_query_ground_truth, mode='r', encoding='utf-8') as input_file:
-    lines = input_file.readlines()
-    b_queries_o_answer={}
-    for line in lines:
-        query = line.strip().split('\t')
-        b_queries_o_answer[query[0]] = query[1]
-# print(b_queries_o_answer)
+b_queries, b_queries_o_answer, b_queries_relevant_doc = get_queries_from_file(b_query_file, b_query_ground_truth)
 
 queries_list = b_queries
 end_time=0
@@ -275,15 +289,20 @@ for query_idx, query in queries_list.items():
     print("Query ID: ", query_idx)
     query_tokens = query_preprocessing(query)
     matched_doc, token_not_found = find_matched_doc(query_tokens, postings_list, doc_index)
-    end_time+=time.time()-st_time
-    print("Ground truth doc: ", b_queries_o_answer[query_idx])
-    q_score = get_score(matched_doc[:top_k], b_queries_o_answer[query_idx])
+    original_relevant_doc = [docID for docID, relevance in zip(b_queries_o_answer[query_idx], b_queries_relevant_doc[query_idx]) if relevance==1]
+    print("Ground truth doc: ", original_relevant_doc)
+    q_score, true_positive_doc =get_precision_score(matched_doc[:top_k], original_relevant_doc)
+    print("True positive doc: ", true_positive_doc)
     score+=q_score
+    print("Precision score: ", q_score)
+    print("Out of all {} relelvant doc: {} relevant documents are retrieved".format(len(original_relevant_doc), len(true_positive_doc)))
     if(q_score==0): queries_not_matched.append(query_idx)
-    print(matched_doc[:top_k])
+    print("Total Matched Doc in ranked order: ", matched_doc[:top_k])
+    print("Time taken to process Query id: {}: {:.5f} sec".format(query_idx, time.time()-st_time))
+    end_time+=time.time()-st_time
     #print("These Tokens not found in the corpus: ", token_not_found)
-print("Final score: ", score)
-print("Not matched queries: ", queries_not_matched)
+print("Average Precision score: {}".format(score/len(queries_list)))
+print("Not matched queries with any doc in corpus: ", queries_not_matched)
 print("Avg time takes to run Boolean Retrieval system for one query: {:.5f} sec".format(end_time/len(queries_list)))
 
 
@@ -304,21 +323,8 @@ print("Avg time takes to run Boolean Retrieval system for one query: {:.5f} sec"
 
 
 print("Query processing for TF-IDF and BM25 ...")
-with open(query_file, mode='r', encoding='utf-8') as input_file:
-    lines = input_file.readlines()
-    queries={}
-    for line in lines:
-        query = line.strip().split('\t')
-        queries[query[0]] = query[1]
-# print(queries)
-#This is ground truth results - the documents from which I extacted all the queries are considered to be true label
-with open(query_ground_truth, mode='r', encoding='utf-8') as input_file:
-    lines = input_file.readlines()
-    queries_o_answer={}
-    for line in lines:
-        query = line.strip().split('\t')
-        queries_o_answer[query[0]] = query[1]
-# print(queries_o_answer)
+queries, queries_o_answer, queries_relevant_doc = get_queries_from_file(query_file, query_ground_truth)
+
 
 def get_doc_tf_idf(postings_list, doc_size):
     doc_vector = np.zeros((doc_size, len(postings_list.keys())), dtype=float)
@@ -439,16 +445,19 @@ for query_idx, query in queries_list.items():
 
     ##top_r_mapped_doc, token_not_found = top_R_ranked_doc(new_q_tokens, champion_lists, top_r)
 
-    end_time+=time.time()-st_time
-    print("Time taken to process Query id: {}: {:.5f} sec".format(query_idx, time.time()-st_time))
-    print("Ground truth doc: ", queries_o_answer[query_idx])
-    q_score=get_score(mapped_doc[:top_k], queries_o_answer[query_idx])
+    original_relevant_doc = [docID for docID, relevance in zip(queries_o_answer[query_idx], queries_relevant_doc[query_idx]) if relevance==1]
+    print("Ground truth doc: ", original_relevant_doc)
+    q_score, true_positive_doc =get_precision_score(mapped_doc[:top_k], original_relevant_doc)
+    print("True positive doc: ", true_positive_doc)
     score+=q_score
+    print("Precision score: ", q_score)
+    print("Out of all {} relelvant doc: {} relevant documents are retrieved".format(len(original_relevant_doc), len(true_positive_doc)))
     if(q_score==0): queries_not_matched.append(query_idx)
-    print("Mapped doc: ", mapped_doc[:top_k])
-    #print("These Tokens not found in the corpus: ", token_not_found)
-print("Final score: ", score)
-print("Not matched queries: ", queries_not_matched)
+    print("Total Matched Doc in ranked order: ", mapped_doc[:top_k])
+    print("Time taken to process Query id: {}: {:.5f} sec".format(query_idx, time.time()-st_time))
+    end_time+=time.time()-st_time
+print("Average Precision score: {}".format(score/len(queries_list)))
+print("Not matched queries with any doc in corpus: ", queries_not_matched)
 print("Avg time takes to run TF-IDF Retrieval system for one query: {:.5f} sec".format(end_time/len(queries_list)))
 
 
@@ -509,6 +518,7 @@ k1 = np.random.uniform(1.2, 2.0)
 b=0.75
 score=0
 queries_not_matched=[]
+total_mapped_doc = []
 for query_idx, query in queries_list.items():
     st_time=time.time()
     print("Query ID: ", query_idx)
@@ -520,14 +530,29 @@ for query_idx, query in queries_list.items():
     #print(new_q_tokens)
     RSVd_vec, token_not_found = get_BM25(new_q_tokens, postings_list, doc_lengths, k1, b)
     mapped_doc = [docName for score, docName in sorted(zip(RSVd_vec, list(doc_index.values())), reverse=True)]
-    print("Ground truth doc: ", queries_o_answer[query_idx])
-    q_score=get_score(mapped_doc[:top_k], queries_o_answer[query_idx])
+    original_relevant_doc = [docID for docID, relevance in zip(queries_o_answer[query_idx], queries_relevant_doc[query_idx]) if relevance==1]
+    print("Ground truth doc: ", original_relevant_doc)
+    q_score, true_positive_doc =get_precision_score(mapped_doc[:top_k], original_relevant_doc)
     score+=q_score
+    print("Precision score: ", q_score)
+    print("Out of all {} relelvant doc: {} relevant documents are retrieved".format(len(original_relevant_doc), len(true_positive_doc)))
     if(q_score==0): queries_not_matched.append(query_idx)
+    print("Total Matched Doc in ranked order: ", mapped_doc[:top_k])
+    print("Time taken to process Query id: {}: {:.5f} sec".format(query_idx, time.time()-st_time))
     end_time+=time.time()-st_time
-    print("Mapped doc: ", mapped_doc[:top_k])
     #print("These Tokens not found in the corpus: ", token_not_found)
-print("Final score: ", score)
-print("Not matched queries: ", queries_not_matched)
+print("Average Precision score: {}".format(score/len(queries_list)))
+print("Not matched queries with any doc in corpus: ", queries_not_matched)
 print("Avg time takes to run BM25 Retrieval system for one query: {:.5f} sec".format(end_time/len(queries_list)))
 
+# total_mapped_doc=np.array(total_mapped_doc).flatten()
+# total_mapped_doc=total_mapped_doc.reshape(len(total_mapped_doc), 1)
+# query_ids = [qid for qid in list(queries_list.keys()) for _ in range(10)]
+# query_ids = np.array(query_ids).reshape(len(total_mapped_doc), 1)
+# ones = np.ones((len(total_mapped_doc), 1), dtype=int)
+# save_query_file = np.hstack((query_ids,ones,total_mapped_doc,ones))
+# print(save_query_file)
+
+# with open('output.txt', 'w') as f:
+#     for x in save_query_file:
+#         f.write('%s,%s,%s,%s\n' % tuple(x))
