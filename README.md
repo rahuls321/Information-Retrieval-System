@@ -1,11 +1,5 @@
 Assignment 1
 
-Name - Rahul Kumar
-Roll No. - 21111069
-Prog. - Mtech CSE
-Mail - rahulkumar21@iitk.ac.in
-Contact - 7761937143
-
 
 *** NOTE *** 
 1. Make sure you are connected with internet. (If you are running on cse server run authenticator.py file to bypass the firewall)
